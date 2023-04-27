@@ -1,8 +1,16 @@
 {
   "lock": false,
+  "tasks": {
+    "test": "deno test --unstable"
+  },
   "fmt": {
     "options": {
       "semiColons": false
+    }
+  },
+  "test": {
+    "files": {
+      "include": ["./tests.ts"]
     }
   }
 }
