@@ -1,0 +1,8 @@
+{
+  "lock": false,
+  "fmt": {
+    "options": {
+      "semiColons": false
+    }
+  }
+}
