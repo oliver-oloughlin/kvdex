@@ -7,7 +7,7 @@ Has no dependencies.
 Models can be defined by extending the Model type.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdb@v1.0.0/mod.ts"
+import type { Model } from "https://deno.land/x/kvdb@v1.1.1/mod.ts"
 
 interface User extends Model {
   username: string,
@@ -23,10 +23,10 @@ interface User extends Model {
 ```
 
 ## Collections
-A Collection contains all database functions for dealing with a collection of documents. The Collection class should be initialized with a Model type parameter and the key for the specific collection. The key must be an array of strings.
+A Collection contains all database functions for dealing with a collection of documents. The Collection class should be initialized with a Model type parameter and the key for the specific collection. The key must adhere to the type Deno.KvKey.
 
 ```ts
-import { Collection } from "https://deno.land/x/kvdb@v1.0.0/mod.ts"
+import { Collection } from "https://deno.land/x/kvdb@v1.1.1/mod.ts"
 
 const users = new Collection<User>(["users"])
 ```
@@ -60,10 +60,10 @@ console.log(id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
 ```
 
 ### Set
-The "set" method is very similar to the "add" method, and is used to add a new document to the KV store with a given id. The id is returned upon completion.
+The "set" method is very similar to the "add" method, and is used to add a new document to the KV store with a given id of type Deno.KvKeyPart. The id is returned upon completion.
 
 ```ts
-const id = await users.add({
+const id = await users.set({
   id: 95700400,
   username: "oliver",
   age: 24,
