@@ -37,15 +37,16 @@ Deno.test({
     await reset()
 
     await t.step({
-      name: "Should add record and return random id of type string",
+      name: "Should add record and return commit result with random id of type string and versionstamp of type string",
       fn: async () => {
         await reset()
 
-        const id = await people.add(testPerson)
+        const { id, versionstamp } = await people.add(testPerson)
 
         const person = await people.find(id)
 
         assert(typeof id === "string")
+        assert(typeof versionstamp === "string")
         assert(typeof person === "object" && person?.id === id)
       }
     })
@@ -57,11 +58,11 @@ Deno.test({
   name: "set",
   fn: async t => {
     await t.step({
-      name: "Should set record with id of type string",
+      name: "Should set record and return commit result with id of type string and versionstamp of type string",
       fn: async () => {
         await reset()
 
-        const id = await people.set({
+        const { id, versionstamp } = await people.set({
           id: "test_id",
           ...testPerson
         })
@@ -69,16 +70,17 @@ Deno.test({
         const person = await people.find(id)
 
         assert(typeof id === "string")
+        assert(typeof versionstamp === "string")
         assert(typeof person === "object" && person?.id === id)
       }
     })
 
     await t.step({
-      name: "Should set record with id of type number",
+      name: "Should set record and return commit result with id of type number and versionstamp of type string",
       fn: async () => {
         await reset()
 
-        const id = await people.set({
+        const { id, versionstamp } = await people.set({
           id: 123,
           ...testPerson
         })
@@ -86,16 +88,17 @@ Deno.test({
         const person = await people.find(id)
 
         assert(typeof id === "number")
+        assert(typeof versionstamp === "string")
         assert(typeof person === "object" && person?.id === id)
       }
     })
 
     await t.step({
-      name: "Should set record with id of type bigint",
+      name: "Should set record and return commit result with id of type bigint and versionstamp of type string",
       fn: async () => {
         await reset()
 
-        const id = await people.set({
+        const { id, versionstamp } = await people.set({
           id: 123n,
           ...testPerson
         })
@@ -103,6 +106,7 @@ Deno.test({
         const person = await people.find(id)
 
         assert(typeof id === "bigint")
+        assert(typeof versionstamp === "string")
         assert(typeof person === "object" && person?.id === id)
       }
     })
@@ -136,7 +140,7 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const id = await people.add(testPerson)
+        const { id } = await people.add(testPerson)
         const person = await people.find(id)
         assert(typeof person === "object")
       }
@@ -153,7 +157,7 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const id = await people.add(testPerson)
+        const { id } = await people.add(testPerson)
         const p1 = await people.find(id)
 
         assert(p1 !== null)
@@ -176,8 +180,10 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const id1 = await people.add(testPerson)
-        const id2 = await people.add(testPerson)
+        const r1 = await people.add(testPerson)
+        const r2 = await people.add(testPerson)
+        const id1 = r1.id
+        const id2 = r2.id
 
         const p1_1 = await people.find(id1)
         const p2_1 = await people.find(id2)
@@ -200,8 +206,10 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const id1 = await people.add(testPerson)
-        const id2 = await people.add(testPerson)
+        const r1 = await people.add(testPerson)
+        const r2 = await people.add(testPerson)
+        const id1 = r1.id
+        const id2 = r2.id
 
         const p1_1 = await people.find(id1)
         const p2_1 = await people.find(id2)
@@ -255,8 +263,10 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const id1 = await people.add(testPerson)
-        const id2 = await people.add(testPerson)
+        const r1 = await people.add(testPerson)
+        const r2 = await people.add(testPerson)
+        const id1 = r1.id
+        const id2 = r2.id
 
         const allPeople = await people.getMany()
 
@@ -271,8 +281,10 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const id1 = await people.add(testPerson)
-        const id2 = await people.add(testPerson)
+        const r1 = await people.add(testPerson)
+        const r2 = await people.add(testPerson)
+        const id1 = r1.id
+        const id2 = r2.id
 
         const allPeople = await people.getMany({
           filter: doc => doc.id === id1
@@ -316,8 +328,10 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const id1 = await people.add(testPerson)
-        const id2 = await people.add(testPerson)
+        const r1 = await people.add(testPerson)
+        const r2 = await people.add(testPerson)
+        const id1 = r1.id
+        const id2 = r2.id
 
         const allPeople = await people.getMany()
 
@@ -337,8 +351,10 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const id1 = await people.add(testPerson)
-        const id2 = await people.add(testPerson)
+        const r1 = await people.add(testPerson)
+        const r2 = await people.add(testPerson)
+        const id1 = r1.id
+        const id2 = r2.id
 
         const allPeople = await people.getMany()
 

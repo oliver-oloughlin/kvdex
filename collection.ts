@@ -1,7 +1,12 @@
-import type { Model, Document } from "./model.ts"
+import type { Model, Document, WithId } from "./model.ts"
 
 export type ListOptions<T extends Model> = Deno.KvListOptions & {
   filter?: (doc: Document<T>) => boolean
+}
+
+export type CommitResult<T1 extends Model, T2 extends Deno.KvKeyPart> = {
+  versionstamp: Deno.KvEntry<T1>["versionstamp"],
+  id: T2
 }
 
 export class Collection<T extends Model> {
@@ -20,16 +25,18 @@ export class Collection<T extends Model> {
    * Finds a document with the given id in the KV store.
    * 
    * @param id - The id of the document to find.
-   * 
+   * @param options - Options for getting the document from the KV store
    * @returns A promise that resolves to the found document, or null if not found.
    */
-  async find(id: Deno.KvKeyPart) {
+  async find(id: Deno.KvKeyPart, options?: Parameters<Deno.Kv["get"]>[1]) {
     return await Collection.useKV(async kv => {
       const key = this.getDocumentKeyFromId(id)
-      const result = await kv.get<T>(key)
+      const result = await kv.get<T>(key, options)
+      const exists = !!result.value && !!result.versionstamp
 
-      const doc: Document<T> | null = !result.value ? null : {
+      const doc: Document<T> | null = !exists ? null : {
         id,
+        versionstamp: result.versionstamp,
         ...result.value
       }
 
@@ -41,14 +48,20 @@ export class Collection<T extends Model> {
    * Adds a new document to the KV store with a randomely generated id.
    * 
    * @param data
-   * @returns A promise that resovles to the generated id for the added document
+   * @returns A promise that resovles to a commit result containing the document versionstamp and id
    */
   async add(data: T) {
     return await Collection.useKV(async kv => {
       const id = crypto.randomUUID()
       const key = this.getDocumentKeyFromId(id)
-      await kv.set(key, data)
-      return id
+      const cr = await kv.set(key, data)
+      
+      const commitResult: CommitResult<T,typeof id> = {
+        versionstamp: cr.versionstamp,
+        id
+      }
+
+      return commitResult
     })
   }
 
@@ -56,14 +69,20 @@ export class Collection<T extends Model> {
    * Adds a new document with the given id to the KV store.
    * 
    * @param document
-   * @returns A promise that resovles to the id of the document
+   * @returns A promise that resovles to a commit result containing the document versionstamp and id
    */
-  async set(document: Document<T>) {
+  async set(document: WithId<T>) {
     return await Collection.useKV(async kv => {
       const { id, ...data } = document
       const key = this.getDocumentKeyFromId(id)
-      await kv.set(key, data)
-      return id
+      const cr = await kv.set(key, data)
+
+      const commitResult: CommitResult<T, typeof id> = {
+        versionstamp: cr.versionstamp,
+        id
+      }
+
+      return commitResult
     })
   }
 
@@ -98,7 +117,8 @@ export class Collection<T extends Model> {
 
         const doc: Document<T> = {
           id,
-          ...entry.value
+          versionstamp: entry.versionstamp,
+          ...entry.value,
         }
         
         if (!options?.filter || options.filter(doc)) await kv.delete(entry.key)
@@ -125,6 +145,7 @@ export class Collection<T extends Model> {
   
         const doc: Document<T> = {
           id,
+          versionstamp: entry.versionstamp,
           ...entry.value
         }
   
@@ -154,6 +175,7 @@ export class Collection<T extends Model> {
   
         const doc: Document<T> = {
           id,
+          versionstamp: entry.versionstamp,
           ...entry.value
         }
 
