@@ -220,6 +220,29 @@ Deno.test({
         assert(p2_2 !== null)
       }
     })
+
+    await t.step({
+      name: "Should only delete the first 2 records",
+      fn: async () => {
+        await reset()
+
+        await people.add(testPerson)
+        await people.add(testPerson)
+        await people.add(testPerson)
+
+        const allPeople1 = await people.getMany()
+
+        assert(allPeople1.length === 3)
+
+        await people.deleteMany({
+          limit: 2,
+        })
+
+        const allPeople2 = await people.getMany()
+
+        assert(allPeople2.length === 1)
+      }
+    })
   }
 })
 
@@ -258,6 +281,27 @@ Deno.test({
         assert(allPeople.length === 1)
         assert(allPeople.some(p => p.id === id1))
         assert(!allPeople.some(p => p.id === id2))
+      }
+    })
+
+    await t.step({
+      name: "Should only retrieve the first 2 records",
+      fn: async () => {
+        await reset()
+
+        await people.add(testPerson)
+        await people.add(testPerson)
+        await people.add(testPerson)
+
+        const allPeople1 = await people.getMany()
+
+        assert(allPeople1.length === 3)
+
+        const allPeople2 = await people.getMany({
+          limit: 2
+        })
+
+        assert(allPeople2.length === 2)
       }
     })
   }
