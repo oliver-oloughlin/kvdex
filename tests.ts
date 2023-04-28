@@ -130,18 +130,37 @@ Deno.test({
       name: "Should return null",
       fn: async () => {
         await reset()
-        const person = await people.find(111)
+
+        const person = await people.find(111, {
+          consistency: "eventual"
+        })
+
         assert(person === null)
       }
     })
 
     await t.step({
-      name: "Should find record by id and not return null",
+      name: "Should find document by id and not return null",
       fn: async () => {
         await reset()
 
         const { id } = await people.add(testPerson)
         const person = await people.find(id)
+        assert(typeof person === "object")
+      }
+    })
+
+    await t.step({
+      name: "Should find document by id and not return null",
+      fn: async () => {
+        await reset()
+
+        const { id } = await people.add(testPerson)
+
+        const person = await people.find(id, {
+          consistency: "eventual"
+        })
+        
         assert(typeof person === "object")
       }
     })
