@@ -32,19 +32,23 @@ const users = new Collection<User>(["users"])
 ```
 
 ### Find
-The "find" method is used to retrieve a single document with the given id from the KV store. The id must adhere to the type Deno.KvKeyPart.
+The "find" method is used to retrieve a single document with the given id from the KV store. The id must adhere to the type Deno.KvKeyPart. This method also takes an optional options argument to control the consistency level.
 
 ```ts
 const user1 = await users.find(123)
+
 const user2 = await users.find(123n)
-const oliver = await users.find("oliver")
+
+const oliver = await users.find("oliver", {
+  consistency: "eventual" // "strong" by default
+})
 ```
 
 ### Add
-The "add" method is used to add a new document to the KV store. An id of type string (uuid) will be generated for the document and returned upon completion.
+The "add" method is used to add a new document to the KV store. An id of type string (uuid) will be generated for the document. Upon completion a CommitResult object will be returned with the document id and versionstamp.
 
 ```ts
-const id = await users.add({
+const { id, versionstamp } = await users.add({
   username: "oliver",
   age: 24,
   activities: ["skiing", "running"],
@@ -60,10 +64,10 @@ console.log(id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
 ```
 
 ### Set
-The "set" method is very similar to the "add" method, and is used to add a new document to the KV store with a given id of type Deno.KvKeyPart. The id is returned upon completion.
+The "set" method is very similar to the "add" method, and is used to add a new document to the KV store with a given id of type Deno.KvKeyPart. Upon completion a CommitResult object will be returned with the document id and versionstamp.
 
 ```ts
-const id = await users.set({
+const { id, versionstamp } = await users.set({
   id: 95700400,
   username: "oliver",
   age: 24,
