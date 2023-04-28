@@ -135,6 +135,33 @@ export class Collection<T extends Model> {
     })
   }
 
+  /**
+   * Executes a callback function for every document according to the given options.
+   * 
+   * If no options are given, the callback function is executed for all documents in the collection.
+   * 
+   * @param fn 
+   * @param options 
+   * @returns A promise that resolves to void
+   */
+  async forEach(fn: (doc: Document<T>) => void, options?: ListOptions<T>) {
+    return await this.useKV(async kv => {
+      const iter = kv.list<T>({ prefix: this.collectionKey }, options)
+      
+      for await (const entry of iter) {
+        const id = this.getIdFromDocumentKey(entry.key)
+        if (!id) continue
+  
+        const doc: Document<T> = {
+          id,
+          ...entry.value
+        }
+
+        if (!options?.filter || options.filter(doc)) fn(doc)
+      }
+    })
+  }
+
 
 
   /* PRIVATE METHODS */

@@ -1,4 +1,4 @@
-import type { Model } from "./model.ts"
+import type { Document, Model } from "./model.ts"
 import { Collection } from "./collection.ts"
 import { assert } from "https://deno.land/std@0.184.0/testing/asserts.ts"
 
@@ -302,6 +302,56 @@ Deno.test({
         })
 
         assert(allPeople2.length === 2)
+      }
+    })
+  }
+})
+
+// Test "forEach" method
+Deno.test({
+  name: "forEach",
+  fn: async t => {
+    await t.step({
+      name: "Should add all documents to list",
+      fn: async () => {
+        await reset()
+
+        const id1 = await people.add(testPerson)
+        const id2 = await people.add(testPerson)
+
+        const allPeople = await people.getMany()
+
+        assert(allPeople.length === 2)
+
+        const list: Document<Person>[] = []
+        await people.forEach(doc => list.push(doc))
+
+        assert(list.length === 2)
+        assert(list.some(doc => doc.id === id1))
+        assert(list.some(doc => doc.id === id2))
+      }
+    })
+
+    await t.step({
+      name: "Should only add filtered documents to list",
+      fn: async () => {
+        await reset()
+
+        const id1 = await people.add(testPerson)
+        const id2 = await people.add(testPerson)
+
+        const allPeople = await people.getMany()
+
+        assert(allPeople.length === 2)
+
+        const list: Document<Person>[] = []
+        await people.forEach(doc => list.push(doc), {
+          filter: doc => doc.id === id1
+        })
+
+        assert(list.length === 1)
+        assert(list.some(doc => doc.id === id1))
+        assert(!list.some(doc => doc.id === id2))
       }
     })
   }
