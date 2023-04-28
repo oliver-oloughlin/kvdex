@@ -133,3 +133,27 @@ const last10 = await users.getMany({
   reverse: true
 })
 ```
+
+### For Each
+The "forEach" method is used for executing a callback function for multiple documents in the KV store. It takes an optional "options" parameter that can be used for filtering of documents. If no options are given, "forEach" will execute the callback function for all documents in the collection.
+
+```ts
+// Log the username of every user document
+await users.forEach(user => console.log(user.username))
+
+// Log the username of user that has "swimming" as an activity
+await users.forEach(user => console.log(user.username), {
+  filter: user => user.activities.includes("swimming")
+})
+
+// Log the usernames of the first 10 users in the KV store
+await users.forEach(user => console.log(user.username), {
+  limit: 10
+})
+
+// Log the usernames of the last 10 users in the KV store
+await users.forEach(user => console.log(user.username), {
+  limit: 10,
+  reverse: true
+})
+```
