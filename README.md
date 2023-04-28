@@ -1,4 +1,4 @@
-# KVDB - Wrapper for Deno KV Store
+# KVDB
 Simple library for storing/retrieving documents in Deno's KV store.
 
 Has no dependencies.
@@ -23,7 +23,7 @@ interface User extends Model {
 ```
 
 ## Collections
-A Collection contains all database functions for dealing with a collection of documents. The Collection class should be initialized with a Model type parameter and the key for the specific collection. The key must adhere to the type Deno.KvKey.
+A Collection contains all methods for dealing with a collection of documents. The Collection class should be initialized with a Model type parameter and the key for the specific collection. The key must adhere to the type Deno.KvKey.
 
 ```ts
 import { Collection } from "https://deno.land/x/kvdb@v1.1.1/mod.ts"
@@ -32,7 +32,7 @@ const users = new Collection<User>(["users"])
 ```
 
 ### Find
-The "find" method is used to retrieve a single document with the given id from the KV store. The id must be of type Deno.KvKeyPart.
+The "find" method is used to retrieve a single document with the given id from the KV store. The id must adhere to the type Deno.KvKeyPart.
 
 ```ts
 const user1 = await users.find(123)

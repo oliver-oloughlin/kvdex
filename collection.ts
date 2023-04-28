@@ -24,7 +24,7 @@ export class Collection<T extends Model> {
    * @returns A promise that resolves to the found document, or null if not found.
    */
   async find(id: Deno.KvKeyPart) {
-    return await this.useKV(async kv => {
+    return await Collection.useKV(async kv => {
       const key = this.getDocumentKeyFromId(id)
       const result = await kv.get<T>(key)
 
@@ -44,7 +44,7 @@ export class Collection<T extends Model> {
    * @returns A promise that resovles to the generated id for the added document
    */
   async add(data: T) {
-    return await this.useKV(async kv => {
+    return await Collection.useKV(async kv => {
       const id = crypto.randomUUID()
       const key = this.getDocumentKeyFromId(id)
       await kv.set(key, data)
@@ -59,7 +59,7 @@ export class Collection<T extends Model> {
    * @returns A promise that resovles to the id of the document
    */
   async set(document: Document<T>) {
-    return await this.useKV(async kv => {
+    return await Collection.useKV(async kv => {
       const { id, ...data } = document
       const key = this.getDocumentKeyFromId(id)
       await kv.set(key, data)
@@ -74,7 +74,7 @@ export class Collection<T extends Model> {
    * @returns A promise that resovles to void
    */
   async delete(id: Deno.KvKeyPart) {
-    return await this.useKV(async kv => {
+    return await Collection.useKV(async kv => {
       const key = this.getDocumentKeyFromId(id)
       await kv.delete(key)
     })
@@ -89,11 +89,11 @@ export class Collection<T extends Model> {
    * @returns A promise that resovles to void
    */
   async deleteMany(options?: ListOptions<T>) {
-    return await this.useKV(async kv => {
+    return await Collection.useKV(async kv => {
       const iter = kv.list<T>({ prefix: this.collectionKey }, options)
 
       for await (const entry of iter) {
-        const id = this.getIdFromDocumentKey(entry.key)
+        const id = Collection.getIdFromDocumentKey(entry.key)
         if (!id) continue
 
         const doc: Document<T> = {
@@ -115,12 +115,12 @@ export class Collection<T extends Model> {
    * @returns A promise that resovles to a list of the retrieved documents
    */
   async getMany(options?: ListOptions<T>) {
-    return await this.useKV(async kv => {
+    return await Collection.useKV(async kv => {
       const iter = kv.list<T>({ prefix: this.collectionKey }, options)
       const result: Document<T>[] = []
   
       for await (const entry of iter) {
-        const id = this.getIdFromDocumentKey(entry.key)
+        const id = Collection.getIdFromDocumentKey(entry.key)
         if (!id) continue
   
         const doc: Document<T> = {
@@ -145,11 +145,11 @@ export class Collection<T extends Model> {
    * @returns A promise that resolves to void
    */
   async forEach(fn: (doc: Document<T>) => void, options?: ListOptions<T>) {
-    return await this.useKV(async kv => {
+    return await Collection.useKV(async kv => {
       const iter = kv.list<T>({ prefix: this.collectionKey }, options)
       
       for await (const entry of iter) {
-        const id = this.getIdFromDocumentKey(entry.key)
+        const id = Collection.getIdFromDocumentKey(entry.key)
         if (!id) continue
   
         const doc: Document<T> = {
@@ -170,11 +170,11 @@ export class Collection<T extends Model> {
     return [...this.collectionKey, id]
   }
 
-  private getIdFromDocumentKey(key: Deno.KvKey) {
+  private static getIdFromDocumentKey(key: Deno.KvKey) {
     return key.at(-1)
   }
 
-  private async useKV<T>(fn: (kv: Deno.Kv) => Promise<T>) {
+  private static async useKV<T>(fn: (kv: Deno.Kv) => Promise<T>) {
     const kv = await Deno.openKv()
     const result = await fn(kv)
     await kv.close()
