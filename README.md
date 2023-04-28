@@ -7,7 +7,7 @@ Has no dependencies.
 Models can be defined by extending the Model type.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdb@v1.1.1/mod.ts"
+import type { Model } from "https://deno.land/x/kvdb@v1.2.0/mod.ts"
 
 interface User extends Model {
   username: string,
@@ -26,7 +26,7 @@ interface User extends Model {
 A Collection contains all methods for dealing with a collection of documents. The Collection class should be initialized with a Model type parameter and the key for the specific collection. The key must adhere to the type Deno.KvKey.
 
 ```ts
-import { Collection } from "https://deno.land/x/kvdb@v1.1.1/mod.ts"
+import { Collection } from "https://deno.land/x/kvdb@v1.2.0/mod.ts"
 
 const users = new Collection<User>(["users"])
 ```
