@@ -1,14 +1,14 @@
-import type { Model, Document, DocumentId } from "./kv.types.ts"
+import type { KvValue, Document, DocumentId } from "./kvdb.types.ts"
 import { useKV, getDocumentId, getDocumentKey } from "./utils.ts"
 
 // Types
-export type ListOptions<T extends Model> = Deno.KvListOptions & {
+export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   filter?: (doc: Document<T>) => boolean
 }
 
 export type FindOptions = Parameters<Deno.Kv["get"]>[1]
 
-export type CommitResult<T1 extends Model, T2 extends Deno.KvKeyPart> = {
+export type CommitResult<T1 extends KvValue, T2 extends DocumentId> = {
   versionstamp: Document<T1>["versionstamp"],
   id: T2
 }
@@ -16,12 +16,12 @@ export type CommitResult<T1 extends Model, T2 extends Deno.KvKeyPart> = {
 export type CollectionKey = Deno.KvKey
 
 // Create collection method
-export function collection<T extends Model>(collectionKey: CollectionKey) {
+export function collection<T extends KvValue>(collectionKey: CollectionKey) {
   return new Collection<T>(collectionKey)
 }
 
 // Collection class
-export class Collection<T extends Model> {
+export class Collection<T extends KvValue> {
 
   private collectionKey: CollectionKey
 
@@ -107,7 +107,7 @@ export class Collection<T extends Model> {
    * @param id 
    * @returns A promise that resovles to void
    */
-  async delete(id: Deno.KvKeyPart) {
+  async delete(id: DocumentId) {
     await useKV(async kv => {
       const key = getDocumentKey(this.collectionKey, id)
       await kv.delete(key)
@@ -197,6 +197,15 @@ export class Collection<T extends Model> {
         if (!options?.filter || options.filter(doc)) fn(doc)
       }
     })
+  }
+
+  /**
+   * Gets the key for this collection instance
+   * 
+   * @returns The collection key
+   */
+  getCollectionKey() {
+    return this.collectionKey
   }
 
 }

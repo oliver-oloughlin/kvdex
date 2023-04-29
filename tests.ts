@@ -1,8 +1,7 @@
-import type { Document, Model } from "./kv.types.ts"
-import { Collection } from "./collection.ts"
+import { kvdb, collection, type KvObject, type Document } from "./mod.ts"
 import { assert } from "https://deno.land/std@0.184.0/testing/asserts.ts"
 
-interface Person extends Model {
+interface Person extends KvObject {
   name: string,
   age: number,
   friends: string[],
@@ -24,10 +23,20 @@ const testPerson: Person = {
   }
 }
 
-const people = new Collection<Person>(["person"])
+const db = kvdb({
+  people: collection<Person>(["people"]),
+  values: {
+    numbers: collection<number>(["values", "numbers"]),
+    strings: collection<string>(["values", "strings"]),
+    u64s: collection<Deno.KvU64>(["values", "u64s"])
+  }
+})
 
 async function reset() {
-  await people.deleteMany()
+  await db.people.deleteMany()
+  await db.values.numbers.deleteMany()
+  await db.values.strings.deleteMany()
+  await db.values.u64s.deleteMany()
 }
 
 // Test "add" method
@@ -41,9 +50,9 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const { id, versionstamp } = await people.add(testPerson)
+        const { id, versionstamp } = await db.people.add(testPerson)
 
-        const person = await people.find(id)
+        const person = await db.people.find(id)
 
         assert(typeof id === "string")
         assert(typeof versionstamp === "string")
@@ -62,9 +71,9 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const { id, versionstamp } = await people.set("test_id", testPerson)
+        const { id, versionstamp } = await db.people.set("test_id", testPerson)
 
-        const person = await people.find(id)
+        const person = await db.people.find(id)
 
         assert(typeof id === "string")
         assert(typeof versionstamp === "string")
@@ -77,9 +86,9 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const { id, versionstamp } = await people.set(123, testPerson)
+        const { id, versionstamp } = await db.people.set(123, testPerson)
 
-        const person = await people.find(id)
+        const person = await db.people.find(id)
 
         assert(typeof id === "number")
         assert(typeof versionstamp === "string")
@@ -92,9 +101,9 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const { id, versionstamp } = await people.set(123n, testPerson)
+        const { id, versionstamp } = await db.people.set(123n, testPerson)
 
-        const person = await people.find(id)
+        const person = await db.people.find(id)
 
         assert(typeof id === "bigint")
         assert(typeof versionstamp === "string")
@@ -112,8 +121,8 @@ Deno.test({
       name: "Should return null",
       fn: async () => {
         await reset()
-        const person = await people.find("non_existing_id")
-        assert(person === null)
+        const doc = await db.people.find("non_existing_id")
+        assert(doc === null)
       }
     })
 
@@ -122,11 +131,11 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const person = await people.find(111, {
+        const doc = await db.people.find(111, {
           consistency: "eventual"
         })
 
-        assert(person === null)
+        assert(doc === null)
       }
     })
 
@@ -135,9 +144,11 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const { id } = await people.add(testPerson)
-        const person = await people.find(id)
-        assert(typeof person === "object")
+        const { id } = await db.people.add(testPerson)
+        const doc = await db.people.find(id)
+        assert(typeof doc === "object")
+        assert(typeof doc?.value === "object")
+        assert(doc?.value.name === testPerson.name)
       }
     })
 
@@ -146,13 +157,15 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const { id } = await people.add(testPerson)
+        const { id } = await db.people.add(testPerson)
 
-        const person = await people.find(id, {
+        const doc = await db.people.find(id, {
           consistency: "eventual"
         })
         
-        assert(typeof person === "object")
+        assert(typeof doc === "object")
+        assert(typeof doc?.value === "object")
+        assert(doc?.value.name === testPerson.name)
       }
     })
   }
@@ -167,13 +180,13 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const { id } = await people.add(testPerson)
-        const p1 = await people.find(id)
+        const { id } = await db.people.add(testPerson)
+        const p1 = await db.people.find(id)
 
         assert(p1 !== null)
 
-        await people.delete(id)
-        const p2 = await people.find(id)
+        await db.people.delete(id)
+        const p2 = await db.people.find(id)
 
         assert(p2 === null)
       }
@@ -190,21 +203,21 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const r1 = await people.add(testPerson)
-        const r2 = await people.add(testPerson)
+        const r1 = await db.people.add(testPerson)
+        const r2 = await db.people.add(testPerson)
         const id1 = r1.id
         const id2 = r2.id
 
-        const p1_1 = await people.find(id1)
-        const p2_1 = await people.find(id2)
+        const p1_1 = await db.people.find(id1)
+        const p2_1 = await db.people.find(id2)
 
         assert(p1_1 !== null)
         assert(p2_1 !== null)
 
-        await people.deleteMany()
+        await db.people.deleteMany()
 
-        const p1_2 = await people.find(id1)
-        const p2_2 = await people.find(id2)
+        const p1_2 = await db.people.find(id1)
+        const p2_2 = await db.people.find(id2)
 
         assert(p1_2 === null)
         assert(p2_2 === null)
@@ -216,23 +229,23 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const r1 = await people.add(testPerson)
-        const r2 = await people.add(testPerson)
+        const r1 = await db.people.add(testPerson)
+        const r2 = await db.people.add(testPerson)
         const id1 = r1.id
         const id2 = r2.id
 
-        const p1_1 = await people.find(id1)
-        const p2_1 = await people.find(id2)
+        const p1_1 = await db.people.find(id1)
+        const p2_1 = await db.people.find(id2)
 
         assert(p1_1 !== null)
         assert(p2_1 !== null)
 
-        await people.deleteMany({
+        await db.people.deleteMany({
           filter: doc => doc.id === id1
         })
 
-        const p1_2 = await people.find(id1)
-        const p2_2 = await people.find(id2)
+        const p1_2 = await db.people.find(id1)
+        const p2_2 = await db.people.find(id2)
 
         assert(p1_2 === null)
         assert(p2_2 !== null)
@@ -244,19 +257,19 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        await people.add(testPerson)
-        await people.add(testPerson)
-        await people.add(testPerson)
+        await db.people.add(testPerson)
+        await db.people.add(testPerson)
+        await db.people.add(testPerson)
 
-        const allPeople1 = await people.getMany()
+        const allPeople1 = await db.people.getMany()
 
         assert(allPeople1.length === 3)
 
-        await people.deleteMany({
+        await db.people.deleteMany({
           limit: 2,
         })
 
-        const allPeople2 = await people.getMany()
+        const allPeople2 = await db.people.getMany()
 
         assert(allPeople2.length === 1)
       }
@@ -273,12 +286,12 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const r1 = await people.add(testPerson)
-        const r2 = await people.add(testPerson)
+        const r1 = await db.people.add(testPerson)
+        const r2 = await db.people.add(testPerson)
         const id1 = r1.id
         const id2 = r2.id
 
-        const allPeople = await people.getMany()
+        const allPeople = await db.people.getMany()
 
         assert(allPeople.length === 2)
         assert(allPeople.some(p => p.id === id1))
@@ -291,12 +304,12 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const r1 = await people.add(testPerson)
-        const r2 = await people.add(testPerson)
+        const r1 = await db.people.add(testPerson)
+        const r2 = await db.people.add(testPerson)
         const id1 = r1.id
         const id2 = r2.id
 
-        const allPeople = await people.getMany({
+        const allPeople = await db.people.getMany({
           filter: doc => doc.id === id1
         })
 
@@ -311,15 +324,15 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        await people.add(testPerson)
-        await people.add(testPerson)
-        await people.add(testPerson)
+        await db.people.add(testPerson)
+        await db.people.add(testPerson)
+        await db.people.add(testPerson)
 
-        const allPeople1 = await people.getMany()
+        const allPeople1 = await db.people.getMany()
 
         assert(allPeople1.length === 3)
 
-        const allPeople2 = await people.getMany({
+        const allPeople2 = await db.people.getMany({
           limit: 2
         })
 
@@ -338,17 +351,17 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const r1 = await people.add(testPerson)
-        const r2 = await people.add(testPerson)
+        const r1 = await db.people.add(testPerson)
+        const r2 = await db.people.add(testPerson)
         const id1 = r1.id
         const id2 = r2.id
 
-        const allPeople = await people.getMany()
+        const allPeople = await db.people.getMany()
 
         assert(allPeople.length === 2)
 
         const list: Document<Person>[] = []
-        await people.forEach(doc => list.push(doc))
+        await db.people.forEach(doc => list.push(doc))
 
         assert(list.length === 2)
         assert(list.some(doc => doc.id === id1))
@@ -361,23 +374,97 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const r1 = await people.add(testPerson)
-        const r2 = await people.add(testPerson)
+        const r1 = await db.people.add(testPerson)
+        const r2 = await db.people.add(testPerson)
         const id1 = r1.id
         const id2 = r2.id
 
-        const allPeople = await people.getMany()
+        const allPeople = await db.people.getMany()
 
         assert(allPeople.length === 2)
 
         const list: Document<Person>[] = []
-        await people.forEach(doc => list.push(doc), {
+        await db.people.forEach(doc => list.push(doc), {
           filter: doc => doc.id === id1
         })
 
         assert(list.length === 1)
         assert(list.some(doc => doc.id === id1))
         assert(!list.some(doc => doc.id === id2))
+      }
+    })
+  }
+})
+
+// Test atomic operations
+Deno.test({
+  name: "atomic",
+  fn: async t => {
+    await t.step({
+      name: "Should add numbers to numbers collection",
+      fn: async () => {
+        await reset()
+
+        const r = await db
+          .atomic(db => db.values.numbers)
+          .add(1)
+          .add(2)
+          .add(3)
+          .commit()
+
+        const numbersResult = await db.values.numbers.getMany()
+
+        assert(r !== null)
+        assert(numbersResult.some(n => n.value === 1))
+        assert(numbersResult.some(n => n.value === 2))
+        assert(numbersResult.some(n => n.value === 3))
+      }
+    })
+
+    await t.step({
+      name: "Should not commit new value",
+      fn: async () => {
+        await reset()
+
+        const { id, versionstamp } = await db.values.strings.add("test1")
+        await db.values.strings.set(id, "test2")
+
+        const r = await db
+          .atomic(db => db.values.strings)
+          .check({
+            id,
+            versionstamp
+          })
+          .set(id, "test3")
+          .commit()
+
+        assert(r === null)
+      }
+    })
+
+    await t.step({
+      name: "Should add and sum value",
+      fn: async () => {
+        await reset()
+
+        const { id } = await db.values.u64s.add(new Deno.KvU64(100n))
+
+        const r1 = await db.values.u64s.find(id)
+
+        assert(r1 !== null)
+        assert(r1?.value.value === new Deno.KvU64(100n).value)
+
+        const r2 = await db
+          .atomic(db => db.values.u64s)
+          .sum(id, 10n)
+          .commit()
+
+        assert(r2 !== null)
+        
+        const r3 = await db.values.u64s.find(id)
+
+        assert(r3 !== null)
+        assert(r3?.value.value === new Deno.KvU64(110n).value)
       }
     })
   }
