@@ -16,12 +16,12 @@ export type CommitResult<T1 extends KvValue, T2 extends DocumentId> = {
 export type CollectionKey = Deno.KvKey
 
 // Create collection method
-export function collection<T extends KvValue>(collectionKey: CollectionKey) {
+export function collection<const T extends KvValue>(collectionKey: CollectionKey) {
   return new Collection<T>(collectionKey)
 }
 
 // Collection class
-export class Collection<T extends KvValue> {
+export class Collection<const T extends KvValue> {
 
   private collectionKey: CollectionKey
 

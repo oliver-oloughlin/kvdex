@@ -23,7 +23,7 @@ interface User extends KvObject {
 ```
 
 ## Collections
-A Collection contains all methods for dealing with a collection of documents. A new collection is created using the "collection" method with a type parameter adhering KvValue and the key for the specific collection. The key must be of type Deno.KvKey.
+A Collection contains all methods for dealing with a collection of documents. A new collection is created using the "collection" method with a type parameter adhering to KvValue, and the key for the specific collection. The key must be of type Deno.KvKey.
 
 ```ts
 import { collection } from "https://deno.land/x/kvdb@v1.3.0/mod.ts"
@@ -34,7 +34,7 @@ const bigints = collection<bigint>(["bigints"])
 ```
 
 ## Database
-The "kvdb" method is used for creating a new KVDB database object. It expects a Schema object containing keys to collections (or other Schema objects for nesting). Wrapping collections inside this object is optional, but is the only way of accessing atomic operations. The collection keys are not constrained to match the object hierachy, but for safety and consistency it is advised to keep them matched.
+The "kvdb" method is used for creating a new KVDB database object. It expects a Schema object containing keys to collections (or other Schema objects for nesting). Wrapping collections inside this object is optional, but is the only way of accessing atomic operations. The collection keys are not constrained to match the object hierachy, but for safety and consistency reasons it is advised to keep them matched.
 
 ```ts
 import { kvdb } from "https://deno.land/x/kvdb@v1.3.0/mod.ts"

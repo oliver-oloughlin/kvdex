@@ -1,5 +1,5 @@
 
-export function generateDocumentId() {
+export function generateId() {
   return crypto.randomUUID()
 }
 

@@ -1,7 +1,7 @@
 import { Collection, CollectionKey } from "./collection.ts"
 import type { Schema } from "./db.ts"
 import type { Document, DocumentId, KvValue } from "./kvdb.types.ts"
-import { generateDocumentId, getDocumentKey, useKV } from "./utils.ts"
+import { generateId, getDocumentKey, useKV } from "./utils.ts"
 
 export type CollectionSelector<T1 extends Schema, T2 extends KvValue> = (schema: T1) => Collection<T2>
 
@@ -33,7 +33,7 @@ export class AtomicBuilder<T1 extends Schema, T2 extends KvValue> {
   }
   
   add(data: T2) {
-    const id = generateDocumentId()
+    const id = generateId()
     const key = getDocumentKey(this.collectionKey, id)
     this.operations.push(op => op.set(key, data))
     return this
