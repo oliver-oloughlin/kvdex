@@ -1,11 +1,11 @@
 
-export type Document<T extends Model> = WithId<T> & { 
-  versionstamp: Deno.KvEntry<T>["versionstamp"]
+export type Document<T extends Model> = {
+  id: DocumentId,
+  versionstamp: Deno.KvEntry<T>["versionstamp"],
+  value: T
 }
 
-export type WithId<T extends Model> = T & {
-  id: Deno.KvKeyPart
-} 
+export type DocumentId = Deno.KvKeyPart
 
 export type Model = KVObject
 

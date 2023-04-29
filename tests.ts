@@ -1,4 +1,4 @@
-import type { Document, Model } from "./model.ts"
+import type { Document, Model } from "./kv.types.ts"
 import { Collection } from "./collection.ts"
 import { assert } from "https://deno.land/std@0.184.0/testing/asserts.ts"
 
@@ -62,10 +62,7 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const { id, versionstamp } = await people.set({
-          id: "test_id",
-          ...testPerson
-        })
+        const { id, versionstamp } = await people.set("test_id", testPerson)
 
         const person = await people.find(id)
 
@@ -80,10 +77,7 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const { id, versionstamp } = await people.set({
-          id: 123,
-          ...testPerson
-        })
+        const { id, versionstamp } = await people.set(123, testPerson)
 
         const person = await people.find(id)
 
@@ -98,10 +92,7 @@ Deno.test({
       fn: async () => {
         await reset()
 
-        const { id, versionstamp } = await people.set({
-          id: 123n,
-          ...testPerson
-        })
+        const { id, versionstamp } = await people.set(123n, testPerson)
 
         const person = await people.find(id)
 
