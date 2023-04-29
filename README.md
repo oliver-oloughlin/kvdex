@@ -206,7 +206,7 @@ const { versionstamp } = await kvdb
 
 ### With checking
 ```ts
-// Only adds 10 to the entry value when it has not been changed since it was read
+// Only adds 10 to the value when it has not been changed after being read
 let result = null
 while (!result) {
   const { id, versionstamp, value } = await kvdb.primitives.bigints.find("id")
