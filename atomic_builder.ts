@@ -74,9 +74,8 @@ export class AtomicBuilder<T1 extends Schema, T2 extends KvValue> {
     return await useKV(async kv => {
       const operation = this.operations.reduce((op, opFn) => opFn(op), kv.atomic())
       const cr = await operation.commit()
-      const success = !!cr?.versionstamp
 
-      const result: AtomicCommitResult | null = !success ? null : {
+      const result: AtomicCommitResult | null = !cr.ok ? null : {
         versionstamp: cr?.versionstamp
       }
 
