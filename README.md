@@ -54,20 +54,20 @@ const kvdb = kvdb({
 The "find" method is used to retrieve a single document with the given id from the KV store. The id must adhere to the type Deno.KvKeyPart. This method also takes an optional options argument to control the consistency level.
 
 ```ts
-const user1 = await kvdb.users.find(123)
+const userDoc1 = await kvdb.users.find(123)
 
-const user2 = await kvdb.users.find(123n)
+const userDoc2 = await kvdb.users.find(123n)
 
-const oliver = await kvdb.users.find("oliver", {
+const userDoc3 = await kvdb.users.find("oliver", {
   consistency: "eventual" // "strong" by default
 })
 ```
 
 ### Add
-The "add" method is used to add a new document to the KV store. An id of type string (uuid) will be generated for the document. Upon completion a CommitResult object will be returned with the document id and versionstamp.
+The "add" method is used to add a new document to the KV store. An id of type string (uuid) will be generated for the document. Upon completion a CommitResult object will be returned with the document id, versionstamp and ok flag.
 
 ```ts
-const { id, versionstamp } = await kvdb.users.add({
+const { id, versionstamp, ok } = await kvdb.users.add({
   username: "oliver",
   age: 24,
   activities: ["skiing", "running"],
@@ -83,10 +83,10 @@ console.log(id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
 ```
 
 ### Set
-The "set" method is very similar to the "add" method, and is used to add a new document to the KV store with a given id of type Deno.KvKeyPart. Upon completion a CommitResult object will be returned with the document id and versionstamp.
+The "set" method is very similar to the "add" method, and is used to add a new document to the KV store with a given id of type Deno.KvKeyPart. Upon completion a CommitResult object will be returned with the document id, versionstamp and ok flag.
 
 ```ts
-const { id, versionstamp } = await kvdb.primitives.strings.set(2048, "Foo")
+const { id, versionstamp, ok } = await kvdb.primitives.strings.set(2048, "Foo")
 
 console.log(id) // 2048
 ```
@@ -102,20 +102,20 @@ await kvdb.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77")
 The "deleteMany" method is used for deleting multiple documents from the KV store. It takes an optional "options" parameter that can be used for filtering of documents to be deleted. If no options are given, "deleteMany" will delete all documents in the collection.
 
 ```ts
-// Deletes all users
+// Deletes all user documents
 await kvdb.users.deleteMany()
 
-// Deletes all users with age above 20
+// Deletes all user documents where the user's age is above 20
 await kvdb.users.deleteMany({
-  filter: user => user.age > 20
+  filter: doc => doc.value.age > 20
 })
 
-// Deletes the first 10 users in the KV store
+// Deletes the first 10 user documents in the KV store
 await kvdb.users.deleteMany({
   limit: 10
 })
 
-// Deletes the last 10 users in the KV store
+// Deletes the last 10 user documents in the KV store
 await kvdb.users.deleteMany({
   limit: 10,
   reverse: true
@@ -126,20 +126,20 @@ await kvdb.users.deleteMany({
 The "getMany" method is used for retrieving multiple documents from the KV store. It takes an optional "options" parameter that can be used for filtering of documents to be retrieved. If no options are given, "getMany" will retrieve all documents in the collection.
 
 ```ts
-// Retrieves all users
+// Retrieves all user documents
 const allUsers = await kvdb.users.getMany()
 
-// Retrieves all users with age above or equal to 18
+// Retrieves all user documents where the user's age is above or equal to 18
 const canBasciallyDrinkEverywhereExceptUSA = await kvdb.users.getMany({
-  filter: user => user.age >= 18
+  filter: doc => doc.value.age >= 18
 })
 
-// Retrieves the first 10 users in the KV store
+// Retrieves the first 10 user documents in the KV store
 const first10 = await kvdb.users.getMany({
   limit: 10
 })
 
-// Retrieves the last 10 users in the KV store
+// Retrieves the last 10 user documents in the KV store
 const last10 = await kvdb.users.getMany({
   limit: 10,
   reverse: true
@@ -151,20 +151,20 @@ The "forEach" method is used for executing a callback function for multiple docu
 
 ```ts
 // Log the username of every user document
-await kvdb.users.forEach(user => console.log(user.username))
+await kvdb.users.forEach(doc => console.log(doc.value.username))
 
-// Log the username of user that has "swimming" as an activity
-await kvdb.users.forEach(user => console.log(user.username), {
-  filter: user => user.activities.includes("swimming")
+// Log the username of every user that has "swimming" as an activity
+await kvdb.users.forEach(doc => console.log(doc.value.username), {
+  filter: doc => doc.value.activities.includes("swimming")
 })
 
-// Log the usernames of the first 10 users in the KV store
-await kvdb.users.forEach(user => console.log(user.username), {
+// Log the usernames of the first 10 user documents in the KV store
+await kvdb.users.forEach(doc => console.log(doc.value.username), {
   limit: 10
 })
 
-// Log the usernames of the last 10 users in the KV store
-await kvdb.users.forEach(user => console.log(user.username), {
+// Log the usernames of the last 10 user documents in the KV store
+await kvdb.users.forEach(doc => console.log(doc.value.username), {
   limit: 10,
   reverse: true
 })
@@ -173,19 +173,19 @@ await kvdb.users.forEach(user => console.log(user.username), {
 ## Atomic Operations
 Atomic operations allow for executing multiple mutations as a single atomic transaction. This means that documents can be checked for changes before committing the mutations, in which case the operation will fail. It also ensures that either all mutations succeed, or they all fail. 
 
-To initiate an atomic operation, call "atomic" on the KVDB object. The method expects a selector for selecting the collection that the subsequent mutation actions will be performed on. Mutations can be performed on documents from multiple collections in a single atomic operation by calling "select" at any point in the building chain to switch the collection context. To execute the operation, call "commit" at the end of the chain. An atomic operation returns a AtomicCommitResult object containing a versionstamp.
+To initiate an atomic operation, call "atomic" on the KVDB object. The method expects a selector for selecting the collection that the subsequent mutation actions will be performed on. Mutations can be performed on documents from multiple collections in a single atomic operation by calling "select" at any point in the building chain to switch the collection context. To execute the operation, call "commit" at the end of the chain. An atomic operation returns a Deno.KvCommitResult object if successful, and Deno.KvCommitError if not.
 
 ### Without checking
 ```ts
 // Deletes and adds an entry to the bigints collection
-const { versionstamp } = await kvdb
+const result = await kvdb
   .atomic(collections => collections.primitives.bigints)
   .delete("id_1")
   .set("id_2", 100n)
   .commit()
 
 // Adds 2 new entries to the strings collection and 1 new entry to the users collection
-const { versionstamp } = await kvdb
+const result = await kvdb
   .atomic(collections => collections.primitives.strings)
   .add("s1")
   .add("s2")
@@ -207,8 +207,8 @@ const { versionstamp } = await kvdb
 ### With checking
 ```ts
 // Only adds 10 to the value when it has not been changed after being read
-let result = null
-while (!result) {
+let result = { ok: false }
+while (!result.ok) {
   const { id, versionstamp, value } = await kvdb.primitives.bigints.find("id")
 
   result = await kvdb

@@ -65,7 +65,7 @@ export class Collection<const T extends KvValue> {
    * Adds a new document to the KV store with a randomely generated id.
    * 
    * @param data
-   * @returns A promise that resovles to a commit result containing the document versionstamp and id
+   * @returns A promise that resovles to a commit result containing the document versionstamp, id and ok flag.
    */
   async add(data: T) {
     return await useKV(async kv => {
@@ -87,7 +87,7 @@ export class Collection<const T extends KvValue> {
    * Adds a new document with the given id to the KV store.
    * 
    * @param data
-   * @returns A promise that resovles to a commit result containing the document versionstamp and id
+   * @returns A promise that resovles to a commit result containing the document versionstamp, id and ok flag.
    */
   async set(id: DocumentId, data: T) {
     return await useKV(async kv => {
