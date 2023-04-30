@@ -438,7 +438,7 @@ Deno.test({
           .set(id, "test3")
           .commit()
 
-        assert(r === null)
+        assert(!r.ok)
       }
     })
 
@@ -465,6 +465,46 @@ Deno.test({
 
         assert(r3 !== null)
         assert(r3?.value.value === new Deno.KvU64(110n).value)
+      }
+    })
+
+    await t.step({
+      name: "Should perform atomic operations using mutate",
+      fn: async () => {
+        await reset()
+
+        const { id } = await db.values.numbers.add(10)
+
+        const nums1 = await db.values.numbers.getMany()
+        assert(nums1.length === 1)
+
+        const r1 = await db
+          .atomic(schema => schema.values.numbers)
+          .mutate(
+            {
+              type: "set",
+              id: "n1",
+              value: 1
+            },
+            {
+              type: "set",
+              id: "n2",
+              value: 2
+            },
+            {
+              type: "delete",
+              id: id
+            }
+          )
+          .commit()
+
+          const nums2 = await db.values.numbers.getMany()
+          
+          assert(r1.ok)
+          assert(nums2.length === 2)
+          assert(nums2.some(doc => doc.value === 1))
+          assert(nums2.some(doc => doc.value === 2))
+          assert(!nums2.some(doc => doc.value === 10))
       }
     })
   }

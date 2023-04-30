@@ -9,6 +9,7 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
 export type FindOptions = Parameters<Deno.Kv["get"]>[1]
 
 export type CommitResult<T1 extends KvValue, T2 extends DocumentId> = {
+  ok: true,
   versionstamp: Document<T1>["versionstamp"],
   id: T2
 }
@@ -73,6 +74,7 @@ export class Collection<const T extends KvValue> {
       const cr = await kv.set(key, data)
       
       const commitResult: CommitResult<T,typeof id> = {
+        ok: true,
         versionstamp: cr.versionstamp,
         id
       }
@@ -93,6 +95,7 @@ export class Collection<const T extends KvValue> {
       const cr = await kv.set(key, data)
 
       const commitResult: CommitResult<T, typeof id> = {
+        ok: true,
         versionstamp: cr.versionstamp,
         id
       }
