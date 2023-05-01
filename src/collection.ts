@@ -8,6 +8,8 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
 
 export type FindOptions = Parameters<Deno.Kv["get"]>[1]
 
+export type FindManyOptions = Parameters<Deno.Kv["getMany"]>[1]
+
 export type CommitResult<T1 extends KvValue, T2 extends DocumentId> = {
   ok: true,
   versionstamp: Document<T1>["versionstamp"],
@@ -40,8 +42,8 @@ export class Collection<const T extends KvValue> {
   /**
    * Finds a document with the given id in the KV store.
    * 
-   * @param id - The id of the document to find.
-   * @param options - Options for getting the document from the KV store
+   * @param id - Id of the document to find.
+   * @param options - Options for reading the document from the KV store.
    * @returns A promise that resolves to the found document, or null if not found.
    */
   async find(id: DocumentId, options?: FindOptions) {
@@ -60,6 +62,34 @@ export class Collection<const T extends KvValue> {
     })
   }
 
+  /**
+   * Finds multiple documents with the given array of ids in the KV store.
+   * 
+   * @param ids - Array of ids of the documents to be found.
+   * @param options - Options for reading the documents from the KV store.
+   * @returns A promise that resolves to an array of documents.
+   */
+  async findMany(ids: DocumentId[], options?: FindManyOptions) {
+    return await useKV(async kv => {
+      const keys = ids.map(id => getDocumentKey(this.collectionKey, id))
+      const entries = await kv.getMany<T[]>(keys, options)
+      
+      const result: Document<T>[] = []
+
+      for (const { key, versionstamp, value } of entries) {
+        const id = getDocumentId(key)
+        if (!id || !versionstamp || !value) continue
+
+        result.push({
+          id,
+          versionstamp,
+          value
+        })
+      }
+
+      return result
+    })
+  }
 
   /**
    * Adds a new document to the KV store with a randomely generated id.

@@ -1,13 +1,13 @@
 # KVDB
 Simple library for storing/retrieving documents in Deno's KV store.
 
-Has no dependencies.
+Zero third-party dependencies.
 
 ## Models
 For collections of objects, models can be defined by extending the KvObject type. Collections can contain any type adhering to the type KvValue, this includes objects, arrays and primitive values.
 
 ```ts
-import type { KvObject } from "https://deno.land/x/kvdb@v1.3.2/mod.ts"
+import type { KvObject } from "https://deno.land/x/kvdb@v1.3.3/mod.ts"
 
 interface User extends KvObject {
   username: string,
@@ -26,7 +26,7 @@ interface User extends KvObject {
 A Collection contains all methods for dealing with a collection of documents. A new collection is created using the "collection" method with a type parameter adhering to KvValue, and the key for the specific collection. The key must be of type Deno.KvKey.
 
 ```ts
-import { collection } from "https://deno.land/x/kvdb@v1.3.2/mod.ts"
+import { collection } from "https://deno.land/x/kvdb@v1.3.3/mod.ts"
 
 const users = collection<User>(["users"])
 const strings = collection<string>(["strings"])
@@ -37,7 +37,7 @@ const bigints = collection<bigint>(["bigints"])
 The "kvdb" method is used for creating a new KVDB database object. It expects a Schema object containing keys to collections (or other Schema objects for nesting). Wrapping collections inside this object is optional, but is the only way of accessing atomic operations. The collection keys are not constrained to match the object hierachy, but for safety and consistency reasons it is advised to keep them matched.
 
 ```ts
-import { kvdb } from "https://deno.land/x/kvdb@v1.3.2/mod.ts"
+import { kvdb } from "https://deno.land/x/kvdb@v1.3.3/mod.ts"
 
 const kvdb = kvdb({
   users: collection<User>(["users"]),
@@ -51,7 +51,7 @@ const kvdb = kvdb({
 ## Collection Methods
 
 ### Find
-The "find" method is used to retrieve a single document with the given id from the KV store. The id must adhere to the type Deno.KvKeyPart. This method also takes an optional options argument to control the consistency level.
+The "find" method is used to retrieve a single document with the given id from the KV store. The id must adhere to the type Deno.KvKeyPart. This method also takes an optional options argument.
 
 ```ts
 const userDoc1 = await kvdb.users.find(123)
@@ -59,6 +59,17 @@ const userDoc1 = await kvdb.users.find(123)
 const userDoc2 = await kvdb.users.find(123n)
 
 const userDoc3 = await kvdb.users.find("oliver", {
+  consistency: "eventual" // "strong" by default
+})
+```
+
+### Find Many
+The "findMany" method is used to retrieve multiple documents with the given array of ids from the KV store. The ids must adhere to the type of Deno.KvKeyPart. This method, like the "find" method, also takes an optional options argument.
+
+```ts
+const userDocs1 = await kvdb.users.findMany(["abc", 123, 123n])
+
+const userDocs2 = await kvdb.users.findMany(["abc", 123, 123n], {
   consistency: "eventual" // "strong" by default
 })
 ```
