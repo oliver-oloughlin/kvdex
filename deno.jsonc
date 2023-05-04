@@ -9,6 +9,6 @@
     }
   },
   "test": {
-    "include": ["./tests/collection.ts", "./tests/db.ts"]
+    "include": ["./testing/tests"]
   }
 }

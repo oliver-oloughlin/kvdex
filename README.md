@@ -4,10 +4,10 @@ Simple library for storing/retrieving documents in Deno's KV store.
 Zero third-party dependencies.
 
 ## Models
-For collections of objects, models can be defined by extending the KvObject type. Collections can contain any type adhering to the type KvValue, this includes objects, arrays and primitive values.
+For collections of objects, models can be defined by extending the KvObject type.
 
 ```ts
-import type { KvObject } from "https://deno.land/x/kvdb@v1.3.3/mod.ts"
+import type { KvObject } from "https://deno.land/x/kvdb@v1.3.4/mod.ts"
 
 interface User extends KvObject {
   username: string,
@@ -23,10 +23,10 @@ interface User extends KvObject {
 ```
 
 ## Collections
-A Collection contains all methods for dealing with a collection of documents. A new collection is created using the "collection" method with a type parameter adhering to KvValue, and the key for the specific collection. The key must be of type Deno.KvKey.
+A Collection contains all methods for dealing with a collection of documents. Collections can contain any type adhering to the type KvValue, this includes objects, arrays and primitive values. A new collection is created using the "collection" function with a type parameter adhering to KvValue, and a unique key for the specific collection. The key must be of type Deno.KvKey.
 
 ```ts
-import { collection } from "https://deno.land/x/kvdb@v1.3.3/mod.ts"
+import { collection } from "https://deno.land/x/kvdb@v1.3.4/mod.ts"
 
 const users = collection<User>(["users"])
 const strings = collection<string>(["strings"])
@@ -34,12 +34,12 @@ const bigints = collection<bigint>(["bigints"])
 ```
 
 ## Database
-The "kvdb" method is used for creating a new KVDB database object. It expects a Schema object containing keys to collections (or other Schema objects for nesting). Wrapping collections inside this object is optional, but is the only way of accessing atomic operations. The collection keys are not constrained to match the object hierachy, but for safety and consistency reasons it is advised to keep them matched.
+The "kvdb" function is used for creating a new KVDB database object. It expects an object of type Schema containing keys to collections (or other Schema objects for nesting). Wrapping collections inside a KVDB object is optional, but is the only way of accessing atomic operations, and will ensure that collection keys are unique. The collection keys are not constrained to match the object hierachy, but to avoid overlapping it is advised to keep them matched. If any 2 collections have the same key, the function will throw an error.
 
 ```ts
-import { kvdb } from "https://deno.land/x/kvdb@v1.3.3/mod.ts"
+import { kvdb } from "https://deno.land/x/kvdb@v1.3.4/mod.ts"
 
-const kvdb = kvdb({
+const db = kvdb({
   users: collection<User>(["users"]),
   primitives: {
     strings: collection<string>(["primitives", "strings"]),
@@ -54,11 +54,11 @@ const kvdb = kvdb({
 The "find" method is used to retrieve a single document with the given id from the KV store. The id must adhere to the type Deno.KvKeyPart. This method also takes an optional options argument.
 
 ```ts
-const userDoc1 = await kvdb.users.find(123)
+const userDoc1 = await db.users.find(123)
 
-const userDoc2 = await kvdb.users.find(123n)
+const userDoc2 = await db.users.find(123n)
 
-const userDoc3 = await kvdb.users.find("oliver", {
+const userDoc3 = await db.users.find("oliver", {
   consistency: "eventual" // "strong" by default
 })
 ```
@@ -67,9 +67,9 @@ const userDoc3 = await kvdb.users.find("oliver", {
 The "findMany" method is used to retrieve multiple documents with the given array of ids from the KV store. The ids must adhere to the type of Deno.KvKeyPart. This method, like the "find" method, also takes an optional options argument.
 
 ```ts
-const userDocs1 = await kvdb.users.findMany(["abc", 123, 123n])
+const userDocs1 = await db.users.findMany(["abc", 123, 123n])
 
-const userDocs2 = await kvdb.users.findMany(["abc", 123, 123n], {
+const userDocs2 = await db.users.findMany(["abc", 123, 123n], {
   consistency: "eventual" // "strong" by default
 })
 ```
@@ -78,7 +78,7 @@ const userDocs2 = await kvdb.users.findMany(["abc", 123, 123n], {
 The "add" method is used to add a new document to the KV store. An id of type string (uuid) will be generated for the document. Upon completion a CommitResult object will be returned with the document id, versionstamp and ok flag.
 
 ```ts
-const { id, versionstamp, ok } = await kvdb.users.add({
+const { id, versionstamp, ok } = await db.users.add({
   username: "oliver",
   age: 24,
   activities: ["skiing", "running"],
@@ -97,7 +97,7 @@ console.log(id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
 The "set" method is very similar to the "add" method, and is used to add a new document to the KV store with a given id of type Deno.KvKeyPart. Upon completion a CommitResult object will be returned with the document id, versionstamp and ok flag.
 
 ```ts
-const { id, versionstamp, ok } = await kvdb.primitives.strings.set(2048, "Foo")
+const { id, versionstamp, ok } = await db.primitives.strings.set(2048, "Foo")
 
 console.log(id) // 2048
 ```
@@ -106,7 +106,7 @@ console.log(id) // 2048
 The "delete" method is used to delete a document with the given id from the KV store.
 
 ```ts
-await kvdb.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77")
+await db.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77")
 ```
 
 ### Delete Many
@@ -114,20 +114,20 @@ The "deleteMany" method is used for deleting multiple documents from the KV stor
 
 ```ts
 // Deletes all user documents
-await kvdb.users.deleteMany()
+await db.users.deleteMany()
 
 // Deletes all user documents where the user's age is above 20
-await kvdb.users.deleteMany({
+await db.users.deleteMany({
   filter: doc => doc.value.age > 20
 })
 
 // Deletes the first 10 user documents in the KV store
-await kvdb.users.deleteMany({
+await db.users.deleteMany({
   limit: 10
 })
 
 // Deletes the last 10 user documents in the KV store
-await kvdb.users.deleteMany({
+await db.users.deleteMany({
   limit: 10,
   reverse: true
 })
@@ -138,20 +138,20 @@ The "getMany" method is used for retrieving multiple documents from the KV store
 
 ```ts
 // Retrieves all user documents
-const allUsers = await kvdb.users.getMany()
+const allUsers = await db.users.getMany()
 
 // Retrieves all user documents where the user's age is above or equal to 18
-const canBasciallyDrinkEverywhereExceptUSA = await kvdb.users.getMany({
+const canBasciallyDrinkEverywhereExceptUSA = await db.users.getMany({
   filter: doc => doc.value.age >= 18
 })
 
 // Retrieves the first 10 user documents in the KV store
-const first10 = await kvdb.users.getMany({
+const first10 = await db.users.getMany({
   limit: 10
 })
 
 // Retrieves the last 10 user documents in the KV store
-const last10 = await kvdb.users.getMany({
+const last10 = await db.users.getMany({
   limit: 10,
   reverse: true
 })
@@ -162,20 +162,20 @@ The "forEach" method is used for executing a callback function for multiple docu
 
 ```ts
 // Log the username of every user document
-await kvdb.users.forEach(doc => console.log(doc.value.username))
+await db.users.forEach(doc => console.log(doc.value.username))
 
 // Log the username of every user that has "swimming" as an activity
-await kvdb.users.forEach(doc => console.log(doc.value.username), {
+await db.users.forEach(doc => console.log(doc.value.username), {
   filter: doc => doc.value.activities.includes("swimming")
 })
 
 // Log the usernames of the first 10 user documents in the KV store
-await kvdb.users.forEach(doc => console.log(doc.value.username), {
+await db.users.forEach(doc => console.log(doc.value.username), {
   limit: 10
 })
 
 // Log the usernames of the last 10 user documents in the KV store
-await kvdb.users.forEach(doc => console.log(doc.value.username), {
+await db.users.forEach(doc => console.log(doc.value.username), {
   limit: 10,
   reverse: true
 })
@@ -189,18 +189,18 @@ To initiate an atomic operation, call "atomic" on the KVDB object. The method ex
 ### Without checking
 ```ts
 // Deletes and adds an entry to the bigints collection
-const result = await kvdb
-  .atomic(collections => collections.primitives.bigints)
+const result = await db
+  .atomic(schema => schema.primitives.bigints)
   .delete("id_1")
   .set("id_2", 100n)
   .commit()
 
 // Adds 2 new entries to the strings collection and 1 new entry to the users collection
-const result = await kvdb
-  .atomic(collections => collections.primitives.strings)
+const result = await db
+  .atomic(schema => schema.primitives.strings)
   .add("s1")
   .add("s2")
-  .select(collections => collections.users)
+  .select(schema => schema.users)
   .set("user_1", {
     username: "oliver",
     age: 24,
@@ -218,12 +218,12 @@ const result = await kvdb
 ### With checking
 ```ts
 // Only adds 10 to the value when it has not been changed after being read
-let result = { ok: false }
-while (!result.ok) {
-  const { id, versionstamp, value } = await kvdb.primitives.bigints.find("id")
+let result = null
+while (!result && !result.ok) {
+  const { id, versionstamp, value } = await db.primitives.bigints.find("id")
 
-  result = await kvdb
-    .atomic(collections => collections.primitives.bigints)
+  result = await db
+    .atomic(schema => schema.primitives.bigints)
     .check({
       id,
       versionstamp
@@ -231,4 +231,35 @@ while (!result.ok) {
     .set(id, value + 10n)
     .commit()
 }
+```
+
+## Utils
+Additional utility funcitons.
+
+### Flatten
+The "flatten" utility function can be used to flatten documents with a value of type KvObject.
+It will only flatten the first layer of the document, meaning the result will be an object containing:
+id, versionstamp and all the key-value pairs of the document value.
+
+```ts
+import { flatten } from "https://deno.land/x/kvdb@v1.3.4/mod.ts"
+
+// We assume the document exists in the KV store
+const doc = await db.users.find(123n)
+
+const flattened = flatten(doc)
+
+// Document:
+// {
+//   id,
+//   versionstamp,
+//   value
+// }
+
+// Flattened:
+// {
+//   id,
+//   versionstamp,
+//   ...userDocument.value
+// }
 ```

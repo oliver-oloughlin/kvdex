@@ -1,3 +1,4 @@
+import type { Document, KvObject } from "./kvdb.types.ts"
 
 export function generateId() {
   return crypto.randomUUID()
@@ -16,4 +17,12 @@ export async function useKV<T>(fn: (kv: Deno.Kv) => Promise<T>) {
   const result = await fn(kv)
   await kv.close()
   return result
+}
+
+export function flatten<T extends KvObject>(document: Document<T>) {
+  const { value, ...rest } = document
+  return {
+    ...value,
+    ...rest
+  }
 }
