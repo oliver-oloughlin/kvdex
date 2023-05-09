@@ -1,7 +1,7 @@
 import type { Collection, CollectionKey } from "./collection.ts"
 import type { Schema } from "./db.ts"
 import type { Document, DocumentId, KvValue } from "./kvdb.types.ts"
-import { generateId, getDocumentKey, useKV } from "./utils.ts"
+import { generateId, getDocumentKey, useKV } from "./kvdb.utils.ts"
 
 // Types
 export type CollectionSelector<T1 extends Schema, T2 extends KvValue> = (schema: T1) => Collection<T2>

@@ -1,5 +1,5 @@
 import type { KvValue, Document, DocumentId } from "./kvdb.types.ts"
-import { useKV, getDocumentId, getDocumentKey } from "./utils.ts"
+import { useKV, getDocumentId, getDocumentKey } from "./kvdb.utils.ts"
 
 // Types
 export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
@@ -26,7 +26,7 @@ export function collection<const T extends KvValue>(collectionKey: CollectionKey
 // Collection class
 export class Collection<const T extends KvValue> {
 
-  private collectionKey: CollectionKey
+  readonly collectionKey: CollectionKey
 
   /**
    * Represents a collection of documents stored in the KV store.
@@ -108,7 +108,7 @@ export class Collection<const T extends KvValue> {
         versionstamp: cr.versionstamp,
         id
       }
-
+  
       return commitResult
     })
   }
@@ -123,13 +123,13 @@ export class Collection<const T extends KvValue> {
     return await useKV(async kv => {
       const key = getDocumentKey(this.collectionKey, id)
       const cr = await kv.set(key, data)
-
+  
       const commitResult: CommitResult<T, typeof id> = {
         ok: true,
         versionstamp: cr.versionstamp,
         id
       }
-
+  
       return commitResult
     })
   }
