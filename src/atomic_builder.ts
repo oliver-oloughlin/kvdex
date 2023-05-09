@@ -61,7 +61,7 @@ export class AtomicBuilder<T1 extends Schema, T2 extends KvValue> {
    */
   constructor(schema: T1, collection: Collection<T2>, operations?: AtomicOperationFn[]) {
     this.schema = schema
-    this.collectionKey = collection.getCollectionKey()
+    this.collectionKey = collection.collectionKey
     this.operations = operations ? operations : []
   }
 
