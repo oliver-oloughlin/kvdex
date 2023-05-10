@@ -12,7 +12,7 @@ export type KVDB<T extends Schema> = T & {
 
 export function kvdb<const T extends Schema>(schema: T): KVDB<T> {
   const collections = extractCollections(schema)
-  const keys = collections.map(collection => collection.getCollectionKey())
+  const keys = collections.map(collection => collection.collectionKey)
   const validKeys = validateCollectionKeys(keys)
 
   if (!validKeys) throw Error("Collections must have unique keys")

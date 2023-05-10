@@ -46,7 +46,7 @@ export type AtomicMutation<T extends KvValue> = {
 )
 
 // AtomicBuilder class
-export class AtomicBuilder<T1 extends Schema, T2 extends KvValue> {
+export class AtomicBuilder<const T1 extends Schema, const T2 extends KvValue> {
 
   private schema: T1
   private collectionKey: CollectionKey

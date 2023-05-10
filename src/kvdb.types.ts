@@ -7,6 +7,8 @@ export type Document<T extends KvValue> = {
 
 export type DocumentId = Deno.KvKeyPart
 
+export type Model = Omit<KvObject, "id">
+
 export type KvObject = {
   [key: string]: KvValue
 }

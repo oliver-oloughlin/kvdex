@@ -52,9 +52,10 @@ export class Collection<const T extends KvValue> {
     return await useKV(async kv => {
       const key = getDocumentKey(this.collectionKey, id)
       const result = await kv.get<T>(key, options)
-      const exists = !!result.value && !!result.versionstamp
 
-      const doc: Document<T> | null = !exists ? null : {
+      if (result.value === null || result.versionstamp === null) return null
+
+      const doc: Document<T> = {
         id,
         versionstamp: result.versionstamp,
         value: result.value
@@ -80,7 +81,7 @@ export class Collection<const T extends KvValue> {
 
       for (const { key, versionstamp, value } of entries) {
         const id = getDocumentId(key)
-        if (!id || !versionstamp || !value) continue
+        if (typeof id === "undefined" || versionstamp === null || value === null) continue
 
         result.push({
           id,
@@ -167,7 +168,7 @@ export class Collection<const T extends KvValue> {
 
       for await (const entry of iter) {
         const id = getDocumentId(entry.key)
-        if (!id) continue
+        if (typeof id === "undefined") continue
 
         const doc: Document<T> = {
           id,
@@ -195,7 +196,7 @@ export class Collection<const T extends KvValue> {
   
       for await (const entry of iter) {
         const id = getDocumentId(entry.key)
-        if (!id) continue
+        if (typeof id === "undefined") continue
   
         const doc: Document<T> = {
           id,
@@ -225,7 +226,7 @@ export class Collection<const T extends KvValue> {
       
       for await (const entry of iter) {
         const id = getDocumentId(entry.key)
-        if (!id) continue
+        if (typeof id === "undefined") continue
   
         const doc: Document<T> = {
           id,
@@ -236,15 +237,6 @@ export class Collection<const T extends KvValue> {
         if (!options?.filter || options.filter(doc)) fn(doc)
       }
     })
-  }
-
-  /**
-   * Gets the key for this collection instance
-   * 
-   * @returns The collection key
-   */
-  getCollectionKey() {
-    return this.collectionKey
   }
 
 }

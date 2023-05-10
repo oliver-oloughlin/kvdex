@@ -4,12 +4,12 @@ Simple library for storing/retrieving documents in Deno's KV store.
 Zero third-party dependencies.
 
 ## Models
-For collections of objects, models can be defined by extending the KvObject type.
+For collections of objects, models can be defined by extending the Model type.
 
 ```ts
-import type { KvObject } from "https://deno.land/x/kvdb@v1.3.4/mod.ts"
+import type { Model } from "https://deno.land/x/kvdb@v1.3.4/mod.ts"
 
-interface User extends KvObject {
+interface User extends Model {
   username: string,
   age: number,
   activities: string[],
@@ -237,9 +237,9 @@ while (!result && !result.ok) {
 Additional utility funcitons.
 
 ### Flatten
-The "flatten" utility function can be used to flatten documents with a value of type KvObject.
+The "flatten" utility function can be used to flatten documents with a value of type Model.
 It will only flatten the first layer of the document, meaning the result will be an object containing:
-id, versionstamp and all the key-value pairs of the document value.
+id, versionstamp and all the entries in the document value.
 
 ```ts
 import { flatten } from "https://deno.land/x/kvdb@v1.3.4/mod.ts"
