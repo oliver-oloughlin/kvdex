@@ -14,6 +14,8 @@ export type CommitResult<T1 extends KvValue, T2 extends DocumentId> = {
   ok: true,
   versionstamp: Document<T1>["versionstamp"],
   id: T2
+} | {
+  ok: false
 }
 
 export type CollectionKey = Deno.KvKey
@@ -103,10 +105,12 @@ export class Collection<const T extends KvValue> {
       const key = getDocumentKey(this.collectionKey, id)
       const cr = await kv.set(key, data)
       
-      const commitResult: CommitResult<T,typeof id> = {
+      const commitResult: CommitResult<T,typeof id> = cr.ok ? {
         ok: true,
         versionstamp: cr.versionstamp,
         id
+      } : {
+        ok: false
       }
   
       return commitResult

@@ -16,13 +16,14 @@ Deno.test({
           fn: async () => {
             await reset()
     
-            const { id, versionstamp } = await db.people.add(testPerson)
+            const cr = await db.people.add(testPerson)
+            if (!cr.ok) throw Error("'testPerson' not added to collection successfully")
     
-            const person = await db.people.find(id)
+            const person = await db.people.find(cr.id)
     
-            assert(typeof id === "string")
-            assert(typeof versionstamp === "string")
-            assert(typeof person === "object" && person?.id === id)
+            assert(typeof cr.id === "string")
+            assert(typeof cr.versionstamp === "string")
+            assert(typeof person === "object" && person?.id === cr.id)
           }
         })
       }
@@ -110,8 +111,10 @@ Deno.test({
           fn: async () => {
             await reset()
     
-            const { id } = await db.people.add(testPerson)
-            const doc = await db.people.find(id)
+            const cr = await db.people.add(testPerson)
+            if (!cr.ok) throw Error("'testPerson' not added to collection successfully")
+
+            const doc = await db.people.find(cr.id)
             assert(typeof doc === "object")
             assert(typeof doc?.value === "object")
             assert(doc?.value.name === testPerson.name)
@@ -123,9 +126,10 @@ Deno.test({
           fn: async () => {
             await reset()
     
-            const { id } = await db.people.add(testPerson)
+            const cr = await db.people.add(testPerson)
+            if (!cr.ok) throw Error("'' not added to collection successfully")
     
-            const doc = await db.people.find(id, {
+            const doc = await db.people.find(cr.id, {
               consistency: "eventual"
             })
             
@@ -202,13 +206,15 @@ Deno.test({
           fn: async () => {
             await reset()
     
-            const { id } = await db.people.add(testPerson)
-            const p1 = await db.people.find(id)
+            const cr = await db.people.add(testPerson)
+            if (!cr.ok) throw Error("'testPerson' not added to collection successfully")
+
+            const p1 = await db.people.find(cr.id)
     
             assert(p1 !== null)
     
-            await db.people.delete(id)
-            const p2 = await db.people.find(id)
+            await db.people.delete(cr.id)
+            const p2 = await db.people.find(cr.id)
     
             assert(p2 === null)
           }
@@ -227,6 +233,8 @@ Deno.test({
     
             const r1 = await db.people.add(testPerson)
             const r2 = await db.people.add(testPerson)
+            if (!r1.ok || !r2.ok) throw Error("'testPerson' not added to collection successfully")
+
             const id1 = r1.id
             const id2 = r2.id
     
@@ -253,6 +261,8 @@ Deno.test({
     
             const r1 = await db.people.add(testPerson)
             const r2 = await db.people.add(testPerson)
+            if (!r1.ok || !r2.ok) throw Error("'testPerson' not added to collection successfully")
+
             const id1 = r1.id
             const id2 = r2.id
     
@@ -310,6 +320,8 @@ Deno.test({
     
             const r1 = await db.people.add(testPerson)
             const r2 = await db.people.add(testPerson)
+            if (!r1.ok || !r2.ok) throw Error("'testPerson' not added to collection successfully")
+
             const id1 = r1.id
             const id2 = r2.id
     
@@ -328,6 +340,8 @@ Deno.test({
     
             const r1 = await db.people.add(testPerson)
             const r2 = await db.people.add(testPerson)
+            if (!r1.ok || !r2.ok) throw Error("'testPerson' not added to collection successfully")
+
             const id1 = r1.id
             const id2 = r2.id
     
@@ -375,6 +389,8 @@ Deno.test({
     
             const r1 = await db.people.add(testPerson)
             const r2 = await db.people.add(testPerson)
+            if (!r1.ok || !r2.ok) throw Error("'testPerson' not added to collection successfully")
+
             const id1 = r1.id
             const id2 = r2.id
     
@@ -398,6 +414,8 @@ Deno.test({
     
             const r1 = await db.people.add(testPerson)
             const r2 = await db.people.add(testPerson)
+            if (!r1.ok || !r2.ok) throw Error("'testPerson' not added to collection successfully")
+            
             const id1 = r1.id
             const id2 = r2.id
     

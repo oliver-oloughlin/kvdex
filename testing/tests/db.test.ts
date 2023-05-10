@@ -70,6 +70,7 @@ Deno.test({
             const numbersResult = await db.values.numbers.getMany()
     
             assert(r !== null)
+            assert(r.ok)
             assert(numbersResult.some(n => n.value === 1))
             assert(numbersResult.some(n => n.value === 2))
             assert(numbersResult.some(n => n.value === 3))
@@ -81,16 +82,18 @@ Deno.test({
           fn: async () => {
             await reset()
     
-            const { id, versionstamp } = await db.values.strings.add("test1")
-            await db.values.strings.set(id, "test2")
+            const cr = await db.values.strings.add("test1")
+            if (!cr.ok) throw Error("'test1' not added to collection successfully")
+
+            await db.values.strings.set(cr.id, "test2")
     
             const r = await db
               .atomic(db => db.values.strings)
               .check({
-                id,
-                versionstamp
+                id: cr.id,
+                versionstamp: cr.versionstamp
               })
-              .set(id, "test3")
+              .set(cr.id, "test3")
               .commit()
     
             assert(!r.ok)
@@ -102,21 +105,22 @@ Deno.test({
           fn: async () => {
             await reset()
     
-            const { id } = await db.values.u64s.add(new Deno.KvU64(100n))
+            const cr = await db.values.u64s.add(new Deno.KvU64(100n))
+            if (!cr.ok) throw Error("'100n' not added to collection successfully")
     
-            const r1 = await db.values.u64s.find(id)
+            const r1 = await db.values.u64s.find(cr.id)
     
             assert(r1 !== null)
             assert(r1?.value.value === new Deno.KvU64(100n).value)
     
             const r2 = await db
               .atomic(db => db.values.u64s)
-              .sum(id, 10n)
+              .sum(cr.id, 10n)
               .commit()
     
             assert(r2 !== null)
             
-            const r3 = await db.values.u64s.find(id)
+            const r3 = await db.values.u64s.find(cr.id)
     
             assert(r3 !== null)
             assert(r3?.value.value === new Deno.KvU64(110n).value)
@@ -128,7 +132,8 @@ Deno.test({
           fn: async () => {
             await reset()
     
-            const { id } = await db.values.numbers.add(10)
+            const cr = await db.values.numbers.add(10)
+            if (!cr.ok) throw Error("'10' not added to collection successfully")
     
             const nums1 = await db.values.numbers.getMany()
             assert(nums1.length === 1)
@@ -148,7 +153,7 @@ Deno.test({
                 },
                 {
                   type: "delete",
-                  id: id
+                  id: cr.id
                 }
               )
               .commit()
