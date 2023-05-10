@@ -38,13 +38,14 @@ Deno.test({
           fn: async () => {
             await reset()
     
-            const { id, versionstamp } = await db.people.set("test_id", testPerson)
+            const cr = await db.people.set("test_id", testPerson)
+            if (!cr.ok) throw Error("'testPerson' not added to collection successfully")
     
-            const person = await db.people.find(id)
+            const person = await db.people.find(cr.id)
     
-            assert(typeof id === "string")
-            assert(typeof versionstamp === "string")
-            assert(typeof person === "object" && person?.id === id)
+            assert(typeof cr.id === "string")
+            assert(typeof cr.versionstamp === "string")
+            assert(typeof person === "object" && person?.id === cr.id)
           }
         })
     
@@ -53,13 +54,14 @@ Deno.test({
           fn: async () => {
             await reset()
     
-            const { id, versionstamp } = await db.people.set(123, testPerson)
+            const cr = await db.people.set(123, testPerson)
+            if (!cr.ok) throw Error("'testPerson' not added to collection successfully")
     
-            const person = await db.people.find(id)
+            const person = await db.people.find(cr.id)
     
-            assert(typeof id === "number")
-            assert(typeof versionstamp === "string")
-            assert(typeof person === "object" && person?.id === id)
+            assert(typeof cr.id === "number")
+            assert(typeof cr.versionstamp === "string")
+            assert(typeof person === "object" && person?.id === cr.id)
           }
         })
     
@@ -68,13 +70,14 @@ Deno.test({
           fn: async () => {
             await reset()
     
-            const { id, versionstamp } = await db.people.set(123n, testPerson)
+            const cr = await db.people.set(123n, testPerson)
+            if (!cr.ok) throw Error("'testPerson' not added to collection successfully")
     
-            const person = await db.people.find(id)
+            const person = await db.people.find(cr.id)
     
-            assert(typeof id === "bigint")
-            assert(typeof versionstamp === "string")
-            assert(typeof person === "object" && person?.id === id)
+            assert(typeof cr.id === "bigint")
+            assert(typeof cr.versionstamp === "string")
+            assert(typeof person === "object" && person?.id === cr.id)
           }
         })
       }

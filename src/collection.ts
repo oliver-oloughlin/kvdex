@@ -128,10 +128,12 @@ export class Collection<const T extends KvValue> {
       const key = getDocumentKey(this.collectionKey, id)
       const cr = await kv.set(key, data)
   
-      const commitResult: CommitResult<T, typeof id> = {
+      const commitResult: CommitResult<T,typeof id> = cr.ok ? {
         ok: true,
         versionstamp: cr.versionstamp,
         id
+      } : {
+        ok: false
       }
   
       return commitResult
