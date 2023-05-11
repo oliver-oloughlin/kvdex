@@ -1,12 +1,21 @@
-import type { Collection, CollectionKey } from "./collection.ts"
+import type { Collection } from "./collection.ts"
 import type { Schema } from "./db.ts"
-import type { Document, DocumentId, KvValue } from "./kvdb.types.ts"
-import { generateId, getDocumentKey, useKV } from "./kvdb.utils.ts"
+import { IndexDataEntry, IndexableCollection } from "./indexable_collection.ts"
+import type { Document, KvId, KvValue, Model } from "./kvdb.types.ts"
+import { generateId, extendKey, useKV } from "./kvdb.utils.ts"
 
 // Types
-export type CollectionSelector<T1 extends Schema, T2 extends KvValue> = (schema: T1) => Collection<T2>
+export type CollectionSelector<TSchema extends Schema, TValue extends KvValue, TCollection extends Collection<TValue>> = 
+  (schema: TSchema) => TCollection
 
 export type AtomicOperationFn = (op: Deno.AtomicOperation) => Deno.AtomicOperation
+
+export type KvAction = (kv: Deno.Kv) => Promise<void>
+
+export type Operations = {
+  atomicOps: AtomicOperationFn[],
+  additionalOps: KvAction[]
+}
 
 export type AtomicCommitResult = {
   ok: true,
@@ -16,13 +25,13 @@ export type AtomicCommitResult = {
   ok: false
 }
 
-export type AtomicCheck<T extends KvValue> = {
-  id: Document<T>["id"],
-  versionstamp: Document<T>["versionstamp"]
+export type AtomicCheck<TValue extends KvValue> = {
+  id: Document<TValue>["id"],
+  versionstamp: Document<TValue>["versionstamp"]
 }
 
 export type AtomicMutation<T extends KvValue> = {
-  id: DocumentId
+  id: KvId
 } & (
   {
     type: "set",
@@ -46,11 +55,11 @@ export type AtomicMutation<T extends KvValue> = {
 )
 
 // AtomicBuilder class
-export class AtomicBuilder<const T1 extends Schema, const T2 extends KvValue> {
+export class AtomicBuilder<const TSchema extends Schema, const TValue extends KvValue, const TCollection extends Collection<TValue>> {
 
-  private schema: T1
-  private collectionKey: CollectionKey
-  private operations: AtomicOperationFn[]
+  private schema: TSchema
+  private operations: Operations
+  protected collection: TCollection
 
   /**
    * Create a new AtomicBuilder for building and executing atomic operations.
@@ -59,10 +68,15 @@ export class AtomicBuilder<const T1 extends Schema, const T2 extends KvValue> {
    * @param collection - The collection currently in context for building atomic operations.
    * @param operations - List of prepared operations from previous instance.
    */
-  constructor(schema: T1, collection: Collection<T2>, operations?: AtomicOperationFn[]) {
+  constructor(schema: TSchema, collection: TCollection, operations?: Operations) {
     this.schema = schema
-    this.collectionKey = collection.collectionKey
-    this.operations = operations ? operations : []
+
+    this.operations = operations ?? {
+      atomicOps: [],
+      additionalOps: []
+    }
+
+    this.collection = collection
   }
 
   /**
@@ -71,7 +85,7 @@ export class AtomicBuilder<const T1 extends Schema, const T2 extends KvValue> {
    * @param selector - Selector function for selecting a new collection from the database schema.
    * @returns A new AtomicBuilder instance.
    */
-  select<const Value extends KvValue>(selector: CollectionSelector<T1, Value>) {
+  select<const TValue extends KvValue>(selector: CollectionSelector<TSchema, TValue, Collection<TValue>>) {
     return new AtomicBuilder(this.schema, selector(this.schema), this.operations)
   }
   
@@ -81,10 +95,22 @@ export class AtomicBuilder<const T1 extends Schema, const T2 extends KvValue> {
    * @param data - Document data to be added.
    * @returns Current AtomicBuilder instance.
    */
-  add(data: T2) {
+  add(data: TValue) {
     const id = generateId()
-    const key = getDocumentKey(this.collectionKey, id)
-    this.operations.push(op => op.set(key, data))
+    const key = extendKey(this.collection.collectionKey, id)
+    this.operations.atomicOps.push(op => op.set(key, data))
+
+    if (this.collection instanceof IndexableCollection) {
+      const collectionIndexKey = this.collection.collectionIndexKey
+      Object.keys(this.collection.indexRecord).forEach(index => {
+        const _data = data as Model
+        const indexValue = _data[index] as KvId
+        const indexKey = extendKey(collectionIndexKey, indexValue)
+        const indexEntry: IndexDataEntry<typeof _data> = { id, ..._data }
+        this.operations.atomicOps.push(op => op.set(indexKey, indexEntry))
+      })
+    }
+
     return this
   }
 
@@ -95,9 +121,21 @@ export class AtomicBuilder<const T1 extends Schema, const T2 extends KvValue> {
    * @param data - Document data to be added.
    * @returns Current AtomicBuilder instance.
    */
-  set(id: DocumentId, data: T2) {
-    const key = getDocumentKey(this.collectionKey, id)
-    this.operations.push(op => op.set(key, data))
+  set(id: KvId, data: TValue) {
+    const key = extendKey(this.collection.collectionKey, id)
+    this.operations.atomicOps.push(op => op.set(key, data))
+
+    if (this.collection instanceof IndexableCollection) {
+      const collectionIndexKey = this.collection.collectionIndexKey
+      Object.keys(this.collection.indexRecord).forEach(index => {
+        const _data = data as Model
+        const indexValue = _data[index] as KvId
+        const indexKey = extendKey(collectionIndexKey, indexValue)
+        const indexEntry: IndexDataEntry<typeof _data> = { id, ..._data }
+        this.operations.atomicOps.push(op => op.set(indexKey, indexEntry))
+      })
+    }
+
     return this
   }
 
@@ -107,9 +145,17 @@ export class AtomicBuilder<const T1 extends Schema, const T2 extends KvValue> {
    * @param id - Id of document to be deleted.
    * @returns Current AtomicBuilder instance.
    */
-  delete(id: DocumentId) {
-    const key = getDocumentKey(this.collectionKey, id)
-    this.operations.push(op => op.delete(key))
+  delete(id: KvId) {
+    const key = extendKey(this.collection.collectionKey, id)
+    this.operations.atomicOps.push(op => op.delete(key))
+
+    if (this.collection instanceof IndexableCollection) {
+      const collectionIndexKey = this.collection.collectionIndexKey
+      Object.keys(this.collection.indexRecord).forEach(index => {
+        // TODO: Delete all index entries of the document
+      })
+    }
+
     return this
   }
 
@@ -119,16 +165,16 @@ export class AtomicBuilder<const T1 extends Schema, const T2 extends KvValue> {
    * @param atomicChecks - AtomicCheck objects containing a document id and versionstamp.
    * @returns Current AtomicBuilder instance.
    */
-  check(...atomicChecks: AtomicCheck<T2>[]) {
+  check(...atomicChecks: AtomicCheck<TValue>[]) {
     const checks: Deno.AtomicCheck[] = atomicChecks.map(({ id, versionstamp }) => {
-      const key = getDocumentKey(this.collectionKey, id)
+      const key = extendKey(this.collection.collectionKey, id)
       return {
         key,
         versionstamp
       }
     })
 
-    this.operations.push(op => op.check(...checks))
+    this.operations.atomicOps.push(op => op.check(...checks))
     return this
   }
 
@@ -140,9 +186,9 @@ export class AtomicBuilder<const T1 extends Schema, const T2 extends KvValue> {
    * @param value - The value to add to the document value.
    * @returns Current AtomicBuilder instance.
    */
-  sum(id: DocumentId, value: bigint) {
-    const key = getDocumentKey(this.collectionKey, id)
-    this.operations.push(op => op.sum(key, value))
+  sum(id: KvId, value: bigint) {
+    const key = extendKey(this.collection.collectionKey, id)
+    this.operations.atomicOps.push(op => op.sum(key, value))
     return this
   }
 
@@ -152,16 +198,16 @@ export class AtomicBuilder<const T1 extends Schema, const T2 extends KvValue> {
    * @param mutations - Atomic mutations to be performed.
    * @returns Current AtomicBuilder instance.
    */
-  mutate(...mutations: AtomicMutation<T2>[]) {
+  mutate(...mutations: AtomicMutation<TValue>[]) {
     const kvMutations: Deno.KvMutation[] = mutations.map(({ id, ...rest }) => {
-      const key = getDocumentKey(this.collectionKey, id)
+      const key = extendKey(this.collection.collectionKey, id)
       return {
         key,
         ...rest
       }
     })
 
-    this.operations.push(op => op.mutate(...kvMutations))
+    this.operations.atomicOps.push(op => op.mutate(...kvMutations))
     return this
   }
 
@@ -172,8 +218,9 @@ export class AtomicBuilder<const T1 extends Schema, const T2 extends KvValue> {
    */
   async commit() {
     return await useKV(async kv => {
-      const operation = this.operations.reduce((op, opFn) => opFn(op), kv.atomic())
-      return await operation.commit()
+      const atomicOperation = this.operations.atomicOps.reduce((op, opFn) => opFn(op), kv.atomic())
+      const [commitResult] = await Promise.all([atomicOperation.commit(), ...this.operations.additionalOps.map(op => op(kv))])
+      return commitResult
     })
   }
   

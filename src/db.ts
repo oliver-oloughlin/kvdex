@@ -6,8 +6,10 @@ export type Schema = {
   [key: string]: Collection<KvValue> | Schema
 }
 
-export type KVDB<T extends Schema> = T & {
-  atomic: <const Value extends KvValue>(selector: CollectionSelector<T, Value>) => AtomicBuilder<T, Value>
+export type KVDB<TSchema extends Schema> = TSchema & {
+  atomic: <const TValue extends KvValue, const TCollection extends Collection<TValue>>(
+    selector: CollectionSelector<TSchema, TValue, TCollection>
+  ) => AtomicBuilder<TSchema, TValue, TCollection>
 }
 
 export function kvdb<const T extends Schema>(schema: T): KVDB<T> {
