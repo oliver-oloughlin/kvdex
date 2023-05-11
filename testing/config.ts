@@ -1,5 +1,4 @@
-import { kvdb, collection, type KvObject } from "../mod.ts"
-import { indexableCollection } from "../src/indexable_collection.ts"
+import { kvdb, collection, indexableCollection, type KvObject } from "../mod.ts"
 
 export interface Person extends KvObject {
   name: string,
