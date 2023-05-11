@@ -1,8 +1,8 @@
 import type { Collection } from "./collection.ts"
 import type { Schema } from "./db.ts"
-import { IndexDataEntry, IndexableCollection } from "./indexable_collection.ts"
-import type { Document, KvId, KvValue, Model } from "./kvdb.types.ts"
-import { generateId, extendKey, useKV } from "./kvdb.utils.ts"
+import { IndexDataEntry, IndexRecord, IndexableCollection } from "./indexable_collection.ts"
+import type { Document, KvId, KvKey, KvValue, Model } from "./kvdb.types.ts"
+import { generateId, extendKey, useKV, getDocumentId, keyEq } from "./kvdb.utils.ts"
 
 // Types
 export type CollectionSelector<TSchema extends Schema, TValue extends KvValue, TCollection extends Collection<TValue>> = 
@@ -10,11 +10,19 @@ export type CollectionSelector<TSchema extends Schema, TValue extends KvValue, T
 
 export type AtomicOperationFn = (op: Deno.AtomicOperation) => Deno.AtomicOperation
 
-export type KvAction = (kv: Deno.Kv) => Promise<void>
+export type PrepareDeleteFn = (kv: Deno.Kv) => Promise<PreparedIndexDelete>
+
+export type PreparedIndexDelete = {
+  data: Model,
+  collectionIndexKey: KvKey,
+  indexRecord: IndexRecord<Model>
+}
 
 export type Operations = {
-  atomicOps: AtomicOperationFn[],
-  additionalOps: KvAction[]
+  atomicFns: AtomicOperationFn[],
+  prepareDeleteFns: PrepareDeleteFn[],
+  deleteKeys: KvKey[],
+  addKeys: KvKey[]
 }
 
 export type AtomicCommitResult = {
@@ -72,8 +80,10 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
     this.schema = schema
 
     this.operations = operations ?? {
-      atomicOps: [],
-      additionalOps: []
+      atomicFns: [],
+      prepareDeleteFns: [],
+      deleteKeys: [],
+      addKeys: []
     }
 
     this.collection = collection
@@ -98,16 +108,22 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
   add(data: TValue) {
     const id = generateId()
     const key = extendKey(this.collection.collectionKey, id)
-    this.operations.atomicOps.push(op => op.set(key, data))
+
+    this.operations.atomicFns.push(op => op.set(key, data))
+    this.operations.addKeys.push(key)
 
     if (this.collection instanceof IndexableCollection) {
       const collectionIndexKey = this.collection.collectionIndexKey
-      Object.keys(this.collection.indexRecord).forEach(index => {
-        const _data = data as Model
-        const indexValue = _data[index] as KvId
+      const indexRecord = this.collection.indexRecord
+      const _data = data as Model
+
+      Object.keys(indexRecord).forEach(index => {
+        const indexValue = _data[index] as KvId | undefined
+        if (typeof indexValue === "undefined") return
+
         const indexKey = extendKey(collectionIndexKey, indexValue)
         const indexEntry: IndexDataEntry<typeof _data> = { id, ..._data }
-        this.operations.atomicOps.push(op => op.set(indexKey, indexEntry))
+        this.operations.atomicFns.push(op => op.set(indexKey, indexEntry))
       })
     }
 
@@ -123,16 +139,22 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
    */
   set(id: KvId, data: TValue) {
     const key = extendKey(this.collection.collectionKey, id)
-    this.operations.atomicOps.push(op => op.set(key, data))
+
+    this.operations.atomicFns.push(op => op.set(key, data))
+    this.operations.addKeys.push(key)
 
     if (this.collection instanceof IndexableCollection) {
       const collectionIndexKey = this.collection.collectionIndexKey
-      Object.keys(this.collection.indexRecord).forEach(index => {
-        const _data = data as Model
-        const indexValue = _data[index] as KvId
+      const indexRecord = this.collection.indexRecord
+      const _data = data as Model
+
+      Object.keys(indexRecord).forEach(index => {
+        const indexValue = _data[index] as KvId | undefined
+        if (typeof indexValue === "undefined") return
+
         const indexKey = extendKey(collectionIndexKey, indexValue)
         const indexEntry: IndexDataEntry<typeof _data> = { id, ..._data }
-        this.operations.atomicOps.push(op => op.set(indexKey, indexEntry))
+        this.operations.atomicFns.push(op => op.set(indexKey, indexEntry))
       })
     }
 
@@ -147,27 +169,22 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
    */
   delete(id: KvId) {
     const key = extendKey(this.collection.collectionKey, id)
-    this.operations.atomicOps.push(op => op.delete(key))
+
+    this.operations.atomicFns.push(op => op.delete(key))
+    this.operations.deleteKeys.push(key)
 
     if (this.collection instanceof IndexableCollection) {
       const collectionIndexKey = this.collection.collectionIndexKey
       const indexRecord = this.collection.indexRecord
 
-      this.operations.additionalOps.push(async kv => {
-        const { value, versionstamp } = await kv.get<TValue>(key)
-        
-        if (value === null || versionstamp === null) return
+      this.operations.prepareDeleteFns.push(async kv => {
+        const doc = await kv.get<Model>(key)
 
-        let atomic = kv.atomic()
-
-        Object.keys(indexRecord).forEach(index => {
-          const _value = value as Model
-          const indexValue = _value[index] as KvId
-          const indexKey = extendKey(collectionIndexKey, indexValue)
-          atomic = atomic.delete(indexKey)
-        })
-
-        await atomic.commit()
+        return {
+          data: doc.value ?? {},
+          collectionIndexKey,
+          indexRecord
+        }
       })
     }
 
@@ -189,7 +206,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
       }
     })
 
-    this.operations.atomicOps.push(op => op.check(...checks))
+    this.operations.atomicFns.push(op => op.check(...checks))
     return this
   }
 
@@ -203,7 +220,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
    */
   sum(id: KvId, value: bigint) {
     const key = extendKey(this.collection.collectionKey, id)
-    this.operations.atomicOps.push(op => op.sum(key, value))
+    this.operations.atomicFns.push(op => op.sum(key, value))
     return this
   }
 
@@ -222,45 +239,48 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
       }
     })
 
-    this.operations.atomicOps.push(op => op.mutate(...kvMutations))
+    this.operations.atomicFns.push(op => op.mutate(...kvMutations))
 
-    if (this.collection instanceof IndexableCollection) {
-      const collectionKey = this.collection.collectionKey
-      const collectionIndexKey = this.collection.collectionIndexKey
-      const indexRecord = this.collection.indexRecord
+    kvMutations.forEach(mut => {
+      if (mut.type === "set") {
+        this.operations.addKeys.push(mut.key)
 
-      mutations.forEach(mut => {
-        if (mut.type === "set") {
+        if (this.collection instanceof IndexableCollection) {
+          const collectionIndexKey = this.collection.collectionIndexKey
+          const indexRecord = this.collection.indexRecord
+
           Object.keys(indexRecord).forEach(index => {
-            const data = mut.value as Model
-            const indexValue = data[index] as KvId
-            const indexKey = extendKey(collectionIndexKey, indexValue)
-            const indexEntry: IndexDataEntry<typeof data> = { id: mut.id, ...data }
-            this.operations.atomicOps.push(op => op.set(indexKey, indexEntry))
-          })
-        }
+            const id = getDocumentId(mut.key)
+            if (typeof id === "undefined") return
 
-        if (mut.type === "delete") {
-          this.operations.additionalOps.push(async kv => {
-            const key = extendKey(collectionKey, mut.id)
-            const { value, versionstamp } = await kv.get<TValue>(key)
+            const data = mut.value as Model
+            const indexValue = data[index] as KvId | undefined
+            if (typeof indexValue === "undefined") return
             
-            if (value === null || versionstamp === null) return
-    
-            let atomic = kv.atomic()
-    
-            Object.keys(indexRecord).forEach(index => {
-              const _value = value as Model
-              const indexValue = _value[index] as KvId
-              const indexKey = extendKey(collectionIndexKey, indexValue)
-              atomic = atomic.delete(indexKey)
-            })
-    
-            await atomic.commit()
+            const indexKey = extendKey(collectionIndexKey, indexValue)
+            const indexEntry: IndexDataEntry<typeof data> = { id, ...data }
+            this.operations.atomicFns.push(op => op.set(indexKey, indexEntry))
           })
         }
-      })
-    }
+      }
+      else if (mut.type === "delete") {
+        this.operations.deleteKeys.push(mut.key)
+
+        if (this.collection instanceof IndexableCollection) {
+          const collectionIndexKey = this.collection.collectionIndexKey
+          const indexRecord = this.collection.indexRecord
+
+          this.operations.prepareDeleteFns.push(async kv => {
+            const doc = await kv.get<Model>(mut.key)
+            return {
+              data: doc.value ?? {},
+              collectionIndexKey,
+              indexRecord
+            }
+          })
+        }
+      }
+    })
 
     return this
   }
@@ -268,12 +288,46 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
   /**
    * Executes the built atomic operation.
    * 
-   * @returns A promise that resolves to a Deno.KvCommitResult object if the operation is successful, or Deno.KvCommitError if not.
+   * @returns A promise that resolves to a Deno.KvCommitResult if the operation is successful, or Deno.KvCommitError if not.
    */
-  async commit() {
+  async commit(): Promise<Deno.KvCommitResult | Deno.KvCommitError> {
     return await useKV(async kv => {
-      const atomicOperation = this.operations.atomicOps.reduce((op, opFn) => opFn(op), kv.atomic())
-      const [commitResult] = await Promise.all([atomicOperation.commit(), ...this.operations.additionalOps.map(op => op(kv))])
+      // Check for overlapping keys
+      if (
+        this.operations.addKeys
+          .some(addKey => this.operations.deleteKeys
+          .some(deleteKey => keyEq(addKey, deleteKey)))
+      ) {
+        return {
+          ok: false
+        }
+      }
+
+      // Prepare delete ops
+      const preparedIndexDeletes = await Promise.all(this.operations.prepareDeleteFns.map(fn => fn(kv)))
+
+      // Perform atomic operation
+      const atomicOperation = this.operations.atomicFns.reduce((op, opFn) => opFn(op), kv.atomic())
+      const commitResult = await atomicOperation.commit()
+
+      // If successful commit, perform delete ops
+      if (commitResult.ok) {
+        await Promise.all(preparedIndexDeletes.map(async ({ data, collectionIndexKey, indexRecord }) => {         
+          let atomic = kv.atomic()
+      
+          Object.keys(indexRecord).forEach(index => {
+            const indexValue = data[index] as KvId | undefined
+            if (typeof indexValue === "undefined") return
+
+            const indexKey = extendKey(collectionIndexKey, indexValue)
+            atomic = atomic.delete(indexKey)
+          })
+      
+          await atomic.commit()
+        }))
+      }
+
+      // Return commit result
       return commitResult
     })
   }

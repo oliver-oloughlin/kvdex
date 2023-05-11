@@ -23,6 +23,17 @@ export const testPerson: Person = {
   }
 }
 
+export const testPerson2: Person = {
+  name: "Elias",
+  age: 23,
+  friends: ["Oliver", "Anders"],
+  address: {
+    country: "Norway",
+    city: "Oslo",
+    postcode: 1024
+  }
+}
+
 export const db = kvdb({
   people: collection<Person>(["people"]),
   indexablePeople: indexableCollection<Person>(["indexablePeople"], {

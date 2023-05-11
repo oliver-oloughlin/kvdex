@@ -18,3 +18,7 @@ export async function useKV<const T>(fn: (kv: Deno.Kv) => Promise<T>) {
   await kv.close()
   return result
 }
+
+export function keyEq(k1: KvKey, k2: KvKey) {
+  return JSON.stringify(k1) === JSON.stringify(k2)
+}
