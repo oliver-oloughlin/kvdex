@@ -151,8 +151,23 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
 
     if (this.collection instanceof IndexableCollection) {
       const collectionIndexKey = this.collection.collectionIndexKey
-      Object.keys(this.collection.indexRecord).forEach(index => {
-        // TODO: Delete all index entries of the document
+      const indexRecord = this.collection.indexRecord
+
+      this.operations.additionalOps.push(async kv => {
+        const { value, versionstamp } = await kv.get<TValue>(key)
+        
+        if (value === null || versionstamp === null) return
+
+        let atomic = kv.atomic()
+
+        Object.keys(indexRecord).forEach(index => {
+          const _value = value as Model
+          const indexValue = _value[index] as KvId
+          const indexKey = extendKey(collectionIndexKey, indexValue)
+          atomic = atomic.delete(indexKey)
+        })
+
+        await atomic.commit()
       })
     }
 
@@ -208,6 +223,45 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
     })
 
     this.operations.atomicOps.push(op => op.mutate(...kvMutations))
+
+    if (this.collection instanceof IndexableCollection) {
+      const collectionKey = this.collection.collectionKey
+      const collectionIndexKey = this.collection.collectionIndexKey
+      const indexRecord = this.collection.indexRecord
+
+      mutations.forEach(mut => {
+        if (mut.type === "set") {
+          Object.keys(indexRecord).forEach(index => {
+            const data = mut.value as Model
+            const indexValue = data[index] as KvId
+            const indexKey = extendKey(collectionIndexKey, indexValue)
+            const indexEntry: IndexDataEntry<typeof data> = { id: mut.id, ...data }
+            this.operations.atomicOps.push(op => op.set(indexKey, indexEntry))
+          })
+        }
+
+        if (mut.type === "delete") {
+          this.operations.additionalOps.push(async kv => {
+            const key = extendKey(collectionKey, mut.id)
+            const { value, versionstamp } = await kv.get<TValue>(key)
+            
+            if (value === null || versionstamp === null) return
+    
+            let atomic = kv.atomic()
+    
+            Object.keys(indexRecord).forEach(index => {
+              const _value = value as Model
+              const indexValue = _value[index] as KvId
+              const indexKey = extendKey(collectionIndexKey, indexValue)
+              atomic = atomic.delete(indexKey)
+            })
+    
+            await atomic.commit()
+          })
+        }
+      })
+    }
+
     return this
   }
 
