@@ -10,7 +10,7 @@ Zero third-party dependencies.
 For collections of objects, models can be defined by extending the Model type.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdb@v1.4.1/mod.ts"
+import type { Model } from "https://deno.land/x/kvdb@v1.4.2/mod.ts"
 
 interface User extends Model {
   username: string,
@@ -29,7 +29,7 @@ interface User extends Model {
 A collection contains all methods for dealing with a collection of documents. Collections can contain any type that extends KvValue, this includes objects, arrays and primitive values. A new collection is created using the "collection" function with a type parameter adhering to KvValue, and a unique key for the specific collection. The key must be of type KvKey.
 
 ```ts
-import { collection } from "https://deno.land/x/kvdb@v1.4.1/mod.ts"
+import { collection } from "https://deno.land/x/kvdb@v1.4.2/mod.ts"
 
 const users = collection<User>(["users"])
 const strings = collection<string>(["strings"])
@@ -39,7 +39,8 @@ const bigints = collection<bigint>(["bigints"])
 For indexing, it is possible to create a collection using the "indexableCollection" function. The function takes an extra parameter of index specifications. Indexing can only be done on values that adhere to the type KvId. Indexable collections can only hold documents of the Model type.
 
 ```ts
-import { indexableCollection } from "https://deno.land/x/kvdb@v1.4.1/mod.ts"
+import { indexableCollection } from "https://deno.land/x/kvdb@v1.4.2/mod.ts"
+
 const indexableUsers = indexableCollection<User>(["indexableUsers"], {
   username: true
 })
@@ -49,7 +50,7 @@ const indexableUsers = indexableCollection<User>(["indexableUsers"], {
 The "kvdb" function is used for creating a new KVDB database object. It expects an object of type Schema containing keys to collections (or other Schema objects for nesting). Wrapping collections inside a KVDB object is optional, but is the only way of accessing atomic operations, and will ensure that collection keys are unique. The collection keys are not constrained to match the object hierachy, but to avoid overlapping it is advised to keep them matched. If any two collections have the same key, the function will throw an error.
 
 ```ts
-import { kvdb } from "https://deno.land/x/kvdb@v1.4.1/mod.ts"
+import { kvdb } from "https://deno.land/x/kvdb@v1.4.2/mod.ts"
 
 const db = kvdb({
   users: collection<User>(["users"]),
@@ -223,7 +224,7 @@ Atomic operations allow for executing multiple mutations as a single atomic tran
 
 To initiate an atomic operation, call "atomic" on the KVDB object. The method expects a selector for selecting the collection that the subsequent mutation actions will be performed on. Mutations can be performed on documents from multiple collections in a single atomic operation by calling "select" at any point in the building chain to switch the collection context. To execute the operation, call "commit" at the end of the chain. An atomic operation returns a Deno.KvCommitResult object if successful, and Deno.KvCommitError if not.
 
-**NOTE:** For indexable collections, any operations performing deletes will not be truly atomic. The reason for this being that the document data must be read before performing the delete operation, to then perform another delete operation for the index entries. If the initial operation fails, the index entries will not be deleted. To avoid collisions when doing writes/deletes, atomic operations will always fail if it is trying to delete and add a document with the same id to the same collection.
+**NOTE:** For indexable collections, any operations performing deletes will not be truly atomic. The reason for this being that the document data must be read before performing the delete operation, to then perform another delete operation for the index entries. If the initial operation fails, the index entries will not be deleted. To avoid collisions and errors related to indexing, an atomic operation will always fail if it is trying to delete and write to the same indexable collection.
 
 ### Without checking
 ```ts
@@ -254,9 +255,10 @@ const result2 = await db
   .commit()
 
 // Will fail and return Deno.KvCommitError because it is trying 
-// to both add and delete a document with id = "user_1"
+// to both add and delete from the indexable collection "indexableUsers"
 const result3 = await db
   .atomic(schema => schema.users)
+  .delete("user_1")
   .set("user_1", {
     username: "oliver",
     age: 24,
@@ -268,7 +270,6 @@ const result3 = await db
       houseNumber: 42
     }
   })
-  .delete("user_1")
   .commit()
 ```
 
@@ -299,7 +300,7 @@ It will only flatten the first layer of the document, meaning the result will be
 id, versionstamp and all the entries in the document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdb@v1.4.1/mod.ts"
+import { flatten } from "https://deno.land/x/kvdb@v1.4.2/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
