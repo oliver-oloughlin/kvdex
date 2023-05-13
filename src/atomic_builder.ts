@@ -125,7 +125,9 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
 
         const indexKey = extendKey(collectionIndexKey, indexValue)
         const indexEntry: IndexDataEntry<typeof _data> = { id, ..._data }
-        this.operations.atomicFns.push(op => op.set(indexKey, indexEntry))
+        this.operations.atomicFns.push(
+          op => op.set(indexKey, indexEntry).check({ key: indexKey, versionstamp: null})
+        )
       })
     }
 
@@ -158,7 +160,9 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
 
         const indexKey = extendKey(collectionIndexKey, indexValue)
         const indexEntry: IndexDataEntry<typeof _data> = { id, ..._data }
-        this.operations.atomicFns.push(op => op.set(indexKey, indexEntry))
+        this.operations.atomicFns.push(
+          op => op.set(indexKey, indexEntry).check({ key: indexKey, versionstamp: null})
+        )
       })
     }
 
@@ -266,7 +270,9 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
             
             const indexKey = extendKey(collectionIndexKey, indexValue)
             const indexEntry: IndexDataEntry<typeof data> = { id, ...data }
-            this.operations.atomicFns.push(op => op.set(indexKey, indexEntry))
+            this.operations.atomicFns.push(
+              op => op.set(indexKey, indexEntry).check({ key: indexKey, versionstamp: null})
+            )
           })
         }
 

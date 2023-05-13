@@ -295,5 +295,41 @@ Deno.test("db", async t1 => {
 
       assert(!cr3.ok)
     })
+
+    await t2.step("Should fail atomic operation if writing to index entry that already exists", async () => {
+      await reset()
+
+      const cr1 = await db
+        .atomic(schema => schema.indexablePeople)
+        .add(testPerson)
+        .commit()
+
+      assert(cr1.ok)
+
+      const cr2 = await db
+        .atomic(schema => schema.indexablePeople)
+        .add(testPerson)
+        .commit()
+
+      assert(!cr2.ok)
+
+      const cr3 = await db
+        .atomic(schema => schema.indexablePeople)
+        .set("id1", testPerson)
+        .commit()
+
+      assert(!cr3.ok)
+
+      const cr4 = await db
+        .atomic(schema => schema.indexablePeople)
+        .mutate({
+          type: "set",
+          id: "id2",
+          value: testPerson
+        })
+        .commit()
+
+      assert(!cr4.ok)
+    })
   })
 })

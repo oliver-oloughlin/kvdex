@@ -44,10 +44,18 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
       let atomic = kv.atomic().set(idKey, data)
 
       Object.keys(this.indexRecord).forEach(index => {
-        const indexValue = data[index] as KvId
+        const indexValue = data[index] as KvId | undefined
+        if (typeof indexValue === "undefined") return
+
         const indexKey = extendKey(this.collectionIndexKey, indexValue)
         const indexEntry: IndexDataEntry<T1> = { id, ...data }
-        atomic = atomic.set(indexKey, indexEntry)
+
+        atomic = atomic
+          .set(indexKey, indexEntry)
+          .check({
+            key: indexKey,
+            versionstamp: null
+          })
       })
 
       const cr = await atomic.commit()
@@ -71,10 +79,18 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
       let atomic = kv.atomic().set(idKey, data)
 
       Object.keys(this.indexRecord).forEach(index => {
-        const indexValue = data[index] as KvId
+        const indexValue = data[index] as KvId | undefined
+        if (typeof indexValue === "undefined") return
+
         const indexKey = extendKey(this.collectionIndexKey, indexValue)
         const indexEntry: IndexDataEntry<T1> = { id, ...data }
-        atomic = atomic.set(indexKey, indexEntry)
+        
+        atomic = atomic
+          .set(indexKey, indexEntry)
+          .check({
+            key: indexKey,
+            versionstamp: null
+          })
       })
 
       const cr = await atomic.commit()

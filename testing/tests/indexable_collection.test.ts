@@ -75,6 +75,16 @@ Deno.test("indexable_collection", async t1 => {
 
       assert(undefinedDoc === null)
     })
+
+    await t2.step("Should not add document by id or index if any entry already exists", async () => {
+      await reset()
+
+      const cr1 = await db.indexablePeople.add(testPerson)
+      assert(cr1.ok)
+
+      const cr2 = await db.indexablePeople.add(testPerson)
+      assert(!cr2.ok)
+    })
   })
 
   // Test "set" method
@@ -142,6 +152,16 @@ Deno.test("indexable_collection", async t1 => {
       })
 
       assert(undefinedDoc === null)
+    })
+
+    await t2.step("Should not add document by id or index if any entry already exists", async () => {
+      await reset()
+
+      const cr1 = await db.indexablePeople.set("id1", testPerson)
+      assert(cr1.ok)
+
+      const cr2 = await db.indexablePeople.set("id2", testPerson)
+      assert(!cr2.ok)
     })
   })
 
