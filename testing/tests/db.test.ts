@@ -1,4 +1,4 @@
-import { kvdb, collection } from "../../mod.ts"
+import { kvdb } from "../../mod.ts"
 import { db, reset, testPerson, testPerson2 } from "../config.ts"
 import { assert, assertThrows } from "../deps.ts"
 
@@ -6,46 +6,54 @@ import { assert, assertThrows } from "../deps.ts"
 Deno.test("db", async t1 => {
   // Test "kvdb" function
   await t1.step("kvdb", async t2 => {
-    await t2.step("Should throw error when creating KVDB with duplicate collection keys", () => {
-      assertThrows(() => kvdb({
-        numbers1: collection<number>(["numbers"]),
-        numbers2: collection<number>(["numbers"])
-      }))
+    await t2.step("Should throw error when creating KVDB with duplicate collection keys", async () => {
+      const kv = await Deno.openKv()
 
-      assertThrows(() => kvdb({
-        numbers: collection<number>(["numbers", 123, 123n]),
+      assertThrows(() => kvdb(kv, cb => ({
+        numbers1: cb.collection<number>(["numbers"]),
+        numbers2: cb.collection<number>(["numbers"])
+      })))
+
+      assertThrows(() => kvdb(kv, cb => ({
+        numbers: cb.collection<number>(["numbers", 123, 123n]),
         nested: {
-          numbers: collection<number>(["numbers", 123, 123n]),
+          numbers: cb.collection<number>(["numbers", 123, 123n]),
           nested: {
-            numbers: collection<number>(["numbers", 123, 123n])
+            numbers: cb.collection<number>(["numbers", 123, 123n])
           }
         }
-      }))
+      })))
+
+      kv.close()
     })
 
-    await t2.step("Should not throw error when creating KVDB with unique collection keys", () => {
+    await t2.step("Should not throw error when creating KVDB with unique collection keys", async () => {
+      const kv = await Deno.openKv()
+
       assert(() => {
-        kvdb({
-          numbers1: collection<number>(["numbers1"]),
-          numbers2: collection<number>(["numbers2"])
-        })
+        kvdb(kv, cb => ({
+          numbers1: cb.collection<number>(["numbers1"]),
+          numbers2: cb.collection<number>(["numbers2"])
+        }))
 
         return true
       })
 
       assert(() => {
-        kvdb({
-          numbers: collection<number>(["numbers", 123, 123n]),
+        kvdb(kv, cb => ({
+          numbers: cb.collection<number>(["numbers", 123, 123n]),
           nested: {
-            numbers: collection<number>(["numbers", 1234, 123n]),
+            numbers: cb.collection<number>(["numbers", 1234, 123n]),
             nested: {
-              numbers: collection<number>(["numbers", 123, 1234n])
+              numbers: cb.collection<number>(["numbers", 123, 1234n])
             }
           }
-        })
+        }))
 
         return true
       })
+
+      kv.close()
     })
   })
 

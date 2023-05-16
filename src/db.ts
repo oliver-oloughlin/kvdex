@@ -1,7 +1,9 @@
 import { AtomicBuilder, type CollectionSelector } from "./atomic_builder.ts"
 import { Collection } from "./collection.ts"
-import type { KvValue } from "./kvdb.types.ts"
+import { IndexRecord, IndexableCollection } from "./indexable_collection.ts"
+import type { KvKey, KvValue, Model } from "./kvdb.types.ts"
 
+// Types
 export type Schema = {
   [key: string]: Collection<KvValue> | Schema
 }
@@ -12,7 +14,11 @@ export type KVDB<TSchema extends Schema> = TSchema & {
   ) => AtomicBuilder<TSchema, TValue, TCollection>
 }
 
-export function kvdb<const T extends Schema>(schema: T): KVDB<T> {
+// Create KVDB function
+export function kvdb<const T extends Schema>(kv: Deno.Kv, schemaBuilder: (builder: CollectionBuilder) => T): KVDB<T> {
+  const builder = new CollectionBuilder(kv)
+  const schema = schemaBuilder(builder)
+
   const collections = extractCollections(schema)
   const keys = collections.map(collection => collection.collectionKey)
   const validKeys = validateCollectionKeys(keys)
@@ -21,10 +27,11 @@ export function kvdb<const T extends Schema>(schema: T): KVDB<T> {
 
   return {
     ...schema,
-    atomic: selector => new AtomicBuilder(schema, selector(schema))
+    atomic: selector => new AtomicBuilder(kv, schema, selector(schema))
   }
 }
 
+// Helpers
 function extractCollections<const T extends Schema>(schema: T) {
   const collections: Collection<KvValue>[] = []
 
@@ -49,4 +56,23 @@ function validateCollectionKeys(keys: Deno.KvKey[]) {
   }
 
   return true
+}
+
+// Collection Builder class
+class CollectionBuilder {
+
+  private kv: Deno.Kv
+
+  constructor(kv: Deno.Kv) {
+    this.kv = kv
+  }
+
+  collection<const T extends KvValue>(collectionKey: KvKey) {
+    return new Collection<T>(this.kv, collectionKey)
+  }
+
+  indexableCollection<const T extends Model>(collectionKey: KvKey, indexRecord: IndexRecord<T>) {
+    return new IndexableCollection(this.kv, collectionKey, indexRecord)
+  }
+
 }
