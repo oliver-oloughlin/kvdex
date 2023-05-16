@@ -1,5 +1,5 @@
 # KVDB
-Simple wrapper module for Deno's KV store. 
+Database wrapper for Deno's KV store.
 Allows for easy and type-safe storing/retrieving of data.
 
 Support for indexing.
@@ -10,7 +10,7 @@ Zero third-party dependencies.
 For collections of objects, models can be defined by extending the Model type.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdb@v1.4.3/mod.ts"
+import type { Model } from "https://deno.land/x/kvdb@v1.5.0/mod.ts"
 
 interface User extends Model {
   username: string,
@@ -29,7 +29,7 @@ interface User extends Model {
 A collection contains all methods for dealing with a collection of documents. Collections can contain any type that extends KvValue, this includes objects, arrays and primitive values. A new collection is created using the "collection" function with a type parameter adhering to KvValue, and a unique key for the specific collection. The key must be of type KvKey.
 
 ```ts
-import { collection } from "https://deno.land/x/kvdb@v1.4.3/mod.ts"
+import { collection } from "https://deno.land/x/kvdb@v1.5.0/mod.ts"
 
 const users = collection<User>(["users"])
 const strings = collection<string>(["strings"])
@@ -39,7 +39,7 @@ const bigints = collection<bigint>(["bigints"])
 For indexing, it is possible to create a collection using the "indexableCollection" function. The function takes an extra parameter of index specifications. Indexing can only be done on values that adhere to the type KvId. Indexable collections can only hold documents of the Model type.
 
 ```ts
-import { indexableCollection } from "https://deno.land/x/kvdb@v1.4.3/mod.ts"
+import { indexableCollection } from "https://deno.land/x/kvdb@v1.5.0/mod.ts"
 
 const indexableUsers = indexableCollection<User>(["indexableUsers"], {
   username: true
@@ -47,19 +47,21 @@ const indexableUsers = indexableCollection<User>(["indexableUsers"], {
 ```
 
 ## Database
-The "kvdb" function is used for creating a new KVDB database object. It expects an object of type Schema containing keys to collections (or other Schema objects for nesting). Wrapping collections inside a KVDB object is optional, but is the only way of accessing atomic operations, and will ensure that collection keys are unique. The collection keys are not constrained to match the object hierachy, but to avoid overlapping it is advised to keep them matched. If any two collections have the same key, the function will throw an error.
+The "kvdb" function is used for creating a new KVDB database object. It must be provided the KV instance that will be used, as well as a function that will build the database schema. The schema builder function takes in a builder object that can be used to build collections. Collections can also be nested inside objects of any depth if you wish for nested structure.
 
 ```ts
-import { kvdb } from "https://deno.land/x/kvdb@v1.4.3/mod.ts"
+import { kvdb } from "https://deno.land/x/kvdb@v1.5.0/mod.ts"
 
-const db = kvdb({
-  users: collection<User>(["users"]),
-  indexableUsers: indexableCollection<User>(["indexableUser"], { username: true })
+const kv = await Deno.openKv()
+
+const db = kvdb(kv, builder => ({
+  users: builder.collection<User>(["users"]),
+  indexableUsers: builder.indexableCollection<User>(["indexableUser"], { username: true })
   primitives: {
-    strings: collection<string>(["primitives", "strings"]),
-    bigints: collection<bigint>(["bigints", "bigints"])
+    strings: builder.collection<string>(["primitives", "strings"]),
+    bigints: builder.collection<bigint>(["bigints", "bigints"])
   }
-})
+}))
 ```
 
 ## Collection Methods
@@ -300,7 +302,7 @@ It will only flatten the first layer of the document, meaning the result will be
 id, versionstamp and all the entries in the document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdb@v1.4.3/mod.ts"
+import { flatten } from "https://deno.land/x/kvdb@v1.5.0/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)

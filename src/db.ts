@@ -19,60 +19,41 @@ export function kvdb<const T extends Schema>(kv: Deno.Kv, schemaBuilder: (builde
   const builder = new CollectionBuilder(kv)
   const schema = schemaBuilder(builder)
 
-  const collections = extractCollections(schema)
-  const keys = collections.map(collection => collection.collectionKey)
-  const validKeys = validateCollectionKeys(keys)
-
-  if (!validKeys) throw Error("Collections must have unique keys")
-
   return {
     ...schema,
     atomic: selector => new AtomicBuilder(kv, schema, selector(schema))
   }
 }
 
-// Helpers
-function extractCollections<const T extends Schema>(schema: T) {
-  const collections: Collection<KvValue>[] = []
-
-  Object.values(schema).forEach((schemaOrCollection) => {
-    if (schemaOrCollection instanceof Collection) {
-      collections.push(schemaOrCollection)
-    }
-    else {
-      collections.push(...extractCollections(schemaOrCollection))
-    }
-  })
-
-  return collections
-}
-
-function validateCollectionKeys(keys: Deno.KvKey[]) {
-  const strKeys = keys.map(key => JSON.stringify(key))
-
-  while (strKeys.length > 0) {
-    const strKey = strKeys.pop()
-    if (strKeys.some(key => key === strKey)) return false
-  }
-
-  return true
-}
-
 // Collection Builder class
 class CollectionBuilder {
 
   private kv: Deno.Kv
+  private collectionKeyStrs: string[]
 
   constructor(kv: Deno.Kv) {
     this.kv = kv
+    this.collectionKeyStrs = []
   }
 
   collection<const T extends KvValue>(collectionKey: KvKey) {
+    this.checkCollectionKey(collectionKey)
     return new Collection<T>(this.kv, collectionKey)
   }
 
   indexableCollection<const T extends Model>(collectionKey: KvKey, indexRecord: IndexRecord<T>) {
+    this.checkCollectionKey(collectionKey)
     return new IndexableCollection(this.kv, collectionKey, indexRecord)
+  }
+
+  private checkCollectionKey(collectionKey: KvKey) {
+    const collectionKeyStr = JSON.stringify(collectionKey)
+    
+    if (this.collectionKeyStrs.some(keyStr => keyStr === collectionKeyStr)) {
+      throw Error(`Collection key "${collectionKeyStr}" has already been assigned another collection.`)
+    }
+
+    this.collectionKeyStrs.push(collectionKeyStr)
   }
 
 }

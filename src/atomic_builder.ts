@@ -5,8 +5,8 @@ import type { Document, KvId, KvKey, KvValue, Model } from "./kvdb.types.ts"
 import { generateId, extendKey, getDocumentId, keyEq } from "./kvdb.utils.ts"
 
 // Types
-export type CollectionSelector<TSchema extends Schema, TValue extends KvValue, TCollection extends Collection<TValue>> = 
-  (schema: TSchema) => TCollection
+export type CollectionSelector<T1 extends Schema, T2 extends KvValue, T3 extends Collection<T2>> = 
+  (schema: T1) => T3
 
 export type AtomicOperationFn = (op: Deno.AtomicOperation) => Deno.AtomicOperation
 
@@ -33,9 +33,9 @@ export type AtomicCommitResult = {
   ok: false
 }
 
-export type AtomicCheck<TValue extends KvValue> = {
-  id: Document<TValue>["id"],
-  versionstamp: Document<TValue>["versionstamp"]
+export type AtomicCheck<T extends KvValue> = {
+  id: Document<T>["id"],
+  versionstamp: Document<T>["versionstamp"]
 }
 
 export type AtomicMutation<T extends KvValue> = {
