@@ -1,7 +1,9 @@
 import { AtomicBuilder, type CollectionSelector } from "./atomic_builder.ts"
 import { Collection } from "./collection.ts"
-import type { KvValue } from "./kvdb.types.ts"
+import { IndexRecord, IndexableCollection } from "./indexable_collection.ts"
+import type { KvKey, KvValue, Model } from "./kvdb.types.ts"
 
+// Types
 export type Schema = {
   [key: string]: Collection<KvValue> | Schema
 }
@@ -12,41 +14,46 @@ export type KVDB<TSchema extends Schema> = TSchema & {
   ) => AtomicBuilder<TSchema, TValue, TCollection>
 }
 
-export function kvdb<const T extends Schema>(schema: T): KVDB<T> {
-  const collections = extractCollections(schema)
-  const keys = collections.map(collection => collection.collectionKey)
-  const validKeys = validateCollectionKeys(keys)
-
-  if (!validKeys) throw Error("Collections must have unique keys")
+// Create KVDB function
+export function kvdb<const T extends Schema>(kv: Deno.Kv, schemaBuilder: (builder: CollectionBuilder) => T): KVDB<T> {
+  const builder = new CollectionBuilder(kv)
+  const schema = schemaBuilder(builder)
 
   return {
     ...schema,
-    atomic: selector => new AtomicBuilder(schema, selector(schema))
+    atomic: selector => new AtomicBuilder(kv, schema, selector(schema))
   }
 }
 
-function extractCollections<const T extends Schema>(schema: T) {
-  const collections: Collection<KvValue>[] = []
+// Collection Builder class
+class CollectionBuilder {
 
-  Object.values(schema).forEach((schemaOrCollection) => {
-    if (schemaOrCollection instanceof Collection) {
-      collections.push(schemaOrCollection)
-    }
-    else {
-      collections.push(...extractCollections(schemaOrCollection))
-    }
-  })
+  private kv: Deno.Kv
+  private collectionKeyStrs: string[]
 
-  return collections
-}
-
-function validateCollectionKeys(keys: Deno.KvKey[]) {
-  const strKeys = keys.map(key => JSON.stringify(key))
-
-  while (strKeys.length > 0) {
-    const strKey = strKeys.pop()
-    if (strKeys.some(key => key === strKey)) return false
+  constructor(kv: Deno.Kv) {
+    this.kv = kv
+    this.collectionKeyStrs = []
   }
 
-  return true
+  collection<const T extends KvValue>(collectionKey: KvKey) {
+    this.checkCollectionKey(collectionKey)
+    return new Collection<T>(this.kv, collectionKey)
+  }
+
+  indexableCollection<const T extends Model>(collectionKey: KvKey, indexRecord: IndexRecord<T>) {
+    this.checkCollectionKey(collectionKey)
+    return new IndexableCollection(this.kv, collectionKey, indexRecord)
+  }
+
+  private checkCollectionKey(collectionKey: KvKey) {
+    const collectionKeyStr = JSON.stringify(collectionKey)
+    
+    if (this.collectionKeyStrs.some(keyStr => keyStr === collectionKeyStr)) {
+      throw Error(`Collection key "${collectionKeyStr}" has already been assigned another collection.`)
+    }
+
+    this.collectionKeyStrs.push(collectionKeyStr)
+  }
+
 }

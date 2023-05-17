@@ -2,11 +2,11 @@ import type { Collection } from "./collection.ts"
 import type { Schema } from "./db.ts"
 import { IndexDataEntry, IndexRecord, IndexableCollection } from "./indexable_collection.ts"
 import type { Document, KvId, KvKey, KvValue, Model } from "./kvdb.types.ts"
-import { generateId, extendKey, useKV, getDocumentId, keyEq } from "./kvdb.utils.ts"
+import { generateId, extendKey, getDocumentId, keyEq } from "./kvdb.utils.ts"
 
 // Types
-export type CollectionSelector<TSchema extends Schema, TValue extends KvValue, TCollection extends Collection<TValue>> = 
-  (schema: TSchema) => TCollection
+export type CollectionSelector<T1 extends Schema, T2 extends KvValue, T3 extends Collection<T2>> = 
+  (schema: T1) => T3
 
 export type AtomicOperationFn = (op: Deno.AtomicOperation) => Deno.AtomicOperation
 
@@ -33,9 +33,9 @@ export type AtomicCommitResult = {
   ok: false
 }
 
-export type AtomicCheck<TValue extends KvValue> = {
-  id: Document<TValue>["id"],
-  versionstamp: Document<TValue>["versionstamp"]
+export type AtomicCheck<T extends KvValue> = {
+  id: Document<T>["id"],
+  versionstamp: Document<T>["versionstamp"]
 }
 
 export type AtomicMutation<T extends KvValue> = {
@@ -65,9 +65,10 @@ export type AtomicMutation<T extends KvValue> = {
 // AtomicBuilder class
 export class AtomicBuilder<const TSchema extends Schema, const TValue extends KvValue, const TCollection extends Collection<TValue>> {
 
+  private kv: Deno.Kv
   private schema: TSchema
   private operations: Operations
-  protected collection: TCollection
+  private collection: TCollection
 
   /**
    * Create a new AtomicBuilder for building and executing atomic operations.
@@ -76,7 +77,8 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
    * @param collection - The collection currently in context for building atomic operations.
    * @param operations - List of prepared operations from previous instance.
    */
-  constructor(schema: TSchema, collection: TCollection, operations?: Operations) {
+  constructor(kv: Deno.Kv, schema: TSchema, collection: TCollection, operations?: Operations) {
+    this.kv = kv
     this.schema = schema
 
     this.operations = operations ?? {
@@ -96,7 +98,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
    * @returns A new AtomicBuilder instance.
    */
   select<const TValue extends KvValue>(selector: CollectionSelector<TSchema, TValue, Collection<TValue>>) {
-    return new AtomicBuilder(this.schema, selector(this.schema), this.operations)
+    return new AtomicBuilder(this.kv, this.schema, selector(this.schema), this.operations)
   }
   
   /**
@@ -301,45 +303,43 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
    * @returns A promise that resolves to a Deno.KvCommitResult if the operation is successful, or Deno.KvCommitError if not.
    */
   async commit(): Promise<Deno.KvCommitResult | Deno.KvCommitError> {
-    return await useKV(async kv => {
-      // Check for overlapping keys
-      if (
-        this.operations.indexAddCollectionKeys
-          .some(addKey => this.operations.indexDeleteCollectionKeys
-          .some(deleteKey => keyEq(addKey, deleteKey)))
-      ) {
-        return {
-          ok: false
-        }
+    // Check for overlapping keys
+    if (
+      this.operations.indexAddCollectionKeys
+        .some(addKey => this.operations.indexDeleteCollectionKeys
+        .some(deleteKey => keyEq(addKey, deleteKey)))
+    ) {
+      return {
+        ok: false
       }
+    }
 
-      // Prepare delete ops
-      const preparedIndexDeletes = await Promise.all(this.operations.prepareDeleteFns.map(fn => fn(kv)))
+    // Prepare delete ops
+    const preparedIndexDeletes = await Promise.all(this.operations.prepareDeleteFns.map(fn => fn(this.kv)))
 
-      // Perform atomic operation
-      const atomicOperation = this.operations.atomicFns.reduce((op, opFn) => opFn(op), kv.atomic())
-      const commitResult = await atomicOperation.commit()
+    // Perform atomic operation
+    const atomicOperation = this.operations.atomicFns.reduce((op, opFn) => opFn(op), this.kv.atomic())
+    const commitResult = await atomicOperation.commit()
 
-      // If successful commit, perform delete ops
-      if (commitResult.ok) {
-        await Promise.all(preparedIndexDeletes.map(async ({ data, collectionIndexKey, indexRecord }) => {         
-          let atomic = kv.atomic()
-      
-          Object.keys(indexRecord).forEach(index => {
-            const indexValue = data[index] as KvId | undefined
-            if (typeof indexValue === "undefined") return
+    // If successful commit, perform delete ops
+    if (commitResult.ok) {
+      await Promise.all(preparedIndexDeletes.map(async ({ data, collectionIndexKey, indexRecord }) => {         
+        let atomic = this.kv.atomic()
+    
+        Object.keys(indexRecord).forEach(index => {
+          const indexValue = data[index] as KvId | undefined
+          if (typeof indexValue === "undefined") return
 
-            const indexKey = extendKey(collectionIndexKey, indexValue)
-            atomic = atomic.delete(indexKey)
-          })
-      
-          await atomic.commit()
-        }))
-      }
+          const indexKey = extendKey(collectionIndexKey, indexValue)
+          atomic = atomic.delete(indexKey)
+        })
+    
+        await atomic.commit()
+      }))
+    }
 
-      // Return commit result
-      return commitResult
-    })
+    // Return commit result
+    return commitResult
   }
   
 }
