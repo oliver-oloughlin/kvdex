@@ -1,6 +1,6 @@
-import { kvdb, collection, indexableCollection, type KvObject } from "../mod.ts"
+import { kvdb, type Model } from "../mod.ts"
 
-export interface Person extends KvObject {
+export interface Person extends Model {
   name: string,
   age: number,
   friends: string[],
@@ -33,17 +33,17 @@ export const testPerson2: Person = {
   }
 }
 
-export const db = kvdb({
-  people: collection<Person>(["people"]),
-  indexablePeople: indexableCollection<Person>(["indexablePeople"], {
-    name: true
-  }),
+const kv = await Deno.openKv()
+
+export const db = kvdb(kv, cb => ({
+  people: cb.collection<Person>(["people"]),
+  indexablePeople: cb.indexableCollection<Person>(["indexablePeople"], { name: true }),
   values: {
-    numbers: collection<number>(["values", "numbers"]),
-    strings: collection<string>(["values", "strings"]),
-    u64s: collection<Deno.KvU64>(["values", "u64s"])
+    numbers: cb.collection<number>(["values", "numbers"]),
+    strings: cb.collection<string>(["values", "strings"]),
+    u64s: cb.collection<Deno.KvU64>(["values", "u64s"])
   }
-})
+}))
 
 export async function reset() {
   await db.people.deleteMany()

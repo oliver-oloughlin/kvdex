@@ -12,13 +12,6 @@ export function getDocumentId(key: KvKey) {
   return key.at(-1)
 }
 
-export async function useKV<const T>(fn: (kv: Deno.Kv) => Promise<T>) {
-  const kv = await Deno.openKv()
-  const result = await fn(kv)
-  await kv.close()
-  return result
-}
-
 export function keyEq(k1: KvKey, k2: KvKey) {
   return JSON.stringify(k1) === JSON.stringify(k2)
 }
