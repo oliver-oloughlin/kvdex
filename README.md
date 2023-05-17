@@ -25,29 +25,8 @@ interface User extends Model {
 }
 ```
 
-## Collections
-A collection contains all methods for dealing with a collection of documents. Collections can contain any type that extends KvValue, this includes objects, arrays and primitive values. A new collection is created using the "collection" function with a type parameter adhering to KvValue, and a unique key for the specific collection. The key must be of type KvKey.
-
-```ts
-import { collection } from "https://deno.land/x/kvdb@v1.5.0/mod.ts"
-
-const users = collection<User>(["users"])
-const strings = collection<string>(["strings"])
-const bigints = collection<bigint>(["bigints"])
-```
-
-For indexing, it is possible to create a collection using the "indexableCollection" function. The function takes an extra parameter of index specifications. Indexing can only be done on values that adhere to the type KvId. Indexable collections can only hold documents of the Model type.
-
-```ts
-import { indexableCollection } from "https://deno.land/x/kvdb@v1.5.0/mod.ts"
-
-const indexableUsers = indexableCollection<User>(["indexableUsers"], {
-  username: true
-})
-```
-
 ## Database
-The "kvdb" function is used for creating a new KVDB database object. It must be provided the KV instance that will be used, as well as a function that will build the database schema. The schema builder function takes in a builder object that can be used to build collections. Collections can also be nested inside objects of any depth if you wish for nested structure.
+The "kvdb" function is used for creating a new KVDB database instance. It must be provided the Deno KV instance that will be used, as well as a function that will build the database collections. The builder function takes in a collection builder object that can be used to build collections. Collections can also be nested inside objects of any depth if you wish for a hierarchical structure. There are no constraints on collection keys from the structure that is used, but if any two collections have the same key the function will throw an error.
 
 ```ts
 import { kvdb } from "https://deno.land/x/kvdb@v1.5.0/mod.ts"
@@ -94,7 +73,7 @@ const userDocs2 = await db.users.findMany(["abc", 123, 123n], {
 The "add" method is used to add a new document to the KV store. An id of type string (uuid) will be generated for the document. Upon completion, a CommitResult object will be returned with the document id, versionstamp and ok flag.
 
 ```ts
-const { id, versionstamp, ok } = await db.users.add({
+const result = await db.users.add({
   username: "oliver",
   age: 24,
   activities: ["skiing", "running"],
@@ -106,16 +85,16 @@ const { id, versionstamp, ok } = await db.users.add({
   }
 })
 
-console.log(id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
+console.log(result.id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
 ```
 
 ### Set
 The "set" method is very similar to the "add" method, and is used to add a new document to the KV store with a given id of type KvId. Upon completion, a CommitResult object will be returned with the document id, versionstamp and ok flag.
 
 ```ts
-const { id, versionstamp, ok } = await db.primitives.strings.set(2048, "Foo")
+const result = await db.primitives.strings.set(2048, "Foo")
 
-console.log(id) // 2048
+console.log(result.id) // 2048
 ```
 
 ### Delete
