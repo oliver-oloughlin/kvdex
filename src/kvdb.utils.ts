@@ -8,7 +8,7 @@ export function extendKey(collectionKey: KvKey, id: KvId) {
   return [...collectionKey, id] as KvKey
 }
 
-export function getDocumentId(key: KvKey) {
+export function getDocumentId(key: Deno.KvKey) {
   return key.at(-1)
 }
 
