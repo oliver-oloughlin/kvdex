@@ -29,7 +29,8 @@ export class Collection<const T extends KvValue> {
    * 
    * Contains methods to work on documents in the collection.
    * 
-   * @param collectionKey - Key that identifies the collection, an array of Deno.KvKeyPart
+   * @param kv - The Deno KV instance to be used.
+   * @param collectionKey - Key that identifies the collection, an array of Deno.KvKeyPart.
    */
   constructor(kv: Deno.Kv, collectionKey: KvKey) {
     this.kv = kv

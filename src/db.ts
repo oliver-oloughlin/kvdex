@@ -14,7 +14,13 @@ export type KVDB<TSchema extends Schema> = TSchema & {
   ) => AtomicBuilder<TSchema, TValue, TCollection>
 }
 
-// Create KVDB function
+/**
+ * Create a new database instance.
+ * 
+ * @param kv - The Deno KV instance to be used for storing and retrieving data.
+ * @param schemaBuilder - Builder function for building the database schema.
+ * @returns
+ */
 export function kvdb<const T extends Schema>(kv: Deno.Kv, schemaBuilder: (builder: CollectionBuilder) => T): KVDB<T> {
   const builder = new CollectionBuilder(kv)
   const schema = schemaBuilder(builder)
@@ -36,11 +42,26 @@ class CollectionBuilder {
     this.collectionKeyStrs = []
   }
 
+  /**
+   * Create a standard collection of data adhering to the type KvValue.
+   * Can be of primitives, like strings and numbers, or arrays and objects.
+   * 
+   * @param collectionKey - A unique KvKey for the collection.
+   * @returns 
+   */
   collection<const T extends KvValue>(collectionKey: KvKey) {
     this.checkCollectionKey(collectionKey)
     return new Collection<T>(this.kv, collectionKey)
   }
 
+  /**
+   * Create an indexable collection of data adhering to the type Model.
+   * Restricted to holding objects.
+   * 
+   * @param collectionKey - A unique KvKey for the collection.
+   * @param indexRecord - A record of fields that the documents should be indexed by.
+   * @returns 
+   */
   indexableCollection<const T extends Model>(collectionKey: KvKey, indexRecord: IndexRecord<T>) {
     this.checkCollectionKey(collectionKey)
     return new IndexableCollection(this.kv, collectionKey, indexRecord)
