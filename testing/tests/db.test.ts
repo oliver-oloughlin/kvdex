@@ -340,4 +340,107 @@ Deno.test("db", async t1 => {
       assert(!cr4.ok)
     })
   })
+
+  // Test valid data types
+  await t1.step("types", async t2 => {
+    await t2.step("Should allow and properly store/retrieve all primitive types", async () => {
+      const kv = await Deno.openKv()
+
+      const db = kvdb(kv, builder => ({
+        strings: builder.collection<string>(["strings"]),
+        numbers: builder.collection<number>(["numbers"]),
+        bigints: builder.collection<bigint>(["bigints"]),
+        u64s: builder.collection<Deno.KvU64>(["u64s"])
+      }))
+
+      await db.strings.add("str1")
+      await db.numbers.add(1)
+      await db.bigints.add(1n)
+      await db.u64s.add(new Deno.KvU64(1n))
+
+      await db.strings.forEach(doc => assert(typeof doc.value === "string"))
+      await db.numbers.forEach(doc => assert(typeof doc.value === "number"))
+      await db.bigints.forEach(doc => assert(typeof doc.value === "bigint"))
+      await db.u64s.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Deno.KvU64))
+
+      await db.strings.deleteMany()
+      await db.numbers.deleteMany()
+      await db.bigints.deleteMany()
+      await db.u64s.deleteMany()
+
+      await kv.close()
+    })
+
+    await t2.step("Should allow and properly store/retrieve array types", async () => {
+      const kv = await Deno.openKv()
+
+      const db = kvdb(kv, builder => ({
+        arrs: builder.collection<Array<string>>(["arrs"]),
+        i8arrs: builder.collection<Int8Array>(["i8arrs"]),
+        i16arrs: builder.collection<Int16Array>(["i16arrs"]),
+        i32arrs: builder.collection<Int32Array>(["i32arrs"]),
+        i64arrs: builder.collection<BigInt64Array>(["i64arrs"]),
+        u8arrs: builder.collection<Uint8Array>(["u8arrs"]),
+        u16arrs: builder.collection<Uint16Array>(["u16arrs"]),
+        u32arrs: builder.collection<Uint32Array>(["u32arrs"]),
+        u64arrs: builder.collection<BigUint64Array>(["u64arrs"]),
+      }))
+
+      await db.arrs.add(["str1", "str2", "str3"])
+      await db.i8arrs.add(new Int8Array([1, 2, 3]))
+      await db.i16arrs.add(new Int16Array([1, 2, 3]))
+      await db.i32arrs.add(new Int32Array([1, 2, 3]))
+      await db.i64arrs.add(new BigInt64Array([1n, 2n, 3n]))
+      await db.u8arrs.add(new Uint8Array([1, 2, 3]))
+      await db.u16arrs.add(new Uint16Array([1, 2, 3]))
+      await db.u32arrs.add(new Uint32Array([1, 2, 3]))
+      await db.u64arrs.add(new BigUint64Array([1n, 2n, 3n]))
+
+      await db.arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Array<string>))
+      await db.i8arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Int8Array))
+      await db.i16arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Int16Array))
+      await db.i32arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Int32Array))
+      await db.i64arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof BigInt64Array))
+      await db.u8arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Uint8Array))
+      await db.u16arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Uint16Array))
+      await db.u32arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Uint32Array))
+      await db.u64arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof BigUint64Array))
+      
+      await db.arrs.deleteMany()
+      await db.i8arrs.deleteMany()
+      await db.i16arrs.deleteMany()
+      await db.i32arrs.deleteMany()
+      await db.i64arrs.deleteMany()
+      await db.u8arrs.deleteMany()
+      await db.u16arrs.deleteMany()
+      await db.u32arrs.deleteMany()
+      await db.u64arrs.deleteMany()
+
+      await kv.close()
+    })
+
+    await t2.step("Should allow and properly store/retrieve built-in object types", async () => {
+      const kv = await Deno.openKv()
+
+      const db = kvdb(kv, builder => ({
+        dates: builder.collection<Date>(["dates"]),
+        sets: builder.collection<Set<string>>(["sets"]),
+        maps: builder.collection<Map<string, number>>(["maps"]),
+      }))
+
+      await db.dates.add(new Date())
+      await db.sets.add(new Set())
+      await db.maps.add(new Map())
+
+      await db.dates.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Date))
+      await db.sets.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Set<string>))
+      await db.maps.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Map<string, number>))
+
+      await db.dates.deleteMany()
+      await db.sets.deleteMany()
+      await db.maps.deleteMany()
+
+      await kv.close()
+    })
+  })
 })
