@@ -73,6 +73,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
   /**
    * Create a new AtomicBuilder for building and executing atomic operations.
    * 
+   * @param kv - The Deno KV instance to be used.
    * @param schema - The database schema containing all accessible collections.
    * @param collection - The collection currently in context for building atomic operations.
    * @param operations - List of prepared operations from previous instance.

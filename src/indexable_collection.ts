@@ -25,6 +25,15 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
   readonly indexRecord: T2
   readonly collectionIndexKey: KvKey
 
+  /**
+   * Represents a collection of documents stored in the KV store.
+   * 
+   * Contains methods to work on documents in the collection.
+   * 
+   * @param kv - The Deno KV instance to be used.
+   * @param collectionKey - Key that identifies the collection, an array of Deno.KvKeyPart.
+   * @param indexRecord - Record of which fields that should be indexed.
+   */
   constructor(kv: Deno.Kv, collectionKey: KvKey, indexRecord: T2) {
     super(kv, collectionKey)
     this.collectionIndexKey = extendKey(collectionKey, "__index__")
@@ -102,7 +111,7 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
    * Find a document by index value.
    * Note that selecting an index that was not defined when creating the collection will always return null.
    * 
-   * @param selection - Which indexes to find document by.
+   * @param selection - Index values to find document by.
    * @param options - Read options.
    * @returns The document found by selected indexes, or null if not found.
    */
