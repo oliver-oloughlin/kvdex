@@ -10,7 +10,7 @@ Zero third-party dependencies.
 For collections of objects, models can be defined by extending the Model type.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdb@v1.5.2/mod.ts"
+import type { Model } from "https://deno.land/x/kvdb@v1.5.3/mod.ts"
 
 interface User extends Model {
   username: string,
@@ -26,10 +26,10 @@ interface User extends Model {
 ```
 
 ## Database
-The "kvdb" function is used for creating a new KVDB database instance, and takes a Deno KV instance and schema builder function as arguments. The schema builder function receives a builder object that is used to create collections. When creating a collection, a collection key must be provided. For indexable collections an index record specifying which fields should be indexed must also be provided. Standard collections can hold data of any type that adhers to the type KvValue, this includes primitives like strings and numbers, while indexable collections can only hold data that extends the Model type (Objects). Collections can be nested inside objects of any depth if you wish for a hierarchical structure. There are no constraints on collection keys from the structure that is used, but if any two collections have the same key the function will throw an error.
+The "kvdb" function is used for creating a new KVDB database instance, and takes a Deno KV instance and schema builder function as arguments. The schema builder function receives a builder object that is used to create collections. When creating a collection, a collection key must be provided. For indexable collections, an index record specifying which fields should be indexed must also be provided. Standard collections can hold data of any type that allowed by the KvValue type, this includes primitives like strings and numbers, while indexable collections can only hold data that extends the Model type (Objects). Collections can be nested inside objects of any depth if you wish for a hierarchical structure. There are no constraints on collection keys from the structure that is used, but if any two collections have the same key the function will throw an error.
 
 ```ts
-import { kvdb } from "https://deno.land/x/kvdb@v1.5.2/mod.ts"
+import { kvdb } from "https://deno.land/x/kvdb@v1.5.3/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -281,7 +281,7 @@ It will only flatten the first layer of the document, meaning the result will be
 id, versionstamp and all the entries in the document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdb@v1.5.2/mod.ts"
+import { flatten } from "https://deno.land/x/kvdb@v1.5.3/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
