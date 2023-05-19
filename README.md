@@ -178,7 +178,7 @@ await db.users.forEach(doc => console.log(doc.value.username), {
 })
 ```
 
-## Indexable Collection methods
+## Indexable Collection Methods
 Indexable collections extend the base Collection class and provide all the same methods. Note that add/set methods will always fail if an identical index entry already exists.
 
 ### Find By Index
