@@ -384,6 +384,9 @@ Deno.test("db", async t1 => {
         u16arrs: builder.collection<Uint16Array>(["u16arrs"]),
         u32arrs: builder.collection<Uint32Array>(["u32arrs"]),
         u64arrs: builder.collection<BigUint64Array>(["u64arrs"]),
+        u8carrs: builder.collection<Uint8ClampedArray>(["u8carrs"]),
+        f32arrs: builder.collection<Float32Array>(["f32arrs"]),
+        f64arrs: builder.collection<Float64Array>(["f64arrs"]),
       }))
 
       await db.arrs.add(["str1", "str2", "str3"])
@@ -395,6 +398,9 @@ Deno.test("db", async t1 => {
       await db.u16arrs.add(new Uint16Array([1, 2, 3]))
       await db.u32arrs.add(new Uint32Array([1, 2, 3]))
       await db.u64arrs.add(new BigUint64Array([1n, 2n, 3n]))
+      await db.u8carrs.add(new Uint8ClampedArray([1, 2 ,3]))
+      await db.f32arrs.add(new Float32Array([1.0, 2.0, 3.0]))
+      await db.f64arrs.add(new Float64Array([1.0, 2.0, 3.0]))
 
       await db.arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Array<string>))
       await db.i8arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Int8Array))
@@ -405,6 +411,9 @@ Deno.test("db", async t1 => {
       await db.u16arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Uint16Array))
       await db.u32arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Uint32Array))
       await db.u64arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof BigUint64Array))
+      await db.u8carrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Uint8ClampedArray))
+      await db.f32arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Float32Array))
+      await db.f64arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Float64Array))
       
       await db.arrs.deleteMany()
       await db.i8arrs.deleteMany()
@@ -415,6 +424,9 @@ Deno.test("db", async t1 => {
       await db.u16arrs.deleteMany()
       await db.u32arrs.deleteMany()
       await db.u64arrs.deleteMany()
+      await db.u8carrs.deleteMany()
+      await db.f32arrs.deleteMany()
+      await db.f64arrs.deleteMany()
 
       await kv.close()
     })
