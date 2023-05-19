@@ -33,6 +33,9 @@ export type KvValue =
   | Uint16Array
   | Uint32Array
   | BigUint64Array
+  | Uint8ClampedArray
+  | Float32Array
+  | Float64Array
   | Date
   | Set<unknown>
   | Map<unknown, unknown>
