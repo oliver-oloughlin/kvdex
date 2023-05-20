@@ -9,7 +9,9 @@ export type KvKey = [Deno.KvKeyPart, ...Deno.KvKey]
 
 export type KvId = Deno.KvKeyPart
 
-export type Model = KvObject
+export type Model = KvObject & {
+  __id__?: never
+}
 
 export type KvObject = {
   [key: string | number]: KvValue
@@ -18,6 +20,8 @@ export type KvObject = {
 export type KvArray = KvValue[]
 
 export type KvValue = 
+  | undefined
+  | null
   | string 
   | number 
   | boolean 

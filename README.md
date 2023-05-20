@@ -7,20 +7,20 @@ Support for indexing.
 Zero third-party dependencies.
 
 ## Models
-For collections of objects, models can be defined by extending the Model type. If you wish to use Zod, you can create your Zod object schema and use its type as your model.
+For collections of objects, models can be defined by extending the Model type. Optional and nullable properties are allowed. If you wish to use Zod, you can create your Zod object schema and use its type as your model.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdb@v1.5.6/mod.ts"
+import type { Model } from "https://deno.land/x/kvdb@v1.5.7/mod.ts"
 
 interface User extends Model {
   username: string,
   age: number,
   activities: string[],
-  address: {
+  address?: {
     country: string,
     city: string,
     street: string,
-    houseNumber: number
+    houseNumber: number | null
   }
 }
 ```
@@ -29,7 +29,7 @@ interface User extends Model {
 The "kvdb" function is used for creating a new KVDB database instance. It takes a Deno KV instance and a schema builder function as arguments.
 
 ```ts
-import { kvdb } from "https://deno.land/x/kvdb@v1.5.6/mod.ts"
+import { kvdb } from "https://deno.land/x/kvdb@v1.5.7/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -83,7 +83,7 @@ const result = await db.users.add({
     country: "Norway",
     city: "Bergen",
     street: "Sesame",
-    houseNumber: 42
+    houseNumber: null
   }
 })
 
@@ -283,7 +283,7 @@ It will only flatten the first layer of the document, meaning the result will be
 id, versionstamp and all the entries in the document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdb@v1.5.6/mod.ts"
+import { flatten } from "https://deno.land/x/kvdb@v1.5.7/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)

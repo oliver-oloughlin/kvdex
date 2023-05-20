@@ -17,7 +17,7 @@ export type IndexSelection<T1 extends Model, T2 extends IndexRecord<T1>> = {
 
 export type CheckIndexRecord<T1 extends Model, T2> = T2 extends IndexRecord<T1> ? T2 : IndexRecord<T1>
 
-export type IndexDataEntry<T extends Model> = T & { __id__: KvId }
+export type IndexDataEntry<T extends Model> = Omit<T, "__id__"> & { __id__: KvId }
 
 // IndexableCollection class
 export class IndexableCollection<const T1 extends Model, const T2 extends IndexRecord<T1>> extends Collection<T1> {
