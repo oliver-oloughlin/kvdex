@@ -9,7 +9,7 @@ export type KvKey = [Deno.KvKeyPart, ...Deno.KvKey]
 
 export type KvId = Deno.KvKeyPart
 
-export type Model = Omit<KvObject, "id">
+export type Model = KvObject
 
 export type KvObject = {
   [key: string | number]: KvValue

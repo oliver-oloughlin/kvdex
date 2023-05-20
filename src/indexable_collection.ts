@@ -17,7 +17,7 @@ export type IndexSelection<T1 extends Model, T2 extends IndexRecord<T1>> = {
 
 export type CheckIndexRecord<T1 extends Model, T2> = T2 extends IndexRecord<T1> ? T2 : IndexRecord<T1>
 
-export type IndexDataEntry<T extends Model> = T & { id: KvId }
+export type IndexDataEntry<T extends Model> = T & { __id__: KvId }
 
 // IndexableCollection class
 export class IndexableCollection<const T1 extends Model, const T2 extends IndexRecord<T1>> extends Collection<T1> {
@@ -51,7 +51,7 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
       if (typeof indexValue === "undefined") return
 
       const indexKey = extendKey(this.collectionIndexKey, indexValue)
-      const indexEntry: IndexDataEntry<T1> = { id, ...data }
+      const indexEntry: IndexDataEntry<T1> = { __id__: id, ...data }
 
       atomic = atomic
         .set(indexKey, indexEntry)
@@ -84,7 +84,7 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
       if (typeof indexValue === "undefined") return
 
       const indexKey = extendKey(this.collectionIndexKey, indexValue)
-      const indexEntry: IndexDataEntry<T1> = { id, ...data }
+      const indexEntry: IndexDataEntry<T1> = { __id__: id, ...data }
       
       atomic = atomic
         .set(indexKey, indexEntry)
@@ -120,15 +120,15 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
     if (indexList.length < 1) return null
 
     const keys = indexList.map(index => extendKey(this.collectionIndexKey, index))
-    const results = await Promise.all(keys.map(key => this.kv.get<unknown & { id: KvId }>(key, options)))
+    const results = await Promise.all(keys.map(key => this.kv.get<unknown & Pick<IndexDataEntry<T1>, "__id__">>(key, options)))
     const result = results.find(r => r.value !== null && r.versionstamp !== null)
 
     if (!result || result.value === null || result.versionstamp === null) return null
 
-    const { id, ...data } = result.value
+    const { __id__, ...data } = result.value
 
     const doc: Document<T1> = {
-      id,
+      id: __id__,
       versionstamp: result.versionstamp,
       value: data as T1
     }
