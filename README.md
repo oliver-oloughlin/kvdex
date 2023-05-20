@@ -7,10 +7,10 @@ Support for indexing.
 Zero third-party dependencies.
 
 ## Models
-For collections of objects, models can be defined by extending the Model type.
+For collections of objects, models can be defined by extending the Model type. If you wish to use Zod, you can create your Zod object schema and use its type as your model.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdb@v1.5.4/mod.ts"
+import type { Model } from "https://deno.land/x/kvdb@v1.5.5/mod.ts"
 
 interface User extends Model {
   username: string,
@@ -29,13 +29,13 @@ interface User extends Model {
 The "kvdb" function is used for creating a new KVDB database instance. It takes a Deno KV instance and a schema builder function as arguments.
 
 ```ts
-import { kvdb } from "https://deno.land/x/kvdb@v1.5.4/mod.ts"
+import { kvdb } from "https://deno.land/x/kvdb@v1.5.5/mod.ts"
 
 const kv = await Deno.openKv()
 
 const db = kvdb(kv, builder => ({
   users: builder.collection<User>(["users"]),
-  indexableUsers: builder.indexableCollection<User>(["indexableUser"], { username: true }),
+  indexableUsers: builder.indexableCollection<User>(["indexableUsers"], { username: true }),
   primitives: {
     strings: builder.collection<string>(["primitives", "strings"]),
     bigints: builder.collection<bigint>(["primitives", "bigints"])
@@ -43,12 +43,12 @@ const db = kvdb(kv, builder => ({
 }))
 ```
 
-The schema builder function receives a builder object that is used to create collections. The output of this function should be a schema object containing collections (or sub-schema objects for nesting). When creating a collection, a collection key must be provided, as well as the type of data the collection will store. For indexable collections, an index record specifying which fields entries should be indexed by must also be provided. Standard collections can hold data of any type included in KvValue, this includes primitives like strings and numbers, while indexable collections can only hold data that extends the Model type (Objects). If any two collections have an identical key, the function will throw an error.
+The schema builder function receives a builder object that is used to create collections. The output of this function should be a schema object containing collections (or sub-schema objects for nesting). When creating a collection, a collection key must be provided, as well as the type of data the collection will store. For indexable collections, an index record specifying which fields should be indexed must also be provided. Standard collections can hold data of any type included in KvValue, this includes primitives like strings and numbers, while indexable collections can only hold data that extends the Model type (Objects). If any two collections have an identical key, the function will throw an error.
 
 ## Collection Methods
 
 ### Find
-The "find" method is used to retrieve a single document with the given id from the KV store. The id must adhere to the type Deno.KvKeyPart. This method also takes an optional options parameter.
+The "find" method is used to retrieve a single document with the given id from the KV store. The id must adhere to the type Deno.KvKeyPart. This method also takes an optional options argument.
 
 ```ts
 const userDoc1 = await db.users.find(123)
@@ -61,7 +61,7 @@ const userDoc3 = await db.users.find("oliver", {
 ```
 
 ### Find Many
-The "findMany" method is used to retrieve multiple documents with the given array of ids from the KV store. The ids must adhere to the type KvId. This method, like the "find" method, also takes an optional options parameter.
+The "findMany" method is used to retrieve multiple documents with the given array of ids from the KV store. The ids must adhere to the type KvId. This method, like the "find" method, also takes an optional options argument.
 
 ```ts
 const userDocs1 = await db.users.findMany(["abc", 123, 123n])
@@ -107,7 +107,7 @@ await db.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77")
 ```
 
 ### Delete Many
-The "deleteMany" method is used for deleting multiple documents from the KV store. It takes an optional "options" parameter that can be used for filtering of documents to be deleted. If no options are given, "deleteMany" will delete all documents in the collection.
+The "deleteMany" method is used for deleting multiple documents from the KV store. It takes an optional options argument that can be used for filtering of documents to be deleted. If no options are given, "deleteMany" will delete all documents in the collection.
 
 ```ts
 // Deletes all user documents
@@ -131,7 +131,7 @@ await db.users.deleteMany({
 ```
 
 ### Get Many
-The "getMany" method is used for retrieving multiple documents from the KV store. It takes an optional "options" parameter that can be used for filtering of documents to be retrieved. If no options are given, "getMany" will retrieve all documents in the collection.
+The "getMany" method is used for retrieving multiple documents from the KV store. It takes an optional options argument that can be used for filtering of documents to be retrieved. If no options are given, "getMany" will retrieve all documents in the collection.
 
 ```ts
 // Retrieves all user documents
@@ -155,7 +155,7 @@ const last10 = await db.users.getMany({
 ```
 
 ### For Each
-The "forEach" method is used for executing a callback function for multiple documents in the KV store. It takes an optional "options" parameter that can be used for filtering of documents. If no options are given, "forEach" will execute the callback function for all documents in the collection.
+The "forEach" method is used for executing a callback function for multiple documents in the KV store. It takes an optional options argument that can be used for filtering of documents. If no options are given, "forEach" will execute the callback function for all documents in the collection.
 
 ```ts
 // Log the username of every user document
@@ -178,11 +178,11 @@ await db.users.forEach(doc => console.log(doc.value.username), {
 })
 ```
 
-## Indexable Collection methods
+## Indexable Collection Methods
 Indexable collections extend the base Collection class and provide all the same methods. Note that add/set methods will always fail if an identical index entry already exists.
 
 ### Find By Index
-The "findByIndex" method is exclusive to indexable collections and can be used to find a document from the given selection of index values. Note that if the index is not defined when creating the collection, finding by that index value will always return null. 
+The "findByIndex" method is exclusive to indexable collections and can be used to find a document from the given selection of index values. Note that if the index is not defined when creating the collection, finding by that index will always return null. 
 ```ts
 // Finds a user document with the username = "oliver"
 const userDoc = await db.indexableUsers.findByIndex({
@@ -283,7 +283,7 @@ It will only flatten the first layer of the document, meaning the result will be
 id, versionstamp and all the entries in the document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdb@v1.5.4/mod.ts"
+import { flatten } from "https://deno.land/x/kvdb@v1.5.5/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
