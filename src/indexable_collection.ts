@@ -44,7 +44,13 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
     const id = generateId()
     const idKey = extendKey(this.collectionKey, id)
 
-    let atomic = this.kv.atomic().set(idKey, data)
+    let atomic = this.kv
+      .atomic()
+      .check({
+        key: idKey,
+        versionstamp: null
+      })
+      .set(idKey, data)
 
     Object.keys(this.indexRecord).forEach(index => {
       const indexValue = data[index] as KvId | undefined
@@ -77,7 +83,13 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
   async set(id: KvId, data: T1) {
     const idKey = extendKey(this.collectionKey, id)
 
-    let atomic = this.kv.atomic().set(idKey, data)
+    let atomic = this.kv
+      .atomic()
+      .check({
+        key: idKey,
+        versionstamp: null
+      })
+      .set(idKey, data)
 
     Object.keys(this.indexRecord).forEach(index => {
       const indexValue = data[index] as KvId | undefined

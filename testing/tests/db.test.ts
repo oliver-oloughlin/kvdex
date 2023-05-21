@@ -81,8 +81,10 @@ Deno.test("db", async t1 => {
     await t2.step("Should not commit new value", async () => {
       await reset()
 
-      const cr = await db.values.strings.add("test1")
-      if (!cr.ok) throw Error("'test1' not added to collection successfully")
+      const cr = await db.values.strings.set("id", "test1")
+      if (!cr.ok) throw Error("document not added to collection successfully")
+
+      await db.values.strings.delete(cr.id)
 
       await db.values.strings.set(cr.id, "test2")
 
@@ -158,6 +160,31 @@ Deno.test("db", async t1 => {
         assert(nums2.some(doc => doc.value === 1))
         assert(nums2.some(doc => doc.value === 2))
         assert(!nums2.some(doc => doc.value === 10))
+    })
+
+    await t2.step("Should not insert document with id that already exists", async () => {
+      await reset()
+
+      const cr1 = await db.people.add(testPerson)
+      assert(cr1.ok)
+
+      const cr2 = await db
+        .atomic(schema => schema.people)
+        .set(cr1.id, testPerson2)
+        .commit()
+
+      assert(!cr2.ok)
+
+      const cr3 = await db
+        .atomic(schema => schema.people)
+        .mutate({
+          type: "set",
+          id: cr1.id,
+          value: testPerson2
+        })
+        .commit()
+
+      assert(!cr3.ok)
     })
   })
 

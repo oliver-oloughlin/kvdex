@@ -163,6 +163,16 @@ Deno.test("indexable_collection", async t1 => {
       const cr2 = await db.indexablePeople.set("id2", testPerson)
       assert(!cr2.ok)
     })
+
+    await t2.step("Should not add document by id or index if id entry already exists", async () => {
+      await reset()
+
+      const cr1 = await db.indexablePeople.set("id1", testPerson)
+      assert(cr1.ok)
+
+      const cr2 = await db.indexablePeople.set("id1", testPerson2)
+      assert(!cr2.ok)
+    })
   })
 
   // Test "findByIndex" method
