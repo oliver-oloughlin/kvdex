@@ -1,9 +1,14 @@
-import { db } from "../testing/config.ts"
 import type { KvValue, Document, KvId, KvKey } from "./kvdb.types.ts"
 import { getDocumentId, extendKey } from "./kvdb.utils.ts"
 
 // Types
 export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
+  /**
+   * Filter documents based on predicate.
+   * 
+   * @param doc - Document
+   * @returns true or false
+   */
   filter?: (doc: Document<T>) => boolean
 }
 

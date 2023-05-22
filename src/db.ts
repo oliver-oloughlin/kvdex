@@ -27,6 +27,13 @@ export function kvdb<const T extends Schema>(kv: Deno.Kv, schemaBuilder: (builde
 
   return {
     ...schema,
+    /**
+     * Initiates an atomic operation. 
+     * Takes a selector function as argument which is used to select an initial collection.
+     * 
+     * @param selector - Collection selector function.
+     * @returns - Commit object.
+     */
     atomic: selector => new AtomicBuilder(kv, schema, selector(schema))
   }
 }

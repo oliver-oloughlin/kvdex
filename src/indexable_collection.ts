@@ -186,6 +186,14 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
     return doc
   }
 
+  /**
+   * Finds documents by a given set of secondary indices.
+   * If multiple are specified, results are combined.
+   * 
+   * @param selection - Selection of secondary indices to find documents by.
+   * @param options - Optional list options.
+   * @returns An array containing the resulting documents.
+   */
   async findBySecondaryIndex(selection: IndexSelection<T1, T2>, options?: ListOptions<T1>) {
     const indexList = Object.entries(selection).filter(([_,value]) => typeof value !== "undefined") as [string, KvId][]
     if (indexList.length < 1) return []
