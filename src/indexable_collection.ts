@@ -17,7 +17,7 @@ export type IndexSelection<T1 extends Model, T2 extends IndexRecord<T1>> = {
 
 export type CheckIndexRecord<T1 extends Model, T2> = T2 extends IndexRecord<T1> ? T2 : IndexRecord<T1>
 
-export type IndexDataEntry<T extends Model> = T & { id: KvId }
+export type IndexDataEntry<T extends Model> = Omit<T, "__id__"> & { __id__: KvId }
 
 // IndexableCollection class
 export class IndexableCollection<const T1 extends Model, const T2 extends IndexRecord<T1>> extends Collection<T1> {
@@ -44,14 +44,20 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
     const id = generateId()
     const idKey = extendKey(this.collectionKey, id)
 
-    let atomic = this.kv.atomic().set(idKey, data)
+    let atomic = this.kv
+      .atomic()
+      .check({
+        key: idKey,
+        versionstamp: null
+      })
+      .set(idKey, data)
 
     Object.keys(this.indexRecord).forEach(index => {
       const indexValue = data[index] as KvId | undefined
       if (typeof indexValue === "undefined") return
 
-      const indexKey = extendKey(this.collectionIndexKey, indexValue)
-      const indexEntry: IndexDataEntry<T1> = { id, ...data }
+      const indexKey = extendKey(this.collectionIndexKey, index, indexValue)
+      const indexEntry: IndexDataEntry<T1> = { __id__: id, ...data }
 
       atomic = atomic
         .set(indexKey, indexEntry)
@@ -77,14 +83,20 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
   async set(id: KvId, data: T1) {
     const idKey = extendKey(this.collectionKey, id)
 
-    let atomic = this.kv.atomic().set(idKey, data)
+    let atomic = this.kv
+      .atomic()
+      .check({
+        key: idKey,
+        versionstamp: null
+      })
+      .set(idKey, data)
 
     Object.keys(this.indexRecord).forEach(index => {
       const indexValue = data[index] as KvId | undefined
       if (typeof indexValue === "undefined") return
 
-      const indexKey = extendKey(this.collectionIndexKey, indexValue)
-      const indexEntry: IndexDataEntry<T1> = { id, ...data }
+      const indexKey = extendKey(this.collectionIndexKey, index, indexValue)
+      const indexEntry: IndexDataEntry<T1> = { __id__: id, ...data }
       
       atomic = atomic
         .set(indexKey, indexEntry)
@@ -116,19 +128,19 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
    * @returns The document found by selected indexes, or null if not found.
    */
   async findByIndex(selection: IndexSelection<T1, T2>, options?: FindOptions) {
-    const indexList = Object.values(selection).filter(value => typeof value !== "undefined") as KvId[]
+    const indexList = Object.entries(selection).filter(([_,value]) => typeof value !== "undefined") as [string, KvId][]
     if (indexList.length < 1) return null
 
-    const keys = indexList.map(index => extendKey(this.collectionIndexKey, index))
-    const results = await Promise.all(keys.map(key => this.kv.get<unknown & { id: KvId }>(key, options)))
+    const keys = indexList.map(([index, indexValue]) => extendKey(this.collectionIndexKey, index, indexValue))
+    const results = await Promise.all(keys.map(key => this.kv.get<unknown & Pick<IndexDataEntry<T1>, "__id__">>(key, options)))
     const result = results.find(r => r.value !== null && r.versionstamp !== null)
 
     if (!result || result.value === null || result.versionstamp === null) return null
 
-    const { id, ...data } = result.value
+    const { __id__, ...data } = result.value
 
     const doc: Document<T1> = {
-      id,
+      id: __id__,
       versionstamp: result.versionstamp,
       value: data as T1
     }
@@ -146,7 +158,7 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
 
     Object.keys(this.indexRecord).forEach(index => {
       const indexValue = value[index] as KvId
-      const indexKey = extendKey(this.collectionIndexKey, indexValue)
+      const indexKey = extendKey(this.collectionIndexKey, index, indexValue)
       atomic = atomic.delete(indexKey)
     })
 
@@ -172,7 +184,7 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
 
         Object.keys(this.indexRecord).forEach(index => {
           const indexValue = value[index] as KvId
-          const indexKey = extendKey(this.collectionIndexKey, indexValue)
+          const indexKey = extendKey(this.collectionIndexKey, index, indexValue)
           atomic = atomic.delete(indexKey)
         })
 

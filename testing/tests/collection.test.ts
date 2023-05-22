@@ -80,6 +80,19 @@ Deno.test({
             assert(typeof person === "object" && person?.id === cr.id)
           }
         })
+
+        await t.step({
+          name: "Should not override existing record with the same id",
+          fn: async () => {
+            await reset()
+    
+            const cr1 = await db.people.set(123n, testPerson)
+            if (!cr1.ok) throw Error("'testPerson' not added to collection successfully")
+    
+            const cr2 = await db.people.set(123n, testPerson)
+            assert(!cr2.ok)
+          }
+        })
       }
     })
 

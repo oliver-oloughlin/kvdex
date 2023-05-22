@@ -1,6 +1,7 @@
 import { kvdb, type Model } from "../mod.ts"
 
 export interface Person extends Model {
+  id?: string,
   name: string,
   age: number,
   friends: string[],

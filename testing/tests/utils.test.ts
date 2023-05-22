@@ -23,7 +23,7 @@ Deno.test("utils", async t1 => {
       const flattened = flatten(doc)
       
       assert(testEntries.every(([key, value]) => {
-        return Object.hasOwn(flattened, key) && flattened[key].toString() === value.toString()
+        return Object.hasOwn(flattened, key) && flattened[key]?.toString() === value.toString()
       }))
     })
   })

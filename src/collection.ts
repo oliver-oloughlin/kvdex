@@ -95,7 +95,15 @@ export class Collection<const T extends KvValue> {
   async add(data: T) {
     const id = crypto.randomUUID()
     const key = extendKey(this.collectionKey, id)
-    const cr = await this.kv.set(key, data)
+    
+    const cr = await this.kv
+      .atomic()
+      .check({
+        key,
+        versionstamp: null
+      })
+      .set(key, data)
+      .commit()
     
     const commitResult: CommitResult<T,typeof id> = cr.ok ? {
       ok: true,
@@ -116,7 +124,15 @@ export class Collection<const T extends KvValue> {
    */
   async set(id: KvId, data: T) {
     const key = extendKey(this.collectionKey, id)
-    const cr = await this.kv.set(key, data)
+    
+    const cr = await this.kv
+      .atomic()
+      .check({
+        key,
+        versionstamp: null
+      })
+      .set(key, data)
+      .commit()
 
     const commitResult: CommitResult<T,typeof id> = cr.ok ? {
       ok: true,
