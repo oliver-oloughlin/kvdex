@@ -216,6 +216,12 @@ Deno.test("db", async t1 => {
       })
       assert(indexDoc2 !== null)
       assert(indexDoc2.value.name === testPerson2.name)
+
+      const indexDocs = await db.indexablePeople.findBySecondaryIndex({
+        age: 24
+      })
+      assert(indexDocs.some(doc => doc.id === indexDoc1.id))
+      assert(indexDocs.some(doc => doc.id === id2))
     })
 
     await t2.step("Should delete all index entries for document", async () => {
@@ -244,6 +250,12 @@ Deno.test("db", async t1 => {
         name: testPerson.name
       })
       assert(indexDoc2 === null)
+
+      const indexDocs = await db.indexablePeople.findBySecondaryIndex({
+        age: 24
+      })
+      console.log(indexDocs)
+      assert(indexDocs.length === 0)
     })
 
     await t2.step("Should add and delete document with index entries using mutate", async () => {
@@ -268,6 +280,11 @@ Deno.test("db", async t1 => {
       })
       assert(indexDoc1 !== null)
 
+      const indexDocs1 = await db.indexablePeople.findBySecondaryIndex({
+        age: 24
+      })
+      assert(indexDocs1.some(doc => doc.id === idDoc1.id))
+
       await db
         .atomic(schema => schema.indexablePeople)
         .mutate({
@@ -283,6 +300,11 @@ Deno.test("db", async t1 => {
         name: testPerson.name
       })
       assert(indexDoc2 === null)
+
+      const indexDocs2 = await db.indexablePeople.findBySecondaryIndex({
+        age: 24
+      })
+      assert(indexDocs2.length === 0)
     })
 
     await t2.step("Should fail atomic operation with add/delete document of same id", async () => {
@@ -395,7 +417,7 @@ Deno.test("db", async t1 => {
       await db.bigints.deleteMany()
       await db.u64s.deleteMany()
 
-      await kv.close()
+      kv.close()
     })
 
     await t2.step("Should allow and properly store/retrieve array types", async () => {
@@ -455,7 +477,7 @@ Deno.test("db", async t1 => {
       await db.f32arrs.deleteMany()
       await db.f64arrs.deleteMany()
 
-      await kv.close()
+      kv.close()
     })
 
     await t2.step("Should allow and properly store/retrieve built-in object types", async () => {
@@ -479,7 +501,7 @@ Deno.test("db", async t1 => {
       await db.sets.deleteMany()
       await db.maps.deleteMany()
 
-      await kv.close()
+      kv.close()
     })
   })
 })

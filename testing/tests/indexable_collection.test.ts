@@ -33,6 +33,12 @@ Deno.test("indexable_collection", async t1 => {
 
       assert(indexDoc !== null)
       assert(indexDoc.value.name === testPerson.name)
+
+      const indexDocs = await db.indexablePeople.findBySecondaryIndex({
+        age: 24 
+      })
+
+      assert(indexDocs.some(doc => doc.id === cr.id))
     })
 
     await t2.step("Should add document to collection by id, but not by undefined index", async () => {
@@ -50,6 +56,12 @@ Deno.test("indexable_collection", async t1 => {
       })
 
       assert(indexDoc === null)
+
+      const indexDocs = await db.indexablePeople.findBySecondaryIndex({
+        username: "oliver"
+      })
+
+      assert(indexDocs.length === 0)
     })
 
     await t2.step("Should add document to collection by id and only defined index", async () => {
@@ -107,6 +119,12 @@ Deno.test("indexable_collection", async t1 => {
 
       assert(indexDoc !== null)
       assert(indexDoc.value.name === testPerson.name)
+
+      const indexDocs = await db.indexablePeople.findBySecondaryIndex({
+        age: 24 
+      })
+
+      assert(indexDocs.some(doc => doc.id === cr.id))
     })
 
     await t2.step("Should add document to collection by given id, but not by undefined index", async () => {
@@ -126,6 +144,12 @@ Deno.test("indexable_collection", async t1 => {
       })
 
       assert(indexDoc === null)
+
+      const indexDocs = await db.indexablePeople.findBySecondaryIndex({
+        username: "oliver"
+      })
+
+      assert(indexDocs.length === 0)
     })
 
     await t2.step("Should add document to collection by given id and only defined index", async () => {
@@ -262,6 +286,12 @@ Deno.test("indexable_collection", async t1 => {
         name: testPerson.name
       })
       assert(indexDoc2 === null)
+
+      const indexDocs = await db.indexablePeople.findBySecondaryIndex({
+        age: 24
+      })
+
+      assert(indexDocs.length === 0)
     })
   })
 
@@ -311,6 +341,13 @@ Deno.test("indexable_collection", async t1 => {
         name: testPerson2.name
       })
       assert(indexDoc2_2 === null)
+
+      // Check that secondary indices are deleted
+      const indexDocs = await db.indexablePeople.findBySecondaryIndex({
+        username: "oliver"
+      })
+
+      assert(indexDocs.length === 0)
     })
 
     await t2.step("Should only delete document entries of filtered documents", async () => {

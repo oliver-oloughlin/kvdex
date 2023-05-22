@@ -407,9 +407,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
           if (typeof indexValue === "undefined") return
   
           const indexKey = extendKey(secondaryCollectionIndexKey, index, indexValue, id)
-          this.operations.atomicFns.push(
-            op => op.set(indexKey, data).check({ key: indexKey, versionstamp: null})
-          )
+          atomic = atomic.delete(indexKey)
         })
     
         await atomic.commit()
