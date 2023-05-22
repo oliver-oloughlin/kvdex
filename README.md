@@ -10,7 +10,7 @@ Zero third-party dependencies.
 For collections of objects, models can be defined by extending the Model type. Optional and nullable properties are allowed. If you wish to use Zod, you can create your Zod object schema and use its type as your model.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdb@v1.5.8/mod.ts"
+import type { Model } from "https://deno.land/x/kvdb@v1.6.0/mod.ts"
 
 interface User extends Model {
   username: string,
@@ -29,13 +29,16 @@ interface User extends Model {
 The "kvdb" function is used for creating a new KVDB database instance. It takes a Deno KV instance and a schema builder function as arguments.
 
 ```ts
-import { kvdb } from "https://deno.land/x/kvdb@v1.5.8/mod.ts"
+import { kvdb } from "https://deno.land/x/kvdb@v1.6.0/mod.ts"
 
 const kv = await Deno.openKv()
 
 const db = kvdb(kv, builder => ({
   users: builder.collection<User>(["users"]),
-  indexableUsers: builder.indexableCollection<User>(["indexableUsers"], { username: true }),
+  indexableUsers: builder.indexableCollection<User>(["indexableUsers"], { 
+    username: "primary",
+    age: "secondary"
+  }),
   primitives: {
     strings: builder.collection<string>(["primitives", "strings"]),
     bigints: builder.collection<bigint>(["primitives", "bigints"])
@@ -43,7 +46,7 @@ const db = kvdb(kv, builder => ({
 }))
 ```
 
-The schema builder function receives a builder object that is used to create collections. The output of this function should be a schema object containing collections (or sub-schema objects for nesting). When creating a collection, a collection key must be provided, as well as the type of data the collection will store. For indexable collections, an index record specifying which fields should be indexed must also be provided. Standard collections can hold data of any type included in KvValue, this includes primitives like strings and numbers, while indexable collections can only hold data that extends the Model type (Objects). If any two collections have an identical key, the function will throw an error.
+The schema builder function receives a builder object that is used to create collections. The output of this function should be a schema object containing collections (or sub-schema objects for nesting). When creating a collection, a collection key must be provided, as well as the type of data the collection will store. For indexable collections, an index record specifying which fields should be indexed can also be provided. Primary (unique) and secondary (non-unique) indexing is supported. Standard collections can hold data of any type included in KvValue, this includes primitives like strings and numbers, while indexable collections can only hold data that extends the Model type (Objects). If any two collections have an identical key, the function will throw an error.
 
 ## Collection Methods
 
@@ -181,24 +184,39 @@ await db.users.forEach(doc => console.log(doc.value.username), {
 ## Indexable Collection Methods
 Indexable collections extend the base Collection class and provide all the same methods. Note that add/set methods will always fail if an identical index entry already exists.
 
-### Find By Index
-The "findByIndex" method is exclusive to indexable collections and can be used to find a document from the given selection of index values. Note that if the index is not defined when creating the collection, finding by that index will always return null. 
+### Find By Primary Index
+The "findByPrimaryIndex" method is exclusive to indexable collections and can be used to find a document from the given selection of primary index values. Note that if the index is not defined when creating the collection, finding by that index will always return null.
 ```ts
 // Finds a user document with the username = "oliver"
-const userDoc = await db.indexableUsers.findByIndex({
+const userDoc = await db.indexableUsers.findByPrimaryIndex({
   username: "oliver"
 })
 
 // Can select by multiple indices
 // It will try to find by each given index and return a single result
-const userDoc = await db.indexableUsers.findByIndex({
+// In this case it will find by username, but not by age
+const userDoc = await db.indexableUsers.findByPrimaryIndex({
   username: "oliver",
   age: 24
 })
 
-// Will return null as age is not defined as an index.
-const notFound = await db.indexableUsers.findByIndex({
+// Will return null as age is not defined as a primary index.
+const notFound = await db.indexableUsers.findByPrimaryIndex({
   age: 24
+})
+```
+
+### Find By Secondary Index
+The "findBySecondaryIndex" method is also exclusive to indexable collections and can be used to find documents by secondary indices. Secondary indices are not unique, and therefore the result is an array of documents. Like with "findByPrimaryIndex", multiple indices can be specified, which in this case will return a combined result for all.
+```ts
+// Returns all users with age = 24
+const userDocs = await db.indexableUsers.findBySecondaryIndex({
+  age: 24
+})
+
+// Returns empty list as username is not defined as a secondary index
+const empty = await db.indexableUsers.findBySecondaryIndex({
+  username: "oliver"
 })
 ```
 
@@ -283,7 +301,7 @@ It will only flatten the first layer of the document, meaning the result will be
 id, versionstamp and all the entries in the document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdb@v1.5.8/mod.ts"
+import { flatten } from "https://deno.land/x/kvdb@v1.6.0/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
