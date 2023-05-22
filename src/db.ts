@@ -64,7 +64,7 @@ class CollectionBuilder {
    */
   indexableCollection<const T extends Model>(collectionKey: KvKey, indexRecord: IndexRecord<T>) {
     this.checkCollectionKey(collectionKey)
-    return new IndexableCollection(this.kv, collectionKey, indexRecord)
+    return new IndexableCollection<T, typeof indexRecord>(this.kv, collectionKey, indexRecord)
   }
 
   private checkCollectionKey(collectionKey: KvKey) {

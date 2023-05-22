@@ -1,3 +1,4 @@
+import { db } from "../testing/config.ts"
 import type { KvValue, Document, KvId, KvKey } from "./kvdb.types.ts"
 import { getDocumentId, extendKey } from "./kvdb.utils.ts"
 

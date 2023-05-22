@@ -77,6 +77,20 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
         })
     })
 
+    this.secondaryIndexList.forEach(index => {
+      const indexValue = data[index] as KvId | undefined
+      if (typeof indexValue === "undefined") return
+
+      const indexKey = extendKey(this.secondaryCollectionIndexKey, index, indexValue, id)
+
+      atomic = atomic
+        .set(indexKey, data)
+        .check({
+          key: indexKey,
+          versionstamp: null
+        })
+    })
+
     const cr = await atomic.commit()
 
     const commitResult: CommitResult<T1, typeof id> = cr.ok ? {
@@ -116,6 +130,20 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
         })
     })
 
+    this.secondaryIndexList.forEach(index => {
+      const indexValue = data[index] as KvId | undefined
+      if (typeof indexValue === "undefined") return
+
+      const indexKey = extendKey(this.secondaryCollectionIndexKey, index, indexValue, id)
+
+      atomic = atomic
+        .set(indexKey, data)
+        .check({
+          key: indexKey,
+          versionstamp: null
+        })
+    })
+
     const cr = await atomic.commit()
 
     const commitResult: CommitResult<T1, typeof id> = cr.ok ? {
@@ -137,7 +165,7 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
    * @param options - Read options.
    * @returns The document found by selected indexes, or null if not found.
    */
-  async findByIndex(selection: IndexSelection<T1, T2>, options?: FindOptions) {
+  async findByPrimaryIndex(selection: IndexSelection<T1, T2>, options?: FindOptions) {
     const indexList = Object.entries(selection).filter(([_,value]) => typeof value !== "undefined") as [string, KvId][]
     if (indexList.length < 1) return null
 
@@ -158,6 +186,36 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
     return doc
   }
 
+  async findBySecondaryIndex(selection: IndexSelection<T1, T2>, options?: ListOptions<T1>) {
+    const indexList = Object.entries(selection).filter(([_,value]) => typeof value !== "undefined") as [string, KvId][]
+    if (indexList.length < 1) return []
+
+    const result: Document<T1>[] = []
+    const keys = indexList.map(([index, indexValue]) => extendKey(this.secondaryCollectionIndexKey, index, indexValue))
+
+    for (const key of keys) {
+      const iter = this.kv.list<T1>({ prefix: key }, options)
+
+      for await (const entry of iter) {
+        const { key, value, versionstamp } = entry
+        const id = getDocumentId(key)
+        if (typeof id === "undefined") continue
+  
+        const doc: Document<T1> = {
+          id,
+          versionstamp,
+          value
+        }
+  
+        if (!options?.filter || options.filter(doc)) {
+          result.push(doc)
+        }
+      }
+    }
+
+    return result
+  }
+
   async delete(id: KvId) {
     const idKey = extendKey(this.collectionKey, id)
     const { value, versionstamp } = await this.kv.get<T1>(idKey)
@@ -169,6 +227,12 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
     this.primaryIndexList.forEach(index => {
       const indexValue = value[index] as KvId
       const indexKey = extendKey(this.primaryCollectionIndexKey, index, indexValue)
+      atomic = atomic.delete(indexKey)
+    })
+
+    this.secondaryIndexList.forEach(index => {
+      const indexValue = value[index] as KvId
+      const indexKey = extendKey(this.secondaryCollectionIndexKey, index, indexValue, id)
       atomic = atomic.delete(indexKey)
     })
 
@@ -195,6 +259,12 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
         this.primaryIndexList.forEach(index => {
           const indexValue = value[index] as KvId
           const indexKey = extendKey(this.primaryCollectionIndexKey, index, indexValue)
+          atomic = atomic.delete(indexKey)
+        })
+
+        this.secondaryIndexList.forEach(index => {
+          const indexValue = value[index] as KvId
+          const indexKey = extendKey(this.secondaryCollectionIndexKey, index, indexValue, id)
           atomic = atomic.delete(indexKey)
         })
 

@@ -25,7 +25,7 @@ export const testPerson: Person = {
 
 export const testPerson2: Person = {
   name: "Elias",
-  age: 23,
+  age: 24,
   friends: ["Oliver", "Anders"],
   address: {
     country: "Norway",
@@ -38,7 +38,7 @@ const kv = await Deno.openKv()
 
 export const db = kvdb(kv, cb => ({
   people: cb.collection<Person>(["people"]),
-  indexablePeople: cb.indexableCollection<Person>(["indexablePeople"], { name: "primary" }),
+  indexablePeople: cb.indexableCollection<Person>(["indexablePeople"], { name: "primary", age: "secondary" }),
   values: {
     numbers: cb.collection<number>(["values", "numbers"]),
     strings: cb.collection<string>(["values", "strings"]),

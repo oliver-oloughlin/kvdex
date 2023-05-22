@@ -201,7 +201,7 @@ Deno.test("db", async t1 => {
         .set(id2, testPerson2)
         .commit()
 
-      const indexDoc1 = await db.indexablePeople.findByIndex({
+      const indexDoc1 = await db.indexablePeople.findByPrimaryIndex({
         name: testPerson.name
       })
       assert(indexDoc1 !== null)
@@ -211,7 +211,7 @@ Deno.test("db", async t1 => {
       assert(idDoc2 !== null)
       assert(idDoc2.value.name === testPerson2.name)
 
-      const indexDoc2 = await db.indexablePeople.findByIndex({
+      const indexDoc2 = await db.indexablePeople.findByPrimaryIndex({
         name: testPerson2.name
       })
       assert(indexDoc2 !== null)
@@ -227,7 +227,7 @@ Deno.test("db", async t1 => {
       const idDoc1 = await db.indexablePeople.find(cr.id)
       assert(idDoc1 !== null)
 
-      const indexDoc1 = await db.indexablePeople.findByIndex({
+      const indexDoc1 = await db.indexablePeople.findByPrimaryIndex({
         name: testPerson.name
       })
       assert(indexDoc1 !== null)
@@ -240,7 +240,7 @@ Deno.test("db", async t1 => {
       const idDoc2 = await db.indexablePeople.find(cr.id)
       assert(idDoc2 === null)
 
-      const indexDoc2 = await db.indexablePeople.findByIndex({
+      const indexDoc2 = await db.indexablePeople.findByPrimaryIndex({
         name: testPerson.name
       })
       assert(indexDoc2 === null)
@@ -263,7 +263,7 @@ Deno.test("db", async t1 => {
       const idDoc1 = await db.indexablePeople.find(id)
       assert(idDoc1 !== null)
 
-      const indexDoc1 = await db.indexablePeople.findByIndex({
+      const indexDoc1 = await db.indexablePeople.findByPrimaryIndex({
         name: testPerson.name
       })
       assert(indexDoc1 !== null)
@@ -279,7 +279,7 @@ Deno.test("db", async t1 => {
       const idDoc2 = await db.indexablePeople.find(id)
       assert(idDoc2 === null)
 
-      const indexDoc2 = await db.indexablePeople.findByIndex({
+      const indexDoc2 = await db.indexablePeople.findByPrimaryIndex({
         name: testPerson.name
       })
       assert(indexDoc2 === null)
