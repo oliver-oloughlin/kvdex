@@ -126,7 +126,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
         const indexValue = _data[index] as KvId | undefined
         if (typeof indexValue === "undefined") return
 
-        const indexKey = extendKey(collectionIndexKey, indexValue)
+        const indexKey = extendKey(collectionIndexKey, index, indexValue)
         const indexEntry: IndexDataEntry<typeof _data> = { __id__: id, ..._data }
         this.operations.atomicFns.push(
           op => op.set(indexKey, indexEntry).check({ key: indexKey, versionstamp: null})
@@ -161,7 +161,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
         const indexValue = _data[index] as KvId | undefined
         if (typeof indexValue === "undefined") return
 
-        const indexKey = extendKey(collectionIndexKey, indexValue)
+        const indexKey = extendKey(collectionIndexKey, index, indexValue)
         const indexEntry: IndexDataEntry<typeof _data> = { __id__: id, ..._data }
         this.operations.atomicFns.push(
           op => op.set(indexKey, indexEntry).check({ key: indexKey, versionstamp: null})
@@ -278,7 +278,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
             const indexValue = data[index] as KvId | undefined
             if (typeof indexValue === "undefined") return
             
-            const indexKey = extendKey(collectionIndexKey, indexValue)
+            const indexKey = extendKey(collectionIndexKey, index, indexValue)
             const indexEntry: IndexDataEntry<typeof data> = { __id__: id, ...data }
             this.operations.atomicFns.push(
               op => op.set(indexKey, indexEntry).check({ key: indexKey, versionstamp: null})
@@ -338,7 +338,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
           const indexValue = data[index] as KvId | undefined
           if (typeof indexValue === "undefined") return
 
-          const indexKey = extendKey(collectionIndexKey, indexValue)
+          const indexKey = extendKey(collectionIndexKey, index, indexValue)
           atomic = atomic.delete(indexKey)
         })
     

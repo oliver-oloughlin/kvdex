@@ -1,11 +1,11 @@
-import type { KvId, KvKey } from "./kvdb.types.ts"
+import type { KvKey } from "./kvdb.types.ts"
 
 export function generateId() {
   return crypto.randomUUID()
 }
 
-export function extendKey(collectionKey: KvKey, id: KvId) {
-  return [...collectionKey, id] as KvKey
+export function extendKey(collectionKey: KvKey, ...keyParts: KvKey) {
+  return [...collectionKey, ...keyParts] as KvKey
 }
 
 export function getDocumentId(key: Deno.KvKey) {
