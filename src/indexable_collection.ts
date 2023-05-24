@@ -40,8 +40,9 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
    */
   constructor(kv: Deno.Kv, collectionKey: KvKey, indexRecord?: T2) {
     super(kv, collectionKey)
-    this.primaryCollectionIndexKey = extendKey(this.collectionKey, "__index_primary__")
-    this.secondaryCollectionIndexKey = extendKey(this.collectionKey, "__index_secondary__")
+
+    this.primaryCollectionIndexKey = extendKey(collectionKey, "__index_primary__")
+    this.secondaryCollectionIndexKey = extendKey(collectionKey, "__index_secondary__")
 
     const primaryIndexEntries =  Object.entries(indexRecord ?? {}) as [string, undefined | IndexType][]
     this.primaryIndexList = primaryIndexEntries.filter(([_,value]) => value === "primary").map(([key]) => key)
@@ -52,7 +53,7 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
 
   async add(data: T1) {
     const id = generateId()
-    const idKey = extendKey(this.collectionKey, id)
+    const idKey = extendKey(this.collectionIdKey, id)
 
     let atomic = this.kv
       .atomic()
@@ -105,7 +106,7 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
   }
 
   async set(id: KvId, data: T1) {
-    const idKey = extendKey(this.collectionKey, id)
+    const idKey = extendKey(this.collectionIdKey, id)
 
     let atomic = this.kv
       .atomic()
@@ -225,10 +226,10 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
   }
 
   async delete(id: KvId) {
-    const idKey = extendKey(this.collectionKey, id)
-    const { value, versionstamp } = await this.kv.get<T1>(idKey)
+    const idKey = extendKey(this.collectionIdKey, id)
+    const { value } = await this.kv.get<T1>(idKey)
     
-    if (value === null || versionstamp === null) return
+    if (value === null) return
 
     let atomic = this.kv.atomic().delete(idKey)
 
@@ -248,7 +249,8 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
   }
 
   async deleteMany(options?: ListOptions<T1>) {
-    const iter = this.kv.list<T1>({ prefix: this.collectionKey }, options)
+    const iter = this.kv.list<T1>({ prefix: this.collectionIdKey }, options)
+    let atomic = this.kv.atomic()
 
     for await (const entry of iter) {
       const { key, value, versionstamp } = entry
@@ -262,7 +264,7 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
       }
       
       if (!options?.filter || options.filter(doc)) {
-        let atomic = this.kv.atomic().delete(entry.key)
+        atomic = atomic.delete(entry.key)
 
         this.primaryIndexList.forEach(index => {
           const indexValue = value[index] as KvId
@@ -275,9 +277,9 @@ export class IndexableCollection<const T1 extends Model, const T2 extends IndexR
           const indexKey = extendKey(this.secondaryCollectionIndexKey, index, indexValue, id)
           atomic = atomic.delete(indexKey)
         })
-
-        await atomic.commit()
       }
+
+      await atomic.commit()
     }
   }
 

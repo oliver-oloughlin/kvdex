@@ -254,7 +254,6 @@ Deno.test("db", async t1 => {
       const indexDocs = await db.indexablePeople.findBySecondaryIndex({
         age: 24
       })
-      console.log(indexDocs)
       assert(indexDocs.length === 0)
     })
 
@@ -504,4 +503,7 @@ Deno.test("db", async t1 => {
       kv.close()
     })
   })
+
+  // Perform last reset
+  await t1.step("RESET", async () => await reset())
 })

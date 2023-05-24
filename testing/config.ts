@@ -24,9 +24,9 @@ export const testPerson: Person = {
 }
 
 export const testPerson2: Person = {
-  name: "Elias",
+  name: "Anders",
   age: 24,
-  friends: ["Oliver", "Anders"],
+  friends: ["Oliver", "Elias"],
   address: {
     country: "Norway",
     city: "Oslo",

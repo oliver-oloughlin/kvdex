@@ -10,8 +10,13 @@ Deno.test("indexable_collection", async t1 => {
       const indexDoc = await db.indexablePeople.findByPrimaryIndex({
         name: testPerson.name
       })
-
       assert(indexDoc === null)
+
+      const pplById = await db.indexablePeople.getMany()
+      assert(pplById.length === 0)
+
+      const pplByAge = await db.indexablePeople.findBySecondaryIndex({ age: 24 })
+      assert(pplByAge.length === 0)
     })
   })
 
@@ -295,6 +300,22 @@ Deno.test("indexable_collection", async t1 => {
     })
   })
 
+  // Test "getMany" method
+  await t1.step("getMany", async t2 => {
+    await t2.step("Should get exactly one copy of every document", async () => {
+      await reset()
+
+      const cr1 = await db.indexablePeople.add(testPerson)
+      const cr2 = await db.indexablePeople.add(testPerson2)
+      assert(cr1.ok && cr2.ok)
+
+      const all = await db.indexablePeople.getMany()
+      assert(all.length === 2)
+      assert(all.some(doc => doc.id === cr1.id))
+      assert(all.some(doc => doc.id === cr2.id))
+    })
+  })
+
   // Test "deleteMany" method
   await t1.step("deleteMany", async t2 => {
     await t2.step("Should delete all document entries of all documents", async () => {
@@ -398,4 +419,7 @@ Deno.test("indexable_collection", async t1 => {
       assert(indexDoc2_2 !== null)
     })
   })
+
+  // Perform last reset
+  await t1.step("RESET", async () => await reset())
 })

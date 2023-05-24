@@ -451,5 +451,8 @@ Deno.test({
         })
       }
     })
+
+    // Perform last reset
+    await t.step("RESET", async () => await reset())
   }
 })

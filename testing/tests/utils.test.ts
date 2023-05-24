@@ -1,5 +1,5 @@
 import { flatten, type Document } from "../../mod.ts"
-import { type Person, testPerson } from "../config.ts"
+import { type Person, testPerson, reset } from "../config.ts"
 import { assert } from "../deps.ts"
 
 Deno.test("utils", async t1 => {
@@ -27,4 +27,7 @@ Deno.test("utils", async t1 => {
       }))
     })
   })
+
+  // Perform last reset
+  await t1.step("RESET", async () => await reset())
 })
