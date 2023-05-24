@@ -28,7 +28,7 @@ export type CommitResult<T1 extends KvValue, T2 extends KvId> = {
 export class Collection<const T extends KvValue> {
 
   protected kv: Deno.Kv
-  readonly collectionKey: KvKey
+  readonly collectionIdKey: KvKey
 
   /**
    * Represents a collection of documents stored in the KV store.
@@ -36,11 +36,11 @@ export class Collection<const T extends KvValue> {
    * Contains methods to work on documents in the collection.
    * 
    * @param kv - The Deno KV instance to be used.
-   * @param collectionKey - Key that identifies the collection, an array of Deno.KvKeyPart.
+   * @param collectionIdKey - Key that identifies the collection, an array of Deno.KvKeyPart.
    */
   constructor(kv: Deno.Kv, collectionKey: KvKey) {
     this.kv = kv
-    this.collectionKey = collectionKey
+    this.collectionIdKey = extendKey(collectionKey, "__id__")
   }
 
   /**
@@ -51,7 +51,7 @@ export class Collection<const T extends KvValue> {
    * @returns A promise that resolves to the found document, or null if not found.
    */
   async find(id: KvId, options?: FindOptions) {
-    const key = extendKey(this.collectionKey, id)
+    const key = extendKey(this.collectionIdKey, id)
     const result = await this.kv.get<T>(key, options)
 
     if (result.value === null || result.versionstamp === null) return null
@@ -73,7 +73,7 @@ export class Collection<const T extends KvValue> {
    * @returns A promise that resolves to an array of documents.
    */
   async findMany(ids: KvId[], options?: FindManyOptions) {
-    const keys = ids.map(id => extendKey(this.collectionKey, id))
+    const keys = ids.map(id => extendKey(this.collectionIdKey, id))
     const entries = await this.kv.getMany<T[]>(keys, options)
     
     const result: Document<T>[] = []
@@ -100,7 +100,7 @@ export class Collection<const T extends KvValue> {
    */
   async add(data: T) {
     const id = crypto.randomUUID()
-    const key = extendKey(this.collectionKey, id)
+    const key = extendKey(this.collectionIdKey, id)
     
     const cr = await this.kv
       .atomic()
@@ -129,7 +129,7 @@ export class Collection<const T extends KvValue> {
    * @returns A promise that resovles to a commit result containing the document versionstamp, id and ok flag.
    */
   async set(id: KvId, data: T) {
-    const key = extendKey(this.collectionKey, id)
+    const key = extendKey(this.collectionIdKey, id)
     
     const cr = await this.kv
       .atomic()
@@ -158,7 +158,7 @@ export class Collection<const T extends KvValue> {
    * @returns A promise that resovles to void
    */
   async delete(id: KvId) {
-    const key = extendKey(this.collectionKey, id)
+    const key = extendKey(this.collectionIdKey, id)
     await this.kv.delete(key)
   }
 
@@ -171,7 +171,7 @@ export class Collection<const T extends KvValue> {
    * @returns A promise that resovles to void
    */
   async deleteMany(options?: ListOptions<T>) {
-    const iter = this.kv.list<T>({ prefix: this.collectionKey }, options)
+    const iter = this.kv.list<T>({ prefix: this.collectionIdKey }, options)
 
     for await (const entry of iter) {
       const id = getDocumentId(entry.key)
@@ -196,7 +196,7 @@ export class Collection<const T extends KvValue> {
    * @returns A promise that resovles to a list of the retrieved documents
    */
   async getMany(options?: ListOptions<T>) {
-    const iter = this.kv.list<T>({ prefix: this.collectionKey }, options)
+    const iter = this.kv.list<T>({ prefix: this.collectionIdKey }, options)
     const result: Document<T>[] = []
 
     for await (const entry of iter) {
@@ -225,7 +225,7 @@ export class Collection<const T extends KvValue> {
    * @returns A promise that resolves to void
    */
   async forEach(fn: (doc: Document<T>) => void, options?: ListOptions<T>) {
-    const iter = this.kv.list<T>({ prefix: this.collectionKey }, options)
+    const iter = this.kv.list<T>({ prefix: this.collectionIdKey }, options)
     
     for await (const entry of iter) {
       const id = getDocumentId(entry.key)

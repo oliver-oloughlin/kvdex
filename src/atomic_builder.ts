@@ -112,11 +112,11 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
    * @returns Current AtomicBuilder instance.
    */
   add(data: TValue) {
-    const collectionKey = this.collection.collectionKey
+    const collectionIdKey = this.collection.collectionIdKey
     const id = generateId()
-    const key = extendKey(collectionKey, id)
+    const idKey = extendKey(collectionIdKey, id)
 
-    this.operations.atomicFns.push(op => op.check({ key, versionstamp: null }).set(key, data))
+    this.operations.atomicFns.push(op => op.check({ key: idKey, versionstamp: null }).set(idKey, data))
 
     if (this.collection instanceof IndexableCollection) {
       const primaryCollectionIndexKey = this.collection.primaryCollectionIndexKey
@@ -125,7 +125,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
       const secondaryIndexList = this.collection.secondaryIndexList
       const _data = data as Model
 
-      this.operations.indexAddCollectionKeys.push(collectionKey)
+      this.operations.indexAddCollectionKeys.push(collectionIdKey)
 
       primaryIndexList.forEach(index => {
         const indexValue = _data[index] as KvId | undefined
@@ -160,10 +160,10 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
    * @returns Current AtomicBuilder instance.
    */
   set(id: KvId, data: TValue) {
-    const collectionKey = this.collection.collectionKey
-    const key = extendKey(collectionKey, id)
+    const collectionKey = this.collection.collectionIdKey
+    const idKey = extendKey(collectionKey, id)
 
-    this.operations.atomicFns.push(op => op.check({ key, versionstamp: null }).set(key, data))
+    this.operations.atomicFns.push(op => op.check({ key: idKey, versionstamp: null }).set(idKey, data))
 
     if (this.collection instanceof IndexableCollection) {
       const primaryCollectionIndexKey = this.collection.primaryCollectionIndexKey
@@ -206,10 +206,10 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
    * @returns Current AtomicBuilder instance.
    */
   delete(id: KvId) {
-    const collectionKey = this.collection.collectionKey
-    const key = extendKey(collectionKey, id)
+    const collectionKey = this.collection.collectionIdKey
+    const idKey = extendKey(collectionKey, id)
 
-    this.operations.atomicFns.push(op => op.delete(key))
+    this.operations.atomicFns.push(op => op.delete(idKey))
 
     if (this.collection instanceof IndexableCollection) {
       const primaryCollectionIndexKey = this.collection.primaryCollectionIndexKey
@@ -220,7 +220,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
       this.operations.indexDeleteCollectionKeys.push(collectionKey)
 
       this.operations.prepareDeleteFns.push(async kv => {
-        const doc = await kv.get<Model>(key)
+        const doc = await kv.get<Model>(idKey)
 
         return {
           id,
@@ -244,7 +244,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
    */
   check(...atomicChecks: AtomicCheck<TValue>[]) {
     const checks: Deno.AtomicCheck[] = atomicChecks.map(({ id, versionstamp }) => {
-      const key = extendKey(this.collection.collectionKey, id)
+      const key = extendKey(this.collection.collectionIdKey, id)
       return {
         key,
         versionstamp
@@ -264,8 +264,8 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
    * @returns Current AtomicBuilder instance.
    */
   sum(id: KvId, value: bigint) {
-    const key = extendKey(this.collection.collectionKey, id)
-    this.operations.atomicFns.push(op => op.sum(key, value))
+    const idKey = extendKey(this.collection.collectionIdKey, id)
+    this.operations.atomicFns.push(op => op.sum(idKey, value))
     return this
   }
 
@@ -277,9 +277,9 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
    */
   mutate(...mutations: AtomicMutation<TValue>[]) {
     const kvMutations: Deno.KvMutation[] = mutations.map(({ id, ...rest }) => {
-      const key = extendKey(this.collection.collectionKey, id)
+      const idKey = extendKey(this.collection.collectionIdKey, id)
       return {
-        key,
+        key: idKey,
         ...rest
       }
     })
@@ -295,7 +295,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
       }
 
       if (this.collection instanceof IndexableCollection) {
-        const collectionKey = this.collection.collectionKey
+        const collectionIdKey = this.collection.collectionIdKey
         const primaryCollectionIndexKey = this.collection.primaryCollectionIndexKey
         const secondaryCollectionIndexKey = this.collection.secondaryCollectionIndexKey
         const primaryIndexList = this.collection.primaryIndexList
@@ -304,7 +304,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
         if (typeof id === "undefined") return
 
         if (mut.type === "set") {
-          this.operations.indexAddCollectionKeys.push(collectionKey)
+          this.operations.indexAddCollectionKeys.push(collectionIdKey)
 
           primaryIndexList.forEach(index => {
             if (typeof id === "undefined") return
@@ -335,7 +335,7 @@ export class AtomicBuilder<const TSchema extends Schema, const TValue extends Kv
         }
 
         if (mut.type === "delete") {
-          this.operations.indexDeleteCollectionKeys.push(collectionKey)
+          this.operations.indexDeleteCollectionKeys.push(collectionIdKey)
 
           this.operations.prepareDeleteFns.push(async kv => {
             const doc = await kv.get<Model>(mut.key)
