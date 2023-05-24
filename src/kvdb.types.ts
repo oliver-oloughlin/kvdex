@@ -38,6 +38,8 @@ export type KvValue =
   | Uint8ClampedArray
   | Float32Array
   | Float64Array
+  | ArrayBuffer
   | Date
   | Set<unknown>
   | Map<unknown, unknown>
+  | RegExp

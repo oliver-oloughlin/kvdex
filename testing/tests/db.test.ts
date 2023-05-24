@@ -435,6 +435,7 @@ Deno.test("db", async t1 => {
         u8carrs: builder.collection<Uint8ClampedArray>(["u8carrs"]),
         f32arrs: builder.collection<Float32Array>(["f32arrs"]),
         f64arrs: builder.collection<Float64Array>(["f64arrs"]),
+        buffers: builder.collection<ArrayBuffer>(["buffers"]),
       }))
 
       await db.arrs.add(["str1", "str2", "str3"])
@@ -449,6 +450,7 @@ Deno.test("db", async t1 => {
       await db.u8carrs.add(new Uint8ClampedArray([1, 2 ,3]))
       await db.f32arrs.add(new Float32Array([1.0, 2.0, 3.0]))
       await db.f64arrs.add(new Float64Array([1.0, 2.0, 3.0]))
+      await db.buffers.add(new ArrayBuffer(16))
 
       await db.arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Array<string>))
       await db.i8arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Int8Array))
@@ -462,6 +464,7 @@ Deno.test("db", async t1 => {
       await db.u8carrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Uint8ClampedArray))
       await db.f32arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Float32Array))
       await db.f64arrs.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Float64Array))
+      await db.buffers.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof ArrayBuffer))
       
       await db.arrs.deleteMany()
       await db.i8arrs.deleteMany()
@@ -475,6 +478,7 @@ Deno.test("db", async t1 => {
       await db.u8carrs.deleteMany()
       await db.f32arrs.deleteMany()
       await db.f64arrs.deleteMany()
+      await db.buffers.deleteMany()
 
       kv.close()
     })
@@ -486,19 +490,23 @@ Deno.test("db", async t1 => {
         dates: builder.collection<Date>(["dates"]),
         sets: builder.collection<Set<string>>(["sets"]),
         maps: builder.collection<Map<string, number>>(["maps"]),
+        regExps: builder.collection<RegExp>(["regExps"])
       }))
 
       await db.dates.add(new Date())
       await db.sets.add(new Set())
       await db.maps.add(new Map())
+      await db.regExps.add(new RegExp("^[0-9]$"))
 
       await db.dates.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Date))
       await db.sets.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Set<string>))
       await db.maps.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof Map<string, number>))
+      await db.regExps.forEach(doc => assert(typeof doc.value === "object" && doc.value instanceof RegExp))
 
       await db.dates.deleteMany()
       await db.sets.deleteMany()
       await db.maps.deleteMany()
+      await db.regExps.deleteMany()
 
       kv.close()
     })
