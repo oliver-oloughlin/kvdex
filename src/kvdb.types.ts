@@ -1,7 +1,6 @@
-
 export type Document<T extends KvValue> = {
-  id: KvId,
-  versionstamp: Deno.KvEntry<T>["versionstamp"],
+  id: KvId
+  versionstamp: Deno.KvEntry<T>["versionstamp"]
   value: T
 }
 
@@ -17,21 +16,21 @@ export type KvObject = {
 
 export type KvArray = KvValue[]
 
-export type KvValue = 
+export type KvValue =
   | undefined
   | null
-  | string 
-  | number 
-  | boolean 
+  | string
+  | number
+  | boolean
   | bigint
-  | Deno.KvU64 
-  | KvObject 
-  | KvArray 
+  | Deno.KvU64
+  | KvObject
+  | KvArray
   | Int8Array
   | Int16Array
   | Int32Array
   | BigInt64Array
-  | Uint8Array 
+  | Uint8Array
   | Uint16Array
   | Uint32Array
   | BigUint64Array
@@ -43,3 +42,5 @@ export type KvValue =
   | Set<unknown>
   | Map<unknown, unknown>
   | RegExp
+  | DataView
+  | Error

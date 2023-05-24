@@ -1,13 +1,13 @@
 import { kvdb, type Model } from "../mod.ts"
 
 export interface Person extends Model {
-  id?: string,
-  name: string,
-  age: number,
-  friends: string[],
+  id?: string
+  name: string
+  age: number
+  friends: string[]
   address: {
-    country: string,
-    city: string,
+    country: string
+    city: string
     postcode: number
   }
 }
@@ -19,8 +19,8 @@ export const testPerson: Person = {
   address: {
     country: "Norway",
     city: "Bergen",
-    postcode: 420
-  }
+    postcode: 420,
+  },
 }
 
 export const testPerson2: Person = {
@@ -30,20 +30,23 @@ export const testPerson2: Person = {
   address: {
     country: "Norway",
     city: "Oslo",
-    postcode: 1024
-  }
+    postcode: 1024,
+  },
 }
 
 const kv = await Deno.openKv()
 
-export const db = kvdb(kv, cb => ({
+export const db = kvdb(kv, (cb) => ({
   people: cb.collection<Person>(["people"]),
-  indexablePeople: cb.indexableCollection<Person>(["indexablePeople"], { name: "primary", age: "secondary" }),
+  indexablePeople: cb.indexableCollection<Person>(["indexablePeople"], {
+    name: "primary",
+    age: "secondary",
+  }),
   values: {
     numbers: cb.collection<number>(["values", "numbers"]),
     strings: cb.collection<string>(["values", "strings"]),
-    u64s: cb.collection<Deno.KvU64>(["values", "u64s"])
-  }
+    u64s: cb.collection<Deno.KvU64>(["values", "u64s"]),
+  },
 }))
 
 export async function reset() {
