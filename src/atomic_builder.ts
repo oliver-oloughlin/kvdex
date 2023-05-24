@@ -1,6 +1,9 @@
 import type { Collection } from "./collection.ts"
 import type { Schema } from "./db.ts"
-import { IndexableCollection, type IndexDataEntry } from "./indexable_collection.ts"
+import {
+  IndexableCollection,
+  type IndexDataEntry,
+} from "./indexable_collection.ts"
 import type { Document, KvId, KvKey, KvValue, Model } from "./kvdb.types.ts"
 import { extendKey, generateId, getDocumentId, keyEq } from "./kvdb.utils.ts"
 

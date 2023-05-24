@@ -1,6 +1,9 @@
 import { AtomicBuilder, type CollectionSelector } from "./atomic_builder.ts"
 import { Collection } from "./collection.ts"
-import { IndexableCollection, type IndexRecord } from "./indexable_collection.ts"
+import {
+  IndexableCollection,
+  type IndexRecord,
+} from "./indexable_collection.ts"
 import type { KvKey, KvValue, Model } from "./kvdb.types.ts"
 
 // Types

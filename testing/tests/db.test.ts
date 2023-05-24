@@ -585,7 +585,7 @@ Deno.test("db", async (t1) => {
           maps: builder.collection<Map<string, number>>(["maps"]),
           regExps: builder.collection<RegExp>(["regExps"]),
           dataVeiws: builder.collection<DataView>(["fdataVeiws"]),
-          errors: builder.collection<Error>(["errors"])
+          errors: builder.collection<Error>(["errors"]),
         }))
 
         await db.dates.add(new Date())
