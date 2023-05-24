@@ -14,7 +14,7 @@ Optional and nullable properties are allowed. If you wish to use Zod, you can
 create your Zod object schema and use its type as your model.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdb@v1.6.4/mod.ts"
+import type { Model } from "https://deno.land/x/kvdb@v1.6.5/mod.ts"
 
 interface User extends Model {
   username: string
@@ -35,7 +35,7 @@ The "kvdb" function is used for creating a new KVDB database instance. It takes
 a Deno KV instance and a schema builder function as arguments.
 
 ```ts
-import { kvdb } from "https://deno.land/x/kvdb@v1.6.4/mod.ts"
+import { kvdb } from "https://deno.land/x/kvdb@v1.6.5/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -381,7 +381,7 @@ result will be an object containing: id, versionstamp and all the entries in the
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdb@v1.6.4/mod.ts"
+import { flatten } from "https://deno.land/x/kvdb@v1.6.5/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)

@@ -584,35 +584,51 @@ Deno.test("db", async (t1) => {
           sets: builder.collection<Set<string>>(["sets"]),
           maps: builder.collection<Map<string, number>>(["maps"]),
           regExps: builder.collection<RegExp>(["regExps"]),
+          dataVeiws: builder.collection<DataView>(["fdataVeiws"]),
+          errors: builder.collection<Error>(["errors"])
         }))
 
         await db.dates.add(new Date())
         await db.sets.add(new Set())
         await db.maps.add(new Map())
         await db.regExps.add(new RegExp("^[0-9]$"))
+        await db.dataVeiws.add(new DataView(new ArrayBuffer(16)))
+        await db.errors.add(new Error("error"))
 
         await db.dates.forEach((doc) =>
           assert(typeof doc.value === "object" && doc.value instanceof Date)
         )
+
         await db.sets.forEach((doc) =>
           assert(
             typeof doc.value === "object" && doc.value instanceof Set<string>,
           )
         )
+
         await db.maps.forEach((doc) =>
           assert(
             typeof doc.value === "object" &&
               doc.value instanceof Map<string, number>,
           )
         )
+
         await db.regExps.forEach((doc) =>
           assert(typeof doc.value === "object" && doc.value instanceof RegExp)
+        )
+
+        await db.dataVeiws.forEach((doc) =>
+          assert(typeof doc.value === "object" && doc.value instanceof DataView)
+        )
+
+        await db.errors.forEach((doc) =>
+          assert(typeof doc.value === "object" && doc.value instanceof Error)
         )
 
         await db.dates.deleteMany()
         await db.sets.deleteMany()
         await db.maps.deleteMany()
         await db.regExps.deleteMany()
+        await db.dataVeiws.deleteMany()
 
         kv.close()
       },

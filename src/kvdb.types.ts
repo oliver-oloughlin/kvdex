@@ -42,3 +42,5 @@ export type KvValue =
   | Set<unknown>
   | Map<unknown, unknown>
   | RegExp
+  | DataView
+  | Error
