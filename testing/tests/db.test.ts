@@ -1,4 +1,4 @@
-import { kvdb } from "../../mod.ts"
+import { createDb } from "../../mod.ts"
 import { db, reset, testPerson, testPerson2 } from "../config.ts"
 import { assert, assertThrows } from "../deps.ts"
 
@@ -12,14 +12,14 @@ Deno.test("db", async (t1) => {
         const kv = await Deno.openKv()
 
         assertThrows(() =>
-          kvdb(kv, (cb) => ({
+          createDb(kv, (cb) => ({
             numbers1: cb.collection<number>(["numbers"]),
             numbers2: cb.collection<number>(["numbers"]),
           }))
         )
 
         assertThrows(() =>
-          kvdb(kv, (cb) => ({
+          createDb(kv, (cb) => ({
             numbers: cb.collection<number>(["numbers", 123, 123n]),
             nested: {
               numbers: cb.collection<number>(["numbers", 123, 123n]),
@@ -35,12 +35,12 @@ Deno.test("db", async (t1) => {
     )
 
     await t2.step(
-      "Should not throw error when creating KVDB with unique collection keys",
+      "Should not throw error when creating DB with unique collection keys",
       async () => {
         const kv = await Deno.openKv()
 
         assert(() => {
-          kvdb(kv, (cb) => ({
+          createDb(kv, (cb) => ({
             numbers1: cb.collection<number>(["numbers1"]),
             numbers2: cb.collection<number>(["numbers2"]),
           }))
@@ -49,7 +49,7 @@ Deno.test("db", async (t1) => {
         })
 
         assert(() => {
-          kvdb(kv, (cb) => ({
+          createDb(kv, (cb) => ({
             numbers: cb.collection<number>(["numbers", 123, 123n]),
             nested: {
               numbers: cb.collection<number>(["numbers", 1234, 123n]),
@@ -423,7 +423,7 @@ Deno.test("db", async (t1) => {
       async () => {
         const kv = await Deno.openKv()
 
-        const db = kvdb(kv, (builder) => ({
+        const db = createDb(kv, (builder) => ({
           strings: builder.collection<string>(["strings"]),
           numbers: builder.collection<number>(["numbers"]),
           bigints: builder.collection<bigint>(["bigints"]),
@@ -458,7 +458,7 @@ Deno.test("db", async (t1) => {
       async () => {
         const kv = await Deno.openKv()
 
-        const db = kvdb(kv, (builder) => ({
+        const db = createDb(kv, (builder) => ({
           arrs: builder.collection<Array<string>>(["arrs"]),
           i8arrs: builder.collection<Int8Array>(["i8arrs"]),
           i16arrs: builder.collection<Int16Array>(["i16arrs"]),
@@ -579,7 +579,7 @@ Deno.test("db", async (t1) => {
       async () => {
         const kv = await Deno.openKv()
 
-        const db = kvdb(kv, (builder) => ({
+        const db = createDb(kv, (builder) => ({
           dates: builder.collection<Date>(["dates"]),
           sets: builder.collection<Set<string>>(["sets"]),
           maps: builder.collection<Map<string, number>>(["maps"]),

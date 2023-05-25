@@ -1,9 +1,4 @@
-import type { Document, Model } from "./kvdb.types.ts"
-
-export type FlattenedDocument<T extends Model> = T & {
-  id: Document<T>["id"]
-  versionstamp: Document<T>["versionstamp"]
-}
+import type { Document, FlattenedDocument, Model } from "./types.ts"
 
 /**
  * Flattens a document at the top level, placing the id and versionstamp together with the document data.
