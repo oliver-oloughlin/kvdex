@@ -1,4 +1,4 @@
-# KVDB
+# {placeholder_name}
 
 Database wrapper for Deno's KV store. Simple and type-safe storing/retrieving of
 data.
@@ -14,7 +14,7 @@ Optional and nullable properties are allowed. If you wish to use Zod, you can
 create your Zod object schema and use its type as your model.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdb@v1.6.5/mod.ts"
+import type { Model } from "https://deno.land/x/{placeholder_name}@v0.1.0/mod.ts"
 
 interface User extends Model {
   username: string
@@ -31,15 +31,15 @@ interface User extends Model {
 
 ## Database
 
-The "kvdb" function is used for creating a new KVDB database instance. It takes
-a Deno KV instance and a schema builder function as arguments.
+The "createDb" function is used for creating a new database instance. It takes a
+Deno KV instance and a schema builder function as arguments.
 
 ```ts
-import { kvdb } from "https://deno.land/x/kvdb@v1.6.5/mod.ts"
+import { createDb } from "https://deno.land/x/{placeholder_name}@v0.1.0/mod.ts"
 
 const kv = await Deno.openKv()
 
-const db = kvdb(kv, (builder) => ({
+const db = createDb(kv, (builder) => ({
   users: builder.collection<User>(["users"]),
   indexableUsers: builder.indexableCollection<User>(["indexableUsers"], {
     username: "primary",
@@ -284,11 +284,11 @@ transaction. This means that documents can be checked for changes before
 committing the mutations, in which case the operation will fail. It also ensures
 that either all mutations succeed, or they all fail.
 
-To initiate an atomic operation, call "atomic" on the KVDB object. The method
-expects a selector for selecting the collection that the subsequent mutation
-actions will be performed on. Mutations can be performed on documents from
-multiple collections in a single atomic operation by calling "select" at any
-point in the building chain to switch the collection context. To execute the
+To initiate an atomic operation, call "atomic" on the database object. The
+method expects a selector for selecting the collection that the subsequent
+mutation actions will be performed on. Mutations can be performed on documents
+from multiple collections in a single atomic operation by calling "select" at
+any point in the building chain to switch the collection context. To execute the
 operation, call "commit" at the end of the chain. An atomic operation returns a
 Deno.KvCommitResult object if successful, and Deno.KvCommitError if not.
 
@@ -381,7 +381,7 @@ result will be an object containing: id, versionstamp and all the entries in the
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdb@v1.6.5/mod.ts"
+import { flatten } from "https://deno.land/x/{placeholder_name}@v0.1.0/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
