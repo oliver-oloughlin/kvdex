@@ -1,5 +1,5 @@
 import { db, reset, testPerson, testPerson2 } from "../config.ts"
-import { assert } from "../deps.ts"
+import { assert } from "../../deps.ts"
 
 Deno.test("indexable_collection", async (t1) => {
   // Test the configuration

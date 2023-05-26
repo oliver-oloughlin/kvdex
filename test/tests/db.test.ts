@@ -1,6 +1,6 @@
 import { createDb } from "../../mod.ts"
 import { db, reset, testPerson, testPerson2 } from "../config.ts"
-import { assert, assertThrows } from "../deps.ts"
+import { assert, assertThrows } from "../../deps.ts"
 
 // Test atomic operations
 Deno.test("db", async (t1) => {

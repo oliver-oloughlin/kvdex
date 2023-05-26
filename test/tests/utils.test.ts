@@ -1,6 +1,6 @@
 import { type Document, flatten } from "../../mod.ts"
 import { type Person, reset, testPerson } from "../config.ts"
-import { assert } from "../deps.ts"
+import { assert } from "../../deps.ts"
 
 Deno.test("utils", async (t1) => {
   // Test "flatten" method
