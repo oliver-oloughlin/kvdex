@@ -4,9 +4,7 @@
     "test": "deno test -A --unstable"
   },
   "fmt": {
-    "options": {
-      "semiColons": false
-    }
+    "semiColons": false
   },
   "test": {
     "include": ["./testing/tests"]

@@ -1,34 +1,18 @@
-import {
-  Collection,
-  type CommitResult,
-  type FindOptions,
+import { Collection } from "./collection.ts"
+import type {
+  CommitResult,
+  Document,
+  FindOptions,
+  IndexDataEntry,
+  IndexRecord,
+  IndexSelection,
+  IndexType,
+  KvId,
+  KvKey,
   ListOptions,
-} from "./collection.ts"
-import type { Document, KvId, KvKey, KvValue, Model } from "./kvdb.types.ts"
-import { extendKey, generateId, getDocumentId } from "./kvdb.utils.ts"
-
-// Types
-export type CheckKvId<T1 extends KvValue, T2> = T1 extends KvId ? T2 : never
-
-export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
-
-export type IndexType = "primary" | "secondary"
-
-export type IndexRecord<T extends Model> = {
-  [key in keyof T]?: CheckKvId<T[key], IndexType>
-}
-
-export type IndexSelection<T1 extends Model, T2 extends IndexRecord<T1>> = {
-  [K in keyof T2]: CheckKvId<CheckKeyOf<K, T1>, CheckKeyOf<K, T1>>
-}
-
-export type CheckIndexRecord<T1 extends Model, T2> = T2 extends IndexRecord<T1>
-  ? T2
-  : IndexRecord<T1>
-
-export type IndexDataEntry<T extends Model> = Omit<T, "__id__"> & {
-  __id__: KvId
-}
+  Model,
+} from "./types.ts"
+import { extendKey, generateId, getDocumentId } from "./utils.internal.ts"
 
 // IndexableCollection class
 export class IndexableCollection<

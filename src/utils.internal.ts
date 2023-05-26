@@ -1,4 +1,4 @@
-import type { KvKey } from "./kvdb.types.ts"
+import type { KvKey } from "./types.ts"
 
 export function generateId() {
   return crypto.randomUUID()

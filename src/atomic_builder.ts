@@ -1,77 +1,22 @@
 import type { Collection } from "./collection.ts"
-import type { Schema } from "./db.ts"
-import { IndexableCollection, type IndexDataEntry } from "./indexable_collection.ts"
-import type { Document, KvId, KvKey, KvValue, Model } from "./kvdb.types.ts"
-import { extendKey, generateId, getDocumentId, keyEq } from "./kvdb.utils.ts"
-
-// Types
-export type CollectionSelector<
-  T1 extends Schema,
-  T2 extends KvValue,
-  T3 extends Collection<T2>,
-> = (schema: T1) => T3
-
-export type AtomicOperationFn = (
-  op: Deno.AtomicOperation,
-) => Deno.AtomicOperation
-
-export type PrepareDeleteFn = (kv: Deno.Kv) => Promise<PreparedIndexDelete>
-
-export type PreparedIndexDelete = {
-  id: KvId
-  data: Model
-  primaryCollectionIndexKey: KvKey
-  secondaryCollectionIndexKey: KvKey
-  primaryIndexList: string[]
-  secondaryIndexList: string[]
-}
-
-export type Operations = {
-  atomicFns: AtomicOperationFn[]
-  prepareDeleteFns: PrepareDeleteFn[]
-  indexDeleteCollectionKeys: KvKey[]
-  indexAddCollectionKeys: KvKey[]
-}
-
-export type AtomicCommitResult =
-  | {
-    ok: true
-    versionstamp: Document<KvValue>["versionstamp"]
-  }
-  | {
-    ok: false
-  }
-
-export type AtomicCheck<T extends KvValue> = {
-  id: Document<T>["id"]
-  versionstamp: Document<T>["versionstamp"]
-}
-
-export type AtomicMutation<T extends KvValue> =
-  & {
-    id: KvId
-  }
-  & (
-    | {
-      type: "set"
-      value: T
-    }
-    | {
-      type: "sum"
-      value: Deno.KvU64
-    }
-    | {
-      type: "min"
-      value: Deno.KvU64
-    }
-    | {
-      type: "max"
-      value: Deno.KvU64
-    }
-    | {
-      type: "delete"
-    }
-  )
+import { IndexableCollection } from "./indexable_collection.ts"
+import type {
+  AtomicCheck,
+  AtomicMutation,
+  CollectionSelector,
+  IndexDataEntry,
+  KvId,
+  KvValue,
+  Model,
+  Operations,
+  Schema,
+} from "./types.ts"
+import {
+  extendKey,
+  generateId,
+  getDocumentId,
+  keyEq,
+} from "./utils.internal.ts"
 
 // AtomicBuilder class
 export class AtomicBuilder<

@@ -1,4 +1,4 @@
-import { kvdb, type Model } from "../mod.ts"
+import { createDb, type Model } from "../mod.ts"
 
 export interface Person extends Model {
   id?: string
@@ -36,7 +36,7 @@ export const testPerson2: Person = {
 
 const kv = await Deno.openKv()
 
-export const db = kvdb(kv, (cb) => ({
+export const db = createDb(kv, (cb) => ({
   people: cb.collection<Person>(["people"]),
   indexablePeople: cb.indexableCollection<Person>(["indexablePeople"], {
     name: "primary",

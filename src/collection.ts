@@ -1,28 +1,14 @@
-import type { Document, KvId, KvKey, KvValue } from "./kvdb.types.ts"
-import { extendKey, getDocumentId } from "./kvdb.utils.ts"
-
-// Types
-export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
-  /**
-   * Filter documents based on predicate.
-   *
-   * @param doc - Document
-   * @returns true or false
-   */
-  filter?: (doc: Document<T>) => boolean
-}
-
-export type FindOptions = Parameters<Deno.Kv["get"]>[1]
-
-export type FindManyOptions = Parameters<Deno.Kv["getMany"]>[1]
-
-export type CommitResult<T1 extends KvValue, T2 extends KvId> = {
-  ok: true
-  versionstamp: Document<T1>["versionstamp"]
-  id: T2
-} | {
-  ok: false
-}
+import type {
+  CommitResult,
+  Document,
+  FindManyOptions,
+  FindOptions,
+  KvId,
+  KvKey,
+  KvValue,
+  ListOptions,
+} from "./types.ts"
+import { extendKey, getDocumentId } from "./utils.internal.ts"
 
 // Collection class
 export class Collection<const T extends KvValue> {
