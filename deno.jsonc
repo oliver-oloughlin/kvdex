@@ -1,12 +1,11 @@
 {
-  "lock": false,
   "tasks": {
-    "test": "deno test -A --unstable"
+    "test": "deno test --unstable"
   },
   "fmt": {
     "semiColons": false
   },
   "test": {
-    "include": ["./testing/tests"]
+    "include": ["./test/tests"]
   }
 }

@@ -1,6 +1,6 @@
 import type { Document } from "../../mod.ts"
 import { db, type Person, reset, testPerson } from "../config.ts"
-import { assert } from "../deps.ts"
+import { assert } from "../../deps.ts"
 
 Deno.test({
   name: "collection",

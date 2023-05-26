@@ -402,3 +402,16 @@ const flattened = flatten(doc)
 //   ...userDocument.value
 // }
 ```
+
+## Development
+
+Any contribution is welcomed and appreciated. How to contribute:
+
+- Clone this repository
+- Add feature / Refactor
+- Run tests using `deno task test`
+- Open Pull Request
+
+## License
+
+Published under [MIT License](./LICENSE.md)
