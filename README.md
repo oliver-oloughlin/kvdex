@@ -405,11 +405,12 @@ const flattened = flatten(doc)
 
 ## Development
 
-Any contribution is welcomed and appreciated. How to contribute:
+Any contributions are welcomed and appreciated. How to contribute:
 
 - Clone this repository
 - Add feature / Refactor
 - Run tests using `deno task test`
+- Prepare code (format + test) using `deno task prep`
 - Open Pull Request
 
 ## License
