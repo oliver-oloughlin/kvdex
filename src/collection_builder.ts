@@ -1,12 +1,26 @@
 import { Collection } from "./collection.ts"
 import { IndexableCollection } from "./indexable_collection.ts"
-import type { IndexRecord, KvKey, KvValue, Model } from "./types.ts"
+import type {
+  CollectionOptions,
+  IndexableCollectionOptions,
+  IndexRecord,
+  KvKey,
+  KvValue,
+  Model,
+} from "./types.ts"
 
-// Collection Builder class
+/**
+ * Builder object for building new collections of documents.
+ */
 export class CollectionBuilder {
   private kv: Deno.Kv
   private collectionKeyStrs: string[]
 
+  /**
+   * Create a new CollectionBuilder instance for building collections.
+   *
+   * @param kv - The KV instance that each collection will use.
+   */
   constructor(kv: Deno.Kv) {
     this.kv = kv
     this.collectionKeyStrs = []
@@ -19,9 +33,12 @@ export class CollectionBuilder {
    * @param collectionKey - A unique KvKey for the collection.
    * @returns
    */
-  collection<const T extends KvValue>(collectionKey: KvKey) {
+  collection<const T extends KvValue>(
+    collectionKey: KvKey,
+    options?: CollectionOptions,
+  ) {
     this.checkCollectionKey(collectionKey)
-    return new Collection<T>(this.kv, collectionKey)
+    return new Collection<T>(this.kv, collectionKey, options)
   }
 
   /**
@@ -34,13 +51,17 @@ export class CollectionBuilder {
    */
   indexableCollection<const T extends Model>(
     collectionKey: KvKey,
-    indexRecord: IndexRecord<T>,
+    options?: IndexableCollectionOptions<T, IndexRecord<T>>,
   ) {
     this.checkCollectionKey(collectionKey)
-    return new IndexableCollection<T, typeof indexRecord>(
+    return new IndexableCollection<
+      T,
+      IndexRecord<T>,
+      IndexableCollectionOptions<T, IndexRecord<T>>
+    >(
       this.kv,
       collectionKey,
-      indexRecord,
+      options,
     )
   }
 

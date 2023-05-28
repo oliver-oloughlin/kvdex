@@ -18,7 +18,12 @@ import {
   keyEq,
 } from "./utils.internal.ts"
 
-// AtomicBuilder class
+/**
+ * Builder object for creating and executing atomic operations in the KV store.
+ *
+ * Handles a single collection context at a time,
+ * with the option of selecting a new collection context during build.
+ */
 export class AtomicBuilder<
   const TSchema extends Schema,
   const TValue extends KvValue,
@@ -30,7 +35,7 @@ export class AtomicBuilder<
   private collection: TCollection
 
   /**
-   * Create a new AtomicBuilder for building and executing atomic operations.
+   * Create a new AtomicBuilder for building and executing atomic operations in the KV store.
    *
    * @param kv - The Deno KV instance to be used.
    * @param schema - The database schema containing all accessible collections.

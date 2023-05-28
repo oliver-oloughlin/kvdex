@@ -1,7 +1,6 @@
 import { createDb, type Model } from "../mod.ts"
 
 export interface Person extends Model {
-  id?: string
   name: string
   age: number
   friends: string[]
@@ -39,8 +38,10 @@ const kv = await Deno.openKv()
 export const db = createDb(kv, (cb) => ({
   people: cb.collection<Person>(["people"]),
   indexablePeople: cb.indexableCollection<Person>(["indexablePeople"], {
-    name: "primary",
-    age: "secondary",
+    indices: {
+      name: "primary",
+      age: "secondary",
+    },
   }),
   values: {
     numbers: cb.collection<number>(["values", "numbers"]),

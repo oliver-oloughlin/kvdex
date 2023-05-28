@@ -1,8 +1,15 @@
+import {
+  COLLECTION_ID_KEY_SUFFIX,
+  DEFAULT_ID_GENEREATE_STARTEGY,
+  ID_INCREMENT_KEY_SUFFIX,
+} from "./constants.ts"
 import type {
+  CollectionOptions,
   CommitResult,
   Document,
   FindManyOptions,
   FindOptions,
+  IdGenerateStrategy,
   KvId,
   KvKey,
   KvValue,
@@ -10,22 +17,29 @@ import type {
 } from "./types.ts"
 import { extendKey, getDocumentId } from "./utils.internal.ts"
 
-// Collection class
+/**
+ * Represents a collection of documents stored in the KV store.
+ *
+ * Contains methods for working on documents in the collection.
+ */
 export class Collection<const T extends KvValue> {
   protected kv: Deno.Kv
   readonly collectionIdKey: KvKey
+  readonly idIncrementKey: KvKey
+  readonly idGenerateStrategy: IdGenerateStrategy
 
   /**
-   * Represents a collection of documents stored in the KV store.
-   *
-   * Contains methods to work on documents in the collection.
+   * Create a new collection for handling documents in the KV store.
    *
    * @param kv - The Deno KV instance to be used.
    * @param collectionIdKey - Key that identifies the collection, an array of Deno.KvKeyPart.
    */
-  constructor(kv: Deno.Kv, collectionKey: KvKey) {
+  constructor(kv: Deno.Kv, collectionKey: KvKey, options?: CollectionOptions) {
     this.kv = kv
-    this.collectionIdKey = extendKey(collectionKey, "__id__")
+    this.collectionIdKey = extendKey(collectionKey, COLLECTION_ID_KEY_SUFFIX)
+    this.idIncrementKey = extendKey(collectionKey, ID_INCREMENT_KEY_SUFFIX)
+    this.idGenerateStrategy = options?.idGenerateStrategy ??
+      DEFAULT_ID_GENEREATE_STARTEGY
   }
 
   /**

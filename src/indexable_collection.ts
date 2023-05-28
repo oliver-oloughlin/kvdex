@@ -1,8 +1,13 @@
 import { Collection } from "./collection.ts"
+import {
+  COLLECTION_INDEX_PRIMARY_KEY_SUFFIX,
+  COLLECTION_INDEX_SECONDARY_KEY_SUFFIX,
+} from "./constants.ts"
 import type {
   CommitResult,
   Document,
   FindOptions,
+  IndexableCollectionOptions,
   IndexDataEntry,
   IndexRecord,
   IndexSelection,
@@ -14,10 +19,16 @@ import type {
 } from "./types.ts"
 import { extendKey, generateId, getDocumentId } from "./utils.internal.ts"
 
-// IndexableCollection class
+/**
+ * Represents a collection of object documents stored in the KV store.
+ *
+ * Contains methods for working on documents in the collection,
+ * including exclusive indexing methods.
+ */
 export class IndexableCollection<
   const T1 extends Model,
   const T2 extends IndexRecord<T1>,
+  const T3 extends IndexableCollectionOptions<T1, T2>,
 > extends Collection<T1> {
   readonly primaryIndexList: string[]
   readonly secondaryIndexList: string[]
@@ -25,38 +36,38 @@ export class IndexableCollection<
   readonly secondaryCollectionIndexKey: KvKey
 
   /**
-   * Represents a collection of documents stored in the KV store.
-   *
-   * Contains methods to work on documents in the collection.
+   * Create a new IndexableCollection for handling object documents in the KV store.
    *
    * @param kv - The Deno KV instance to be used.
    * @param collectionKey - Key that identifies the collection, an array of Deno.KvKeyPart.
    * @param indexRecord - Record of which fields that should be indexed.
    */
-  constructor(kv: Deno.Kv, collectionKey: KvKey, indexRecord?: T2) {
-    super(kv, collectionKey)
+  constructor(kv: Deno.Kv, collectionKey: KvKey, options?: T3) {
+    super(kv, collectionKey, options)
 
     this.primaryCollectionIndexKey = extendKey(
       collectionKey,
-      "__index_primary__",
+      COLLECTION_INDEX_PRIMARY_KEY_SUFFIX,
     )
     this.secondaryCollectionIndexKey = extendKey(
       collectionKey,
-      "__index_secondary__",
+      COLLECTION_INDEX_SECONDARY_KEY_SUFFIX,
     )
 
-    const primaryIndexEntries = Object.entries(indexRecord ?? {}) as [
+    const primaryIndexEntries = Object.entries(options?.indices ?? {}) as [
       string,
       undefined | IndexType,
     ][]
+
     this.primaryIndexList = primaryIndexEntries.filter(([_, value]) =>
       value === "primary"
     ).map(([key]) => key)
 
-    const secondaryIndexEntries = Object.entries(indexRecord ?? {}) as [
+    const secondaryIndexEntries = Object.entries(options?.indices ?? {}) as [
       string,
       undefined | IndexType,
     ][]
+
     this.secondaryIndexList = secondaryIndexEntries.filter(([_, value]) =>
       value === "secondary"
     ).map(([key]) => key)
