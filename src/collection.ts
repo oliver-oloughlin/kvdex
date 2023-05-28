@@ -8,8 +8,9 @@ import type {
   KvKey,
   KvValue,
   ListOptions,
+UpdateData,
 } from "./types.ts"
-import { extendKey, getDocumentId } from "./utils.internal.ts"
+import { extendKey, getDocumentId, isKvObject } from "./utils.internal.ts"
 
 /**
  * Represents a collection of documents stored in the KV store.
@@ -154,6 +155,27 @@ export class Collection<const T extends KvValue> {
   async delete(id: KvId) {
     const key = extendKey(this.collectionIdKey, id)
     await this.kv.delete(key)
+  }
+
+  async update(id: KvId, data: UpdateData<T>): Promise<CommitResult<T, typeof id>> {
+    const key = extendKey(this.collectionIdKey, id)
+    const { value, versionstamp } = await this.kv.get<T>(key)
+
+    if (value === null || versionstamp === null) {
+      return { ok: false }
+    }
+
+    if (isKvObject(value)) {
+      // TODO: Deep merge value and data, set new value
+    }
+
+    const result = await this.kv.set(key, data)
+
+    return {
+      ok: true,
+      id,
+      versionstamp: result.versionstamp
+    }
   }
 
   /**

@@ -131,6 +131,8 @@ export type DB<TSchema extends Schema> = TSchema & {
 }
 
 // KV Types
+export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T> : T
+
 export type FlattenedDocument<T extends Model> = T & {
   id: Document<T>["id"]
   versionstamp: Document<T>["versionstamp"]
