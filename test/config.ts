@@ -46,6 +46,8 @@ export const db = createDb(kv, (cb) => ({
     strings: cb.collection<string>(["values", "strings"]),
     u64s: cb.collection<Deno.KvU64>(["values", "u64s"]),
   },
+  arrs: cb.collection<string[]>(["arrs"]),
+  dates: cb.collection<Date>(["dates"]),
 }))
 
 export async function reset() {
@@ -54,4 +56,6 @@ export async function reset() {
   await db.values.numbers.deleteMany()
   await db.values.strings.deleteMany()
   await db.values.u64s.deleteMany()
+  await db.arrs.deleteMany()
+  await db.dates.deleteMany()
 }

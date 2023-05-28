@@ -6,9 +6,10 @@ import type {
   FindOptions,
   KvId,
   KvKey,
+  KvObject,
   KvValue,
   ListOptions,
-UpdateData,
+  UpdateData,
 } from "./types.ts"
 import { extendKey, getDocumentId, isKvObject } from "./utils.internal.ts"
 
@@ -157,7 +158,10 @@ export class Collection<const T extends KvValue> {
     await this.kv.delete(key)
   }
 
-  async update(id: KvId, data: UpdateData<T>): Promise<CommitResult<T, typeof id>> {
+  async update(
+    id: KvId,
+    data: UpdateData<T>,
+  ): Promise<CommitResult<T, typeof id>> {
     const key = extendKey(this.collectionIdKey, id)
     const { value, versionstamp } = await this.kv.get<T>(key)
 
@@ -166,7 +170,15 @@ export class Collection<const T extends KvValue> {
     }
 
     if (isKvObject(value)) {
-      // TODO: Deep merge value and data, set new value
+      const _data = data as KvObject
+      const newData = { value, ..._data }
+      const result = await this.kv.set(key, newData)
+
+      return {
+        ok: true,
+        id,
+        versionstamp: result.versionstamp,
+      }
     }
 
     const result = await this.kv.set(key, data)
@@ -174,7 +186,7 @@ export class Collection<const T extends KvValue> {
     return {
       ok: true,
       id,
-      versionstamp: result.versionstamp
+      versionstamp: result.versionstamp,
     }
   }
 
