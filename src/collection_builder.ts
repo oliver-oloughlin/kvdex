@@ -1,13 +1,6 @@
 import { Collection } from "./collection.ts"
 import { IndexableCollection } from "./indexable_collection.ts"
-import type {
-  CollectionOptions,
-  IndexableCollectionOptions,
-  IndexRecord,
-  KvKey,
-  KvValue,
-  Model,
-} from "./types.ts"
+import type { IndexRecord, KvKey, KvValue, Model } from "./types.ts"
 
 /**
  * Builder object for building new collections of documents.
@@ -35,10 +28,9 @@ export class CollectionBuilder {
    */
   collection<const T extends KvValue>(
     collectionKey: KvKey,
-    options?: CollectionOptions,
   ) {
     this.checkCollectionKey(collectionKey)
-    return new Collection<T>(this.kv, collectionKey, options)
+    return new Collection<T>(this.kv, collectionKey)
   }
 
   /**
@@ -51,17 +43,16 @@ export class CollectionBuilder {
    */
   indexableCollection<const T extends Model>(
     collectionKey: KvKey,
-    options?: IndexableCollectionOptions<T, IndexRecord<T>>,
+    indexRecord: IndexRecord<T>,
   ) {
     this.checkCollectionKey(collectionKey)
     return new IndexableCollection<
       T,
-      IndexRecord<T>,
-      IndexableCollectionOptions<T, IndexRecord<T>>
+      IndexRecord<T>
     >(
       this.kv,
       collectionKey,
-      options,
+      indexRecord,
     )
   }
 

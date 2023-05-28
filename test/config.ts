@@ -38,10 +38,8 @@ const kv = await Deno.openKv()
 export const db = createDb(kv, (cb) => ({
   people: cb.collection<Person>(["people"]),
   indexablePeople: cb.indexableCollection<Person>(["indexablePeople"], {
-    indices: {
-      name: "primary",
-      age: "secondary",
-    },
+    name: "primary",
+    age: "secondary",
   }),
   values: {
     numbers: cb.collection<number>(["values", "numbers"]),

@@ -1,7 +1,3 @@
-import type { IdGenerateStrategy } from "./types.ts"
-
-export const DEFAULT_ID_GENEREATE_STARTEGY: IdGenerateStrategy = "uuid"
-
 export const COLLECTION_ID_KEY_SUFFIX = "__id__"
 
 export const COLLECTION_INDEX_PRIMARY_KEY_SUFFIX = "__index_primary__"

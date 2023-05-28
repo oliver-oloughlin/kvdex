@@ -7,7 +7,6 @@ import type {
   CommitResult,
   Document,
   FindOptions,
-  IndexableCollectionOptions,
   IndexDataEntry,
   IndexRecord,
   IndexSelection,
@@ -28,7 +27,6 @@ import { extendKey, generateId, getDocumentId } from "./utils.internal.ts"
 export class IndexableCollection<
   const T1 extends Model,
   const T2 extends IndexRecord<T1>,
-  const T3 extends IndexableCollectionOptions<T1, T2>,
 > extends Collection<T1> {
   readonly primaryIndexList: string[]
   readonly secondaryIndexList: string[]
@@ -42,8 +40,8 @@ export class IndexableCollection<
    * @param collectionKey - Key that identifies the collection, an array of Deno.KvKeyPart.
    * @param indexRecord - Record of which fields that should be indexed.
    */
-  constructor(kv: Deno.Kv, collectionKey: KvKey, options?: T3) {
-    super(kv, collectionKey, options)
+  constructor(kv: Deno.Kv, collectionKey: KvKey, indexRecord: T2) {
+    super(kv, collectionKey)
 
     this.primaryCollectionIndexKey = extendKey(
       collectionKey,
@@ -54,7 +52,7 @@ export class IndexableCollection<
       COLLECTION_INDEX_SECONDARY_KEY_SUFFIX,
     )
 
-    const primaryIndexEntries = Object.entries(options?.indices ?? {}) as [
+    const primaryIndexEntries = Object.entries(indexRecord ?? {}) as [
       string,
       undefined | IndexType,
     ][]
@@ -63,7 +61,7 @@ export class IndexableCollection<
       value === "primary"
     ).map(([key]) => key)
 
-    const secondaryIndexEntries = Object.entries(options?.indices ?? {}) as [
+    const secondaryIndexEntries = Object.entries(indexRecord ?? {}) as [
       string,
       undefined | IndexType,
     ][]

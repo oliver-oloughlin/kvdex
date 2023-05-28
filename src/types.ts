@@ -71,12 +71,6 @@ export type AtomicMutation<T extends KvValue> =
   )
 
 // Collection Types
-export type IdGenerateStrategy = "uuid" | "increment"
-
-export type CollectionOptions = {
-  idGenerateStrategy?: IdGenerateStrategy
-}
-
 export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   /**
    * Filter documents based on predicate.
@@ -100,13 +94,6 @@ export type CommitResult<T1 extends KvValue, T2 extends KvId> = {
 }
 
 // Indexable Collection Types
-export type IndexableCollectionOptions<
-  T1 extends Model,
-  T2 extends IndexRecord<T1>,
-> = CollectionOptions & {
-  indices?: T2
-}
-
 export type CheckKvId<T1 extends KvValue, T2> = T1 extends KvId ? T2 : never
 
 export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
