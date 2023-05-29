@@ -16,7 +16,13 @@ import type {
   ListOptions,
   Model,
 } from "./types.ts"
-import { extendKey, generateId, getDocumentId } from "./utils.internal.ts"
+import {
+  deleteIndices,
+  extendKey,
+  generateId,
+  getDocumentId,
+  setIndices,
+} from "./utils.internal.ts"
 
 /**
  * Represents a collection of object documents stored in the KV store.
@@ -83,43 +89,7 @@ export class IndexableCollection<
       })
       .set(idKey, data)
 
-    this.primaryIndexList.forEach((index) => {
-      const indexValue = data[index] as KvId | undefined
-      if (typeof indexValue === "undefined") return
-
-      const indexKey = extendKey(
-        this.primaryCollectionIndexKey,
-        index,
-        indexValue,
-      )
-      const indexEntry: IndexDataEntry<T1> = { ...data, __id__: id }
-
-      atomic = atomic
-        .set(indexKey, indexEntry)
-        .check({
-          key: indexKey,
-          versionstamp: null,
-        })
-    })
-
-    this.secondaryIndexList.forEach((index) => {
-      const indexValue = data[index] as KvId | undefined
-      if (typeof indexValue === "undefined") return
-
-      const indexKey = extendKey(
-        this.secondaryCollectionIndexKey,
-        index,
-        indexValue,
-        id,
-      )
-
-      atomic = atomic
-        .set(indexKey, data)
-        .check({
-          key: indexKey,
-          versionstamp: null,
-        })
-    })
+    atomic = setIndices(id, data, atomic, this)
 
     const cr = await atomic.commit()
 
@@ -147,43 +117,7 @@ export class IndexableCollection<
       })
       .set(idKey, data)
 
-    this.primaryIndexList.forEach((index) => {
-      const indexValue = data[index] as KvId | undefined
-      if (typeof indexValue === "undefined") return
-
-      const indexKey = extendKey(
-        this.primaryCollectionIndexKey,
-        index,
-        indexValue,
-      )
-      const indexEntry: IndexDataEntry<T1> = { ...data, __id__: id }
-
-      atomic = atomic
-        .set(indexKey, indexEntry)
-        .check({
-          key: indexKey,
-          versionstamp: null,
-        })
-    })
-
-    this.secondaryIndexList.forEach((index) => {
-      const indexValue = data[index] as KvId | undefined
-      if (typeof indexValue === "undefined") return
-
-      const indexKey = extendKey(
-        this.secondaryCollectionIndexKey,
-        index,
-        indexValue,
-        id,
-      )
-
-      atomic = atomic
-        .set(indexKey, data)
-        .check({
-          key: indexKey,
-          versionstamp: null,
-        })
-    })
+    atomic = setIndices(id, data, atomic, this)
 
     const cr = await atomic.commit()
 
@@ -204,6 +138,14 @@ export class IndexableCollection<
    * Find a document by index value.
    * Note that selecting an index that was not defined when creating the collection will always return null.
    *
+   * **Example:**
+   * ```ts
+   * // Returns a single result
+   * const userByUsername = await db.users.findByPrimaryIndex({
+   *   username: "oli"
+   * })
+   * ```
+   *
    * @param selection - Index values to find document by.
    * @param options - Read options.
    * @returns The document found by selected indexes, or null if not found.
@@ -215,16 +157,19 @@ export class IndexableCollection<
     const indexList = Object.entries(selection).filter(([_, value]) =>
       typeof value !== "undefined"
     ) as [string, KvId][]
+
     if (indexList.length < 1) return null
 
     const keys = indexList.map(([index, indexValue]) =>
       extendKey(this.primaryCollectionIndexKey, index, indexValue)
     )
+
     const results = await Promise.all(
       keys.map((key) =>
         this.kv.get<unknown & Pick<IndexDataEntry<T1>, "__id__">>(key, options)
       ),
     )
+
     const result = results.find((r) =>
       r.value !== null && r.versionstamp !== null
     )
@@ -247,6 +192,14 @@ export class IndexableCollection<
   /**
    * Finds documents by a given set of secondary indices.
    * If multiple are specified, results are combined.
+   *
+   * **Example:**
+   * ```ts
+   * // Returns a list of user documents
+   * const usersByAge = await db.users.findBySecondaryIndex({
+   *   age: 24
+   * })
+   * ```
    *
    * @param selection - Selection of secondary indices to find documents by.
    * @param options - Optional list options.
@@ -297,28 +250,41 @@ export class IndexableCollection<
 
     let atomic = this.kv.atomic().delete(idKey)
 
-    this.primaryIndexList.forEach((index) => {
-      const indexValue = value[index] as KvId
-      const indexKey = extendKey(
-        this.primaryCollectionIndexKey,
-        index,
-        indexValue,
-      )
-      atomic = atomic.delete(indexKey)
-    })
-
-    this.secondaryIndexList.forEach((index) => {
-      const indexValue = value[index] as KvId
-      const indexKey = extendKey(
-        this.secondaryCollectionIndexKey,
-        index,
-        indexValue,
-        id,
-      )
-      atomic = atomic.delete(indexKey)
-    })
+    atomic = deleteIndices(id, value, atomic, this)
 
     await atomic.commit()
+  }
+
+  async update<const TId extends KvId>(
+    id: TId,
+    data: Partial<T1>,
+  ): Promise<CommitResult<T1, TId>> {
+    const key = extendKey(this.collectionIdKey, id)
+    const { value, versionstamp } = await this.kv.get<T1>(key)
+
+    if (value === null || versionstamp === null) {
+      return { ok: false }
+    }
+
+    await this.delete(id)
+
+    const newData = { ...value, ...data }
+
+    let atomic = this.kv.atomic().set(key, newData)
+    atomic = setIndices(id, newData, atomic, this)
+    const result = await atomic.commit()
+
+    if (!result.ok) {
+      return {
+        ok: false,
+      }
+    }
+
+    return {
+      ok: true,
+      id,
+      versionstamp: result.versionstamp,
+    }
   }
 
   async deleteMany(options?: ListOptions<T1>) {
@@ -338,27 +304,7 @@ export class IndexableCollection<
 
       if (!options?.filter || options.filter(doc)) {
         atomic = atomic.delete(entry.key)
-
-        this.primaryIndexList.forEach((index) => {
-          const indexValue = value[index] as KvId
-          const indexKey = extendKey(
-            this.primaryCollectionIndexKey,
-            index,
-            indexValue,
-          )
-          atomic = atomic.delete(indexKey)
-        })
-
-        this.secondaryIndexList.forEach((index) => {
-          const indexValue = value[index] as KvId
-          const indexKey = extendKey(
-            this.secondaryCollectionIndexKey,
-            index,
-            indexValue,
-            id,
-          )
-          atomic = atomic.delete(indexKey)
-        })
+        atomic = deleteIndices(id, value, atomic, this)
       }
 
       await atomic.commit()

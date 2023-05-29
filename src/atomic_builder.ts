@@ -64,6 +64,11 @@ export class AtomicBuilder<
   /**
    * Select a new collection context.
    *
+   * **Example:**
+   * ```ts
+   * operation.select(schema => schema.users)
+   * ```
+   *
    * @param selector - Selector function for selecting a new collection from the database schema.
    * @returns A new AtomicBuilder instance.
    */
@@ -81,6 +86,16 @@ export class AtomicBuilder<
   /**
    * Add a new document to the KV store with a randomely generated id.
    *
+   * **Example:**
+   * ```ts
+   * db
+   *  .atomic(schema => schema.users)
+   *  .add({
+   *    username: "user1",
+   *    age: 32
+   *  })
+   * ```
+   *
    * @param data - Document data to be added.
    * @returns Current AtomicBuilder instance.
    */
@@ -96,10 +111,14 @@ export class AtomicBuilder<
     if (this.collection instanceof IndexableCollection) {
       const primaryCollectionIndexKey =
         this.collection.primaryCollectionIndexKey
+
       const secondaryCollectionIndexKey =
         this.collection.secondaryCollectionIndexKey
+
       const primaryIndexList = this.collection.primaryIndexList
+
       const secondaryIndexList = this.collection.secondaryIndexList
+
       const _data = data as Model
 
       this.operations.indexAddCollectionKeys.push(collectionIdKey)
@@ -109,10 +128,12 @@ export class AtomicBuilder<
         if (typeof indexValue === "undefined") return
 
         const indexKey = extendKey(primaryCollectionIndexKey, index, indexValue)
+
         const indexEntry: IndexDataEntry<typeof _data> = {
           ..._data,
           __id__: id,
         }
+
         this.operations.atomicFns.push(
           (op) =>
             op.set(indexKey, indexEntry).check({
@@ -132,6 +153,7 @@ export class AtomicBuilder<
           indexValue,
           id,
         )
+
         this.operations.atomicFns.push(
           (op) =>
             op.set(indexKey, data).check({ key: indexKey, versionstamp: null }),
@@ -144,6 +166,16 @@ export class AtomicBuilder<
 
   /**
    * Adds a new document to the KV store with the given id.
+   *
+   * **Example:**
+   * ```ts
+   * db
+   *  .atomic(schema => schema.users)
+   *  .set("user1", {
+   *    username: "user1",
+   *    age: 32
+   *  })
+   * ```
    *
    * @param id - Id of the document to be added.
    * @param data - Document data to be added.
@@ -160,10 +192,14 @@ export class AtomicBuilder<
     if (this.collection instanceof IndexableCollection) {
       const primaryCollectionIndexKey =
         this.collection.primaryCollectionIndexKey
+
       const secondaryCollectionIndexKey =
         this.collection.secondaryCollectionIndexKey
+
       const primaryIndexList = this.collection.primaryIndexList
+
       const secondaryIndexList = this.collection.secondaryIndexList
+
       const _data = data as Model
 
       this.operations.indexAddCollectionKeys.push(collectionKey)
@@ -173,10 +209,12 @@ export class AtomicBuilder<
         if (typeof indexValue === "undefined") return
 
         const indexKey = extendKey(primaryCollectionIndexKey, index, indexValue)
+
         const indexEntry: IndexDataEntry<typeof _data> = {
           ..._data,
           __id__: id,
         }
+
         this.operations.atomicFns.push(
           (op) =>
             op.set(indexKey, indexEntry).check({
@@ -196,6 +234,7 @@ export class AtomicBuilder<
           indexValue,
           id,
         )
+
         this.operations.atomicFns.push(
           (op) =>
             op.set(indexKey, data).check({ key: indexKey, versionstamp: null }),
@@ -209,6 +248,13 @@ export class AtomicBuilder<
   /**
    * Deletes a document from the KV store with the given id.
    *
+   * **Example:**
+   * ```ts
+   * db
+   *  .atomic(schema => schema.users)
+   *  .delete("user1")
+   * ```
+   *
    * @param id - Id of document to be deleted.
    * @returns Current AtomicBuilder instance.
    */
@@ -221,9 +267,12 @@ export class AtomicBuilder<
     if (this.collection instanceof IndexableCollection) {
       const primaryCollectionIndexKey =
         this.collection.primaryCollectionIndexKey
+
       const secondaryCollectionIndexKey =
         this.collection.secondaryCollectionIndexKey
+
       const primaryIndexList = this.collection.primaryIndexList
+
       const secondaryIndexList = this.collection.secondaryIndexList
 
       this.operations.indexDeleteCollectionKeys.push(collectionKey)
@@ -248,6 +297,16 @@ export class AtomicBuilder<
   /**
    * Check if documents have been changed since a specific versionstamp.
    *
+   * **Example:**
+   * ```ts
+   * db
+   *  .atomic(schema => schema.users)
+   *  .check({
+   *    id: "user1",
+   *    versionstamp: null // Check that document does not already exist
+   *  })
+   * ```
+   *
    * @param atomicChecks - AtomicCheck objects containing a document id and versionstamp.
    * @returns Current AtomicBuilder instance.
    */
@@ -270,6 +329,13 @@ export class AtomicBuilder<
    * Adds the given value to the value of the document with the given id.
    * Sum only works for documents of type Deno.KvU64 and will throw an error for documents of any other type.
    *
+   * **Example:**
+   * ```ts
+   * db
+   *  .atomic(schema => schema.u64s) // Select collection of Deno.KvU64 values
+   *  .sum("num1", 100n)
+   * ```
+   *
    * @param id - Id of document that contains the value to be updated.
    * @param value - The value to add to the document value.
    * @returns Current AtomicBuilder instance.
@@ -282,6 +348,23 @@ export class AtomicBuilder<
 
   /**
    * Specifies atomic mutations to be formed on documents.
+   *
+   * **Example:**
+   * ```ts
+   * db
+   *  .atomic(schema => schema.u64s)
+   *  .mutate(
+   *    {
+   *      type: "delete",
+   *      id: "num1"
+   *    },
+   *    {
+   *       type: "set",
+   *      id: "num2",
+   *      value: new Deno.KvU64(200n)
+   *    }
+   *  )
+   * ```
    *
    * @param mutations - Atomic mutations to be performed.
    * @returns Current AtomicBuilder instance.
@@ -309,13 +392,19 @@ export class AtomicBuilder<
 
       if (this.collection instanceof IndexableCollection) {
         const collectionIdKey = this.collection.collectionIdKey
+
         const primaryCollectionIndexKey =
           this.collection.primaryCollectionIndexKey
+
         const secondaryCollectionIndexKey =
           this.collection.secondaryCollectionIndexKey
+
         const primaryIndexList = this.collection.primaryIndexList
+
         const secondaryIndexList = this.collection.secondaryIndexList
+
         const id = getDocumentId(mut.key)
+
         if (typeof id === "undefined") return
 
         if (mut.type === "set") {
@@ -326,6 +415,7 @@ export class AtomicBuilder<
 
             const data = mut.value as Model
             const indexValue = data[index] as KvId | undefined
+
             if (typeof indexValue === "undefined") return
 
             const indexKey = extendKey(
@@ -333,10 +423,12 @@ export class AtomicBuilder<
               index,
               indexValue,
             )
+
             const indexEntry: IndexDataEntry<typeof data> = {
               ...data,
               __id__: id,
             }
+
             this.operations.atomicFns.push(
               (op) =>
                 op.set(indexKey, indexEntry).check({
@@ -359,6 +451,7 @@ export class AtomicBuilder<
               indexValue,
               id,
             )
+
             this.operations.atomicFns.push(
               (op) =>
                 op.set(indexKey, data).check({
@@ -420,6 +513,7 @@ export class AtomicBuilder<
       (op, opFn) => opFn(op),
       this.kv.atomic(),
     )
+
     const commitResult = await atomicOperation.commit()
 
     // If successful commit, perform delete ops

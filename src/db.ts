@@ -10,6 +10,11 @@ import { CollectionBuilder } from "./collection_builder.ts"
  *
  * **Example:**
  * ```ts
+ * interface User extends Model {
+ *   username: string
+ *   age: number
+ * }
+ *
  * const kv = await Deno.openKv()
  *
  * const db = createDb(kv, (builder) => ({

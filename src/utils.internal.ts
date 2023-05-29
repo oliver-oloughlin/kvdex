@@ -1,4 +1,12 @@
-import type { KvKey, KvValue } from "./types.ts"
+import { IndexableCollection } from "./indexable_collection.ts"
+import type {
+  IndexDataEntry,
+  IndexRecord,
+  KvId,
+  KvKey,
+  KvValue,
+  Model,
+} from "./types.ts"
 
 export function generateId() {
   return crypto.randomUUID()
@@ -47,4 +55,82 @@ export function isKvObject(value: KvValue) {
   }
 
   return false
+}
+
+export function setIndices<T1 extends Model, T2 extends IndexRecord<T1>>(
+  id: KvId,
+  data: T1,
+  atomic: Deno.AtomicOperation,
+  collection: IndexableCollection<T1, T2>,
+) {
+  let op = atomic
+
+  collection.primaryIndexList.forEach((index) => {
+    const indexValue = data[index] as KvId | undefined
+    if (typeof indexValue === "undefined") return
+
+    const indexKey = extendKey(
+      collection.primaryCollectionIndexKey,
+      index,
+      indexValue,
+    )
+
+    const indexEntry: IndexDataEntry<T1> = { ...data, __id__: id }
+
+    op = op.set(indexKey, indexEntry).check({
+      key: indexKey,
+      versionstamp: null,
+    })
+  })
+
+  collection.secondaryIndexList.forEach((index) => {
+    const indexValue = data[index] as KvId | undefined
+    if (typeof indexValue === "undefined") return
+
+    const indexKey = extendKey(
+      collection.secondaryCollectionIndexKey,
+      index,
+      indexValue,
+      id,
+    )
+
+    op = op.set(indexKey, data).check({
+      key: indexKey,
+      versionstamp: null,
+    })
+  })
+
+  return op
+}
+
+export function deleteIndices<T1 extends Model, T2 extends IndexRecord<T1>>(
+  id: KvId,
+  data: T1,
+  atomic: Deno.AtomicOperation,
+  collection: IndexableCollection<T1, T2>,
+) {
+  let op = atomic
+
+  collection.primaryIndexList.forEach((index) => {
+    const indexValue = data[index] as KvId
+    const indexKey = extendKey(
+      collection.primaryCollectionIndexKey,
+      index,
+      indexValue,
+    )
+    op = op.delete(indexKey)
+  })
+
+  collection.secondaryIndexList.forEach((index) => {
+    const indexValue = data[index] as KvId
+    const indexKey = extendKey(
+      collection.secondaryCollectionIndexKey,
+      index,
+      indexValue,
+      id,
+    )
+    op = op.delete(indexKey)
+  })
+
+  return op
 }

@@ -36,6 +36,15 @@ export class Collection<const T extends KvValue> {
   /**
    * Finds a document with the given id in the KV store.
    *
+   * **Example:**
+   * ```ts
+   * const userDoc1 = await db.users.find("user1")
+   *
+   * const userDoc2 = await db.users.find("user2", {
+   *   consistency: "eventual" // "strong" by default
+   * })
+   * ```
+   *
    * @param id - Id of the document to find.
    * @param options - Options for reading the document from the KV store.
    * @returns A promise that resolves to the found document, or null if not found.
@@ -57,6 +66,15 @@ export class Collection<const T extends KvValue> {
 
   /**
    * Finds multiple documents with the given array of ids in the KV store.
+   *
+   * **Example:**
+   * ```ts
+   * const userDocs1 = await db.users.findMany(["user1", "user2", "user3"])
+   *
+   * const userDocs2 = await db.users.findMany(["user1", "user2", "user3"], {
+   *   consistency: "eventual" // "strong" by default
+   * })
+   * ```
    *
    * @param ids - Array of ids of the documents to be found.
    * @param options - Options for reading the documents from the KV store.
@@ -86,6 +104,14 @@ export class Collection<const T extends KvValue> {
 
   /**
    * Adds a new document to the KV store with a randomely generated id.
+   *
+   * **Example:**
+   * ```ts
+   * const result = await db.users.add({
+   *   username: "oli",
+   *   age: 24
+   * })
+   * ```
    *
    * @param data
    * @returns A promise that resovles to a commit result containing the document versionstamp, id and ok flag.
@@ -119,6 +145,14 @@ export class Collection<const T extends KvValue> {
   /**
    * Adds a new document with the given id to the KV store.
    *
+   * **Example:**
+   * ```ts
+   * const result = await db.users.add("oliver", {
+   *   username: "oli",
+   *   age: 24
+   * })
+   * ```
+   *
    * @param data
    * @returns A promise that resovles to a commit result containing the document versionstamp, id and ok flag.
    */
@@ -150,6 +184,11 @@ export class Collection<const T extends KvValue> {
   /**
    * Deletes a document with the given id from the KV store.
    *
+   * **Example:**
+   * ```ts
+   * await db.users.delete("oliver")
+   * ```
+   *
    * @param id
    * @returns A promise that resovles to void
    */
@@ -158,10 +197,32 @@ export class Collection<const T extends KvValue> {
     await this.kv.delete(key)
   }
 
-  async update(
-    id: KvId,
+  /**
+   * Updates a document with the given id in the KV store.
+   *
+   * For primitive values, arrays and built-in objects,
+   * this method overrides the old value with the new one.
+   *
+   * For custom object types, this method merges the
+   * new data with the exisiting data.
+   *
+   * **Example:**
+   * ```ts
+   * const result1 = await db.numbers.update("num1", 10)
+   *
+   * const result2 = await db.users.update("oliver", {
+   *   age: 30 // Partial update, only updates the age field
+   * })
+   * ```
+   *
+   * @param id - Id of document to be updated
+   * @param data - Updated data to be inserted into document
+   * @returns
+   */
+  async update<const TId extends KvId>(
+    id: TId,
     data: UpdateData<T>,
-  ): Promise<CommitResult<T, typeof id>> {
+  ): Promise<CommitResult<T, TId>> {
     const key = extendKey(this.collectionIdKey, id)
     const { value, versionstamp } = await this.kv.get<T>(key)
 
@@ -170,8 +231,9 @@ export class Collection<const T extends KvValue> {
     }
 
     if (isKvObject(value)) {
+      const _value = value as KvObject
       const _data = data as KvObject
-      const newData = { value, ..._data }
+      const newData = { ..._value, ..._data }
       const result = await this.kv.set(key, newData)
 
       return {
@@ -194,6 +256,17 @@ export class Collection<const T extends KvValue> {
    * Deletes multiple documents from the KV store according to the given options.
    *
    * If no options are given, all documents are deleted.
+   *
+   * **Example:**
+   * ```ts
+   * // Delete all
+   * await db.users.deleteMany()
+   *
+   * // Delete only users with username = "oli"
+   * await db.users.deleteMany({
+   *   filter: doc => doc.value.username === "oli"
+   * })
+   * ```
    *
    * @param options
    * @returns A promise that resovles to void
@@ -222,6 +295,17 @@ export class Collection<const T extends KvValue> {
    *
    * If no options are given, all documents are retrieved.
    *
+   * **Example:**
+   * ```ts
+   * // Get all users
+   * const userDocs1 = await db.users.getMany()
+   *
+   * // Only get users with username that starts with "a"
+   * const userDocs2 = await db.users.getMany({
+   *   filter: doc => doc.value.username.startsWith("a")
+   * })
+   * ```
+   *
    * @param options
    * @returns A promise that resovles to a list of the retrieved documents
    */
@@ -249,6 +333,17 @@ export class Collection<const T extends KvValue> {
    * Executes a callback function for every document according to the given options.
    *
    * If no options are given, the callback function is executed for all documents in the collection.
+   *
+   * **Example:**
+   * ```ts
+   * // Print all usernames
+   * await db.users.forEach(doc => console.log(doc.value.username))
+   *
+   * // Print all usernames of users with age < 18
+   * await db.users.forEach(doc => console.log(doc.value.username), {
+   *   filter: doc => doc.value.age < 18
+   * })
+   * ```
    *
    * @param fn
    * @param options

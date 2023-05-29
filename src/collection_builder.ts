@@ -23,6 +23,11 @@ export class CollectionBuilder {
    * Create a standard collection of data adhering to the type KvValue.
    * Can be of primitives, like strings and numbers, or arrays and objects.
    *
+   * **Example:**
+   * ```ts
+   * builder.collection<string>(["strings"])
+   * ```
+   *
    * @param collectionKey - A unique KvKey for the collection.
    * @returns
    */
@@ -35,7 +40,15 @@ export class CollectionBuilder {
 
   /**
    * Create an indexable collection of data adhering to the type Model.
-   * Restricted to holding objects.
+   * Restricted to object types.
+   *
+   * **Example:**
+   * ```ts
+   * builder.indexableCollection<User>(["users"], {
+   *   username: "primary",
+   *   age: "secondary"
+   * })
+   * ```
    *
    * @param collectionKey - A unique KvKey for the collection.
    * @param indexRecord - A record of fields that the documents should be indexed by.

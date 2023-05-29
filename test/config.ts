@@ -6,8 +6,8 @@ export interface Person extends Model {
   friends: string[]
   address: {
     country: string
-    city: string
-    postcode: number
+    city: string | null
+    postcode?: number
   }
 }
 

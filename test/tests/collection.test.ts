@@ -1,4 +1,4 @@
-import type { Document } from "../../mod.ts"
+import { Document, flatten } from "../../mod.ts"
 import { db, type Person, reset, testPerson } from "../config.ts"
 import { assert } from "../../deps.ts"
 
@@ -303,6 +303,41 @@ Deno.test({
           assert(
             doc4 !== null && doc4.value.value === new Deno.KvU64(200n).value,
           )
+        },
+      )
+
+      await t2.step(
+        "Should update object types with merged value",
+        async () => {
+          await reset()
+
+          const cr1 = await db.people.add(testPerson)
+
+          assert(cr1.ok)
+
+          const cr2 = await db.people.update(cr1.id, {
+            age: 77,
+            address: {
+              country: "Sweden",
+              city: null,
+            },
+            friends: [],
+          })
+
+          assert(cr2.ok)
+
+          const doc = await db.people.find(cr1.id)
+
+          assert(doc !== null)
+
+          const value = flatten(doc)
+
+          assert(value.name === testPerson.name)
+          assert(value.age === 77)
+          assert(value.address.country === "Sweden")
+          assert(value.address.city === null)
+          assert(typeof value.address.postcode === "undefined")
+          assert(value.friends.length === 0)
         },
       )
     })
