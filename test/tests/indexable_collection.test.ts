@@ -246,7 +246,73 @@ Deno.test("indexable_collection", async (t1) => {
     )
   })
 
-  // Test "findByIndex" method
+  // Test "addMany" method
+  await t1.step("addMany", async (t2) => {
+    await t2.step(
+      "Should add all document entries and index entries",
+      async () => {
+        await reset()
+
+        const cr = await db.indexablePeople.addMany(testPerson, testPerson2)
+
+        assert(cr.ok)
+
+        const people = await db.indexablePeople.getMany()
+
+        assert(people.length === 2)
+        assert(people.some((doc) => doc.value.name === testPerson.name))
+        assert(people.some((doc) => doc.value.name === testPerson2.name))
+
+        const byName1 = await db.indexablePeople.findByPrimaryIndex({
+          name: testPerson.name,
+        })
+
+        const byName2 = await db.indexablePeople.findByPrimaryIndex({
+          name: testPerson2.name,
+        })
+
+        assert(byName1 !== null)
+        assert(byName2 !== null)
+
+        const byAge = await db.indexablePeople.findBySecondaryIndex({
+          age: 24,
+        })
+
+        assert(byAge.length === 2)
+        assert(byAge.some((doc) => doc.value.name === testPerson.name))
+        assert(byAge.some((doc) => doc.value.name === testPerson2.name))
+      },
+    )
+
+    await t2.step(
+      "Should not add document entries with duplicate indices",
+      async () => {
+        await reset()
+
+        const cr = await db.indexablePeople.addMany(testPerson, testPerson)
+
+        assert(!cr.ok)
+
+        const people = await db.indexablePeople.getMany()
+
+        assert(people.length === 0)
+
+        const byName = await db.indexablePeople.findByPrimaryIndex({
+          name: testPerson.name,
+        })
+
+        assert(byName === null)
+
+        const byAge = await db.indexablePeople.findBySecondaryIndex({
+          age: 24,
+        })
+
+        assert(byAge.length === 0)
+      },
+    )
+  })
+
+  // Test "findByPrimaryIndex" method
   await t1.step("findByPrimaryIndex", async (t2) => {
     await t2.step("Should find document by primary index", async () => {
       await reset()

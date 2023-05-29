@@ -14,7 +14,7 @@ Optional and nullable properties are allowed. If you wish to use Zod, you can
 create your Zod object schema and use its type as your model.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.2.0/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.2.1/mod.ts"
 
 interface User extends Model {
   username: string
@@ -35,7 +35,7 @@ The "createDb" function is used for creating a new database instance. It takes a
 Deno KV instance and a schema builder function as arguments.
 
 ```ts
-import { createDb } from "https://deno.land/x/kvdex@v0.2.0/mod.ts"
+import { createDb } from "https://deno.land/x/kvdex@v0.2.1/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -116,6 +116,30 @@ const result = await db.users.add({
 })
 
 console.log(result.id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
+```
+
+### Add Many
+
+The "addMany" method is used to add multiple document entries to the KV store in
+a single operation. For Indexable Collection, any entries that violate the
+constraint of primary indices will cause the operation to fail Returns a
+Deno.KvCommitResult or Deno.KvCommitError upon completion.
+
+```ts
+// Adds 5 new document entries to the KV store.
+await result = await db.numbers.add(1, 2, 3, 4, 5)
+
+// Will fail, as "username" is defined as a primary index and cannot have duplicates
+await result = await db.indexableUsers.add(
+  {
+    username: "oli",
+    age: 24
+  },
+  {
+    username: "oli",
+    age: 56
+  }
+)
 ```
 
 ### Set
@@ -400,7 +424,7 @@ result will be an object containing: id, versionstamp and all the entries in the
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.2.0/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.2.1/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)

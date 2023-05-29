@@ -1,5 +1,5 @@
 import { Document, flatten } from "../../mod.ts"
-import { db, type Person, reset, testPerson } from "../config.ts"
+import { db, type Person, reset, testPerson, testPerson2 } from "../config.ts"
 import { assert } from "../../deps.ts"
 
 Deno.test({
@@ -232,6 +232,23 @@ Deno.test({
           },
         })
       },
+    })
+
+    // Test "addMany" method
+    await t.step("addMany", async (t2) => {
+      await t2.step("Should add all document entries", async () => {
+        await reset()
+
+        const cr = await db.people.addMany(testPerson, testPerson2)
+
+        assert(cr.ok)
+
+        const people = await db.people.getMany()
+
+        assert(people.length === 2)
+        assert(people.some((doc) => doc.value.name === testPerson.name))
+        assert(people.some((doc) => doc.value.name === testPerson2.name))
+      })
     })
 
     // Test "delete" method
