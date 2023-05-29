@@ -253,6 +253,48 @@ export class Collection<const T extends KvValue> {
   }
 
   /**
+   * Adds multiple documents to the KV store.
+   *
+   * **Example:**
+   * ```ts
+   * // Adds 5 new document entries to the KV store.
+   * await result = await db.numbers.add(1, 2, 3, 4, 5)
+   *
+   * // Will fail, as "username" is defined as a primary index and cannot have duplicates
+   * await result = await db.users.add(
+   *   {
+   *     username: "oli",
+   *     age: 24
+   *   },
+   *   {
+   *     username: "oli",
+   *     age: 56
+   *   }
+   * )
+   * ```
+   *
+   * @param entries - Data entries to be added.
+   * @returns A promise that resolves to Deno.KvCommitResult or Deno.KvCommitError
+   */
+  async addMany(...entries: T[]) {
+    let atomic = this.kv.atomic()
+
+    entries.forEach((data) => {
+      const id = crypto.randomUUID()
+      const key = extendKey(this.collectionIdKey, id)
+
+      atomic = atomic
+        .check({
+          key,
+          versionstamp: null,
+        })
+        .set(key, data)
+    })
+
+    return await atomic.commit()
+  }
+
+  /**
    * Deletes multiple documents from the KV store according to the given options.
    *
    * If no options are given, all documents are deleted.

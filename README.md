@@ -118,6 +118,30 @@ const result = await db.users.add({
 console.log(result.id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
 ```
 
+### Add Many
+
+The "addMany" method is used to add multiple document entries to the KV store in
+a single operation. For Indexable Collection, any entries that violate the
+constraint of primary indices will cause the operation to fail Returns a
+Deno.KvCommitResult or Deno.KvCommitError upon completion.
+
+```ts
+// Adds 5 new document entries to the KV store.
+await result = await db.numbers.add(1, 2, 3, 4, 5)
+
+// Will fail, as "username" is defined as a primary index and cannot have duplicates
+await result = await db.indexableUsers.add(
+  {
+    username: "oli",
+    age: 24
+  },
+  {
+    username: "oli",
+    age: 56
+  }
+)
+```
+
 ### Set
 
 The "set" method is very similar to the "add" method, and is used to add a new
