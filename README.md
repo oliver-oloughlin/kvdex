@@ -14,7 +14,7 @@ Optional and nullable properties are allowed. If you wish to use Zod, you can
 create your Zod object schema and use its type as your model.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.1.2/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.2.0/mod.ts"
 
 interface User extends Model {
   username: string
@@ -35,7 +35,7 @@ The "createDb" function is used for creating a new database instance. It takes a
 Deno KV instance and a schema builder function as arguments.
 
 ```ts
-import { createDb } from "https://deno.land/x/kvdex@v0.1.2/mod.ts"
+import { createDb } from "https://deno.land/x/kvdex@v0.2.0/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -129,6 +129,25 @@ flag.
 const result = await db.primitives.strings.set(2048, "Foo")
 
 console.log(result.id) // 2048
+```
+
+### Update
+
+The "update" method is used to update the value of exisiting documents in the KV
+store. For primitive values, arrays and built-in objects (Date, RegExp, etc.),
+this method overrides the exisiting data with the new value. For custom objects
+(Models), this method performs a partial update, merging the new value with the
+existing data. Upon completion, a CommitResult object will be returned with the
+document id, versionstamp and ok flag.
+
+```ts
+// Updates the document with a new value
+const result1 = await db.primitives.numbers.update("num1", 42)
+
+// Partial update, only updates the age field
+const result2 = await db.users.update("user1", {
+  age: 67,
+})
 ```
 
 ### Delete
@@ -381,7 +400,7 @@ result will be an object containing: id, versionstamp and all the entries in the
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.1.2/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.2.0/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)

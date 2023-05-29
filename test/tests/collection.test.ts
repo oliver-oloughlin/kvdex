@@ -1,4 +1,4 @@
-import type { Document } from "../../mod.ts"
+import { Document, flatten } from "../../mod.ts"
 import { db, type Person, reset, testPerson } from "../config.ts"
 import { assert } from "../../deps.ts"
 
@@ -261,95 +261,173 @@ Deno.test({
       },
     })
 
+    // Test "update" method
+    await t.step("update", async (t2) => {
+      await t2.step(
+        "Should update primitive and standard objects with new value",
+        async () => {
+          await reset()
+
+          const cr1 = await db.values.numbers.add(1)
+          const cr2 = await db.arrs.add(["1", "2", "3"])
+          const cr3 = await db.dates.add(new Date("2020-01-01"))
+          const cr4 = await db.values.u64s.add(new Deno.KvU64(100n))
+
+          assert(cr1.ok && cr2.ok && cr3.ok && cr4.ok)
+
+          const cr11 = await db.values.numbers.update(cr1.id, 2)
+          const cr22 = await db.arrs.update(cr2.id, ["101"])
+          const cr33 = await db.dates.update(cr3.id, new Date("2022-02-02"))
+          const cr44 = await db.values.u64s.update(cr4.id, new Deno.KvU64(200n))
+
+          assert(cr11.ok && cr22.ok && cr33.ok && cr44.ok)
+
+          const doc1 = await db.values.numbers.find(cr1.id)
+          const doc2 = await db.arrs.find(cr2.id)
+          const doc3 = await db.dates.find(cr3.id)
+          const doc4 = await db.values.u64s.find(cr4.id)
+
+          assert(doc1 !== null && doc1.value === 2)
+
+          assert(
+            doc2 !== null &&
+              JSON.stringify(doc2.value) === JSON.stringify(["101"]),
+          )
+
+          assert(
+            doc3 !== null &&
+              doc3.value.getMilliseconds() ===
+                new Date("2022-02-02").getMilliseconds(),
+          )
+
+          assert(
+            doc4 !== null && doc4.value.value === new Deno.KvU64(200n).value,
+          )
+        },
+      )
+
+      await t2.step(
+        "Should update object types with merged value",
+        async () => {
+          await reset()
+
+          const cr1 = await db.people.add(testPerson)
+
+          assert(cr1.ok)
+
+          const cr2 = await db.people.update(cr1.id, {
+            age: 77,
+            address: {
+              country: "Sweden",
+              city: null,
+            },
+            friends: [],
+          })
+
+          assert(cr2.ok)
+
+          const doc = await db.people.find(cr1.id)
+
+          assert(doc !== null)
+
+          const value = flatten(doc)
+
+          assert(value.name === testPerson.name)
+          assert(value.age === 77)
+          assert(value.address.country === "Sweden")
+          assert(value.address.city === null)
+          assert(typeof value.address.postcode === "undefined")
+          assert(value.friends.length === 0)
+        },
+      )
+    })
+
     // Test "deleteMany" method
-    Deno.test({
-      name: "deleteMany",
-      fn: async (t) => {
-        await t.step({
-          name: "Should delete all records",
-          fn: async () => {
-            await reset()
+    await t.step("deleteMany", async (t2) => {
+      await t2.step({
+        name: "Should delete all records",
+        fn: async () => {
+          await reset()
 
-            const r1 = await db.people.add(testPerson)
-            const r2 = await db.people.add(testPerson)
-            if (!r1.ok || !r2.ok) {
-              throw Error("'testPerson' not added to collection successfully")
-            }
+          const r1 = await db.people.add(testPerson)
+          const r2 = await db.people.add(testPerson)
+          if (!r1.ok || !r2.ok) {
+            throw Error("'testPerson' not added to collection successfully")
+          }
 
-            const id1 = r1.id
-            const id2 = r2.id
+          const id1 = r1.id
+          const id2 = r2.id
 
-            const p1_1 = await db.people.find(id1)
-            const p2_1 = await db.people.find(id2)
+          const p1_1 = await db.people.find(id1)
+          const p2_1 = await db.people.find(id2)
 
-            assert(p1_1 !== null)
-            assert(p2_1 !== null)
+          assert(p1_1 !== null)
+          assert(p2_1 !== null)
 
-            await db.people.deleteMany()
+          await db.people.deleteMany()
 
-            const p1_2 = await db.people.find(id1)
-            const p2_2 = await db.people.find(id2)
+          const p1_2 = await db.people.find(id1)
+          const p2_2 = await db.people.find(id2)
 
-            assert(p1_2 === null)
-            assert(p2_2 === null)
-          },
-        })
+          assert(p1_2 === null)
+          assert(p2_2 === null)
+        },
+      })
 
-        await t.step({
-          name: "Should only delete filtered records",
-          fn: async () => {
-            await reset()
+      await t2.step({
+        name: "Should only delete filtered records",
+        fn: async () => {
+          await reset()
 
-            const r1 = await db.people.add(testPerson)
-            const r2 = await db.people.add(testPerson)
-            if (!r1.ok || !r2.ok) {
-              throw Error("'testPerson' not added to collection successfully")
-            }
+          const r1 = await db.people.add(testPerson)
+          const r2 = await db.people.add(testPerson)
+          if (!r1.ok || !r2.ok) {
+            throw Error("'testPerson' not added to collection successfully")
+          }
 
-            const id1 = r1.id
-            const id2 = r2.id
+          const id1 = r1.id
+          const id2 = r2.id
 
-            const p1_1 = await db.people.find(id1)
-            const p2_1 = await db.people.find(id2)
+          const p1_1 = await db.people.find(id1)
+          const p2_1 = await db.people.find(id2)
 
-            assert(p1_1 !== null)
-            assert(p2_1 !== null)
+          assert(p1_1 !== null)
+          assert(p2_1 !== null)
 
-            await db.people.deleteMany({
-              filter: (doc) => doc.id === id1,
-            })
+          await db.people.deleteMany({
+            filter: (doc) => doc.id === id1,
+          })
 
-            const p1_2 = await db.people.find(id1)
-            const p2_2 = await db.people.find(id2)
+          const p1_2 = await db.people.find(id1)
+          const p2_2 = await db.people.find(id2)
 
-            assert(p1_2 === null)
-            assert(p2_2 !== null)
-          },
-        })
+          assert(p1_2 === null)
+          assert(p2_2 !== null)
+        },
+      })
 
-        await t.step({
-          name: "Should only delete the first 2 records",
-          fn: async () => {
-            await reset()
+      await t2.step({
+        name: "Should only delete the first 2 records",
+        fn: async () => {
+          await reset()
 
-            await db.people.add(testPerson)
-            await db.people.add(testPerson)
-            await db.people.add(testPerson)
+          await db.people.add(testPerson)
+          await db.people.add(testPerson)
+          await db.people.add(testPerson)
 
-            const allPeople1 = await db.people.getMany()
+          const allPeople1 = await db.people.getMany()
 
-            assert(allPeople1.length === 3)
+          assert(allPeople1.length === 3)
 
-            await db.people.deleteMany({
-              limit: 2,
-            })
+          await db.people.deleteMany({
+            limit: 2,
+          })
 
-            const allPeople2 = await db.people.getMany()
+          const allPeople2 = await db.people.getMany()
 
-            assert(allPeople2.length === 1)
-          },
-        })
-      },
+          assert(allPeople2.length === 1)
+        },
+      })
     })
 
     // Test "getMany" method

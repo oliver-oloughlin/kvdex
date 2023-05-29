@@ -1,5 +1,6 @@
 import { db, reset, testPerson, testPerson2 } from "../config.ts"
 import { assert } from "../../deps.ts"
+import { flatten } from "../../mod.ts"
 
 Deno.test("indexable_collection", async (t1) => {
   // Test the configuration
@@ -354,6 +355,67 @@ Deno.test("indexable_collection", async (t1) => {
       })
 
       assert(indexDocs.length === 0)
+    })
+  })
+
+  // Test "update" method
+  await t1.step("update", async (t2) => {
+    await t2.step("Should update data with merged value", async () => {
+      await reset()
+
+      const cr1 = await db.indexablePeople.add(testPerson)
+
+      assert(cr1.ok)
+
+      const cr2 = await db.indexablePeople.update(cr1.id, {
+        age: 77,
+        address: {
+          country: "Sweden",
+          city: null,
+        },
+        friends: [],
+      })
+
+      assert(cr2.ok)
+
+      const idDoc = await db.indexablePeople.find(cr1.id)
+
+      const nameDoc = await db.indexablePeople.findByPrimaryIndex({
+        name: "Oliver",
+      })
+
+      const [ageDoc] = await db.indexablePeople.findBySecondaryIndex({
+        age: 77,
+      })
+
+      assert(idDoc !== null)
+      assert(nameDoc !== null)
+      assert(typeof ageDoc !== "undefined" && ageDoc !== null)
+
+      const value1 = flatten(idDoc)
+      const value2 = flatten(nameDoc)
+      const value3 = flatten(ageDoc)
+
+      assert(value1.name === testPerson.name)
+      assert(value1.age === 77)
+      assert(value1.address.country === "Sweden")
+      assert(value1.address.city === null)
+      assert(typeof value1.address.postcode === "undefined")
+      assert(value1.friends.length === 0)
+
+      assert(value2.name === testPerson.name)
+      assert(value2.age === 77)
+      assert(value2.address.country === "Sweden")
+      assert(value2.address.city === null)
+      assert(typeof value2.address.postcode === "undefined")
+      assert(value2.friends.length === 0)
+
+      assert(value3.name === testPerson.name)
+      assert(value3.age === 77)
+      assert(value3.address.country === "Sweden")
+      assert(value3.address.city === null)
+      assert(typeof value3.address.postcode === "undefined")
+      assert(value3.friends.length === 0)
     })
   })
 
