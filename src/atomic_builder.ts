@@ -27,12 +27,11 @@ import {
 export class AtomicBuilder<
   const TSchema extends Schema,
   const TValue extends KvValue,
-  const TCollection extends Collection<TValue>,
 > {
   private kv: Deno.Kv
   private schema: TSchema
   private operations: Operations
-  private collection: TCollection
+  private collection: Collection<TValue>
 
   /**
    * Create a new AtomicBuilder for building and executing atomic operations in the KV store.
@@ -45,7 +44,7 @@ export class AtomicBuilder<
   constructor(
     kv: Deno.Kv,
     schema: TSchema,
-    collection: TCollection,
+    collection: Collection<TValue>,
     operations?: Operations,
   ) {
     this.kv = kv
@@ -73,7 +72,7 @@ export class AtomicBuilder<
    * @returns A new AtomicBuilder instance.
    */
   select<const TValue extends KvValue>(
-    selector: CollectionSelector<TSchema, TValue, Collection<TValue>>,
+    selector: CollectionSelector<TSchema, TValue>,
   ) {
     return new AtomicBuilder(
       this.kv,
