@@ -75,7 +75,7 @@ Deno.test("indexable_collection", async (t1) => {
         assert(indexDoc === null)
 
         const indexDocs = await db.indexablePeople.findBySecondaryIndex({
-          username: "oliver",
+          name: testPerson.name,
         })
 
         assert(indexDocs.length === 0)
@@ -181,7 +181,7 @@ Deno.test("indexable_collection", async (t1) => {
         assert(indexDoc === null)
 
         const indexDocs = await db.indexablePeople.findBySecondaryIndex({
-          username: "oliver",
+          name: testPerson.name,
         })
 
         assert(indexDocs.length === 0)
@@ -554,7 +554,7 @@ Deno.test("indexable_collection", async (t1) => {
 
         // Check that secondary indices are deleted
         const indexDocs = await db.indexablePeople.findBySecondaryIndex({
-          username: "oliver",
+          age: 24,
         })
 
         assert(indexDocs.length === 0)

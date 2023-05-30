@@ -46,7 +46,7 @@ export class IndexableCollection<
    * @param collectionKey - Key that identifies the collection, an array of Deno.KvKeyPart.
    * @param indexRecord - Record of which fields that should be indexed.
    */
-  constructor(kv: Deno.Kv, collectionKey: KvKey, indexRecord: T2) {
+  constructor(kv: Deno.Kv, collectionKey: KvKey, indexRecord?: T2) {
     super(kv, collectionKey)
 
     this.primaryCollectionIndexKey = extendKey(

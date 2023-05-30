@@ -105,7 +105,7 @@ export type IndexRecord<T extends Model> = {
 }
 
 export type IndexSelection<T1 extends Model, T2 extends IndexRecord<T1>> = {
-  [K in keyof T2]: CheckKvId<CheckKeyOf<K, T1>, CheckKeyOf<K, T1>>
+  [K in keyof T2]?: CheckKvId<CheckKeyOf<K, T1>, CheckKeyOf<K, T1>>
 }
 
 export type CheckIndexRecord<T1 extends Model, T2> = T2 extends IndexRecord<T1>
