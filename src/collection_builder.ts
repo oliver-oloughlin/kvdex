@@ -58,7 +58,7 @@ export class CollectionBuilder {
     collectionKey: KvKey,
   ) {
     this.checkCollectionKey(collectionKey)
-    return new IndexableCollectionDef<T>(this.kv, collectionKey)
+    return new IndexableCollectionBuilder<T>(this.kv, collectionKey)
   }
 
   private checkCollectionKey(collectionKey: KvKey) {
@@ -74,7 +74,10 @@ export class CollectionBuilder {
   }
 }
 
-class IndexableCollectionDef<const T1 extends Model> {
+/**
+ * Builder object for creating a new IndexableCollection.
+ */
+class IndexableCollectionBuilder<const T1 extends Model> {
   private kv: Deno.Kv
   private collectionKey: KvKey
 
@@ -83,6 +86,13 @@ class IndexableCollectionDef<const T1 extends Model> {
     this.collectionKey = collectionKey
   }
 
+  /**
+   * Sets the indices of an IndexableCollection and returns the
+   * collection instance.
+   *
+   * @param indexRecord - Index record of primary and secondary indices.
+   * @returns - A new IndexableCollection instance.
+   */
   indices<const T2 extends IndexRecord<T1>>(indexRecord: T2) {
     return new IndexableCollection<T1, T2>(
       this.kv,

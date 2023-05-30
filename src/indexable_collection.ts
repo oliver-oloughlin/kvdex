@@ -1,5 +1,6 @@
 import { Collection } from "./collection.ts"
 import {
+  COLLECTION_ID_KEY_SUFFIX,
   COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
   COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
 } from "./constants.ts"
@@ -7,6 +8,7 @@ import type {
   CommitResult,
   Document,
   FindOptions,
+  IndexableCollectionKeys,
   IndexDataEntry,
   IndexRecord,
   IndexType,
@@ -37,27 +39,30 @@ export class IndexableCollection<
 > extends Collection<T1> {
   readonly primaryIndexList: string[]
   readonly secondaryIndexList: string[]
-  readonly primaryCollectionIndexKey: KvKey
-  readonly secondaryCollectionIndexKey: KvKey
+  readonly keys: IndexableCollectionKeys
 
   /**
    * Create a new IndexableCollection for handling object documents in the KV store.
    *
    * @param kv - The Deno KV instance to be used.
    * @param collectionKey - Key that identifies the collection, an array of Deno.KvKeyPart.
-   * @param indexRecord - Record of which fields that should be indexed.
+   * @param indexRecord - Record of primary and secondary indices.
    */
   constructor(kv: Deno.Kv, collectionKey: KvKey, indexRecord?: T2) {
     super(kv, collectionKey)
 
-    this.primaryCollectionIndexKey = extendKey(
-      collectionKey,
-      COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
-    )
-    this.secondaryCollectionIndexKey = extendKey(
-      collectionKey,
-      COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
-    )
+    this.keys = {
+      baseKey: collectionKey,
+      idKey: extendKey(collectionKey, COLLECTION_ID_KEY_SUFFIX),
+      primaryIndexKey: extendKey(
+        collectionKey,
+        COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
+      ),
+      secondaryIndexKey: extendKey(
+        collectionKey,
+        COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
+      ),
+    }
 
     const primaryIndexEntries = Object.entries(indexRecord ?? {}) as [
       string,
@@ -80,7 +85,7 @@ export class IndexableCollection<
 
   async add(data: T1) {
     const id = generateId()
-    const idKey = extendKey(this.collectionIdKey, id)
+    const idKey = extendKey(this.keys.idKey, id)
 
     let atomic = this.kv
       .atomic()
@@ -108,7 +113,7 @@ export class IndexableCollection<
   }
 
   async set(id: KvId, data: T1) {
-    const idKey = extendKey(this.collectionIdKey, id)
+    const idKey = extendKey(this.keys.idKey, id)
 
     let atomic = this.kv
       .atomic()
@@ -153,7 +158,7 @@ export class IndexableCollection<
 
     entries.forEach((data) => {
       const id = generateId()
-      const idKey = extendKey(this.collectionIdKey, id)
+      const idKey = extendKey(this.keys.idKey, id)
 
       atomic = atomic
         .check({
@@ -195,7 +200,7 @@ export class IndexableCollection<
     if (indexList.length < 1) return null
 
     const keys = indexList.map(([index, indexValue]) =>
-      extendKey(this.primaryCollectionIndexKey, index, indexValue)
+      extendKey(this.keys.primaryIndexKey, index, indexValue)
     )
 
     const results = await Promise.all(
@@ -250,7 +255,7 @@ export class IndexableCollection<
 
     const result: Document<T1>[] = []
     const keys = indexList.map(([index, indexValue]) =>
-      extendKey(this.secondaryCollectionIndexKey, index, indexValue)
+      extendKey(this.keys.secondaryIndexKey, index, indexValue)
     )
 
     for (const key of keys) {
@@ -277,7 +282,7 @@ export class IndexableCollection<
   }
 
   async delete(id: KvId) {
-    const idKey = extendKey(this.collectionIdKey, id)
+    const idKey = extendKey(this.keys.idKey, id)
     const { value } = await this.kv.get<T1>(idKey)
 
     if (value === null) return
@@ -293,7 +298,7 @@ export class IndexableCollection<
     id: TId,
     data: Partial<T1>,
   ): Promise<CommitResult<T1, TId>> {
-    const key = extendKey(this.collectionIdKey, id)
+    const key = extendKey(this.keys.idKey, id)
     const { value, versionstamp } = await this.kv.get<T1>(key)
 
     if (value === null || versionstamp === null) {
@@ -322,7 +327,7 @@ export class IndexableCollection<
   }
 
   async deleteMany(options?: ListOptions<T1>) {
-    const iter = this.kv.list<T1>({ prefix: this.collectionIdKey }, options)
+    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
     let atomic = this.kv.atomic()
 
     for await (const entry of iter) {

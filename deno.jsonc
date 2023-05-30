@@ -4,7 +4,8 @@
     "prep": "deno fmt && deno test --unstable"
   },
   "fmt": {
-    "semiColons": false
+    "semiColons": false,
+    "exclude": ["README.md"]
   },
   "test": {
     "include": ["./test/tests"]

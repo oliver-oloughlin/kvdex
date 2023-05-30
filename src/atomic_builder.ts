@@ -100,7 +100,7 @@ export class AtomicBuilder<
    * @returns Current AtomicBuilder instance.
    */
   add(data: TValue) {
-    const collectionIdKey = this.collection.collectionIdKey
+    const collectionIdKey = this.collection.keys.idKey
     const id = generateId()
     const idKey = extendKey(collectionIdKey, id)
 
@@ -109,11 +109,9 @@ export class AtomicBuilder<
     )
 
     if (this.collection instanceof IndexableCollection) {
-      const primaryCollectionIndexKey =
-        this.collection.primaryCollectionIndexKey
+      const primaryCollectionIndexKey = this.collection.keys.primaryIndexKey
 
-      const secondaryCollectionIndexKey =
-        this.collection.secondaryCollectionIndexKey
+      const secondaryCollectionIndexKey = this.collection.keys.secondaryIndexKey
 
       const primaryIndexList = this.collection.primaryIndexList
 
@@ -182,7 +180,7 @@ export class AtomicBuilder<
    * @returns Current AtomicBuilder instance.
    */
   set(id: KvId, data: TValue) {
-    const collectionKey = this.collection.collectionIdKey
+    const collectionKey = this.collection.keys.idKey
     const idKey = extendKey(collectionKey, id)
 
     this.operations.atomicFns.push((op) =>
@@ -190,11 +188,9 @@ export class AtomicBuilder<
     )
 
     if (this.collection instanceof IndexableCollection) {
-      const primaryCollectionIndexKey =
-        this.collection.primaryCollectionIndexKey
+      const primaryCollectionIndexKey = this.collection.keys.primaryIndexKey
 
-      const secondaryCollectionIndexKey =
-        this.collection.secondaryCollectionIndexKey
+      const secondaryCollectionIndexKey = this.collection.keys.secondaryIndexKey
 
       const primaryIndexList = this.collection.primaryIndexList
 
@@ -259,17 +255,15 @@ export class AtomicBuilder<
    * @returns Current AtomicBuilder instance.
    */
   delete(id: KvId) {
-    const collectionKey = this.collection.collectionIdKey
+    const collectionKey = this.collection.keys.idKey
     const idKey = extendKey(collectionKey, id)
 
     this.operations.atomicFns.push((op) => op.delete(idKey))
 
     if (this.collection instanceof IndexableCollection) {
-      const primaryCollectionIndexKey =
-        this.collection.primaryCollectionIndexKey
+      const primaryCollectionIndexKey = this.collection.keys.primaryIndexKey
 
-      const secondaryCollectionIndexKey =
-        this.collection.secondaryCollectionIndexKey
+      const secondaryCollectionIndexKey = this.collection.keys.secondaryIndexKey
 
       const primaryIndexList = this.collection.primaryIndexList
 
@@ -313,7 +307,7 @@ export class AtomicBuilder<
   check(...atomicChecks: AtomicCheck<TValue>[]) {
     const checks: Deno.AtomicCheck[] = atomicChecks.map(
       ({ id, versionstamp }) => {
-        const key = extendKey(this.collection.collectionIdKey, id)
+        const key = extendKey(this.collection.keys.idKey, id)
         return {
           key,
           versionstamp,
@@ -341,7 +335,7 @@ export class AtomicBuilder<
    * @returns Current AtomicBuilder instance.
    */
   sum(id: KvId, value: bigint) {
-    const idKey = extendKey(this.collection.collectionIdKey, id)
+    const idKey = extendKey(this.collection.keys.idKey, id)
     this.operations.atomicFns.push((op) => op.sum(idKey, value))
     return this
   }
@@ -371,7 +365,7 @@ export class AtomicBuilder<
    */
   mutate(...mutations: AtomicMutation<TValue>[]) {
     const kvMutations: Deno.KvMutation[] = mutations.map(({ id, ...rest }) => {
-      const idKey = extendKey(this.collection.collectionIdKey, id)
+      const idKey = extendKey(this.collection.keys.idKey, id)
       return {
         key: idKey,
         ...rest,
@@ -391,13 +385,12 @@ export class AtomicBuilder<
       }
 
       if (this.collection instanceof IndexableCollection) {
-        const collectionIdKey = this.collection.collectionIdKey
+        const collectionIdKey = this.collection.keys.idKey
 
-        const primaryCollectionIndexKey =
-          this.collection.primaryCollectionIndexKey
+        const primaryCollectionIndexKey = this.collection.keys.primaryIndexKey
 
         const secondaryCollectionIndexKey =
-          this.collection.secondaryCollectionIndexKey
+          this.collection.keys.secondaryIndexKey
 
         const primaryIndexList = this.collection.primaryIndexList
 

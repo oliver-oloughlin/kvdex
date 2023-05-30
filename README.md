@@ -14,7 +14,7 @@ Optional and nullable properties are allowed. If you wish to use Zod, you can
 create your Zod object schema and use its type as your model.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.2.1/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.3.0/mod.ts"
 
 interface User extends Model {
   username: string
@@ -35,16 +35,17 @@ The "createDb" function is used for creating a new database instance. It takes a
 Deno KV instance and a schema builder function as arguments.
 
 ```ts
-import { createDb } from "https://deno.land/x/kvdex@v0.2.1/mod.ts"
+import { createDb } from "https://deno.land/x/kvdex@v0.3.0/mod.ts"
 
 const kv = await Deno.openKv()
 
 const db = createDb(kv, (builder) => ({
   users: builder.collection<User>(["users"]),
-  indexableUsers: builder.indexableCollection<User>(["indexableUsers"], {
+  indexableUsers: builder.indexableCollection<User>(["indexableUsers"]).indices({
     username: "primary",
     age: "secondary",
   }),
+  // Nested
   primitives: {
     strings: builder.collection<string>(["primitives", "strings"]),
     bigints: builder.collection<bigint>(["primitives", "bigints"]),
@@ -53,15 +54,15 @@ const db = createDb(kv, (builder) => ({
 ```
 
 The schema builder function receives a builder object that is used to create
-collections. The output of this function should be a schema object containing
+collections. The output of this function is a schema object containing
 collections (or sub-schema objects for nesting). When creating a collection, a
 collection key must be provided, as well as the type of data the collection will
-store. For indexable collections, an index record specifying which fields should
-be indexed can also be provided. Primary (unique) and secondary (non-unique)
-indexing is supported. Standard collections can hold data of any type included
-in KvValue, this includes primitives like strings and numbers, while indexable
-collections can only hold data that extends the Model type (Objects). If any two
-collections have an identical key, the function will throw an error.
+store. For indexable collections, an extra step is required for specifying
+indices. Primary (unique) and secondary (non-unique) indexing is supported.
+Standard collections can hold data of any type included in KvValue, this
+includes primitives like strings and numbers, while indexable collections can
+only hold data that extends the Model type (Objects). If any two collections
+have an identical key, the function will throw an error.
 
 ## Collection Methods
 
@@ -424,7 +425,7 @@ result will be an object containing: id, versionstamp and all the entries in the
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.2.1/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.3.0/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)

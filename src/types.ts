@@ -71,6 +71,11 @@ export type AtomicMutation<T extends KvValue> =
   )
 
 // Collection Types
+export type CollectionKeys = {
+  baseKey: KvKey
+  idKey: KvKey
+}
+
 export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   /**
    * Filter documents based on predicate.
@@ -94,6 +99,11 @@ export type CommitResult<T1 extends KvValue, T2 extends KvId> = {
 }
 
 // Indexable Collection Types
+export type IndexableCollectionKeys = CollectionKeys & {
+  primaryIndexKey: KvKey
+  secondaryIndexKey: KvKey
+}
+
 export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
 
 export type IndexType = "primary" | "secondary"
@@ -130,6 +140,18 @@ export type Schema = {
 }
 
 export type DB<TSchema extends Schema> = TSchema & {
+  /**
+   * Initiates an atomic operation.
+   * Takes a selector function as argument which is used to select an initial collection.
+   *
+   * **Example:**
+   * ```ts
+   * db.atomic(schema => schema.users)
+   * ```
+   *
+   * @param selector - Collection selector function.
+   * @returns A new AtomicBuilder instance.
+   */
   atomic: <
     const TValue extends KvValue,
     const TCollection extends Collection<TValue>,
