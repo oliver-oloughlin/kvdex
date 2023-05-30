@@ -100,22 +100,26 @@ export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
 
 export type IndexType = "primary" | "secondary"
 
+export type KeysThatExtend<T1, T2> = keyof {
+  [K in keyof T1 as T1[K] extends T2 ? K : never]: unknown
+}
+
 export type IndexRecord<T extends Model> = {
-  [key in keyof T]?: CheckKvId<T[key], IndexType>
+  [key in KeysThatExtend<T, KvId>]?: IndexType
 }
 
 export type PrimaryIndexSelection<
   T1 extends Model,
   T2 extends IndexRecord<T1>,
 > = {
-  [K in keyof T2]?: T2[K] extends "primary" ? CheckKeyOf<K, T1> : never
+  [K in KeysThatExtend<T2, "primary">]?: CheckKeyOf<K, T1>
 }
 
 export type SecondaryIndexSelection<
   T1 extends Model,
   T2 extends IndexRecord<T1>,
 > = {
-  [K in keyof T2]?: T2[K] extends "secondary" ? CheckKeyOf<K, T1> : never
+  [K in KeysThatExtend<T2, "secondary">]?: CheckKeyOf<K, T1>
 }
 
 export type CheckIndexRecord<T1 extends Model, T2> = T2 extends IndexRecord<T1>
