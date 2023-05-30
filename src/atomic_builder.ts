@@ -26,7 +26,7 @@ import {
  */
 export class AtomicBuilder<
   const TSchema extends Schema,
-  const TValue extends KvValue
+  const TValue extends KvValue,
 > {
   private kv: Deno.Kv
   private schema: TSchema
