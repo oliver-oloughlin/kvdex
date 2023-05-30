@@ -55,15 +55,15 @@ export type AtomicMutation<T extends KvValue> =
     }
     | {
       type: "sum"
-      value: Deno.KvU64
+      value: T extends Deno.KvU64 ? T : never
     }
     | {
       type: "min"
-      value: Deno.KvU64
+      value: T extends Deno.KvU64 ? T : never
     }
     | {
       type: "max"
-      value: Deno.KvU64
+      value: T extends Deno.KvU64 ? T : never
     }
     | {
       type: "delete"
