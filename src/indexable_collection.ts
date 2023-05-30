@@ -9,12 +9,13 @@ import type {
   FindOptions,
   IndexDataEntry,
   IndexRecord,
-  IndexSelection,
   IndexType,
   KvId,
   KvKey,
   ListOptions,
   Model,
+  PrimaryIndexSelection,
+  SecondaryIndexSelection,
 } from "./types.ts"
 import {
   deleteIndices,
@@ -184,7 +185,7 @@ export class IndexableCollection<
    * @returns The document found by selected indexes, or null if not found.
    */
   async findByPrimaryIndex(
-    selection: IndexSelection<T1, T2>,
+    selection: PrimaryIndexSelection<T1, T2>,
     options?: FindOptions,
   ) {
     const indexList = Object.entries(selection).filter(([_, value]) =>
@@ -239,7 +240,7 @@ export class IndexableCollection<
    * @returns An array containing the resulting documents.
    */
   async findBySecondaryIndex(
-    selection: IndexSelection<T1, T2>,
+    selection: SecondaryIndexSelection<T1, T2>,
     options?: ListOptions<T1>,
   ) {
     const indexList = Object.entries(selection).filter(([_, value]) =>

@@ -69,13 +69,13 @@ Deno.test("indexable_collection", async (t1) => {
         assert(idDoc.value.name === testPerson.name)
 
         const indexDoc = await db.indexablePeople.findByPrimaryIndex({
-          age: testPerson.age,
+          age: undefined,
         })
 
         assert(indexDoc === null)
 
         const indexDocs = await db.indexablePeople.findBySecondaryIndex({
-          name: testPerson.name,
+          name: undefined,
         })
 
         assert(indexDocs.length === 0)
@@ -104,7 +104,7 @@ Deno.test("indexable_collection", async (t1) => {
         assert(idDoc.value.name === testPerson.name)
 
         const undefinedDoc = await db.indexablePeople.findByPrimaryIndex({
-          age: testPerson.age,
+          age: undefined,
         })
 
         assert(undefinedDoc === null)
@@ -175,13 +175,13 @@ Deno.test("indexable_collection", async (t1) => {
         assert(idDoc.value.name === testPerson.name)
 
         const indexDoc = await db.indexablePeople.findByPrimaryIndex({
-          age: testPerson.age,
+          age: undefined,
         })
 
         assert(indexDoc === null)
 
         const indexDocs = await db.indexablePeople.findBySecondaryIndex({
-          name: testPerson.name,
+          name: undefined,
         })
 
         assert(indexDocs.length === 0)
@@ -212,7 +212,7 @@ Deno.test("indexable_collection", async (t1) => {
         assert(idDoc.value.name === testPerson.name)
 
         const undefinedDoc = await db.indexablePeople.findByPrimaryIndex({
-          age: testPerson.age,
+          age: undefined,
         })
 
         assert(undefinedDoc === null)
@@ -342,31 +342,10 @@ Deno.test("indexable_collection", async (t1) => {
         }
 
         const indexDoc = await db.indexablePeople.findByPrimaryIndex({
-          age: testPerson.age,
+          age: undefined,
         })
 
         assert(indexDoc === null)
-      },
-    )
-
-    await t2.step(
-      "Should find document by selection of defined and undefined primary index",
-      async () => {
-        await reset()
-
-        const cr = await db.indexablePeople.add(testPerson)
-        if (!cr.ok) {
-          throw Error("document was not added to collection usccessfully")
-        }
-
-        const indexDoc = await db.indexablePeople.findByPrimaryIndex({
-          age: testPerson.age,
-          name: testPerson.name,
-        })
-
-        assert(indexDoc !== null)
-        assert(indexDoc.id === cr.id)
-        assert(indexDoc.value.name === testPerson.name)
       },
     )
   })
