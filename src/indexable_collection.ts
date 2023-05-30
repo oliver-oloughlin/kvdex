@@ -1,7 +1,7 @@
 import { Collection } from "./collection.ts"
 import {
-  COLLECTION_INDEX_PRIMARY_KEY_SUFFIX,
-  COLLECTION_INDEX_SECONDARY_KEY_SUFFIX,
+  COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
+  COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
 } from "./constants.ts"
 import type {
   CommitResult,
@@ -52,11 +52,11 @@ export class IndexableCollection<
 
     this.primaryCollectionIndexKey = extendKey(
       collectionKey,
-      COLLECTION_INDEX_PRIMARY_KEY_SUFFIX,
+      COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
     )
     this.secondaryCollectionIndexKey = extendKey(
       collectionKey,
-      COLLECTION_INDEX_SECONDARY_KEY_SUFFIX,
+      COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
     )
 
     const primaryIndexEntries = Object.entries(indexRecord ?? {}) as [

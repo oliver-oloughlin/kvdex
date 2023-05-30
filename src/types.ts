@@ -94,8 +94,6 @@ export type CommitResult<T1 extends KvValue, T2 extends KvId> = {
 }
 
 // Indexable Collection Types
-export type CheckKvId<T1 extends KvValue, T2> = T1 extends KvId ? T2 : never
-
 export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
 
 export type IndexType = "primary" | "secondary"
@@ -121,10 +119,6 @@ export type SecondaryIndexSelection<
 > = {
   [K in KeysThatExtend<T2, "secondary">]?: CheckKeyOf<K, T1>
 }
-
-export type CheckIndexRecord<T1 extends Model, T2> = T2 extends IndexRecord<T1>
-  ? T2
-  : IndexRecord<T1>
 
 export type IndexDataEntry<T extends Model> = Omit<T, "__id__"> & {
   __id__: KvId
