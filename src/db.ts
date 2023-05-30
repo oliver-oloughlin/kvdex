@@ -19,7 +19,7 @@ import { CollectionBuilder } from "./collection_builder.ts"
  *
  * const db = createDb(kv, (builder) => ({
  *   numbers: builder.collection<number>(["numbers"]),
- *   users: builder.indexableCollection<User>(["users"], {
+ *   users: builder.indexableCollection<User>(["users"]).indices({
  *     username: "primary",
  *     age: "secondary"
  *   })
@@ -39,13 +39,6 @@ export function createDb<const T extends Schema>(
 
   return {
     ...schema,
-    /**
-     * Initiates an atomic operation.
-     * Takes a selector function as argument which is used to select an initial collection.
-     *
-     * @param selector - Collection selector function.
-     * @returns - Commit object.
-     */
     atomic: (selector) => new AtomicBuilder(kv, schema, selector(schema)),
   }
 }

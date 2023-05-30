@@ -70,7 +70,7 @@ export function setIndices<T1 extends Model, T2 extends IndexRecord<T1>>(
     if (typeof indexValue === "undefined") return
 
     const indexKey = extendKey(
-      collection.primaryCollectionIndexKey,
+      collection.keys.primaryIndexKey,
       index,
       indexValue,
     )
@@ -88,7 +88,7 @@ export function setIndices<T1 extends Model, T2 extends IndexRecord<T1>>(
     if (typeof indexValue === "undefined") return
 
     const indexKey = extendKey(
-      collection.secondaryCollectionIndexKey,
+      collection.keys.secondaryIndexKey,
       index,
       indexValue,
       id,
@@ -114,7 +114,7 @@ export function deleteIndices<T1 extends Model, T2 extends IndexRecord<T1>>(
   collection.primaryIndexList.forEach((index) => {
     const indexValue = data[index] as KvId
     const indexKey = extendKey(
-      collection.primaryCollectionIndexKey,
+      collection.keys.primaryIndexKey,
       index,
       indexValue,
     )
@@ -124,7 +124,7 @@ export function deleteIndices<T1 extends Model, T2 extends IndexRecord<T1>>(
   collection.secondaryIndexList.forEach((index) => {
     const indexValue = data[index] as KvId
     const indexKey = extendKey(
-      collection.secondaryCollectionIndexKey,
+      collection.keys.secondaryIndexKey,
       index,
       indexValue,
       id,

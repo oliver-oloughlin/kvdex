@@ -71,6 +71,11 @@ export type AtomicMutation<T extends KvValue> =
   )
 
 // Collection Types
+export type CollectionKeys = {
+  baseKey: KvKey
+  idKey: KvKey
+}
+
 export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   /**
    * Filter documents based on predicate.
@@ -94,23 +99,36 @@ export type CommitResult<T1 extends KvValue, T2 extends KvId> = {
 }
 
 // Indexable Collection Types
-export type CheckKvId<T1 extends KvValue, T2> = T1 extends KvId ? T2 : never
+export type IndexableCollectionKeys = CollectionKeys & {
+  primaryIndexKey: KvKey
+  secondaryIndexKey: KvKey
+}
 
 export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
 
 export type IndexType = "primary" | "secondary"
 
+export type KeysThatExtend<T1, T2> = keyof {
+  [K in keyof T1 as T1[K] extends T2 ? K : never]: unknown
+}
+
 export type IndexRecord<T extends Model> = {
-  [key in keyof T]?: CheckKvId<T[key], IndexType>
+  [key in KeysThatExtend<T, KvId>]?: IndexType
 }
 
-export type IndexSelection<T1 extends Model, T2 extends IndexRecord<T1>> = {
-  [K in keyof T2]: CheckKvId<CheckKeyOf<K, T1>, CheckKeyOf<K, T1>>
+export type PrimaryIndexSelection<
+  T1 extends Model,
+  T2 extends IndexRecord<T1>,
+> = {
+  [K in KeysThatExtend<T2, "primary">]?: CheckKeyOf<K, T1>
 }
 
-export type CheckIndexRecord<T1 extends Model, T2> = T2 extends IndexRecord<T1>
-  ? T2
-  : IndexRecord<T1>
+export type SecondaryIndexSelection<
+  T1 extends Model,
+  T2 extends IndexRecord<T1>,
+> = {
+  [K in KeysThatExtend<T2, "secondary">]?: CheckKeyOf<K, T1>
+}
 
 export type IndexDataEntry<T extends Model> = Omit<T, "__id__"> & {
   __id__: KvId
@@ -122,6 +140,18 @@ export type Schema = {
 }
 
 export type DB<TSchema extends Schema> = TSchema & {
+  /**
+   * Initiates an atomic operation.
+   * Takes a selector function as argument which is used to select an initial collection.
+   *
+   * **Example:**
+   * ```ts
+   * db.atomic(schema => schema.users)
+   * ```
+   *
+   * @param selector - Collection selector function.
+   * @returns A new AtomicBuilder instance.
+   */
   atomic: <
     const TValue extends KvValue,
     const TCollection extends Collection<TValue>,

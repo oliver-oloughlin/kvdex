@@ -55,63 +55,6 @@ Deno.test("indexable_collection", async (t1) => {
     )
 
     await t2.step(
-      "Should add document to collection by id, but not by undefined index",
-      async () => {
-        await reset()
-
-        const cr = await db.indexablePeople.add(testPerson)
-        if (!cr.ok) {
-          throw Error("Did not add document to collection successfully")
-        }
-
-        const idDoc = await db.indexablePeople.find(cr.id)
-        assert(idDoc !== null)
-        assert(idDoc.value.name === testPerson.name)
-
-        const indexDoc = await db.indexablePeople.findByPrimaryIndex({
-          age: testPerson.age,
-        })
-
-        assert(indexDoc === null)
-
-        const indexDocs = await db.indexablePeople.findBySecondaryIndex({
-          username: "oliver",
-        })
-
-        assert(indexDocs.length === 0)
-      },
-    )
-
-    await t2.step(
-      "Should add document to collection by id and only defined index",
-      async () => {
-        await reset()
-
-        const cr = await db.indexablePeople.add(testPerson)
-        if (!cr.ok) {
-          throw Error("Did not add document to collection successfully")
-        }
-
-        const idDoc = await db.indexablePeople.find(cr.id)
-        assert(idDoc !== null)
-        assert(idDoc.value.name === testPerson.name)
-
-        const indexDoc = await db.indexablePeople.findByPrimaryIndex({
-          name: testPerson.name,
-        })
-
-        assert(indexDoc !== null)
-        assert(idDoc.value.name === testPerson.name)
-
-        const undefinedDoc = await db.indexablePeople.findByPrimaryIndex({
-          age: testPerson.age,
-        })
-
-        assert(undefinedDoc === null)
-      },
-    )
-
-    await t2.step(
       "Should not add document by id or index if any entry already exists",
       async () => {
         await reset()
@@ -155,67 +98,6 @@ Deno.test("indexable_collection", async (t1) => {
         })
 
         assert(indexDocs.some((doc) => doc.id === cr.id))
-      },
-    )
-
-    await t2.step(
-      "Should add document to collection by given id, but not by undefined index",
-      async () => {
-        await reset()
-
-        const id = "oliver"
-
-        const cr = await db.indexablePeople.set(id, testPerson)
-        if (!cr.ok) {
-          throw Error("Did not add document to collection successfully")
-        }
-
-        const idDoc = await db.indexablePeople.find(cr.id)
-        assert(idDoc !== null)
-        assert(idDoc.value.name === testPerson.name)
-
-        const indexDoc = await db.indexablePeople.findByPrimaryIndex({
-          age: testPerson.age,
-        })
-
-        assert(indexDoc === null)
-
-        const indexDocs = await db.indexablePeople.findBySecondaryIndex({
-          username: "oliver",
-        })
-
-        assert(indexDocs.length === 0)
-      },
-    )
-
-    await t2.step(
-      "Should add document to collection by given id and only defined index",
-      async () => {
-        await reset()
-
-        const id = "oliver"
-
-        const cr = await db.indexablePeople.set(id, testPerson)
-        if (!cr.ok) {
-          throw Error("Did not add document to collection successfully")
-        }
-
-        const idDoc = await db.indexablePeople.find(id)
-        assert(idDoc !== null)
-        assert(idDoc.value.name === testPerson.name)
-
-        const indexDoc = await db.indexablePeople.findByPrimaryIndex({
-          name: testPerson.name,
-        })
-
-        assert(indexDoc !== null)
-        assert(idDoc.value.name === testPerson.name)
-
-        const undefinedDoc = await db.indexablePeople.findByPrimaryIndex({
-          age: testPerson.age,
-        })
-
-        assert(undefinedDoc === null)
       },
     )
 
@@ -330,45 +212,6 @@ Deno.test("indexable_collection", async (t1) => {
       assert(indexDoc.id === cr.id)
       assert(indexDoc.value.name === testPerson.name)
     })
-
-    await t2.step(
-      "Should not find document by undefined primary index",
-      async () => {
-        await reset()
-
-        const cr = await db.indexablePeople.add(testPerson)
-        if (!cr.ok) {
-          throw Error("document was not added to collection usccessfully")
-        }
-
-        const indexDoc = await db.indexablePeople.findByPrimaryIndex({
-          age: testPerson.age,
-        })
-
-        assert(indexDoc === null)
-      },
-    )
-
-    await t2.step(
-      "Should find document by selection of defined and undefined primary index",
-      async () => {
-        await reset()
-
-        const cr = await db.indexablePeople.add(testPerson)
-        if (!cr.ok) {
-          throw Error("document was not added to collection usccessfully")
-        }
-
-        const indexDoc = await db.indexablePeople.findByPrimaryIndex({
-          age: testPerson.age,
-          name: testPerson.name,
-        })
-
-        assert(indexDoc !== null)
-        assert(indexDoc.id === cr.id)
-        assert(indexDoc.value.name === testPerson.name)
-      },
-    )
   })
 
   // Test "findBySecondaryIndex" method
@@ -554,7 +397,7 @@ Deno.test("indexable_collection", async (t1) => {
 
         // Check that secondary indices are deleted
         const indexDocs = await db.indexablePeople.findBySecondaryIndex({
-          username: "oliver",
+          age: 24,
         })
 
         assert(indexDocs.length === 0)
