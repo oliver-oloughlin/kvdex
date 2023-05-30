@@ -5,8 +5,7 @@ import type { AtomicBuilder } from "./atomic_builder.ts"
 export type CollectionSelector<
   T1 extends Schema,
   T2 extends KvValue,
-  T3 extends Collection<T2>,
-> = (schema: T1) => T3
+> = (schema: T1) => Collection<T2>
 
 export type AtomicOperationFn = (
   op: Deno.AtomicOperation,
@@ -154,10 +153,9 @@ export type DB<TSchema extends Schema> = TSchema & {
    */
   atomic: <
     const TValue extends KvValue,
-    const TCollection extends Collection<TValue>,
   >(
-    selector: CollectionSelector<TSchema, TValue, TCollection>,
-  ) => AtomicBuilder<TSchema, TValue, TCollection>
+    selector: CollectionSelector<TSchema, TValue>,
+  ) => AtomicBuilder<TSchema, TValue>
 }
 
 // KV Types
