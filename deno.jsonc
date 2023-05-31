@@ -1,7 +1,9 @@
 {
+  "lock": false,
   "tasks": {
     "test": "deno test --unstable",
-    "prep": "deno fmt && deno test --unstable"
+    "prep": "deno fmt && deno test --unstable",
+    "bench": "deno bench --unstable"
   },
   "fmt": {
     "semiColons": false,
@@ -9,5 +11,8 @@
   },
   "test": {
     "include": ["./test/tests"]
+  },
+  "bench": {
+    "include": ["./bench/benches"]
   }
 }
