@@ -14,7 +14,7 @@ Optional and nullable properties are allowed. If you wish to use Zod, you can
 create your Zod object schema and use its type as your model.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.3.1/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.3.2/mod.ts"
 
 interface User extends Model {
   username: string
@@ -35,17 +35,17 @@ The "createDb" function is used for creating a new database instance. It takes a
 Deno KV instance and a schema builder function as arguments.
 
 ```ts
-import { createDb } from "https://deno.land/x/kvdex@v0.3.1/mod.ts"
+import { createDb } from "https://deno.land/x/kvdex@v0.3.2/mod.ts"
 
 const kv = await Deno.openKv()
 
 const db = createDb(kv, (builder) => ({
   users: builder.collection<User>(["users"]),
   indexableUsers: builder.indexableCollection<User>(["indexableUsers"]).indices({
-    username: "primary",
-    age: "secondary",
+    username: "primary", // Unique index
+    age: "secondary", // Non-unique index
   }),
-  // Nested
+  // Nested collections
   primitives: {
     strings: builder.collection<string>(["primitives", "strings"]),
     bigints: builder.collection<bigint>(["primitives", "bigints"]),
@@ -425,7 +425,7 @@ result will be an object containing: id, versionstamp and all the entries in the
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.3.1/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.3.2/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
