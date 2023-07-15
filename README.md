@@ -128,10 +128,10 @@ Deno.KvCommitResult or Deno.KvCommitError upon completion.
 
 ```ts
 // Adds 5 new document entries to the KV store.
-await result = await db.numbers.add(1, 2, 3, 4, 5)
+await result = await db.numbers.addMany(1, 2, 3, 4, 5)
 
 // Will fail, as "username" is defined as a primary index and cannot have duplicates
-await result = await db.indexableUsers.add(
+await result = await db.indexableUsers.addMany(
   {
     username: "oli",
     age: 24
