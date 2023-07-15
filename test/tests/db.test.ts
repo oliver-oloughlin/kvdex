@@ -83,9 +83,9 @@ Deno.test("db", async (t1) => {
 
       assert(r !== null)
       assert(r.ok)
-      assert(numbersResult.some((n) => n.value === 1))
-      assert(numbersResult.some((n) => n.value === 2))
-      assert(numbersResult.some((n) => n.value === 3))
+      assert(numbersResult.result.some((n) => n.value === 1))
+      assert(numbersResult.result.some((n) => n.value === 2))
+      assert(numbersResult.result.some((n) => n.value === 3))
     })
 
     await t2.step("Should not commit new value", async () => {
@@ -141,7 +141,7 @@ Deno.test("db", async (t1) => {
       if (!cr.ok) throw Error("'10' not added to collection successfully")
 
       const nums1 = await db.values.numbers.getMany()
-      assert(nums1.length === 1)
+      assert(nums1.result.length === 1)
 
       const r1 = await db
         .atomic((schema) => schema.values.numbers)
@@ -166,10 +166,10 @@ Deno.test("db", async (t1) => {
       const nums2 = await db.values.numbers.getMany()
 
       assert(r1.ok)
-      assert(nums2.length === 2)
-      assert(nums2.some((doc) => doc.value === 1))
-      assert(nums2.some((doc) => doc.value === 2))
-      assert(!nums2.some((doc) => doc.value === 10))
+      assert(nums2.result.length === 2)
+      assert(nums2.result.some((doc) => doc.value === 1))
+      assert(nums2.result.some((doc) => doc.value === 2))
+      assert(!nums2.result.some((doc) => doc.value === 10))
     })
 
     await t2.step(
@@ -235,8 +235,8 @@ Deno.test("db", async (t1) => {
         const indexDocs = await db.indexablePeople.findBySecondaryIndex({
           age: 24,
         })
-        assert(indexDocs.some((doc) => doc.id === indexDoc1.id))
-        assert(indexDocs.some((doc) => doc.id === id2))
+        assert(indexDocs.result.some((doc) => doc.id === indexDoc1.id))
+        assert(indexDocs.result.some((doc) => doc.id === id2))
       },
     )
 
@@ -272,7 +272,7 @@ Deno.test("db", async (t1) => {
       const indexDocs = await db.indexablePeople.findBySecondaryIndex({
         age: 24,
       })
-      assert(indexDocs.length === 0)
+      assert(indexDocs.result.length === 0)
     })
 
     await t2.step(
@@ -302,7 +302,7 @@ Deno.test("db", async (t1) => {
         const indexDocs1 = await db.indexablePeople.findBySecondaryIndex({
           age: 24,
         })
-        assert(indexDocs1.some((doc) => doc.id === idDoc1.id))
+        assert(indexDocs1.result.some((doc) => doc.id === idDoc1.id))
 
         await db
           .atomic((schema) => schema.indexablePeople)
@@ -323,7 +323,7 @@ Deno.test("db", async (t1) => {
         const indexDocs2 = await db.indexablePeople.findBySecondaryIndex({
           age: 24,
         })
-        assert(indexDocs2.length === 0)
+        assert(indexDocs2.result.length === 0)
       },
     )
 
@@ -490,7 +490,7 @@ Deno.test("db", async (t1) => {
 
         await db.arrs.forEach((doc) =>
           assert(
-            typeof doc.value === "object" && doc.value instanceof Array<string>,
+            typeof doc.value === "object" && Array.isArray(doc.value),
           )
         )
         await db.i8arrs.forEach((doc) =>
@@ -601,14 +601,13 @@ Deno.test("db", async (t1) => {
 
         await db.sets.forEach((doc) =>
           assert(
-            typeof doc.value === "object" && doc.value instanceof Set<string>,
+            typeof doc.value === "object" && doc.value instanceof Set,
           )
         )
 
         await db.maps.forEach((doc) =>
           assert(
-            typeof doc.value === "object" &&
-              doc.value instanceof Map<string, number>,
+            typeof doc.value === "object" && doc.value instanceof Map,
           )
         )
 

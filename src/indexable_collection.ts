@@ -251,8 +251,9 @@ export class IndexableCollection<
     const indexList = Object.entries(selection).filter(([_, value]) =>
       typeof value !== "undefined"
     ) as [string, KvId][]
-    if (indexList.length < 1) return []
+    if (indexList.length < 1) return { result: [], cursor: undefined }
 
+    let cursor = ""
     const result: Document<T1>[] = []
     const keys = indexList.map(([index, indexValue]) =>
       extendKey(this.keys.secondaryIndexKey, index, indexValue)
@@ -276,14 +277,12 @@ export class IndexableCollection<
           result.push(doc)
         }
       }
-      return {
-        result,
-        cursor: iter.cursor,
-        next: iter.next,
-      }
+      cursor = iter.cursor
     }
-
-    
+    return {
+      result,
+      cursor,
+    }
   }
 
   async delete(id: KvId) {
@@ -355,7 +354,6 @@ export class IndexableCollection<
     }
     return {
       cursor: iter.cursor,
-      next: iter.next,
     }
   }
 }

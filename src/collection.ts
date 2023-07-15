@@ -336,7 +336,6 @@ export class Collection<const T extends KvValue> {
     }
     return {
       cursor: iter.cursor,
-      next: iter.next,
     }
   }
 
@@ -378,8 +377,7 @@ export class Collection<const T extends KvValue> {
 
     return {
       result,
-      cursor:  iter.cursor,
-      next: iter.next,
+      cursor: iter.cursor,
     }
   }
 
@@ -420,7 +418,6 @@ export class Collection<const T extends KvValue> {
     }
     return {
       cursor: iter.cursor,
-      next: iter.next,
     }
   }
 }
