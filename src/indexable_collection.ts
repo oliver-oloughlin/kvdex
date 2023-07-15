@@ -16,6 +16,7 @@ import type {
   KvKey,
   ListOptions,
   Model,
+  NoPaginationListOptions,
   PrimaryIndexSelection,
   SecondaryIndexSelection,
 } from "./types.ts"
@@ -246,14 +247,15 @@ export class IndexableCollection<
    */
   async findBySecondaryIndex(
     selection: SecondaryIndexSelection<T1, T2>,
-    options?: ListOptions<T1>,
+    options?: NoPaginationListOptions<T1>,
   ) {
-    const indexList = Object.entries(selection).filter(([_, value]) =>
-      typeof value !== "undefined"
-    ) as [string, KvId][]
-    if (indexList.length < 1) return { result: [], cursor: undefined }
+    const indexList = Object.entries(selection)
+      .filter(([_, value]) => typeof value !== "undefined") as [string, KvId][]
 
-    let cursor = ""
+    if (indexList.length < 1) {
+      return []
+    }
+
     const result: Document<T1>[] = []
     const keys = indexList.map(([index, indexValue]) =>
       extendKey(this.keys.secondaryIndexKey, index, indexValue)
@@ -277,12 +279,8 @@ export class IndexableCollection<
           result.push(doc)
         }
       }
-      cursor = iter.cursor
     }
-    return {
-      result,
-      cursor,
-    }
+    return result
   }
 
   async delete(id: KvId) {

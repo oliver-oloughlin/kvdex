@@ -347,10 +347,10 @@ export class Collection<const T extends KvValue> {
    * **Example:**
    * ```ts
    * // Get all users
-   * const userDocs1 = await db.users.getMany()
+   * const { result } = await db.users.getMany()
    *
    * // Only get users with username that starts with "a"
-   * const userDocs2 = await db.users.getMany({
+   * const { result } = await db.users.getMany({
    *   filter: doc => doc.value.username.startsWith("a")
    * })
    * ```
