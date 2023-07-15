@@ -221,20 +221,20 @@ documents in the collection.
 
 ```ts
 // Retrieves all user documents
-const allUsers = await db.users.getMany()
+const { result } = await db.users.getMany()
 
 // Retrieves all user documents where the user's age is above or equal to 18
-const canBasciallyDrinkEverywhereExceptUSA = await db.users.getMany({
+const { result } = await db.users.getMany({
   filter: (doc) => doc.value.age >= 18,
 })
 
 // Retrieves the first 10 user documents in the KV store
-const first10 = await db.users.getMany({
+const { result } = await db.users.getMany({
   limit: 10,
 })
 
 // Retrieves the last 10 user documents in the KV store
-const last10 = await db.users.getMany({
+const { result } = await db.users.getMany({
   limit: 10,
   reverse: true,
 })
@@ -295,7 +295,7 @@ const userDoc = await db.indexableUsers.findByPrimaryIndex({
   age: 24,
 })
 
-// Will return null as age is not defined as a primary index.
+// Will return null as age is not defined as a primary index
 const notFound = await db.indexableUsers.findByPrimaryIndex({
   age: 24,
 })
@@ -315,7 +315,7 @@ const userDocs = await db.indexableUsers.findBySecondaryIndex({
   age: 24,
 })
 
-// Returns empty list as username is not defined as a secondary index
+// Returns empty list, as username is not defined as a secondary index
 const empty = await db.indexableUsers.findBySecondaryIndex({
   username: "oliver",
 })
