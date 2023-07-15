@@ -1,4 +1,4 @@
-# KVDEX
+# kvdex
 
 Database wrapper for Deno's KV store. Simple and type-safe storing/retrieving of
 data.
@@ -453,9 +453,14 @@ Any contributions are welcomed and appreciated. How to contribute:
 
 - Clone this repository
 - Add feature / Refactor
+- Add or refactor tests as needed
 - Run tests using `deno task test`
 - Prepare code (format + test) using `deno task prep`
 - Open Pull Request
+
+This project aims at having as high test coverage as possible to improve code quality and to avoid breaking features when refactoring. Therefore it is encouraged that any feature contributions are also accompanied by relevant unit tests to ensure those features remain stable.
+
+The goal of kvdex is to provide a type safe, higher level API to Deno KV, while trying to retain as much of the native functionality as possible. Additionally, this module should be light-weight and should not rely on any third-party dependencies. Please kleep this in mind when making any contributions.
 
 ## License
 
