@@ -1,4 +1,4 @@
-# KVDEX
+# kvdex
 
 Database wrapper for Deno's KV store. Simple and type-safe storing/retrieving of
 data.
@@ -14,7 +14,7 @@ Optional and nullable properties are allowed. If you wish to use Zod, you can
 create your Zod object schema and use its type as your model.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.3.2/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.4.0/mod.ts"
 
 interface User extends Model {
   username: string
@@ -35,7 +35,7 @@ The "createDb" function is used for creating a new database instance. It takes a
 Deno KV instance and a schema builder function as arguments.
 
 ```ts
-import { createDb } from "https://deno.land/x/kvdex@v0.3.2/mod.ts"
+import { createDb } from "https://deno.land/x/kvdex@v0.4.0/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -221,20 +221,20 @@ documents in the collection.
 
 ```ts
 // Retrieves all user documents
-const allUsers = await db.users.getMany()
+const { result } = await db.users.getMany()
 
 // Retrieves all user documents where the user's age is above or equal to 18
-const canBasciallyDrinkEverywhereExceptUSA = await db.users.getMany({
+const { result } = await db.users.getMany({
   filter: (doc) => doc.value.age >= 18,
 })
 
 // Retrieves the first 10 user documents in the KV store
-const first10 = await db.users.getMany({
+const { result } = await db.users.getMany({
   limit: 10,
 })
 
 // Retrieves the last 10 user documents in the KV store
-const last10 = await db.users.getMany({
+const { result } = await db.users.getMany({
   limit: 10,
   reverse: true,
 })
@@ -295,7 +295,7 @@ const userDoc = await db.indexableUsers.findByPrimaryIndex({
   age: 24,
 })
 
-// Will return null as age is not defined as a primary index.
+// Will return null as age is not defined as a primary index
 const notFound = await db.indexableUsers.findByPrimaryIndex({
   age: 24,
 })
@@ -315,7 +315,7 @@ const userDocs = await db.indexableUsers.findBySecondaryIndex({
   age: 24,
 })
 
-// Returns empty list as username is not defined as a secondary index
+// Returns empty list, as username is not defined as a secondary index
 const empty = await db.indexableUsers.findBySecondaryIndex({
   username: "oliver",
 })
@@ -425,7 +425,7 @@ result will be an object containing: id, versionstamp and all the entries in the
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.3.2/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.4.0/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
@@ -453,9 +453,14 @@ Any contributions are welcomed and appreciated. How to contribute:
 
 - Clone this repository
 - Add feature / Refactor
+- Add or refactor tests as needed
 - Run tests using `deno task test`
 - Prepare code (format + test) using `deno task prep`
 - Open Pull Request
+
+This project aims at having as high test coverage as possible to improve code quality and to avoid breaking features when refactoring. Therefore it is encouraged that any feature contributions are also accompanied by relevant unit tests to ensure those features remain stable.
+
+The goal of kvdex is to provide a type safe, higher level API to Deno KV, while trying to retain as much of the native functionality as possible. Additionally, this module should be light-weight and should not rely on any third-party dependencies. Please kleep this in mind when making any contributions.
 
 ## License
 

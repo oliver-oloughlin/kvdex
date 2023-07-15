@@ -19,7 +19,7 @@ Deno.test("indexable_collection", async (t1) => {
       const pplByAge = await db.indexablePeople.findBySecondaryIndex({
         age: 24,
       })
-      assert(pplByAge.result.length === 0)
+      assert(pplByAge.length === 0)
     })
   })
 
@@ -50,7 +50,7 @@ Deno.test("indexable_collection", async (t1) => {
           age: 24,
         })
 
-        assert(indexDocs.result.some((doc) => doc.id === cr.id))
+        assert(indexDocs.some((doc) => doc.id === cr.id))
       },
     )
 
@@ -97,7 +97,7 @@ Deno.test("indexable_collection", async (t1) => {
           age: 24,
         })
 
-        assert(indexDocs.result.some((doc) => doc.id === cr.id))
+        assert(indexDocs.some((doc) => doc.id === cr.id))
       },
     )
 
@@ -160,9 +160,9 @@ Deno.test("indexable_collection", async (t1) => {
           age: 24,
         })
 
-        assert(byAge.result.length === 2)
-        assert(byAge.result.some((doc) => doc.value.name === testPerson.name))
-        assert(byAge.result.some((doc) => doc.value.name === testPerson2.name))
+        assert(byAge.length === 2)
+        assert(byAge.some((doc) => doc.value.name === testPerson.name))
+        assert(byAge.some((doc) => doc.value.name === testPerson2.name))
       },
     )
 
@@ -189,7 +189,7 @@ Deno.test("indexable_collection", async (t1) => {
           age: 24,
         })
 
-        assert(byAge.result.length === 0)
+        assert(byAge.length === 0)
       },
     )
   })
@@ -226,8 +226,8 @@ Deno.test("indexable_collection", async (t1) => {
       const peopleByAge24 = await db.indexablePeople.findBySecondaryIndex({
         age: 24,
       })
-      assert(peopleByAge24.result.some((p) => p.id === cr1.id))
-      assert(peopleByAge24.result.some((p) => p.id === cr2.id))
+      assert(peopleByAge24.some((p) => p.id === cr1.id))
+      assert(peopleByAge24.some((p) => p.id === cr2.id))
     })
   })
 
@@ -263,7 +263,7 @@ Deno.test("indexable_collection", async (t1) => {
         age: 24,
       })
 
-      assert(indexDocs.result.length === 0)
+      assert(indexDocs.length === 0)
     })
   })
 
@@ -293,9 +293,9 @@ Deno.test("indexable_collection", async (t1) => {
         name: "Oliver",
       })
 
-      const [ageDoc] = (await db.indexablePeople.findBySecondaryIndex({
+      const [ageDoc] = await db.indexablePeople.findBySecondaryIndex({
         age: 77,
-      })).result
+      })
 
       assert(idDoc !== null)
       assert(nameDoc !== null)
@@ -341,6 +341,26 @@ Deno.test("indexable_collection", async (t1) => {
       assert(all.result.length === 2)
       assert(all.result.some((doc) => doc.id === cr1.id))
       assert(all.result.some((doc) => doc.id === cr2.id))
+    })
+
+    await t2.step("Should get all documents by pagination", async () => {
+      await reset()
+
+      await db.indexablePeople.add(testPerson)
+      await db.indexablePeople.add(testPerson2)
+
+      const allPeople1 = await db.indexablePeople.getMany()
+      assert(allPeople1.result.length === 2)
+
+      let cursor: string | undefined
+      const result = []
+      do {
+        const data = await db.indexablePeople.getMany({ cursor, limit: 1 })
+        result.push(...data.result)
+        cursor = data.cursor
+      } while (cursor)
+
+      assert(result.length === 2)
     })
   })
 
@@ -400,7 +420,7 @@ Deno.test("indexable_collection", async (t1) => {
           age: 24,
         })
 
-        assert(indexDocs.result.length === 0)
+        assert(indexDocs.length === 0)
       },
     )
 
@@ -456,6 +476,25 @@ Deno.test("indexable_collection", async (t1) => {
         assert(indexDoc2_2 !== null)
       },
     )
+
+    await t2.step("Should delete all records using pagination", async () => {
+      await reset()
+
+      await db.indexablePeople.add(testPerson)
+      await db.indexablePeople.add(testPerson2)
+
+      const allPeople1 = await db.indexablePeople.getMany()
+      assert(allPeople1.result.length === 2)
+
+      let cursor: string | undefined
+      do {
+        const r = await db.indexablePeople.deleteMany({ cursor, limit: 1 })
+        cursor = r.cursor
+      } while (cursor)
+
+      const allPeople2 = await db.indexablePeople.getMany()
+      assert(allPeople2.result.length === 0)
+    })
   })
 
   // Perform last reset

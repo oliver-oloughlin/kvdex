@@ -235,8 +235,8 @@ Deno.test("db", async (t1) => {
         const indexDocs = await db.indexablePeople.findBySecondaryIndex({
           age: 24,
         })
-        assert(indexDocs.result.some((doc) => doc.id === indexDoc1.id))
-        assert(indexDocs.result.some((doc) => doc.id === id2))
+        assert(indexDocs.some((doc) => doc.id === indexDoc1.id))
+        assert(indexDocs.some((doc) => doc.id === id2))
       },
     )
 
@@ -272,7 +272,7 @@ Deno.test("db", async (t1) => {
       const indexDocs = await db.indexablePeople.findBySecondaryIndex({
         age: 24,
       })
-      assert(indexDocs.result.length === 0)
+      assert(indexDocs.length === 0)
     })
 
     await t2.step(
@@ -302,7 +302,7 @@ Deno.test("db", async (t1) => {
         const indexDocs1 = await db.indexablePeople.findBySecondaryIndex({
           age: 24,
         })
-        assert(indexDocs1.result.some((doc) => doc.id === idDoc1.id))
+        assert(indexDocs1.some((doc) => doc.id === idDoc1.id))
 
         await db
           .atomic((schema) => schema.indexablePeople)
@@ -323,7 +323,7 @@ Deno.test("db", async (t1) => {
         const indexDocs2 = await db.indexablePeople.findBySecondaryIndex({
           age: 24,
         })
-        assert(indexDocs2.result.length === 0)
+        assert(indexDocs2.length === 0)
       },
     )
 

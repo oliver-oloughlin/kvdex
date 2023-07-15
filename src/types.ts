@@ -85,6 +85,11 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   filter?: (doc: Document<T>) => boolean
 }
 
+export type NoPaginationListOptions<T extends KvValue> = Omit<
+  ListOptions<T>,
+  "cursor" | "limit"
+>
+
 export type FindOptions = Parameters<Deno.Kv["get"]>[1]
 
 export type FindManyOptions = Parameters<Deno.Kv["getMany"]>[1]
