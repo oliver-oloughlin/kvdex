@@ -245,9 +245,9 @@ Deno.test({
 
         const people = await db.people.getMany()
 
-        assert(people.length === 2)
-        assert(people.some((doc) => doc.value.name === testPerson.name))
-        assert(people.some((doc) => doc.value.name === testPerson2.name))
+        assert(people.result.length === 2)
+        assert(people.result.some((doc) => doc.value.name === testPerson.name))
+        assert(people.result.some((doc) => doc.value.name === testPerson2.name))
       })
     })
 
@@ -434,7 +434,7 @@ Deno.test({
 
           const allPeople1 = await db.people.getMany()
 
-          assert(allPeople1.length === 3)
+          assert(allPeople1.result.length === 3)
 
           await db.people.deleteMany({
             limit: 2,
@@ -442,7 +442,7 @@ Deno.test({
 
           const allPeople2 = await db.people.getMany()
 
-          assert(allPeople2.length === 1)
+          assert(allPeople2.result.length === 1)
         },
       })
     })
@@ -467,9 +467,9 @@ Deno.test({
 
             const allPeople = await db.people.getMany()
 
-            assert(allPeople.length === 2)
-            assert(allPeople.some((p) => p.id === id1))
-            assert(allPeople.some((p) => p.id === id2))
+            assert(allPeople.result.length === 2)
+            assert(allPeople.result.some((p) => p.id === id1))
+            assert(allPeople.result.some((p) => p.id === id2))
           },
         })
 
@@ -491,9 +491,9 @@ Deno.test({
               filter: (doc) => doc.id === id1,
             })
 
-            assert(allPeople.length === 1)
-            assert(allPeople.some((p) => p.id === id1))
-            assert(!allPeople.some((p) => p.id === id2))
+            assert(allPeople.result.length === 1)
+            assert(allPeople.result.some((p) => p.id === id1))
+            assert(!allPeople.result.some((p) => p.id === id2))
           },
         })
 
@@ -508,13 +508,13 @@ Deno.test({
 
             const allPeople1 = await db.people.getMany()
 
-            assert(allPeople1.length === 3)
+            assert(allPeople1.result.length === 3)
 
             const allPeople2 = await db.people.getMany({
               limit: 2,
             })
 
-            assert(allPeople2.length === 2)
+            assert(allPeople2.result.length === 2)
           },
         })
       },
@@ -540,7 +540,7 @@ Deno.test({
 
             const allPeople = await db.people.getMany()
 
-            assert(allPeople.length === 2)
+            assert(allPeople.result.length === 2)
 
             const list: Document<Person>[] = []
             await db.people.forEach((doc) => list.push(doc))
@@ -567,7 +567,7 @@ Deno.test({
 
             const allPeople = await db.people.getMany()
 
-            assert(allPeople.length === 2)
+            assert(allPeople.result.length === 2)
 
             const list: Document<Person>[] = []
             await db.people.forEach((doc) => list.push(doc), {
