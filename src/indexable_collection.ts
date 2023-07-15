@@ -276,9 +276,14 @@ export class IndexableCollection<
           result.push(doc)
         }
       }
+      return {
+        result,
+        cursor: iter.cursor,
+        next: iter.next,
+      }
     }
 
-    return result
+    
   }
 
   async delete(id: KvId) {
@@ -347,6 +352,10 @@ export class IndexableCollection<
       }
 
       await atomic.commit()
+    }
+    return {
+      cursor: iter.cursor,
+      next: iter.next,
     }
   }
 }

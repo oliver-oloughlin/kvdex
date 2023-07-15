@@ -334,6 +334,10 @@ export class Collection<const T extends KvValue> {
         await this.kv.delete(entry.key)
       }
     }
+    return {
+      cursor: iter.cursor,
+      next: iter.next,
+    }
   }
 
   /**
@@ -372,7 +376,11 @@ export class Collection<const T extends KvValue> {
       if (!options?.filter || options.filter(doc)) result.push(doc)
     }
 
-    return result
+    return {
+      result,
+      cursor:  iter.cursor,
+      next: iter.next,
+    }
   }
 
   /**
@@ -409,6 +417,10 @@ export class Collection<const T extends KvValue> {
       }
 
       if (!options?.filter || options.filter(doc)) fn(doc)
+    }
+    return {
+      cursor: iter.cursor,
+      next: iter.next,
     }
   }
 }
