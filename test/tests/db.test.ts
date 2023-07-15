@@ -490,7 +490,7 @@ Deno.test("db", async (t1) => {
 
         await db.arrs.forEach((doc) =>
           assert(
-            typeof doc.value === "object" && doc.value instanceof Array<string>,
+            typeof doc.value === "object" && doc.value instanceof Array,
           )
         )
         await db.i8arrs.forEach((doc) =>
@@ -601,14 +601,14 @@ Deno.test("db", async (t1) => {
 
         await db.sets.forEach((doc) =>
           assert(
-            typeof doc.value === "object" && doc.value instanceof Set<string>,
+            typeof doc.value === "object" && doc.value instanceof Set,
           )
         )
 
         await db.maps.forEach((doc) =>
           assert(
             typeof doc.value === "object" &&
-              doc.value instanceof Map<string, number>,
+              doc.value instanceof Map,
           )
         )
 
