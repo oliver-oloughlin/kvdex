@@ -342,6 +342,26 @@ Deno.test("indexable_collection", async (t1) => {
       assert(all.result.some((doc) => doc.id === cr1.id))
       assert(all.result.some((doc) => doc.id === cr2.id))
     })
+
+    await t2.step("Should get all documents by pagination", async () => {
+      await reset()
+
+      await db.indexablePeople.add(testPerson)
+      await db.indexablePeople.add(testPerson2)
+
+      const allPeople1 = await db.indexablePeople.getMany()
+      assert(allPeople1.result.length === 2)
+
+      let cursor: string | undefined
+      const result = []
+      do {
+        const data = await db.indexablePeople.getMany({ cursor, limit: 1 })
+        result.push(...data.result)
+        cursor = data.cursor
+      } while (cursor)
+
+      assert(result.length === 2)
+    })
   })
 
   // Test "deleteMany" method
@@ -456,6 +476,25 @@ Deno.test("indexable_collection", async (t1) => {
         assert(indexDoc2_2 !== null)
       },
     )
+
+    await t2.step("Should delete all records using pagination", async () => {
+      await reset()
+
+      await db.indexablePeople.add(testPerson)
+      await db.indexablePeople.add(testPerson2)
+
+      const allPeople1 = await db.indexablePeople.getMany()
+      assert(allPeople1.result.length === 2)
+
+      let cursor: string | undefined
+      do {
+        const r = await db.indexablePeople.deleteMany({ cursor, limit: 1 })
+        cursor = r.cursor
+      } while (cursor)
+
+      const allPeople2 = await db.indexablePeople.getMany()
+      assert(allPeople2.result.length === 0)
+    })
   })
 
   // Perform last reset

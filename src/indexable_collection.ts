@@ -351,7 +351,7 @@ export class IndexableCollection<
       await atomic.commit()
     }
     return {
-      cursor: iter.cursor,
+      cursor: iter.cursor || undefined,
     }
   }
 }

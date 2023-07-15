@@ -335,7 +335,7 @@ export class Collection<const T extends KvValue> {
       }
     }
     return {
-      cursor: iter.cursor,
+      cursor: iter.cursor || undefined,
     }
   }
 
@@ -377,7 +377,7 @@ export class Collection<const T extends KvValue> {
 
     return {
       result,
-      cursor: iter.cursor,
+      cursor: iter.cursor || undefined,
     }
   }
 
@@ -417,7 +417,7 @@ export class Collection<const T extends KvValue> {
       if (!options?.filter || options.filter(doc)) fn(doc)
     }
     return {
-      cursor: iter.cursor,
+      cursor: iter.cursor || undefined,
     }
   }
 }

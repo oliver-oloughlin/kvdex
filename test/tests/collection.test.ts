@@ -445,6 +445,26 @@ Deno.test({
           assert(allPeople2.result.length === 1)
         },
       })
+
+      await t2.step("Should delete all records using pagination", async () => {
+        await reset()
+
+        await db.people.add(testPerson)
+        await db.people.add(testPerson)
+        await db.people.add(testPerson)
+
+        const allPeople1 = await db.people.getMany()
+        assert(allPeople1.result.length === 3)
+
+        let cursor: string | undefined
+        do {
+          const r = await db.people.deleteMany({ cursor, limit: 1 })
+          cursor = r.cursor
+        } while (cursor)
+
+        const allPeople2 = await db.people.getMany()
+        assert(allPeople2.result.length === 0)
+      })
     })
 
     // Test "getMany" method
@@ -517,6 +537,27 @@ Deno.test({
             assert(allPeople2.result.length === 2)
           },
         })
+
+        await t.step("Should get all documents by pagination", async () => {
+          await reset()
+
+          await db.people.add(testPerson)
+          await db.people.add(testPerson)
+          await db.people.add(testPerson)
+
+          const allPeople1 = await db.people.getMany()
+          assert(allPeople1.result.length === 3)
+
+          let cursor: string | undefined
+          const result = []
+          do {
+            const data = await db.people.getMany({ cursor, limit: 1 })
+            result.push(...data.result)
+            cursor = data.cursor
+          } while (cursor)
+
+          assert(result.length === 3)
+        })
       },
     })
 
@@ -579,6 +620,32 @@ Deno.test({
             assert(!list.some((doc) => doc.id === id2))
           },
         })
+
+        await t.step(
+          "Should add all documents to list by pagination",
+          async () => {
+            await reset()
+
+            await db.people.add(testPerson)
+            await db.people.add(testPerson)
+            await db.people.add(testPerson)
+
+            const allPeople1 = await db.people.getMany()
+            assert(allPeople1.result.length === 3)
+
+            let cursor: string | undefined
+            const result: Document<Person>[] = []
+            do {
+              const data = await db.people.forEach((doc) => result.push(doc), {
+                cursor,
+                limit: 1,
+              })
+              cursor = data.cursor
+            } while (cursor)
+
+            assert(result.length === 3)
+          },
+        )
       },
     })
 
