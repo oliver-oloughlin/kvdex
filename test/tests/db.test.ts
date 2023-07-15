@@ -490,7 +490,7 @@ Deno.test("db", async (t1) => {
 
         await db.arrs.forEach((doc) =>
           assert(
-            typeof doc.value === "object" && Array.isArray(doc.value),
+            typeof doc.value === "object" && doc.value instanceof Array,
           )
         )
         await db.i8arrs.forEach((doc) =>
