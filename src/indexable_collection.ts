@@ -5,6 +5,7 @@ import {
   COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
 } from "./constants.ts"
 import type {
+  CheckKeyOf,
   CommitResult,
   Document,
   FindOptions,
@@ -14,11 +15,12 @@ import type {
   IndexType,
   KvId,
   KvKey,
+  KvValue,
   ListOptions,
   Model,
   NoPaginationListOptions,
-  PrimaryIndexSelection,
-  SecondaryIndexSelection,
+  PrimaryIndexKeys,
+  SecondaryIndexKeys,
 } from "./types.ts"
 import {
   deleteIndices,
@@ -157,31 +159,22 @@ export class IndexableCollection<
    * @param options - Read options.
    * @returns The document found by selected indexes, or null if not found.
    */
-  async findByPrimaryIndex(
-    selection: PrimaryIndexSelection<T1, T2>,
+  async findByPrimaryIndex<const K extends PrimaryIndexKeys<T1, T2>>(
+    index: K,
+    value: CheckKeyOf<K, T1>,
     options?: FindOptions,
   ) {
-    const indexList = Object.entries(selection).filter(([_, value]) =>
-      typeof value !== "undefined"
-    ) as [string, KvId][]
-
-    if (indexList.length < 1) return null
-
-    const keys = indexList.map(([index, indexValue]) =>
-      extendKey(this.keys.primaryIndexKey, index, indexValue)
+    const key = extendKey(
+      this.keys.primaryIndexKey,
+      index as KvId,
+      value as KvId,
     )
 
-    const results = await Promise.all(
-      keys.map((key) =>
-        this.kv.get<unknown & Pick<IndexDataEntry<T1>, "__id__">>(key, options)
-      ),
-    )
+    const result = await this.kv.get<
+      unknown & Pick<IndexDataEntry<T1>, "__id__">
+    >(key, options)
 
-    const result = results.find((r) =>
-      r.value !== null && r.versionstamp !== null
-    )
-
-    if (!result || result.value === null || result.versionstamp === null) {
+    if (result.value === null || result.versionstamp === null) {
       return null
     }
 
@@ -212,41 +205,35 @@ export class IndexableCollection<
    * @param options - Optional list options.
    * @returns An array containing the resulting documents.
    */
-  async findBySecondaryIndex(
-    selection: SecondaryIndexSelection<T1, T2>,
-    options?: NoPaginationListOptions<T1>,
+  async findBySecondaryIndex<const K extends SecondaryIndexKeys<T1, T2>>(
+    index: K,
+    value: CheckKeyOf<K, T1>,
+    options?: ListOptions<T1>,
   ) {
-    const indexList = Object.entries(selection)
-      .filter(([_, value]) => typeof value !== "undefined") as [string, KvId][]
-
-    if (indexList.length < 1) {
-      return []
-    }
-
     const result: Document<T1>[] = []
-    const keys = indexList.map(([index, indexValue]) =>
-      extendKey(this.keys.secondaryIndexKey, index, indexValue)
+    const key = extendKey(
+      this.keys.secondaryIndexKey,
+      index as KvId,
+      value as KvId,
     )
 
-    await Promise.all(keys.map(async (key) => {
-      const iter = this.kv.list<T1>({ prefix: key }, options)
+    const iter = this.kv.list<T1>({ prefix: key }, options)
 
-      for await (const entry of iter) {
-        const { key, value, versionstamp } = entry
-        const id = getDocumentId(key)
-        if (typeof id === "undefined") continue
+    for await (const entry of iter) {
+      const { key, value, versionstamp } = entry
+      const id = getDocumentId(key)
+      if (typeof id === "undefined") continue
 
-        const doc: Document<T1> = {
-          id,
-          versionstamp,
-          value,
-        }
-
-        if (!options?.filter || options.filter(doc)) {
-          result.push(doc)
-        }
+      const doc: Document<T1> = {
+        id,
+        versionstamp,
+        value,
       }
-    }))
+
+      if (!options?.filter || options.filter(doc)) {
+        result.push(doc)
+      }
+    }
 
     return result
   }
