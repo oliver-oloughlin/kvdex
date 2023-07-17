@@ -122,16 +122,17 @@ console.log(result.id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
 ### Add Many
 
 The "addMany" method is used to add multiple document entries to the KV store in
-a single operation. For Indexable Collection, any entries that violate the
-constraint of primary indices will cause the operation to fail Returns a
-Deno.KvCommitResult or Deno.KvCommitError upon completion.
+a single operation. Upon completion, a list of CommitResult objects will be 
+returned. For indexable collections, if any entries violate the constraints of
+primary indices, those entries will not be added and the subsequent commit result
+object will indicate this by the ok flag being false.
 
 ```ts
 // Adds 5 new document entries to the KV store.
-await result = await db.numbers.addMany(1, 2, 3, 4, 5)
+await results = await db.numbers.addMany(1, 2, 3, 4, 5)
 
-// Will fail, as "username" is defined as a primary index and cannot have duplicates
-await result = await db.indexableUsers.addMany(
+// Only adds the first entry, as "username" is defined as a primary index and cannot have duplicates
+await results = await db.indexableUsers.addMany(
   {
     username: "oli",
     age: 24

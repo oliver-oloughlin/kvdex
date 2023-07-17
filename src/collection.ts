@@ -262,10 +262,10 @@ export class Collection<const T extends KvValue> {
    * **Example:**
    * ```ts
    * // Adds 5 new document entries to the KV store.
-   * await result = await db.numbers.addMany(1, 2, 3, 4, 5)
+   * await results = await db.numbers.addMany(1, 2, 3, 4, 5)
    *
-   * // Will fail, as "username" is defined as a primary index and cannot have duplicates
-   * await result = await db.users.addMany(
+   * // Only adds the first entry, as "username" is defined as a primary index and cannot have duplicates
+   * await results = await db.users.addMany(
    *   {
    *     username: "oli",
    *     age: 24
@@ -278,9 +278,9 @@ export class Collection<const T extends KvValue> {
    * ```
    *
    * @param entries - Data entries to be added.
-   * @returns A promise that resolves to Deno.KvCommitResult or Deno.KvCommitError
+   * @returns A promise that resolves to a list of Deno.KvCommitResult or Deno.KvCommitError objects
    */
-  async addMany(...entries: T[]) {
+  async addMany(...entries: [T, ...T[]]) {
     return await Promise.all(entries.map((data) => this.add(data)))
   }
 
