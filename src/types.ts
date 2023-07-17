@@ -85,11 +85,6 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   filter?: (doc: Document<T>) => boolean
 }
 
-export type NoPaginationListOptions<T extends KvValue> = Omit<
-  ListOptions<T>,
-  "cursor" | "limit"
->
-
 export type FindOptions = Parameters<Deno.Kv["get"]>[1]
 
 export type FindManyOptions = Parameters<Deno.Kv["getMany"]>[1]
@@ -112,27 +107,19 @@ export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
 
 export type IndexType = "primary" | "secondary"
 
-export type KeysThatExtend<T1, T2> = keyof {
+export type KeysOfThatExtend<T1, T2> = keyof {
   [K in keyof T1 as T1[K] extends T2 ? K : never]: unknown
 }
 
 export type IndexRecord<T extends Model> = {
-  [key in KeysThatExtend<T, KvId>]?: IndexType
+  [key in KeysOfThatExtend<T, KvId>]?: IndexType
 }
 
-export type PrimaryIndexSelection<
-  T1 extends Model,
-  T2 extends IndexRecord<T1>,
-> = {
-  [K in KeysThatExtend<T2, "primary">]?: CheckKeyOf<K, T1>
-}
+export type PrimaryIndexKeys<T1 extends Model, T2 extends IndexRecord<T1>> =
+  KeysOfThatExtend<T2, "primary">
 
-export type SecondaryIndexSelection<
-  T1 extends Model,
-  T2 extends IndexRecord<T1>,
-> = {
-  [K in KeysThatExtend<T2, "secondary">]?: CheckKeyOf<K, T1>
-}
+export type SecondaryIndexKeys<T1 extends Model, T2 extends IndexRecord<T1>> =
+  KeysOfThatExtend<T2, "secondary">
 
 export type IndexDataEntry<T extends Model> = Omit<T, "__id__"> & {
   __id__: KvId

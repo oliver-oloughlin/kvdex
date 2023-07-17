@@ -262,10 +262,10 @@ export class Collection<const T extends KvValue> {
    * **Example:**
    * ```ts
    * // Adds 5 new document entries to the KV store.
-   * await result = await db.numbers.addMany(1, 2, 3, 4, 5)
+   * await results = await db.numbers.addMany(1, 2, 3, 4, 5)
    *
-   * // Will fail, as "username" is defined as a primary index and cannot have duplicates
-   * await result = await db.users.addMany(
+   * // Only adds the first entry, as "username" is defined as a primary index and cannot have duplicates
+   * await results = await db.users.addMany(
    *   {
    *     username: "oli",
    *     age: 24
@@ -278,24 +278,10 @@ export class Collection<const T extends KvValue> {
    * ```
    *
    * @param entries - Data entries to be added.
-   * @returns A promise that resolves to Deno.KvCommitResult or Deno.KvCommitError
+   * @returns A promise that resolves to a list of Deno.KvCommitResult or Deno.KvCommitError objects
    */
-  async addMany(...entries: T[]) {
-    let atomic = this.kv.atomic()
-
-    entries.forEach((data) => {
-      const id = crypto.randomUUID()
-      const key = extendKey(this.keys.idKey, id)
-
-      atomic = atomic
-        .check({
-          key,
-          versionstamp: null,
-        })
-        .set(key, data)
-    })
-
-    return await atomic.commit()
+  async addMany(...entries: [T, ...T[]]) {
+    return await Promise.all(entries.map((data) => this.add(data)))
   }
 
   /**
@@ -315,7 +301,7 @@ export class Collection<const T extends KvValue> {
    * ```
    *
    * @param options
-   * @returns A promise that resovles to void
+   * @returns A promise that resovles to an object containing the iterator cursor
    */
   async deleteMany(options?: ListOptions<T>) {
     const iter = this.kv.list<T>({ prefix: this.keys.idKey }, options)
@@ -356,7 +342,7 @@ export class Collection<const T extends KvValue> {
    * ```
    *
    * @param options
-   * @returns A promise that resovles to a list of the retrieved documents
+   * @returns A promise that resovles to an object containing a list of the retrieved documents and the iterator cursor
    */
   async getMany(options?: ListOptions<T>) {
     const iter = this.kv.list<T>({ prefix: this.keys.idKey }, options)
@@ -399,7 +385,7 @@ export class Collection<const T extends KvValue> {
    *
    * @param fn
    * @param options
-   * @returns A promise that resolves to void
+   * @returns A promise that resovles to an object containing the iterator cursor
    */
   async forEach(fn: (doc: Document<T>) => void, options?: ListOptions<T>) {
     const iter = this.kv.list<T>({ prefix: this.keys.idKey }, options)

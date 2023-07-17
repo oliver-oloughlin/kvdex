@@ -5,6 +5,7 @@ import {
   COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
 } from "./constants.ts"
 import type {
+  CheckKeyOf,
   CommitResult,
   Document,
   FindOptions,
@@ -16,9 +17,8 @@ import type {
   KvKey,
   ListOptions,
   Model,
-  NoPaginationListOptions,
-  PrimaryIndexSelection,
-  SecondaryIndexSelection,
+  PrimaryIndexKeys,
+  SecondaryIndexKeys,
 } from "./types.ts"
 import {
   deleteIndices,
@@ -141,80 +141,36 @@ export class IndexableCollection<
     return commitResult
   }
 
-  async addMany<const TEntries extends [T1, ...T1[]]>(
-    ...entries: TEntries
-  ): Promise<Deno.KvCommitResult | Deno.KvCommitError> {
-    for (const index of this.primaryIndexList) {
-      const indexValues = entries.map((data) => JSON.stringify(data[index]))
-      const indexValuesSet = new Set(indexValues)
-
-      if (indexValues.length !== indexValuesSet.size) {
-        return {
-          ok: false,
-        }
-      }
-    }
-
-    let atomic = this.kv.atomic()
-
-    entries.forEach((data) => {
-      const id = generateId()
-      const idKey = extendKey(this.keys.idKey, id)
-
-      atomic = atomic
-        .check({
-          key: idKey,
-          versionstamp: null,
-        })
-        .set(idKey, data)
-
-      atomic = setIndices(id, data, atomic, this)
-    })
-
-    return await atomic.commit()
-  }
-
   /**
-   * Find a document by index value.
-   * Note that selecting an index that was not defined when creating the collection will always return null.
+   * Find a document by a primary index.
    *
    * **Example:**
    * ```ts
-   * // Returns a single result
-   * const userByUsername = await db.users.findByPrimaryIndex({
-   *   username: "oli"
-   * })
+   * // Finds a user document with the username = "oli"
+   * const userDoc = await db.users.findByPrimaryIndex("username", "oli")
    * ```
    *
-   * @param selection - Index values to find document by.
+   * @param index - Index to find by.
+   * @param value - Index value.
    * @param options - Read options.
-   * @returns The document found by selected indexes, or null if not found.
+   * @returns A promise resolving to the document found by selected index, or null if not found.
    */
-  async findByPrimaryIndex(
-    selection: PrimaryIndexSelection<T1, T2>,
+  async findByPrimaryIndex<const K extends PrimaryIndexKeys<T1, T2>>(
+    index: K,
+    value: CheckKeyOf<K, T1>,
     options?: FindOptions,
   ) {
-    const indexList = Object.entries(selection).filter(([_, value]) =>
-      typeof value !== "undefined"
-    ) as [string, KvId][]
-
-    if (indexList.length < 1) return null
-
-    const keys = indexList.map(([index, indexValue]) =>
-      extendKey(this.keys.primaryIndexKey, index, indexValue)
+    const key = extendKey(
+      this.keys.primaryIndexKey,
+      index as KvId,
+      value as KvId,
     )
 
-    const results = await Promise.all(
-      keys.map((key) =>
-        this.kv.get<unknown & Pick<IndexDataEntry<T1>, "__id__">>(key, options)
-      ),
-    )
+    const result = await this.kv.get<
+      unknown & Pick<IndexDataEntry<T1>, "__id__">
+    >(key, options)
 
-    const result = results.find((r) =>
-      r.value !== null && r.versionstamp !== null
-    )
-
-    if (!result || result.value === null || result.versionstamp === null) {
+    if (result.value === null || result.versionstamp === null) {
       return null
     }
 
@@ -230,57 +186,53 @@ export class IndexableCollection<
   }
 
   /**
-   * Finds documents by a given set of secondary indices.
-   * If multiple are specified, results are combined.
+   * Find documents by a secondary index.
    *
    * **Example:**
    * ```ts
-   * // Returns a list of user documents
-   * const usersByAge = await db.users.findBySecondaryIndex({
-   *   age: 24
-   * })
+   * // Returns all users with age = 24
+   * const { result } = await db.users.findBySecondaryIndex("age", 24)
    * ```
    *
-   * @param selection - Selection of secondary indices to find documents by.
+   * @param index - Index to find by.
+   * @param value - Index value.
    * @param options - Optional list options.
-   * @returns An array containing the resulting documents.
+   * @returns A promise resolving to an object containing the result list and iterator cursor.
    */
-  async findBySecondaryIndex(
-    selection: SecondaryIndexSelection<T1, T2>,
-    options?: NoPaginationListOptions<T1>,
+  async findBySecondaryIndex<const K extends SecondaryIndexKeys<T1, T2>>(
+    index: K,
+    value: CheckKeyOf<K, T1>,
+    options?: ListOptions<T1>,
   ) {
-    const indexList = Object.entries(selection)
-      .filter(([_, value]) => typeof value !== "undefined") as [string, KvId][]
-
-    if (indexList.length < 1) {
-      return []
-    }
-
-    const result: Document<T1>[] = []
-    const keys = indexList.map(([index, indexValue]) =>
-      extendKey(this.keys.secondaryIndexKey, index, indexValue)
+    const key = extendKey(
+      this.keys.secondaryIndexKey,
+      index as KvId,
+      value as KvId,
     )
 
-    for (const key of keys) {
-      const iter = this.kv.list<T1>({ prefix: key }, options)
+    const iter = this.kv.list<T1>({ prefix: key }, options)
+    const result: Document<T1>[] = []
 
-      for await (const entry of iter) {
-        const { key, value, versionstamp } = entry
-        const id = getDocumentId(key)
-        if (typeof id === "undefined") continue
+    for await (const entry of iter) {
+      const { key, value, versionstamp } = entry
+      const id = getDocumentId(key)
+      if (typeof id === "undefined") continue
 
-        const doc: Document<T1> = {
-          id,
-          versionstamp,
-          value,
-        }
+      const doc: Document<T1> = {
+        id,
+        versionstamp,
+        value,
+      }
 
-        if (!options?.filter || options.filter(doc)) {
-          result.push(doc)
-        }
+      if (!options?.filter || options.filter(doc)) {
+        result.push(doc)
       }
     }
-    return result
+
+    return {
+      result,
+      cursor: iter.cursor || undefined,
+    }
   }
 
   async delete(id: KvId) {
