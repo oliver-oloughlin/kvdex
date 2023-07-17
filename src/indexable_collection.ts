@@ -15,10 +15,8 @@ import type {
   IndexType,
   KvId,
   KvKey,
-  KvValue,
   ListOptions,
   Model,
-  NoPaginationListOptions,
   PrimaryIndexKeys,
   SecondaryIndexKeys,
 } from "./types.ts"
@@ -144,20 +142,18 @@ export class IndexableCollection<
   }
 
   /**
-   * Find a document by index value.
-   * Note that selecting an index that was not defined when creating the collection will always return null.
+   * Find a document by a primary index.
    *
    * **Example:**
    * ```ts
-   * // Returns a single result
-   * const userByUsername = await db.users.findByPrimaryIndex({
-   *   username: "oli"
-   * })
+   * // Finds a user document with the username = "oli"
+   * const userDoc = await db.users.findByPrimaryIndex("username", "oli")
    * ```
    *
-   * @param selection - Index values to find document by.
+   * @param index - Index to find by.
+   * @param value - Index value.
    * @param options - Read options.
-   * @returns The document found by selected indexes, or null if not found.
+   * @returns A promise resolving to the document found by selected index, or null if not found.
    */
   async findByPrimaryIndex<const K extends PrimaryIndexKeys<T1, T2>>(
     index: K,
@@ -190,27 +186,24 @@ export class IndexableCollection<
   }
 
   /**
-   * Finds documents by a given set of secondary indices.
-   * If multiple are specified, results are combined.
+   * Find documents by a secondary index.
    *
    * **Example:**
    * ```ts
-   * // Returns a list of user documents
-   * const usersByAge = await db.users.findBySecondaryIndex({
-   *   age: 24
-   * })
+   * // Returns all users with age = 24
+   * const { result } = await db.users.findBySecondaryIndex("age", 24)
    * ```
    *
-   * @param selection - Selection of secondary indices to find documents by.
+   * @param index - Index to find by.
+   * @param value - Index value.
    * @param options - Optional list options.
-   * @returns An array containing the resulting documents.
+   * @returns A promise resolving to an object containing the result list and iterator cursor.
    */
   async findBySecondaryIndex<const K extends SecondaryIndexKeys<T1, T2>>(
     index: K,
     value: CheckKeyOf<K, T1>,
     options?: ListOptions<T1>,
   ) {
-    const result: Document<T1>[] = []
     const key = extendKey(
       this.keys.secondaryIndexKey,
       index as KvId,
@@ -218,6 +211,7 @@ export class IndexableCollection<
     )
 
     const iter = this.kv.list<T1>({ prefix: key }, options)
+    const result: Document<T1>[] = []
 
     for await (const entry of iter) {
       const { key, value, versionstamp } = entry
@@ -235,7 +229,10 @@ export class IndexableCollection<
       }
     }
 
-    return result
+    return {
+      result,
+      cursor: iter.cursor || undefined,
+    }
   }
 
   async delete(id: KvId) {

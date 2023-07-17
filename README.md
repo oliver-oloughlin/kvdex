@@ -189,8 +189,8 @@ await db.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77")
 
 The "deleteMany" method is used for deleting multiple documents from the KV
 store. It takes an optional options argument that can be used for filtering of
-documents to be deleted. If no options are given, "deleteMany" will delete all
-documents in the collection.
+documents to be deleted, and pagination. If no options are given, "deleteMany" 
+will delete all documents in the collection.
 
 ```ts
 // Deletes all user documents
@@ -217,8 +217,8 @@ await db.users.deleteMany({
 
 The "getMany" method is used for retrieving multiple documents from the KV
 store. It takes an optional options argument that can be used for filtering of
-documents to be retrieved. If no options are given, "getMany" will retrieve all
-documents in the collection.
+documents to be retrieved, and pagination. If no options are given, "getMany" 
+will retrieve all documents in the collection.
 
 ```ts
 // Retrieves all user documents
@@ -245,7 +245,7 @@ const { result } = await db.users.getMany({
 
 The "forEach" method is used for executing a callback function for multiple
 documents in the KV store. It takes an optional options argument that can be
-used for filtering of documents. If no options are given, "forEach" will execute
+used for filtering of documents and pagination. If no options are given, "forEach" will execute
 the callback function for all documents in the collection.
 
 ```ts
@@ -278,48 +278,22 @@ already exists.
 ### Find By Primary Index
 
 The "findByPrimaryIndex" method is exclusive to indexable collections and can be
-used to find a document from the given selection of primary index values. Note
-that if the index is not defined when creating the collection, finding by that
-index will always return null.
+used to find a document by a primary index.
 
 ```ts
 // Finds a user document with the username = "oliver"
-const userDoc = await db.indexableUsers.findByPrimaryIndex({
-  username: "oliver",
-})
-
-// Can select by multiple indices
-// It will try to find by each given index and return a single result
-// In this case it will find by username, but not by age
-const userDoc = await db.indexableUsers.findByPrimaryIndex({
-  username: "oliver",
-  age: 24,
-})
-
-// Will return null as age is not defined as a primary index
-const notFound = await db.indexableUsers.findByPrimaryIndex({
-  age: 24,
-})
+const userDoc = await db.indexableUsers.findByPrimaryIndex("username", "oliver")
 ```
 
 ### Find By Secondary Index
 
-The "findBySecondaryIndex" method is also exclusive to indexable collections and
-can be used to find documents by secondary indices. Secondary indices are not
-unique, and therefore the result is an array of documents. Like with
-"findByPrimaryIndex", multiple indices can be specified, which in this case will
-return a combined result for all.
+The "findBySecondaryIndex" method is exclusive to indexable collections and
+can be used to find documents by a secondary index. Secondary indices are not
+unique, and therefore the result is an array of documents.
 
 ```ts
 // Returns all users with age = 24
-const userDocs = await db.indexableUsers.findBySecondaryIndex({
-  age: 24,
-})
-
-// Returns empty list, as username is not defined as a secondary index
-const empty = await db.indexableUsers.findBySecondaryIndex({
-  username: "oliver",
-})
+const { result } = await db.indexableUsers.findBySecondaryIndex("age", 24)
 ```
 
 ## Atomic Operations

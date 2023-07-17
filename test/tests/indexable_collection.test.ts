@@ -18,7 +18,7 @@ Deno.test("indexable_collection", async (t1) => {
       assert(pplById.result.length === 0)
 
       const pplByAge = await db.indexablePeople.findBySecondaryIndex("age", 24)
-      assert(pplByAge.length === 0)
+      assert(pplByAge.result.length === 0)
     })
   })
 
@@ -51,7 +51,7 @@ Deno.test("indexable_collection", async (t1) => {
           24,
         )
 
-        assert(indexDocs.some((doc) => doc.id === cr.id))
+        assert(indexDocs.result.some((doc) => doc.id === cr.id))
       },
     )
 
@@ -100,7 +100,7 @@ Deno.test("indexable_collection", async (t1) => {
           24,
         )
 
-        assert(indexDocs.some((doc) => doc.id === cr.id))
+        assert(indexDocs.result.some((doc) => doc.id === cr.id))
       },
     )
 
@@ -163,9 +163,9 @@ Deno.test("indexable_collection", async (t1) => {
 
         const byAge = await db.indexablePeople.findBySecondaryIndex("age", 24)
 
-        assert(byAge.length === 2)
-        assert(byAge.some((doc) => doc.value.name === testPerson.name))
-        assert(byAge.some((doc) => doc.value.name === testPerson2.name))
+        assert(byAge.result.length === 2)
+        assert(byAge.result.some((doc) => doc.value.name === testPerson.name))
+        assert(byAge.result.some((doc) => doc.value.name === testPerson2.name))
       },
     )
 
@@ -191,7 +191,7 @@ Deno.test("indexable_collection", async (t1) => {
 
         const byAge = await db.indexablePeople.findBySecondaryIndex("age", 24)
 
-        assert(byAge.length === 1)
+        assert(byAge.result.length === 1)
       },
     )
   })
@@ -230,8 +230,8 @@ Deno.test("indexable_collection", async (t1) => {
         "age",
         24,
       )
-      assert(peopleByAge24.some((p) => p.id === cr1.id))
-      assert(peopleByAge24.some((p) => p.id === cr2.id))
+      assert(peopleByAge24.result.some((p) => p.id === cr1.id))
+      assert(peopleByAge24.result.some((p) => p.id === cr2.id))
     })
   })
 
@@ -267,7 +267,7 @@ Deno.test("indexable_collection", async (t1) => {
 
       const indexDocs = await db.indexablePeople.findBySecondaryIndex("age", 24)
 
-      assert(indexDocs.length === 0)
+      assert(indexDocs.result.length === 0)
     })
   })
 
@@ -298,7 +298,11 @@ Deno.test("indexable_collection", async (t1) => {
         "Oliver",
       )
 
-      const [ageDoc] = await db.indexablePeople.findBySecondaryIndex("age", 77)
+      const { result } = await db.indexablePeople.findBySecondaryIndex(
+        "age",
+        77,
+      )
+      const [ageDoc] = result
 
       assert(idDoc !== null)
       assert(nameDoc !== null)
@@ -428,7 +432,7 @@ Deno.test("indexable_collection", async (t1) => {
           24,
         )
 
-        assert(indexDocs.length === 0)
+        assert(indexDocs.result.length === 0)
       },
     )
 

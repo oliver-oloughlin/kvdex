@@ -301,7 +301,7 @@ export class Collection<const T extends KvValue> {
    * ```
    *
    * @param options
-   * @returns A promise that resovles to void
+   * @returns A promise that resovles to an object containing the iterator cursor
    */
   async deleteMany(options?: ListOptions<T>) {
     const iter = this.kv.list<T>({ prefix: this.keys.idKey }, options)
@@ -342,7 +342,7 @@ export class Collection<const T extends KvValue> {
    * ```
    *
    * @param options
-   * @returns A promise that resovles to a list of the retrieved documents
+   * @returns A promise that resovles to an object containing a list of the retrieved documents and the iterator cursor
    */
   async getMany(options?: ListOptions<T>) {
     const iter = this.kv.list<T>({ prefix: this.keys.idKey }, options)
@@ -385,7 +385,7 @@ export class Collection<const T extends KvValue> {
    *
    * @param fn
    * @param options
-   * @returns A promise that resolves to void
+   * @returns A promise that resovles to an object containing the iterator cursor
    */
   async forEach(fn: (doc: Document<T>) => void, options?: ListOptions<T>) {
     const iter = this.kv.list<T>({ prefix: this.keys.idKey }, options)
