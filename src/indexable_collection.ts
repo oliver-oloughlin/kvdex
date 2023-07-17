@@ -261,7 +261,7 @@ export class IndexableCollection<
       extendKey(this.keys.secondaryIndexKey, index, indexValue)
     )
 
-    for (const key of keys) {
+    await Promise.all(keys.map(async key => {
       const iter = this.kv.list<T1>({ prefix: key }, options)
 
       for await (const entry of iter) {
@@ -279,7 +279,8 @@ export class IndexableCollection<
           result.push(doc)
         }
       }
-    }
+    }))
+
     return result
   }
 
