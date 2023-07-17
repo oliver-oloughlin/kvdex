@@ -141,39 +141,6 @@ export class IndexableCollection<
     return commitResult
   }
 
-  async addMany<const TEntries extends [T1, ...T1[]]>(
-    ...entries: TEntries
-  ): Promise<Deno.KvCommitResult | Deno.KvCommitError> {
-    for (const index of this.primaryIndexList) {
-      const indexValues = entries.map((data) => JSON.stringify(data[index]))
-      const indexValuesSet = new Set(indexValues)
-
-      if (indexValues.length !== indexValuesSet.size) {
-        return {
-          ok: false,
-        }
-      }
-    }
-
-    let atomic = this.kv.atomic()
-
-    entries.forEach((data) => {
-      const id = generateId()
-      const idKey = extendKey(this.keys.idKey, id)
-
-      atomic = atomic
-        .check({
-          key: idKey,
-          versionstamp: null,
-        })
-        .set(idKey, data)
-
-      atomic = setIndices(id, data, atomic, this)
-    })
-
-    return await atomic.commit()
-  }
-
   /**
    * Find a document by index value.
    * Note that selecting an index that was not defined when creating the collection will always return null.
@@ -261,7 +228,7 @@ export class IndexableCollection<
       extendKey(this.keys.secondaryIndexKey, index, indexValue)
     )
 
-    await Promise.all(keys.map(async key => {
+    await Promise.all(keys.map(async (key) => {
       const iter = this.kv.list<T1>({ prefix: key }, options)
 
       for await (const entry of iter) {

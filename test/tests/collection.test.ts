@@ -239,9 +239,9 @@ Deno.test({
       await t2.step("Should add all document entries", async () => {
         await reset()
 
-        const cr = await db.people.addMany(testPerson, testPerson2)
+        const crs = await db.people.addMany(testPerson, testPerson2)
 
-        assert(cr.ok)
+        assert(crs.every((cr) => cr.ok))
 
         const people = await db.people.getMany()
 

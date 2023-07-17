@@ -281,21 +281,7 @@ export class Collection<const T extends KvValue> {
    * @returns A promise that resolves to Deno.KvCommitResult or Deno.KvCommitError
    */
   async addMany(...entries: T[]) {
-    let atomic = this.kv.atomic()
-
-    entries.forEach((data) => {
-      const id = crypto.randomUUID()
-      const key = extendKey(this.keys.idKey, id)
-
-      atomic = atomic
-        .check({
-          key,
-          versionstamp: null,
-        })
-        .set(key, data)
-    })
-
-    return await atomic.commit()
+    return await Promise.all(entries.map((data) => this.add(data)))
   }
 
   /**

@@ -135,9 +135,9 @@ Deno.test("indexable_collection", async (t1) => {
       async () => {
         await reset()
 
-        const cr = await db.indexablePeople.addMany(testPerson, testPerson2)
+        const crs = await db.indexablePeople.addMany(testPerson, testPerson2)
 
-        assert(cr.ok)
+        assert(crs.every((cr) => cr.ok))
 
         const people = await db.indexablePeople.getMany()
 
@@ -171,25 +171,25 @@ Deno.test("indexable_collection", async (t1) => {
       async () => {
         await reset()
 
-        const cr = await db.indexablePeople.addMany(testPerson, testPerson)
+        const crs = await db.indexablePeople.addMany(testPerson, testPerson)
 
-        assert(!cr.ok)
+        assert(crs.some((cr) => !cr.ok))
 
         const people = await db.indexablePeople.getMany()
 
-        assert(people.result.length === 0)
+        assert(people.result.length === 1)
 
         const byName = await db.indexablePeople.findByPrimaryIndex({
           name: testPerson.name,
         })
 
-        assert(byName === null)
+        assert(byName !== null)
 
         const byAge = await db.indexablePeople.findBySecondaryIndex({
           age: 24,
         })
 
-        assert(byAge.length === 0)
+        assert(byAge.length === 1)
       },
     )
   })
