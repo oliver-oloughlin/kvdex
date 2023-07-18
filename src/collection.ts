@@ -196,9 +196,11 @@ export class Collection<const T extends KvValue> {
    * @param id
    * @returns A promise that resovles to void
    */
-  async delete(id: KvId) {
-    const key = extendKey(this.keys.idKey, id)
-    await this.kv.delete(key)
+  async delete(...ids: [KvId, ...KvId[]]) {
+    await Promise.all(ids.map(async (id) => {
+      const key = extendKey(this.keys.idKey, id)
+      await this.kv.delete(key)
+    }))
   }
 
   /**

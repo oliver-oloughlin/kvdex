@@ -235,17 +235,20 @@ export class IndexableCollection<
     }
   }
 
-  async delete(id: KvId) {
-    const idKey = extendKey(this.keys.idKey, id)
-    const { value } = await this.kv.get<T1>(idKey)
+  async delete(...ids: [KvId, ...KvId[]]) {
+    await Promise.all(ids.map(async (id) => {
+      const idKey = extendKey(this.keys.idKey, id)
+      const { value } = await this.kv.get<T1>(idKey)
 
-    if (value === null) return
+      if (value === null) {
+        return
+      }
 
-    let atomic = this.kv.atomic().delete(idKey)
+      let atomic = this.kv.atomic().delete(idKey)
+      atomic = deleteIndices(id, value, atomic, this)
 
-    atomic = deleteIndices(id, value, atomic, this)
-
-    await atomic.commit()
+      await atomic.commit()
+    }))
   }
 
   async update<const TId extends KvId>(
