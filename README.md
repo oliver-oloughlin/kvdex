@@ -178,11 +178,13 @@ const result2 = await db.users.update("user1", {
 
 ### Delete
 
-The "delete" method is used to delete a document with the given id from the KV
+The "delete" method is used to delete one or more documents with the given ids from the KV
 store.
 
 ```ts
 await db.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77")
+
+await db.users.delete("user1", "user2", "user3")
 ```
 
 ### Delete Many
