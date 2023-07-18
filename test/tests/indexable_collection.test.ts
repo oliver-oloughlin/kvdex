@@ -237,38 +237,105 @@ Deno.test("indexable_collection", async (t1) => {
 
   // Test "delete" method
   await t1.step("delete", async (t2) => {
-    await t2.step("Should delete all index entries of document", async () => {
-      await reset()
+    await t2.step(
+      "Should delete all index entries of document by id",
+      async () => {
+        await reset()
 
-      const cr = await db.indexablePeople.add(testPerson)
-      if (!cr.ok) {
-        throw Error("document was not added to collection usccessfully")
-      }
+        const cr = await db.indexablePeople.add(testPerson)
+        if (!cr.ok) {
+          throw Error("document was not added to collection usccessfully")
+        }
 
-      const idDoc1 = await db.indexablePeople.find(cr.id)
-      assert(idDoc1 !== null)
+        const idDoc1 = await db.indexablePeople.find(cr.id)
+        assert(idDoc1 !== null)
 
-      const indexDoc1 = await db.indexablePeople.findByPrimaryIndex(
-        "name",
-        testPerson.name,
-      )
-      assert(indexDoc1 !== null)
+        const indexDoc1 = await db.indexablePeople.findByPrimaryIndex(
+          "name",
+          testPerson.name,
+        )
+        assert(indexDoc1 !== null)
 
-      await db.indexablePeople.delete(cr.id)
+        await db.indexablePeople.delete(cr.id)
 
-      const idDoc2 = await db.indexablePeople.find(cr.id)
-      assert(idDoc2 === null)
+        const idDoc2 = await db.indexablePeople.find(cr.id)
+        assert(idDoc2 === null)
 
-      const indexDoc2 = await db.indexablePeople.findByPrimaryIndex(
-        "name",
-        testPerson.name,
-      )
-      assert(indexDoc2 === null)
+        const indexDoc2 = await db.indexablePeople.findByPrimaryIndex(
+          "name",
+          testPerson.name,
+        )
+        assert(indexDoc2 === null)
 
-      const indexDocs = await db.indexablePeople.findBySecondaryIndex("age", 24)
+        const indexDocs = await db.indexablePeople.findBySecondaryIndex(
+          "age",
+          24,
+        )
 
-      assert(indexDocs.result.length === 0)
-    })
+        assert(indexDocs.result.length === 0)
+      },
+    )
+
+    await t2.step(
+      "Should delete all index entries of multiple documents by ids",
+      async () => {
+        await reset()
+
+        const cr1 = await db.indexablePeople.add(testPerson)
+        const cr2 = await db.indexablePeople.add(testPerson2)
+
+        assert(cr1.ok)
+        assert(cr2.ok)
+
+        const allPeople1 = await db.indexablePeople.getMany()
+        assert(allPeople1.result.length === 2)
+
+        const indexDoc1_1 = await db.indexablePeople.findByPrimaryIndex(
+          "name",
+          testPerson.name,
+        )
+
+        const indexDoc2_1 = await db.indexablePeople.findByPrimaryIndex(
+          "name",
+          testPerson2.name,
+        )
+
+        assert(indexDoc1_1 !== null)
+        assert(indexDoc2_1 !== null)
+
+        const peopleByAge1 = await db.indexablePeople.findBySecondaryIndex(
+          "age",
+          24,
+        )
+
+        assert(peopleByAge1.result.length === 2)
+
+        await db.indexablePeople.delete(cr1.id, cr2.id)
+
+        const allPeople2 = await db.indexablePeople.getMany()
+        assert(allPeople2.result.length === 0)
+
+        const indexDoc1_2 = await db.indexablePeople.findByPrimaryIndex(
+          "name",
+          testPerson.name,
+        )
+
+        const indexDoc2_2 = await db.indexablePeople.findByPrimaryIndex(
+          "name",
+          testPerson2.name,
+        )
+
+        assert(indexDoc1_2 === null)
+        assert(indexDoc2_2 === null)
+
+        const peopleByAge2 = await db.indexablePeople.findBySecondaryIndex(
+          "age",
+          24,
+        )
+
+        assert(peopleByAge2.result.length === 0)
+      },
+    )
   })
 
   // Test "update" method

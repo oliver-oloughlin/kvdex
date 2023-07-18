@@ -186,19 +186,23 @@ export class Collection<const T extends KvValue> {
   }
 
   /**
-   * Deletes a document with the given id from the KV store.
+   * Deletes one or more documents with the given ids from the KV store.
    *
    * **Example:**
    * ```ts
    * await db.users.delete("oliver")
+   *
+   * await db.users.delete("user1", "user2", "user3")
    * ```
    *
    * @param id
    * @returns A promise that resovles to void
    */
-  async delete(id: KvId) {
-    const key = extendKey(this.keys.idKey, id)
-    await this.kv.delete(key)
+  async delete(...ids: [KvId, ...KvId[]]) {
+    await Promise.all(ids.map(async (id) => {
+      const key = extendKey(this.keys.idKey, id)
+      await this.kv.delete(key)
+    }))
   }
 
   /**
