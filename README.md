@@ -271,6 +271,22 @@ await db.users.forEach((doc) => console.log(doc.value.username), {
 })
 ```
 
+### Count
+
+The "count" method is used to count the number of documents in a collection. 
+It takes an optional options argument that can be used for filtering of documents.
+If no options are given, it will count all documents in the collection.
+
+```ts
+// Returns the total number of user documents in the KV store
+const count = await db.users.count()
+
+// Returns the number of users with age > 20
+const count = await db.users.count({
+  filter: doc => doc.value.age > 20
+})
+```
+
 ## Indexable Collection Methods
 
 Indexable collections extend the base Collection class and provide all the same
