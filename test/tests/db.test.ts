@@ -5,7 +5,7 @@ import { assert, assertThrows } from "../../deps.ts"
 // Test atomic operations
 Deno.test("db", async (t1) => {
   // Test "kvdb" function
-  await t1.step("kvdb", async (t2) => {
+  await t1.step("createDb", async (t2) => {
     await t2.step(
       "Should throw error when creating KVDB with duplicate collection keys",
       async () => {
@@ -424,7 +424,7 @@ Deno.test("db", async (t1) => {
   })
 
   // Test "countAll" method
-  await t1.step("count", async (t) => {
+  await t1.step("countAll", async (t) => {
     await t.step(
       "Should count all document entries across all collections",
       async () => {
@@ -437,6 +437,29 @@ Deno.test("db", async (t1) => {
 
         const count = await db.countAll()
         assert(count === 15)
+      },
+    )
+  })
+
+  // Test "deleteAll" method
+  await t1.step("deleteAll", async (t) => {
+    await t.step(
+      "Should delete all document entries across all collections",
+      async () => {
+        await reset()
+
+        await db.values.numbers.addMany(1, 2, 3, 4, 5)
+        await db.values.strings.addMany("1", "2", "3", "4", "5")
+        await db.people.addMany(testPerson, testPerson, testPerson)
+        await db.indexablePeople.addMany(testPerson, testPerson2)
+
+        const count1 = await db.countAll()
+        assert(count1 === 15)
+
+        await db.deleteAll()
+
+        const count2 = await db.countAll()
+        assert(count2 === 0)
       },
     )
   })

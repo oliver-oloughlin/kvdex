@@ -1,5 +1,11 @@
 import { AtomicBuilder } from "./atomic_builder.ts"
-import type { CountAllOptions, DB, KvValue, Schema } from "./types.ts"
+import type {
+  CountAllOptions,
+  DB,
+  DeleteAllOptions,
+  KvValue,
+  Schema,
+} from "./types.ts"
 import { CollectionBuilder } from "./collection_builder.ts"
 import { Collection } from "./collection.ts"
 
@@ -42,6 +48,7 @@ export function createDb<const T extends Schema>(
     ...schema,
     atomic: (selector) => new AtomicBuilder(kv, schema, selector(schema)),
     countAll: (options) => _countAll(kv, schema, options),
+    deleteAll: (options) => _deleteAll(kv, schema, options),
   }
 }
 
@@ -57,7 +64,23 @@ async function _countAll(
   const counts = await Promise.all(
     Object.values(schemaOrCollection).map((val) => _countAll(kv, val, options)),
   )
-  const count = counts.reduce((sum, c) => sum + c, 0)
 
-  return count
+  return counts.reduce((sum, c) => sum + c, 0)
+}
+
+async function _deleteAll(
+  kv: Deno.Kv,
+  schemaOrCollection: Schema | Collection<KvValue>,
+  options?: DeleteAllOptions,
+) {
+  if (schemaOrCollection instanceof Collection) {
+    await schemaOrCollection.deleteMany(options)
+    return
+  }
+
+  await Promise.all(
+    Object.values(schemaOrCollection).map((val) =>
+      _deleteAll(kv, val, options)
+    ),
+  )
 }

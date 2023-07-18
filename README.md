@@ -69,8 +69,8 @@ have an identical key, the function will throw an error.
 ### Find
 
 The "find" method is used to retrieve a single document with the given id from
-the KV store. The id must adhere to the type Deno.KvKeyPart. This method also
-takes an optional options argument.
+the KV store. The id must adhere to the type Deno.KvKeyPart. 
+This method takes an optional options argument that can be used to set the consistency mode.
 
 ```ts
 const userDoc1 = await db.users.find(123)
@@ -85,8 +85,8 @@ const userDoc3 = await db.users.find("oliver", {
 ### Find Many
 
 The "findMany" method is used to retrieve multiple documents with the given
-array of ids from the KV store. The ids must adhere to the type KvId. This
-method, like the "find" method, also takes an optional options argument.
+array of ids from the KV store. The ids must adhere to the type KvId. 
+This method takes an optional options argument that can be used to set the consistency mode.
 
 ```ts
 const userDocs1 = await db.users.findMany(["abc", 123, 123n])
@@ -190,9 +190,9 @@ await db.users.delete("user1", "user2", "user3")
 ### Delete Many
 
 The "deleteMany" method is used for deleting multiple documents from the KV
-store. It takes an optional options argument that can be used for filtering of
-documents to be deleted, and pagination. If no options are given, "deleteMany" 
-will delete all documents in the collection.
+store without specifying ids. 
+It takes an optional options argument that can be used for filtering of documents to be deleted, and pagination.
+If no options are given, "deleteMany" will delete all documents in the collection.
 
 ```ts
 // Deletes all user documents
@@ -316,11 +316,24 @@ const { result } = await db.indexableUsers.findBySecondaryIndex("age", 24)
 
 ## Database Methods
 
+These are methods which can be found at the top level of your database object, and perform operations across multiple collections.
+
 ### Count All
 
+The "countAll" method is used to count the total number of documents across all collections. It takes an optional options argument that can be used to set the consistency mode.
+
 ```ts
-// Returns the total number of documents in the KV store across all collections
+// Gets the total number of documents in the KV store across all collections
 const count = await db.countAll()
+```
+
+### Delete All
+
+The "deleteAll" method is used to delete all documents in across all collections. It takes an optional options argument that can be used to set the consistency mode.
+
+```ts
+// Deletes all documents in the KV store across all collections
+await db.deleteAll()
 ```
 
 ### Atomic
@@ -348,7 +361,7 @@ always fail if it is trying to delete and write to the same indexable
 collection. It will also fail if trying to set/add a document with existing
 index entries.
 
-### Without checking
+#### Without checking
 
 ```ts
 // Deletes and adds an entry to the bigints collection
@@ -396,7 +409,7 @@ const result3 = await db
   .commit()
 ```
 
-### With checking
+#### With checking
 
 ```ts
 // Only adds 10 to the value when it has not been changed after being read

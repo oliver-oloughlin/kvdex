@@ -155,7 +155,7 @@ export type DB<TSchema extends Schema> = TSchema & {
 
   /**
    * Count all document entries in the KV store.
-   * 
+   *
    * **Example:**
    * ```ts
    * // Returns the total number of documents in the KV store across all collections
@@ -166,9 +166,24 @@ export type DB<TSchema extends Schema> = TSchema & {
    * @returns A promise that resolves to a number representing the total count of documents in the KV store.
    */
   countAll: (options?: CountAllOptions) => Promise<number>
+
+  /**
+   * Delete all document entries in the KV store.
+   *
+   * **Example:**
+   * ```ts
+   * // Deletes all documents across all collections
+   * await db.deleteAll()
+   * ```
+   *
+   * @returns A promise that resolves to void.
+   */
+  deleteAll: (options?: DeleteAllOptions) => Promise<void>
 }
 
 export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
+
+export type DeleteAllOptions = Pick<Deno.KvListOptions, "consistency">
 
 // KV Types
 export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T> : T
