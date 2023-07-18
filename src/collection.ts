@@ -191,7 +191,7 @@ export class Collection<const T extends KvValue> {
    * **Example:**
    * ```ts
    * await db.users.delete("oliver")
-   * 
+   *
    * await db.users.delete("user1", "user2", "user3")
    * ```
    *
