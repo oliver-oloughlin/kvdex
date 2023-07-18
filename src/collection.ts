@@ -2,6 +2,7 @@ import { COLLECTION_ID_KEY_SUFFIX } from "./constants.ts"
 import type {
   CollectionKeys,
   CommitResult,
+  CountOptions,
   Document,
   FindManyOptions,
   FindOptions,
@@ -409,5 +410,44 @@ export class Collection<const T extends KvValue> {
     return {
       cursor: iter.cursor || undefined,
     }
+  }
+
+  /**
+   * Counts the number of documents in the collection.
+   *
+   * **Example:**
+   * ```ts
+   * // Returns the total number of user documents in the KV store
+   * const count = await db.users.count()
+   *
+   * // Returns the number of users with age > 20
+   * const count = await db.users.count({
+   *   filter: doc => doc.value.age > 20
+   * })
+   * ```
+   *
+   * @param options
+   * @returns A promise that resolves to a number representing the performed count.
+   */
+  async count(options?: CountOptions<T>) {
+    const iter = this.kv.list<T>({ prefix: this.keys.idKey }, options)
+    let result = 0
+
+    for await (const entry of iter) {
+      const id = getDocumentId(entry.key)
+      if (typeof id === "undefined") continue
+
+      const doc: Document<T> = {
+        id,
+        versionstamp: entry.versionstamp,
+        value: entry.value,
+      }
+
+      if (!options?.filter || options.filter(doc)) {
+        result++
+      }
+    }
+
+    return result
   }
 }

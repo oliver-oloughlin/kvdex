@@ -85,6 +85,10 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   filter?: (doc: Document<T>) => boolean
 }
 
+export type CountOptions<T extends KvValue> =
+  & CountAllOptions
+  & Pick<ListOptions<T>, "filter">
+
 export type FindOptions = Parameters<Deno.Kv["get"]>[1]
 
 export type FindManyOptions = Parameters<Deno.Kv["getMany"]>[1]
@@ -148,7 +152,38 @@ export type DB<TSchema extends Schema> = TSchema & {
   >(
     selector: CollectionSelector<TSchema, TValue>,
   ) => AtomicBuilder<TSchema, TValue>
+
+  /**
+   * Count all document entries in the KV store.
+   *
+   * **Example:**
+   * ```ts
+   * // Returns the total number of documents in the KV store across all collections
+   * const count = await db.countAll()
+   * ```
+   *
+   * @param options
+   * @returns A promise that resolves to a number representing the total count of documents in the KV store.
+   */
+  countAll: (options?: CountAllOptions) => Promise<number>
+
+  /**
+   * Delete all document entries in the KV store.
+   *
+   * **Example:**
+   * ```ts
+   * // Deletes all documents across all collections
+   * await db.deleteAll()
+   * ```
+   *
+   * @returns A promise that resolves to void.
+   */
+  deleteAll: (options?: DeleteAllOptions) => Promise<void>
 }
+
+export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
+
+export type DeleteAllOptions = Pick<Deno.KvListOptions, "consistency">
 
 // KV Types
 export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T> : T

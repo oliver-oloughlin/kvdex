@@ -14,7 +14,7 @@ Optional and nullable properties are allowed. If you wish to use Zod, you can
 create your Zod object schema and use its type as your model.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.5.1/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.5.2/mod.ts"
 
 interface User extends Model {
   username: string
@@ -35,7 +35,7 @@ The "createDb" function is used for creating a new database instance. It takes a
 Deno KV instance and a schema builder function as arguments.
 
 ```ts
-import { createDb } from "https://deno.land/x/kvdex@v0.5.1/mod.ts"
+import { createDb } from "https://deno.land/x/kvdex@v0.5.2/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -69,8 +69,8 @@ have an identical key, the function will throw an error.
 ### Find
 
 The "find" method is used to retrieve a single document with the given id from
-the KV store. The id must adhere to the type Deno.KvKeyPart. This method also
-takes an optional options argument.
+the KV store. The id must adhere to the type Deno.KvKeyPart. 
+This method takes an optional options argument that can be used to set the consistency mode.
 
 ```ts
 const userDoc1 = await db.users.find(123)
@@ -85,8 +85,8 @@ const userDoc3 = await db.users.find("oliver", {
 ### Find Many
 
 The "findMany" method is used to retrieve multiple documents with the given
-array of ids from the KV store. The ids must adhere to the type KvId. This
-method, like the "find" method, also takes an optional options argument.
+array of ids from the KV store. The ids must adhere to the type KvId. 
+This method takes an optional options argument that can be used to set the consistency mode.
 
 ```ts
 const userDocs1 = await db.users.findMany(["abc", 123, 123n])
@@ -190,9 +190,9 @@ await db.users.delete("user1", "user2", "user3")
 ### Delete Many
 
 The "deleteMany" method is used for deleting multiple documents from the KV
-store. It takes an optional options argument that can be used for filtering of
-documents to be deleted, and pagination. If no options are given, "deleteMany" 
-will delete all documents in the collection.
+store without specifying ids. 
+It takes an optional options argument that can be used for filtering of documents to be deleted, and pagination.
+If no options are given, "deleteMany" will delete all documents in the collection.
 
 ```ts
 // Deletes all user documents
@@ -271,6 +271,22 @@ await db.users.forEach((doc) => console.log(doc.value.username), {
 })
 ```
 
+### Count
+
+The "count" method is used to count the number of documents in a collection. 
+It takes an optional options argument that can be used for filtering of documents.
+If no options are given, it will count all documents in the collection.
+
+```ts
+// Returns the total number of user documents in the KV store
+const count = await db.users.count()
+
+// Returns the number of users with age > 20
+const count = await db.users.count({
+  filter: doc => doc.value.age > 20
+})
+```
+
 ## Indexable Collection Methods
 
 Indexable collections extend the base Collection class and provide all the same
@@ -298,7 +314,29 @@ unique, and therefore the result is an array of documents.
 const { result } = await db.indexableUsers.findBySecondaryIndex("age", 24)
 ```
 
-## Atomic Operations
+## Database Methods
+
+These are methods which can be found at the top level of your database object, and perform operations across multiple collections.
+
+### Count All
+
+The "countAll" method is used to count the total number of documents across all collections. It takes an optional options argument that can be used to set the consistency mode.
+
+```ts
+// Gets the total number of documents in the KV store across all collections
+const count = await db.countAll()
+```
+
+### Delete All
+
+The "deleteAll" method is used to delete all documents in across all collections. It takes an optional options argument that can be used to set the consistency mode.
+
+```ts
+// Deletes all documents in the KV store across all collections
+await db.deleteAll()
+```
+
+### Atomic
 
 Atomic operations allow for executing multiple mutations as a single atomic
 transaction. This means that documents can be checked for changes before
@@ -323,7 +361,7 @@ always fail if it is trying to delete and write to the same indexable
 collection. It will also fail if trying to set/add a document with existing
 index entries.
 
-### Without checking
+#### Without checking
 
 ```ts
 // Deletes and adds an entry to the bigints collection
@@ -371,7 +409,7 @@ const result3 = await db
   .commit()
 ```
 
-### With checking
+#### With checking
 
 ```ts
 // Only adds 10 to the value when it has not been changed after being read
@@ -402,7 +440,7 @@ result will be an object containing: id, versionstamp and all the entries in the
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.5.1/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.5.2/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
