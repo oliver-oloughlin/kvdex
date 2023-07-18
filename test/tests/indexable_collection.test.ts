@@ -581,18 +581,21 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "count" method
-  await t1.step("count", async t => {
-    await t.step("Should correctly count all documents in collection", async () => {
-      await reset()
+  await t1.step("count", async (t) => {
+    await t.step(
+      "Should correctly count all documents in collection",
+      async () => {
+        await reset()
 
-      await db.indexablePeople.addMany(testPerson, testPerson2)
+        await db.indexablePeople.addMany(testPerson, testPerson2)
 
-      const allPeople = await db.indexablePeople.getMany()
-      assert(allPeople.result.length === 2)
+        const allPeople = await db.indexablePeople.getMany()
+        assert(allPeople.result.length === 2)
 
-      const count = await db.indexablePeople.count()
-      assert(count === 2)
-    })
+        const count = await db.indexablePeople.count()
+        assert(count === 2)
+      },
+    )
 
     await t.step("Should correctly count filtered documents", async () => {
       await reset()
@@ -603,7 +606,7 @@ Deno.test("indexable_collection", async (t1) => {
       assert(allPeople.result.length === 2)
 
       const count = await db.indexablePeople.count({
-        filter: doc => doc.value.name === testPerson.name
+        filter: (doc) => doc.value.name === testPerson.name,
       })
 
       assert(count === 1)

@@ -314,7 +314,16 @@ unique, and therefore the result is an array of documents.
 const { result } = await db.indexableUsers.findBySecondaryIndex("age", 24)
 ```
 
-## Atomic Operations
+## Database Methods
+
+### Count All
+
+```ts
+// Returns the total number of documents in the KV store across all collections
+const count = await db.countAll()
+```
+
+### Atomic
 
 Atomic operations allow for executing multiple mutations as a single atomic
 transaction. This means that documents can be checked for changes before

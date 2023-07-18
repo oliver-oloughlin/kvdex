@@ -423,6 +423,24 @@ Deno.test("db", async (t1) => {
     )
   })
 
+  // Test "countAll" method
+  await t1.step("count", async (t) => {
+    await t.step(
+      "Should count all document entries across all collections",
+      async () => {
+        await reset()
+
+        await db.values.numbers.addMany(1, 2, 3, 4, 5)
+        await db.values.strings.addMany("1", "2", "3", "4", "5")
+        await db.people.addMany(testPerson, testPerson, testPerson)
+        await db.indexablePeople.addMany(testPerson, testPerson2)
+
+        const count = await db.countAll()
+        assert(count === 15)
+      },
+    )
+  })
+
   // Test valid data types
   await t1.step("types", async (t2) => {
     await t2.step(

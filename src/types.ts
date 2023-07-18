@@ -85,7 +85,9 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   filter?: (doc: Document<T>) => boolean
 }
 
-export type NoPaginationListOptions<T extends KvValue> = Omit<ListOptions<T>, "batchSize" | "limit" | "reverse" | "cursor">
+export type CountOptions<T extends KvValue> =
+  & CountAllOptions
+  & Pick<ListOptions<T>, "filter">
 
 export type FindOptions = Parameters<Deno.Kv["get"]>[1]
 
@@ -150,7 +152,23 @@ export type DB<TSchema extends Schema> = TSchema & {
   >(
     selector: CollectionSelector<TSchema, TValue>,
   ) => AtomicBuilder<TSchema, TValue>
+
+  /**
+   * Count all document entries in the KV store.
+   * 
+   * **Example:**
+   * ```ts
+   * // Returns the total number of documents in the KV store across all collections
+   * const count = await db.countAll()
+   * ```
+   *
+   * @param options
+   * @returns A promise that resolves to a number representing the total count of documents in the KV store.
+   */
+  countAll: (options?: CountAllOptions) => Promise<number>
 }
+
+export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
 
 // KV Types
 export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T> : T

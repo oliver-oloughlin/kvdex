@@ -670,18 +670,21 @@ Deno.test({
     })
 
     // Test "count" method
-    await t.step("count", async t => {
-      await t.step("Should correctly count all documents in collection", async () => {
-        await reset()
+    await t.step("count", async (t) => {
+      await t.step(
+        "Should correctly count all documents in collection",
+        async () => {
+          await reset()
 
-        await db.values.numbers.addMany(1, 2, 3, 4, 5)
+          await db.values.numbers.addMany(1, 2, 3, 4, 5)
 
-        const allNums = await db.values.numbers.getMany()
-        assert(allNums.result.length === 5)
+          const allNums = await db.values.numbers.getMany()
+          assert(allNums.result.length === 5)
 
-        const count = await db.values.numbers.count()
-        assert(count === 5)
-      })
+          const count = await db.values.numbers.count()
+          assert(count === 5)
+        },
+      )
 
       await t.step("Should correctly count filtered documents", async () => {
         await reset()
@@ -692,7 +695,7 @@ Deno.test({
         assert(allNums.result.length === 7)
 
         const count = await db.values.numbers.count({
-          filter: doc => doc.value === 3
+          filter: (doc) => doc.value === 3,
         })
 
         assert(count === 2)

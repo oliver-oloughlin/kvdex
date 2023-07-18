@@ -2,6 +2,7 @@ import { COLLECTION_ID_KEY_SUFFIX } from "./constants.ts"
 import type {
   CollectionKeys,
   CommitResult,
+  CountOptions,
   Document,
   FindManyOptions,
   FindOptions,
@@ -10,7 +11,6 @@ import type {
   KvObject,
   KvValue,
   ListOptions,
-  NoPaginationListOptions,
   UpdateData,
 } from "./types.ts"
 import { extendKey, getDocumentId, isKvObject } from "./utils.internal.ts"
@@ -414,7 +414,7 @@ export class Collection<const T extends KvValue> {
 
   /**
    * Counts the number of documents in the collection.
-   * 
+   *
    * **Example:**
    * ```ts
    * // Returns the total number of user documents in the KV store
@@ -425,11 +425,11 @@ export class Collection<const T extends KvValue> {
    *   filter: doc => doc.value.age > 20
    * })
    * ```
-   * 
-   * @param options 
+   *
+   * @param options
    * @returns A promise that resolves to a number representing the performed count.
    */
-  async count(options?: NoPaginationListOptions<T>) {
+  async count(options?: CountOptions<T>) {
     const iter = this.kv.list<T>({ prefix: this.keys.idKey }, options)
     let result = 0
 
