@@ -326,7 +326,7 @@ export class Collection<const T extends KvValue> {
         await this.kv.delete(entry.key)
       }
     }
-    
+
     return {
       cursor: iter.cursor || undefined,
     }
@@ -419,22 +419,22 @@ export class Collection<const T extends KvValue> {
 
   /**
    * Executes a callback function for every document according to the given options.
-   * 
+   *
    * If no options are given, the callback function is executed for all documents in the collection.
-   * 
+   *
    * The results from the callback function are returned as a list.
-   * 
+   *
    * **Example**
    * ```ts
    * // Maps from all user documents to a list of all user document ids
    * const { result } = await db.users.map(doc => doc.id)
-   * 
+   *
    * // Maps from users with age > 20 to a list of usernames
    * const { result } = await db.users.map(doc => doc.value.username, {
    *   filter: doc => doc.value.age > 20
    * })
    * ```
-   * 
+   *
    * @param fn - Callback function.
    * @param options
    * @returns A promise that resovles to an object containing a list of the callback results and the iterator cursor
