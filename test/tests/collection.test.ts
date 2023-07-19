@@ -702,6 +702,45 @@ Deno.test({
       })
     })
 
+    await t.step("map", async (t) => {
+      await t.step(
+        "Should map from all documents to document ids",
+        async () => {
+          await reset()
+
+          const crs = await db.values.numbers.addMany(1, 2, 3, 4, 5)
+          assert(crs.every((cr) => cr.ok))
+
+          const ids = await db.values.numbers.map((doc) => doc.id)
+          assert(ids.result.length === 5)
+          assert(ids.result.every((id) => typeof id === "string"))
+
+          const allNums = await db.values.numbers.findMany(ids.result)
+          assert(allNums.length === 5)
+        },
+      )
+
+      await t.step(
+        "Should map from all filtered documents to document ids",
+        async () => {
+          await reset()
+
+          const crs = await db.values.numbers.addMany(1, 2, 3, 4, 5)
+          assert(crs.every((cr) => cr.ok))
+
+          const ids = await db.values.numbers.map((doc) => doc.id, {
+            filter: (doc) => doc.value < 3,
+          })
+
+          assert(ids.result.length === 2)
+          assert(ids.result.every((id) => typeof id === "string"))
+
+          const allNums = await db.values.numbers.findMany(ids.result)
+          assert(allNums.length === 2)
+        },
+      )
+    })
+
     // Perform last reset
     await t.step("RESET", async () => await reset())
   },
