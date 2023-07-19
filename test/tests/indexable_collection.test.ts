@@ -613,6 +613,56 @@ Deno.test("indexable_collection", async (t1) => {
     })
   })
 
+  await t1.step("map", async (t) => {
+    await t.step(
+      "Should map from all documents to document fields",
+      async () => {
+        await reset()
+
+        const crs = await db.indexablePeople.addMany(testPerson, testPerson2)
+        assert(crs.every((cr) => cr.ok))
+
+        const names = await db.indexablePeople.map((doc) => doc.value.name)
+        assert(names.result.length === 2)
+        assert(names.result.every((id) => typeof id === "string"))
+
+        const docsByName = await Promise.all(
+          names.result.map((name) =>
+            db.indexablePeople.findByPrimaryIndex("name", name)
+          ),
+        )
+        assert(docsByName.length === 2)
+        assert(docsByName.every((doc) => doc !== null))
+      },
+    )
+
+    await t.step(
+      "Should map from all filtered documents to document fields",
+      async () => {
+        await reset()
+
+        const crs = await db.indexablePeople.addMany(testPerson, testPerson2)
+        assert(crs.every((cr) => cr.ok))
+
+        const names = await db.indexablePeople.map((doc) => doc.value.name, {
+          filter: (doc) => doc.value.name === testPerson.name,
+        })
+
+        assert(names.result.length === 1)
+        assert(names.result.every((id) => typeof id === "string"))
+
+        const docsByName = await Promise.all(
+          names.result.map((name) =>
+            db.indexablePeople.findByPrimaryIndex("name", name)
+          ),
+        )
+
+        assert(docsByName.length === 1)
+        assert(docsByName.every((doc) => doc !== null))
+      },
+    )
+  })
+
   // Perform last reset
   await t1.step("RESET", async () => await reset())
 })

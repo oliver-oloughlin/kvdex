@@ -14,7 +14,7 @@ Optional and nullable properties are allowed. If you wish to use Zod, you can
 create your Zod object schema and use its type as your model.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.5.2/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.5.3/mod.ts"
 
 interface User extends Model {
   username: string
@@ -35,7 +35,7 @@ The "createDb" function is used for creating a new database instance. It takes a
 Deno KV instance and a schema builder function as arguments.
 
 ```ts
-import { createDb } from "https://deno.land/x/kvdex@v0.5.2/mod.ts"
+import { createDb } from "https://deno.land/x/kvdex@v0.5.3/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -247,8 +247,8 @@ const { result } = await db.users.getMany({
 
 The "forEach" method is used for executing a callback function for multiple
 documents in the KV store. It takes an optional options argument that can be
-used for filtering of documents and pagination. If no options are given, "forEach" will execute
-the callback function for all documents in the collection.
+used for filtering of documents and pagination. If no options are given,
+the callback function will be executed for all documents in the collection.
 
 ```ts
 // Log the username of every user document
@@ -268,6 +268,33 @@ await db.users.forEach((doc) => console.log(doc.value.username), {
 await db.users.forEach((doc) => console.log(doc.value.username), {
   limit: 10,
   reverse: true,
+})
+```
+
+### Map
+
+The "map" method is used for executing a callback function for multiple documents in the KV store, and retrieving the results. 
+It takes an optional options argument that can be used for filtering of documents and pagination. 
+If no options are given, the callback function will be executed for all documents in the collection.
+
+```ts
+// Get a list of all the ids of the user documents
+const { result } = await db.users.map((doc) => doc.id)
+
+// Get a list of all usernames of users with age > 20
+const { result } = await db.users.map((doc) => doc.value.username, {
+  filter: (doc) => doc.value.age > 20,
+})
+
+// Get a list of the usernames of the first 10 users in the KV store
+const { result } = await db.users.forEach((doc) => doc.value.username, {
+  limit: 10,
+})
+
+// Get a list of the usernames of the last 10 users in the KV store
+const { result } = await db.users.forEach((doc) => doc.value.username, {
+  limit: 10,
+  reverse: true
 })
 ```
 
@@ -440,7 +467,7 @@ result will be an object containing: id, versionstamp and all the entries in the
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.5.2/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.5.3/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
