@@ -7,6 +7,40 @@ Support for indexing.
 
 Zero third-party dependencies.
 
+## Table of Contents
+
+- [kvdex](#kvdex)
+  - [Table of Contents](#table-of-contents)
+  - [Models](#models)
+  - [Database](#database)
+  - [Collection Methods](#collection-methods)
+    - [find()](#find)
+    - [findMany()](#findmany)
+    - [add()](#add)
+    - [addMany()](#addmany)
+    - [set()](#set)
+    - [update()](#update)
+    - [delete()](#delete)
+    - [deleteMany()](#deletemany)
+    - [getMany()](#getmany)
+    - [forEach()](#foreach)
+    - [map()](#map)
+    - [count()](#count)
+  - [Indexable Collection Methods](#indexable-collection-methods)
+    - [findByPrimaryIndex()](#findbyprimaryindex)
+    - [findBySecondaryIndex()](#findbysecondaryindex)
+  - [Database Methods](#database-methods)
+    - [countAll()](#countall)
+    - [deleteAll()](#deleteall)
+    - [atomic()](#atomic)
+  - [Atomic Operations](#atomic-operations)
+    - [Without checking](#without-checking)
+    - [With checking](#with-checking)
+  - [Utils](#utils)
+    - [flatten()](#flatten)
+  - [Development](#development)
+  - [License](#license)
+
 ## Models
 
 For collections of objects, models can be defined by extending the Model type.
@@ -14,7 +48,7 @@ Optional and nullable properties are allowed. If you wish to use Zod, you can
 create your Zod object schema and use its type as your model.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.5.3/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.6.0/mod.ts"
 
 interface User extends Model {
   username: string
@@ -32,41 +66,33 @@ interface User extends Model {
 ## Database
 
 The "createDb" function is used for creating a new database instance. It takes a
-Deno KV instance and a schema builder function as arguments.
+Deno KV instance and a schema definition as arguments.
 
 ```ts
-import { createDb } from "https://deno.land/x/kvdex@v0.5.3/mod.ts"
+import { createDb } from "https://deno.land/x/kvdex@v0.6.0/mod.ts"
 
 const kv = await Deno.openKv()
 
-const db = createDb(kv, (builder) => ({
-  users: builder.collection<User>(["users"]),
-  indexableUsers: builder.indexableCollection<User>(["indexableUsers"]).indices({
-    username: "primary", // Unique index
-    age: "secondary", // Non-unique index
+const db = createDb(kv, {
+  numbers: (ctx) => ctx.collection<number>().build(),
+  users: (ctx) => ctx.indexableCollection<User>().build({
+    indices: {
+      username: "primary" // unique
+      age: "secondary" // non-unique
+    }
   }),
   // Nested collections
-  primitives: {
-    strings: builder.collection<string>(["primitives", "strings"]),
-    bigints: builder.collection<bigint>(["primitives", "bigints"]),
-  },
-}))
+  nested: {
+    strings: (ctx) => ctx.collection<string>().build(),
+  }
+})
 ```
 
-The schema builder function receives a builder object that is used to create
-collections. The output of this function is a schema object containing
-collections (or sub-schema objects for nesting). When creating a collection, a
-collection key must be provided, as well as the type of data the collection will
-store. For indexable collections, an extra step is required for specifying
-indices. Primary (unique) and secondary (non-unique) indexing is supported.
-Standard collections can hold data of any type included in KvValue, this
-includes primitives like strings and numbers, while indexable collections can
-only hold data that extends the Model type (Objects). If any two collections
-have an identical key, the function will throw an error.
+The schema definition defines collection builder functions (or nested schema definitions) which receive a builder context. Standard collections can hold any type adhering to KvValue (string, number, array, object...), while indexable collections can only hold types adhering to Model (objects). For indexable collections, primary (unique) and secondary (non-unique) indexing is supported.
 
 ## Collection Methods
 
-### Find
+### find()
 
 The "find" method is used to retrieve a single document with the given id from
 the KV store. The id must adhere to the type Deno.KvKeyPart. 
@@ -82,7 +108,7 @@ const userDoc3 = await db.users.find("oliver", {
 })
 ```
 
-### Find Many
+### findMany()
 
 The "findMany" method is used to retrieve multiple documents with the given
 array of ids from the KV store. The ids must adhere to the type KvId. 
@@ -96,7 +122,7 @@ const userDocs2 = await db.users.findMany(["abc", 123, 123n], {
 })
 ```
 
-### Add
+### add()
 
 The "add" method is used to add a new document to the KV store. An id of type
 string (uuid) will be generated for the document. Upon completion, a
@@ -119,7 +145,7 @@ const result = await db.users.add({
 console.log(result.id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
 ```
 
-### Add Many
+### addMany()
 
 The "addMany" method is used to add multiple document entries to the KV store in
 a single operation. Upon completion, a list of CommitResult objects will be 
@@ -132,7 +158,7 @@ object will indicate this by the ok flag being false.
 await results = await db.numbers.addMany(1, 2, 3, 4, 5)
 
 // Only adds the first entry, as "username" is defined as a primary index and cannot have duplicates
-await results = await db.indexableUsers.addMany(
+await results = await db.users.addMany(
   {
     username: "oli",
     age: 24
@@ -144,7 +170,7 @@ await results = await db.indexableUsers.addMany(
 )
 ```
 
-### Set
+### set()
 
 The "set" method is very similar to the "add" method, and is used to add a new
 document to the KV store with a given id of type KvId. Upon completion, a
@@ -152,12 +178,12 @@ CommitResult object will be returned with the document id, versionstamp and ok
 flag.
 
 ```ts
-const result = await db.primitives.strings.set(2048, "Foo")
+const result = await db.numbers.set("id_1", 2048)
 
-console.log(result.id) // 2048
+console.log(result.id) // "id_1"
 ```
 
-### Update
+### update()
 
 The "update" method is used to update the value of exisiting documents in the KV
 store. For primitive values, arrays and built-in objects (Date, RegExp, etc.),
@@ -168,7 +194,7 @@ document id, versionstamp and ok flag.
 
 ```ts
 // Updates the document with a new value
-const result1 = await db.primitives.numbers.update("num1", 42)
+const result1 = await db.numbers.update("num1", 42)
 
 // Partial update, only updates the age field
 const result2 = await db.users.update("user1", {
@@ -176,7 +202,7 @@ const result2 = await db.users.update("user1", {
 })
 ```
 
-### Delete
+### delete()
 
 The "delete" method is used to delete one or more documents with the given ids from the KV
 store.
@@ -187,7 +213,7 @@ await db.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77")
 await db.users.delete("user1", "user2", "user3")
 ```
 
-### Delete Many
+### deleteMany()
 
 The "deleteMany" method is used for deleting multiple documents from the KV
 store without specifying ids. 
@@ -215,7 +241,7 @@ await db.users.deleteMany({
 })
 ```
 
-### Get Many
+### getMany()
 
 The "getMany" method is used for retrieving multiple documents from the KV
 store. It takes an optional options argument that can be used for filtering of
@@ -243,7 +269,7 @@ const { result } = await db.users.getMany({
 })
 ```
 
-### For Each
+### forEach()
 
 The "forEach" method is used for executing a callback function for multiple
 documents in the KV store. It takes an optional options argument that can be
@@ -271,7 +297,7 @@ await db.users.forEach((doc) => console.log(doc.value.username), {
 })
 ```
 
-### Map
+### map()
 
 The "map" method is used for executing a callback function for multiple documents in the KV store, and retrieving the results. 
 It takes an optional options argument that can be used for filtering of documents and pagination. 
@@ -298,7 +324,7 @@ const { result } = await db.users.forEach((doc) => doc.value.username, {
 })
 ```
 
-### Count
+### count()
 
 The "count" method is used to count the number of documents in a collection. 
 It takes an optional options argument that can be used for filtering of documents.
@@ -320,17 +346,17 @@ Indexable collections extend the base Collection class and provide all the same
 methods. Note that add/set methods will always fail if an identical index entry
 already exists.
 
-### Find By Primary Index
+### findByPrimaryIndex()
 
 The "findByPrimaryIndex" method is exclusive to indexable collections and can be
 used to find a document by a primary index.
 
 ```ts
 // Finds a user document with the username = "oliver"
-const userDoc = await db.indexableUsers.findByPrimaryIndex("username", "oliver")
+const userDoc = await db.users.findByPrimaryIndex("username", "oliver")
 ```
 
-### Find By Secondary Index
+### findBySecondaryIndex()
 
 The "findBySecondaryIndex" method is exclusive to indexable collections and
 can be used to find documents by a secondary index. Secondary indices are not
@@ -338,14 +364,14 @@ unique, and therefore the result is an array of documents.
 
 ```ts
 // Returns all users with age = 24
-const { result } = await db.indexableUsers.findBySecondaryIndex("age", 24)
+const { result } = await db.users.findBySecondaryIndex("age", 24)
 ```
 
 ## Database Methods
 
 These are methods which can be found at the top level of your database object, and perform operations across multiple collections.
 
-### Count All
+### countAll()
 
 The "countAll" method is used to count the total number of documents across all collections. It takes an optional options argument that can be used to set the consistency mode.
 
@@ -354,7 +380,7 @@ The "countAll" method is used to count the total number of documents across all 
 const count = await db.countAll()
 ```
 
-### Delete All
+### deleteAll()
 
 The "deleteAll" method is used to delete all documents in across all collections. It takes an optional options argument that can be used to set the consistency mode.
 
@@ -363,7 +389,15 @@ The "deleteAll" method is used to delete all documents in across all collections
 await db.deleteAll()
 ```
 
-### Atomic
+### atomic()
+
+The "atomic" method is used to initiate an atomic operation. The method takes a selection function as argument for selecting the initial collection context.
+
+```ts
+db.atomic((schema) => schema.users)
+```
+
+## Atomic Operations
 
 Atomic operations allow for executing multiple mutations as a single atomic
 transaction. This means that documents can be checked for changes before
@@ -388,21 +422,21 @@ always fail if it is trying to delete and write to the same indexable
 collection. It will also fail if trying to set/add a document with existing
 index entries.
 
-#### Without checking
+### Without checking
 
 ```ts
 // Deletes and adds an entry to the bigints collection
 const result1 = await db
-  .atomic((schema) => schema.primitives.bigints)
+  .atomic((schema) => schema.numbers)
   .delete("id_1")
-  .set("id_2", 100n)
+  .set("id_2", 100)
   .commit()
 
 // Adds 2 new entries to the strings collection and 1 new entry to the users collection
 const result2 = await db
-  .atomic((schema) => schema.primitives.strings)
-  .add("s1")
-  .add("s2")
+  .atomic((schema) => schema.numbers)
+  .add(1)
+  .add(2)
   .select((schema) => schema.users)
   .set("user_1", {
     username: "oliver",
@@ -418,9 +452,9 @@ const result2 = await db
   .commit()
 
 // Will fail and return Deno.KvCommitError because it is trying
-// to both add and delete from the indexable collection "indexableUsers"
+// to both add and delete from an indexable collection
 const result3 = await db
-  .atomic((schema) => schema.indexableUsers)
+  .atomic((schema) => schema.users)
   .delete("user_1")
   .set("user_1", {
     username: "oliver",
@@ -436,21 +470,21 @@ const result3 = await db
   .commit()
 ```
 
-#### With checking
+### With checking
 
 ```ts
 // Only adds 10 to the value when it has not been changed after being read
 let result = null
-while (!result && !result.ok) {
-  const { id, versionstamp, value } = await db.primitives.bigints.find("id")
+while (!result || !result.ok) {
+  const { id, versionstamp, value } = await db.numbers.find("id")
 
   result = await db
-    .atomic((schema) => schema.primitives.bigints)
+    .atomic((schema) => schema.numbers)
     .check({
       id,
       versionstamp,
     })
-    .set(id, value + 10n)
+    .set(id, value + 10)
     .commit()
 }
 ```
@@ -459,7 +493,7 @@ while (!result && !result.ok) {
 
 Additional utility functions.
 
-### Flatten
+### flatten()
 
 The "flatten" utility function can be used to flatten documents with a value of
 type Model. It will only flatten the first layer of the document, meaning the
@@ -467,7 +501,7 @@ result will be an object containing: id, versionstamp and all the entries in the
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.5.3/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.6.0/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)

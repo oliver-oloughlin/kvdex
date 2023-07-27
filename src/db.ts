@@ -1,19 +1,22 @@
 import { AtomicBuilder } from "./atomic_builder.ts"
 import type {
+  CollectionDefinition,
   CountAllOptions,
   DB,
   DeleteAllOptions,
+  KvKey,
   KvValue,
   Schema,
+  SchemaDefinition,
 } from "./types.ts"
-import { CollectionBuilder } from "./collection_builder.ts"
+import { CollectionBuilderContext } from "./collection_builder.ts"
 import { Collection } from "./collection.ts"
+import { extendKey } from "./utils.internal.ts"
 
 /**
  * Create a new database instance.
  *
- * Builds the database collections and checks for duplicate keys.
- * In the case where two collections have the same key, an error will be thrown.
+ * Builds the database collections and forms the schema.
  *
  * **Example:**
  * ```ts
@@ -24,26 +27,27 @@ import { Collection } from "./collection.ts"
  *
  * const kv = await Deno.openKv()
  *
- * const db = createDb(kv, (builder) => ({
- *   numbers: builder.collection<number>(["numbers"]),
- *   users: builder.indexableCollection<User>(["users"]).indices({
- *     username: "primary",
- *     age: "secondary"
+ * const db = createDb(kv, {
+ *   numbers: (ctx) => ctx.collection<number>().build(),
+ *   u64s: (ctx) => ctx.collection<Deno.KvU64>().build(),
+ *   users: (ctx) => ctx.indexableCollection<User>().build({
+ *     indices: {
+ *       username: "primary",
+ *       age: "secondary"
+ *     }
  *   })
- * }))
+ * })
  * ```
  *
  * @param kv - The Deno KV instance to be used for storing and retrieving data.
- * @param schemaBuilder - Builder function for building the database schema.
+ * @param schemaDefinition - The schema definition used to build collections and create the database schema.
  * @returns
  */
-export function createDb<const T extends Schema>(
+export function createDb<const T extends SchemaDefinition>(
   kv: Deno.Kv,
-  schemaBuilder: (builder: CollectionBuilder) => T,
+  schemaDefinition: T,
 ): DB<T> {
-  const builder = new CollectionBuilder(kv)
-  const schema = schemaBuilder(builder)
-
+  const schema = _createSchema(schemaDefinition, kv) as Schema<T>
   return {
     ...schema,
     atomic: (selector) => new AtomicBuilder(kv, schema, selector(schema)),
@@ -52,9 +56,33 @@ export function createDb<const T extends Schema>(
   }
 }
 
+function _createSchema<const T extends SchemaDefinition>(
+  def: T,
+  kv: Deno.Kv,
+  treeKey?: KvKey,
+): Schema<T> {
+  const entries = Object.entries(def)
+
+  const schemaEntries = entries.map(([key, value]) => {
+    const extendedKey = treeKey ? extendKey(treeKey, key) : [key] as KvKey
+    if (typeof value === "function") {
+      const initializer = new CollectionBuilderContext(kv, extendedKey)
+      return [key, value(initializer)]
+    }
+
+    return [key, _createSchema(value, kv, extendedKey)]
+  })
+
+  const schema = Object.fromEntries(schemaEntries)
+
+  return schema as Schema<T>
+}
+
 async function _countAll(
   kv: Deno.Kv,
-  schemaOrCollection: Schema | Collection<KvValue>,
+  schemaOrCollection:
+    | Schema<SchemaDefinition>
+    | Collection<KvValue, CollectionDefinition<KvValue>>,
   options?: CountAllOptions,
 ): Promise<number> {
   if (schemaOrCollection instanceof Collection) {
@@ -70,7 +98,9 @@ async function _countAll(
 
 async function _deleteAll(
   kv: Deno.Kv,
-  schemaOrCollection: Schema | Collection<KvValue>,
+  schemaOrCollection:
+    | Schema<SchemaDefinition>
+    | Collection<KvValue, CollectionDefinition<KvValue>>,
   options?: DeleteAllOptions,
 ) {
   if (schemaOrCollection instanceof Collection) {

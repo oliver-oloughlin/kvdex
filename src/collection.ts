@@ -1,5 +1,6 @@
 import { COLLECTION_ID_KEY_SUFFIX } from "./constants.ts"
 import type {
+  CollectionDefinition,
   CollectionKeys,
   CommitResult,
   CountOptions,
@@ -7,7 +8,6 @@ import type {
   FindManyOptions,
   FindOptions,
   KvId,
-  KvKey,
   KvObject,
   KvValue,
   ListOptions,
@@ -20,21 +20,31 @@ import { extendKey, getDocumentId, isKvObject } from "./utils.internal.ts"
  *
  * Contains methods for working on documents in the collection.
  */
-export class Collection<const T extends KvValue> {
+export class Collection<
+  const T1 extends KvValue,
+  const T2 extends CollectionDefinition<T1>,
+> {
   protected kv: Deno.Kv
   readonly keys: CollectionKeys
 
   /**
    * Create a new collection for handling documents in the KV store.
    *
-   * @param kv - The Deno KV instance to be used.
-   * @param collectionIdKey - Key that identifies the collection, an array of Deno.KvKeyPart.
+   * **Example:**
+   * ```ts
+   * const numbers = new Collection<number>({
+   *   kv: await Deno.openKv(),
+   *   key: ["numbers"]
+   * })
+   * ```
+   *
+   * @param def - Collection definition.
    */
-  constructor(kv: Deno.Kv, collectionKey: KvKey) {
-    this.kv = kv
+  constructor(def: T2) {
+    this.kv = def.kv
     this.keys = {
-      baseKey: collectionKey,
-      idKey: extendKey(collectionKey, COLLECTION_ID_KEY_SUFFIX),
+      baseKey: def.key,
+      idKey: extendKey(def.key, COLLECTION_ID_KEY_SUFFIX),
     }
   }
 
@@ -56,11 +66,11 @@ export class Collection<const T extends KvValue> {
    */
   async find(id: KvId, options?: FindOptions) {
     const key = extendKey(this.keys.idKey, id)
-    const result = await this.kv.get<T>(key, options)
+    const result = await this.kv.get<T1>(key, options)
 
     if (result.value === null || result.versionstamp === null) return null
 
-    const doc: Document<T> = {
+    const doc: Document<T1> = {
       id,
       versionstamp: result.versionstamp,
       value: result.value,
@@ -87,9 +97,9 @@ export class Collection<const T extends KvValue> {
    */
   async findMany(ids: KvId[], options?: FindManyOptions) {
     const keys = ids.map((id) => extendKey(this.keys.idKey, id))
-    const entries = await this.kv.getMany<T[]>(keys, options)
+    const entries = await this.kv.getMany<T1[]>(keys, options)
 
-    const result: Document<T>[] = []
+    const result: Document<T1>[] = []
 
     for (const { key, versionstamp, value } of entries) {
       const id = getDocumentId(key)
@@ -122,7 +132,7 @@ export class Collection<const T extends KvValue> {
    * @param data
    * @returns A promise that resovles to a commit result containing the document versionstamp, id and ok flag.
    */
-  async add(data: T) {
+  async add(data: T1) {
     const id = crypto.randomUUID()
     const key = extendKey(this.keys.idKey, id)
 
@@ -135,7 +145,7 @@ export class Collection<const T extends KvValue> {
       .set(key, data)
       .commit()
 
-    const commitResult: CommitResult<T, typeof id> = cr.ok
+    const commitResult: CommitResult<T1, typeof id> = cr.ok
       ? {
         ok: true,
         versionstamp: cr.versionstamp,
@@ -162,7 +172,7 @@ export class Collection<const T extends KvValue> {
    * @param data
    * @returns A promise that resovles to a commit result containing the document versionstamp, id and ok flag.
    */
-  async set(id: KvId, data: T) {
+  async set(id: KvId, data: T1) {
     const key = extendKey(this.keys.idKey, id)
 
     const cr = await this.kv
@@ -174,7 +184,7 @@ export class Collection<const T extends KvValue> {
       .set(key, data)
       .commit()
 
-    const commitResult: CommitResult<T, typeof id> = cr.ok
+    const commitResult: CommitResult<T1, typeof id> = cr.ok
       ? {
         ok: true,
         versionstamp: cr.versionstamp,
@@ -196,15 +206,18 @@ export class Collection<const T extends KvValue> {
    *
    * await db.users.delete("user1", "user2", "user3")
    * ```
-   *
-   * @param id
-   * @returns A promise that resovles to void
+   * @param ids - IDs of documents to be deleted.
+   * @returns A promise that resovles to void.
    */
-  async delete(...ids: [KvId, ...KvId[]]) {
-    await Promise.all(ids.map(async (id) => {
+  async delete(...ids: KvId[]) {
+    let atomic = this.kv.atomic()
+
+    ids.forEach((id) => {
       const key = extendKey(this.keys.idKey, id)
-      await this.kv.delete(key)
-    }))
+      atomic = atomic.delete(key)
+    })
+
+    await atomic.commit()
   }
 
   /**
@@ -231,10 +244,10 @@ export class Collection<const T extends KvValue> {
    */
   async update<const TId extends KvId>(
     id: TId,
-    data: UpdateData<T>,
-  ): Promise<CommitResult<T, TId>> {
+    data: UpdateData<T1>,
+  ): Promise<CommitResult<T1, TId>> {
     const key = extendKey(this.keys.idKey, id)
-    const { value, versionstamp } = await this.kv.get<T>(key)
+    const { value, versionstamp } = await this.kv.get<T1>(key)
 
     if (value === null || versionstamp === null) {
       return { ok: false }
@@ -286,7 +299,7 @@ export class Collection<const T extends KvValue> {
    * @param entries - Data entries to be added.
    * @returns A promise that resolves to a list of Deno.KvCommitResult or Deno.KvCommitError objects
    */
-  async addMany(...entries: [T, ...T[]]) {
+  async addMany(...entries: T1[]) {
     return await Promise.all(entries.map((data) => this.add(data)))
   }
 
@@ -309,14 +322,14 @@ export class Collection<const T extends KvValue> {
    * @param options
    * @returns A promise that resovles to an object containing the iterator cursor
    */
-  async deleteMany(options?: ListOptions<T>) {
-    const iter = this.kv.list<T>({ prefix: this.keys.idKey }, options)
+  async deleteMany(options?: ListOptions<T1>) {
+    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
 
     for await (const entry of iter) {
       const id = getDocumentId(entry.key)
       if (typeof id === "undefined") continue
 
-      const doc: Document<T> = {
+      const doc: Document<T1> = {
         id,
         versionstamp: entry.versionstamp,
         value: entry.value,
@@ -351,15 +364,15 @@ export class Collection<const T extends KvValue> {
    * @param options
    * @returns A promise that resovles to an object containing a list of the retrieved documents and the iterator cursor
    */
-  async getMany(options?: ListOptions<T>) {
-    const iter = this.kv.list<T>({ prefix: this.keys.idKey }, options)
-    const result: Document<T>[] = []
+  async getMany(options?: ListOptions<T1>) {
+    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
+    const result: Document<T1>[] = []
 
     for await (const entry of iter) {
       const id = getDocumentId(entry.key)
       if (typeof id === "undefined") continue
 
-      const doc: Document<T> = {
+      const doc: Document<T1> = {
         id,
         versionstamp: entry.versionstamp,
         value: entry.value,
@@ -396,14 +409,14 @@ export class Collection<const T extends KvValue> {
    * @param options
    * @returns A promise that resovles to an object containing the iterator cursor
    */
-  async forEach(fn: (doc: Document<T>) => void, options?: ListOptions<T>) {
-    const iter = this.kv.list<T>({ prefix: this.keys.idKey }, options)
+  async forEach(fn: (doc: Document<T1>) => void, options?: ListOptions<T1>) {
+    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
 
     for await (const entry of iter) {
       const id = getDocumentId(entry.key)
       if (typeof id === "undefined") continue
 
-      const doc: Document<T> = {
+      const doc: Document<T1> = {
         id,
         versionstamp: entry.versionstamp,
         value: entry.value,
@@ -440,17 +453,17 @@ export class Collection<const T extends KvValue> {
    * @returns A promise that resovles to an object containing a list of the callback results and the iterator cursor
    */
   async map<const TMapped>(
-    fn: (doc: Document<T>) => TMapped,
-    options?: ListOptions<T>,
+    fn: (doc: Document<T1>) => TMapped,
+    options?: ListOptions<T1>,
   ) {
-    const iter = this.kv.list<T>({ prefix: this.keys.idKey }, options)
+    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
     const result: TMapped[] = []
 
     for await (const entry of iter) {
       const id = getDocumentId(entry.key)
       if (typeof id === "undefined") continue
 
-      const doc: Document<T> = {
+      const doc: Document<T1> = {
         id,
         versionstamp: entry.versionstamp,
         value: entry.value,
@@ -484,15 +497,15 @@ export class Collection<const T extends KvValue> {
    * @param options
    * @returns A promise that resolves to a number representing the performed count.
    */
-  async count(options?: CountOptions<T>) {
-    const iter = this.kv.list<T>({ prefix: this.keys.idKey }, options)
+  async count(options?: CountOptions<T1>) {
+    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
     let result = 0
 
     for await (const entry of iter) {
       const id = getDocumentId(entry.key)
       if (typeof id === "undefined") continue
 
-      const doc: Document<T> = {
+      const doc: Document<T1> = {
         id,
         versionstamp: entry.versionstamp,
         value: entry.value,

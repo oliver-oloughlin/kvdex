@@ -3,6 +3,7 @@ import { IndexableCollection } from "./indexable_collection.ts"
 import type {
   AtomicCheck,
   AtomicMutation,
+  CollectionDefinition,
   CollectionSelector,
   IndexDataEntry,
   KvId,
@@ -10,6 +11,7 @@ import type {
   Model,
   Operations,
   Schema,
+  SchemaDefinition,
 } from "./types.ts"
 import {
   extendKey,
@@ -25,13 +27,13 @@ import {
  * with the option of selecting a new collection context during build.
  */
 export class AtomicBuilder<
-  const TSchema extends Schema,
-  const TValue extends KvValue,
+  const T1 extends Schema<SchemaDefinition>,
+  const T2 extends KvValue,
 > {
   private kv: Deno.Kv
-  private schema: TSchema
+  private schema: T1
   private operations: Operations
-  private collection: Collection<TValue>
+  private collection: Collection<T2, CollectionDefinition<T2>>
 
   /**
    * Create a new AtomicBuilder for building and executing atomic operations in the KV store.
@@ -43,8 +45,8 @@ export class AtomicBuilder<
    */
   constructor(
     kv: Deno.Kv,
-    schema: TSchema,
-    collection: Collection<TValue>,
+    schema: T1,
+    collection: Collection<T2, CollectionDefinition<T2>>,
     operations?: Operations,
   ) {
     this.kv = kv
@@ -65,14 +67,17 @@ export class AtomicBuilder<
    *
    * **Example:**
    * ```ts
-   * operation.select(schema => schema.users)
+   * db
+   *   .atomic(schema => schema.users)
+   *   // ... some operations
+   *   .select(schema => schema.numbers)
    * ```
    *
    * @param selector - Selector function for selecting a new collection from the database schema.
    * @returns A new AtomicBuilder instance.
    */
   select<const TValue extends KvValue>(
-    selector: CollectionSelector<TSchema, TValue>,
+    selector: CollectionSelector<T1, TValue>,
   ) {
     return new AtomicBuilder(
       this.kv,
@@ -98,7 +103,7 @@ export class AtomicBuilder<
    * @param data - Document data to be added.
    * @returns Current AtomicBuilder instance.
    */
-  add(data: TValue) {
+  add(data: T2) {
     const collectionIdKey = this.collection.keys.idKey
     const id = generateId()
     const idKey = extendKey(collectionIdKey, id)
@@ -178,7 +183,7 @@ export class AtomicBuilder<
    * @param data - Document data to be added.
    * @returns Current AtomicBuilder instance.
    */
-  set(id: KvId, data: TValue) {
+  set(id: KvId, data: T2) {
     const collectionKey = this.collection.keys.idKey
     const idKey = extendKey(collectionKey, id)
 
@@ -303,7 +308,7 @@ export class AtomicBuilder<
    * @param atomicChecks - AtomicCheck objects containing a document id and versionstamp.
    * @returns Current AtomicBuilder instance.
    */
-  check(...atomicChecks: AtomicCheck<TValue>[]) {
+  check(...atomicChecks: AtomicCheck<T2>[]) {
     const checks: Deno.AtomicCheck[] = atomicChecks.map(
       ({ id, versionstamp }) => {
         const key = extendKey(this.collection.keys.idKey, id)
@@ -352,7 +357,7 @@ export class AtomicBuilder<
    *      id: "num1"
    *    },
    *    {
-   *       type: "set",
+   *      type: "set",
    *      id: "num2",
    *      value: new Deno.KvU64(200n)
    *    }
@@ -362,7 +367,7 @@ export class AtomicBuilder<
    * @param mutations - Atomic mutations to be performed.
    * @returns Current AtomicBuilder instance.
    */
-  mutate(...mutations: AtomicMutation<TValue>[]) {
+  mutate(...mutations: AtomicMutation<T2>[]) {
     const kvMutations: Deno.KvMutation[] = mutations.map(({ id, ...rest }) => {
       const idKey = extendKey(this.collection.keys.idKey, id)
       return {

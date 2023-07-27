@@ -35,27 +35,50 @@ export const testPerson2: Person = {
 
 const kv = await Deno.openKv()
 
-export const db = createDb(kv, (cb) => ({
-  people: cb.collection<Person>(["people"]),
-  indexablePeople: cb.indexableCollection<Person>(["indexablePeople"]).indices({
-    name: "primary",
-    age: "secondary",
-  }),
+export const db = createDb(kv, {
+  people: (cb) => cb.collection<Person>().build(),
+  indexablePeople: (cb) =>
+    cb.indexableCollection<Person>().build({
+      indices: {
+        name: "primary",
+        age: "secondary",
+      },
+    }),
   values: {
-    numbers: cb.collection<number>(["values", "numbers"]),
-    strings: cb.collection<string>(["values", "strings"]),
-    u64s: cb.collection<Deno.KvU64>(["values", "u64s"]),
+    numbers: (cb) => cb.collection<number>().build(),
+    strings: (cb) => cb.collection<string>().build(),
+    u64s: (cb) => cb.collection<Deno.KvU64>().build(),
   },
-  arrs: cb.collection<string[]>(["arrs"]),
-  dates: cb.collection<Date>(["dates"]),
-}))
+  arrs: (cb) => cb.collection<string[]>().build(),
+  dates: (cb) => cb.collection<Date>().build(),
+})
 
 export async function reset() {
-  await db.people.deleteMany()
-  await db.indexablePeople.deleteMany()
-  await db.values.numbers.deleteMany()
-  await db.values.strings.deleteMany()
-  await db.values.u64s.deleteMany()
-  await db.arrs.deleteMany()
-  await db.dates.deleteMany()
+  await db.deleteAll()
+}
+
+export function generateNumbers(n: number) {
+  const numbers: number[] = []
+  for (let i = 0; i < n; i++) {
+    numbers.push(i)
+  }
+
+  return numbers
+}
+
+export function generatePeople(n: number) {
+  const people: Person[] = []
+  for (let i = 0; i < n; i++) {
+    people.push({
+      name: `generated_name_${i}`,
+      age: Math.floor(Math.random() * 100),
+      friends: [],
+      address: {
+        city: "Bergen",
+        country: "Norway",
+      },
+    })
+  }
+
+  return people
 }

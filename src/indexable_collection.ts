@@ -9,12 +9,11 @@ import type {
   CommitResult,
   Document,
   FindOptions,
+  IndexableCollectionDefinition,
   IndexableCollectionKeys,
   IndexDataEntry,
-  IndexRecord,
   IndexType,
   KvId,
-  KvKey,
   ListOptions,
   Model,
   PrimaryIndexKeys,
@@ -31,13 +30,13 @@ import {
 /**
  * Represents a collection of object documents stored in the KV store.
  *
- * Contains methods for working on documents in the collection,
- * including exclusive indexing methods.
+ * Contains methods for working on documents in a collection,
+ * including methods exclusive to indexable collections.
  */
 export class IndexableCollection<
   const T1 extends Model,
-  const T2 extends IndexRecord<T1>,
-> extends Collection<T1> {
+  const T2 extends IndexableCollectionDefinition<T1>,
+> extends Collection<T1, T2> {
   readonly primaryIndexList: string[]
   readonly secondaryIndexList: string[]
   readonly keys: IndexableCollectionKeys
@@ -45,27 +44,37 @@ export class IndexableCollection<
   /**
    * Create a new IndexableCollection for handling object documents in the KV store.
    *
-   * @param kv - The Deno KV instance to be used.
-   * @param collectionKey - Key that identifies the collection, an array of Deno.KvKeyPart.
-   * @param indexRecord - Record of primary and secondary indices.
+   * **Example:**
+   * ```ts
+   * const users = new IndexableCollection<User>({
+   *   kv: await Deno.openKv(),
+   *   key: ["users"],
+   *   indices: {
+   *     username: "primary",
+   *     age: "secondary"
+   *   }
+   * })
+   * ```
+   *
+   * @param def - Indexable Collection Definition.
    */
-  constructor(kv: Deno.Kv, collectionKey: KvKey, indexRecord?: T2) {
-    super(kv, collectionKey)
+  constructor(def: T2) {
+    super(def)
 
     this.keys = {
-      baseKey: collectionKey,
-      idKey: extendKey(collectionKey, COLLECTION_ID_KEY_SUFFIX),
+      baseKey: def.key,
+      idKey: extendKey(def.key, COLLECTION_ID_KEY_SUFFIX),
       primaryIndexKey: extendKey(
-        collectionKey,
+        def.key,
         COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
       ),
       secondaryIndexKey: extendKey(
-        collectionKey,
+        def.key,
         COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
       ),
     }
 
-    const primaryIndexEntries = Object.entries(indexRecord ?? {}) as [
+    const primaryIndexEntries = Object.entries(def.indices) as [
       string,
       undefined | IndexType,
     ][]
@@ -74,7 +83,7 @@ export class IndexableCollection<
       value === "primary"
     ).map(([key]) => key)
 
-    const secondaryIndexEntries = Object.entries(indexRecord ?? {}) as [
+    const secondaryIndexEntries = Object.entries(def.indices) as [
       string,
       undefined | IndexType,
     ][]
@@ -155,7 +164,7 @@ export class IndexableCollection<
    * @param options - Read options.
    * @returns A promise resolving to the document found by selected index, or null if not found.
    */
-  async findByPrimaryIndex<const K extends PrimaryIndexKeys<T1, T2>>(
+  async findByPrimaryIndex<const K extends PrimaryIndexKeys<T1, T2["indices"]>>(
     index: K,
     value: CheckKeyOf<K, T1>,
     options?: FindOptions,
@@ -196,10 +205,12 @@ export class IndexableCollection<
    *
    * @param index - Index to find by.
    * @param value - Index value.
-   * @param options - Optional list options.
+   * @param options - List options.
    * @returns A promise resolving to an object containing the result list and iterator cursor.
    */
-  async findBySecondaryIndex<const K extends SecondaryIndexKeys<T1, T2>>(
+  async findBySecondaryIndex<
+    const K extends SecondaryIndexKeys<T1, T2["indices"]>,
+  >(
     index: K,
     value: CheckKeyOf<K, T1>,
     options?: ListOptions<T1>,
@@ -235,7 +246,7 @@ export class IndexableCollection<
     }
   }
 
-  async delete(...ids: [KvId, ...KvId[]]) {
+  async delete(...ids: KvId[]) {
     await Promise.all(ids.map(async (id) => {
       const idKey = extendKey(this.keys.idKey, id)
       const { value } = await this.kv.get<T1>(idKey)
@@ -285,7 +296,6 @@ export class IndexableCollection<
 
   async deleteMany(options?: ListOptions<T1>) {
     const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
-    let atomic = this.kv.atomic()
 
     for await (const entry of iter) {
       const { key, value, versionstamp } = entry
@@ -299,11 +309,11 @@ export class IndexableCollection<
       }
 
       if (!options?.filter || options.filter(doc)) {
+        let atomic = this.kv.atomic()
         atomic = atomic.delete(entry.key)
         atomic = deleteIndices(id, value, atomic, this)
+        await atomic.commit()
       }
-
-      await atomic.commit()
     }
     return {
       cursor: iter.cursor || undefined,
