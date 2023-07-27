@@ -204,10 +204,14 @@ export class Collection<
    * @returns A promise that resovles to void
    */
   async delete(...ids: KvId[]) {
-    await Promise.all(ids.map(async (id) => {
+    let atomic = this.kv.atomic()
+
+    ids.forEach((id) => {
       const key = extendKey(this.keys.idKey, id)
-      await this.kv.delete(key)
-    }))
+      atomic = atomic.delete(key)
+    })
+
+    await atomic.commit()
   }
 
   /**

@@ -9,7 +9,7 @@ import type {
   Schema,
   SchemaDefinition,
 } from "./types.ts"
-import { CollectionInitializer } from "./collection_builder.ts"
+import { CollectionBuilderContext } from "./collection_builder.ts"
 import { Collection } from "./collection.ts"
 import { extendKey } from "./utils.internal.ts"
 
@@ -64,7 +64,7 @@ function _createSchema<const T extends SchemaDefinition>(
   const schemaEntries = entries.map(([key, value]) => {
     const extendedKey = treeKey ? extendKey(treeKey, key) : [key] as KvKey
     if (typeof value === "function") {
-      const initializer = new CollectionInitializer(kv, extendedKey)
+      const initializer = new CollectionBuilderContext(kv, extendedKey)
       return [key, value(initializer)]
     }
 

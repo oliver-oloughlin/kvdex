@@ -8,7 +8,7 @@ import type {
   Model,
 } from "./types.ts"
 
-export class CollectionInitializer {
+export class CollectionBuilderContext {
   private kv: Deno.Kv
   private key: KvKey
 

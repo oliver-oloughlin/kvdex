@@ -1,6 +1,6 @@
 import type { Collection } from "./collection.ts"
 import type { AtomicBuilder } from "./atomic_builder.ts"
-import { CollectionInitializer } from "./collection_builder.ts"
+import type { CollectionBuilderContext } from "./collection_builder.ts"
 
 // Atomic Builder Types
 export type CollectionSelector<
@@ -153,7 +153,7 @@ export type IndexDataEntry<T extends Model> = Omit<T, "__id__"> & {
 
 // DB TypesCollection<KvValue, CollectionDefinition<KvValue>>
 export type CollectionBuilderFn = (
-  initializer: CollectionInitializer,
+  initializer: CollectionBuilderContext,
 ) => Collection<KvValue, CollectionDefinition<KvValue>>
 
 export type SchemaDefinition = {

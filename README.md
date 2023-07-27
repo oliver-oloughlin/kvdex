@@ -7,6 +7,40 @@ Support for indexing.
 
 Zero third-party dependencies.
 
+## Table of Contents
+
+- [kvdex](#kvdex)
+  - [Table of Contents](#table-of-contents)
+  - [Models](#models)
+  - [Database](#database)
+  - [Collection Methods](#collection-methods)
+    - [Find](#find)
+    - [Find Many](#find-many)
+    - [Add](#add)
+    - [Add Many](#add-many)
+    - [Set](#set)
+    - [Update](#update)
+    - [Delete](#delete)
+    - [Delete Many](#delete-many)
+    - [Get Many](#get-many)
+    - [For Each](#for-each)
+    - [Map](#map)
+    - [Count](#count)
+  - [Indexable Collection Methods](#indexable-collection-methods)
+    - [Find By Primary Index](#find-by-primary-index)
+    - [Find By Secondary Index](#find-by-secondary-index)
+  - [Database Methods](#database-methods)
+    - [Count All](#count-all)
+    - [Delete All](#delete-all)
+    - [Atomic](#atomic)
+  - [Atomic Operations](#atomic-operations)
+    - [Without checking](#without-checking)
+    - [With checking](#with-checking)
+  - [Utils](#utils)
+    - [Flatten](#flatten)
+  - [Development](#development)
+  - [License](#license)
+
 ## Models
 
 For collections of objects, models can be defined by extending the Model type.
@@ -32,37 +66,29 @@ interface User extends Model {
 ## Database
 
 The "createDb" function is used for creating a new database instance. It takes a
-Deno KV instance and a schema builder function as arguments.
+Deno KV instance and a schema definition as arguments.
 
 ```ts
 import { createDb } from "https://deno.land/x/kvdex@v0.5.3/mod.ts"
 
 const kv = await Deno.openKv()
 
-const db = createDb(kv, (builder) => ({
-  users: builder.collection<User>(["users"]),
-  indexableUsers: builder.indexableCollection<User>(["indexableUsers"]).indices({
-    username: "primary", // Unique index
-    age: "secondary", // Non-unique index
+const db = createDb(kv, {
+  numbers: (ctx) => ctx.collection<number>().build(),
+  users: (ctx) => ctx.indexableCollection<User>().build({
+    indices: {
+      username: "primary" // unique
+      age: "secondary" // non-unique
+    }
   }),
   // Nested collections
-  primitives: {
-    strings: builder.collection<string>(["primitives", "strings"]),
-    bigints: builder.collection<bigint>(["primitives", "bigints"]),
-  },
-}))
+  nested: {
+    strings: (ctx) => ctx.collection<string>().build(),
+  }
+})
 ```
 
-The schema builder function receives a builder object that is used to create
-collections. The output of this function is a schema object containing
-collections (or sub-schema objects for nesting). When creating a collection, a
-collection key must be provided, as well as the type of data the collection will
-store. For indexable collections, an extra step is required for specifying
-indices. Primary (unique) and secondary (non-unique) indexing is supported.
-Standard collections can hold data of any type included in KvValue, this
-includes primitives like strings and numbers, while indexable collections can
-only hold data that extends the Model type (Objects). If any two collections
-have an identical key, the function will throw an error.
+The schema definition defines collection builder functions (or nested schema definitions) which receive a builder context. Standard collections can hold any type adhering to KvValue (string, number, array, object...), while indexable collections can only hold types adhering to Model (objects). For indexable collections, primary (unique) and secondary (non-unique) indexing is supported.
 
 ## Collection Methods
 
@@ -132,7 +158,7 @@ object will indicate this by the ok flag being false.
 await results = await db.numbers.addMany(1, 2, 3, 4, 5)
 
 // Only adds the first entry, as "username" is defined as a primary index and cannot have duplicates
-await results = await db.indexableUsers.addMany(
+await results = await db.users.addMany(
   {
     username: "oli",
     age: 24
@@ -152,9 +178,9 @@ CommitResult object will be returned with the document id, versionstamp and ok
 flag.
 
 ```ts
-const result = await db.primitives.strings.set(2048, "Foo")
+const result = await db.numbers.set("id_1", 2048)
 
-console.log(result.id) // 2048
+console.log(result.id) // "id_1"
 ```
 
 ### Update
@@ -168,7 +194,7 @@ document id, versionstamp and ok flag.
 
 ```ts
 // Updates the document with a new value
-const result1 = await db.primitives.numbers.update("num1", 42)
+const result1 = await db.numbers.update("num1", 42)
 
 // Partial update, only updates the age field
 const result2 = await db.users.update("user1", {
@@ -327,7 +353,7 @@ used to find a document by a primary index.
 
 ```ts
 // Finds a user document with the username = "oliver"
-const userDoc = await db.indexableUsers.findByPrimaryIndex("username", "oliver")
+const userDoc = await db.users.findByPrimaryIndex("username", "oliver")
 ```
 
 ### Find By Secondary Index
@@ -338,7 +364,7 @@ unique, and therefore the result is an array of documents.
 
 ```ts
 // Returns all users with age = 24
-const { result } = await db.indexableUsers.findBySecondaryIndex("age", 24)
+const { result } = await db.users.findBySecondaryIndex("age", 24)
 ```
 
 ## Database Methods
@@ -365,6 +391,14 @@ await db.deleteAll()
 
 ### Atomic
 
+The "atomic" method is used to initiate an atomic operation. The method takes a selection function as argument for selecting the initial collection context.
+
+```ts
+await db.atomic((schema) => schema.users)
+```
+
+## Atomic Operations
+
 Atomic operations allow for executing multiple mutations as a single atomic
 transaction. This means that documents can be checked for changes before
 committing the mutations, in which case the operation will fail. It also ensures
@@ -388,21 +422,21 @@ always fail if it is trying to delete and write to the same indexable
 collection. It will also fail if trying to set/add a document with existing
 index entries.
 
-#### Without checking
+### Without checking
 
 ```ts
 // Deletes and adds an entry to the bigints collection
 const result1 = await db
-  .atomic((schema) => schema.primitives.bigints)
+  .atomic((schema) => schema.numbers)
   .delete("id_1")
-  .set("id_2", 100n)
+  .set("id_2", 100)
   .commit()
 
 // Adds 2 new entries to the strings collection and 1 new entry to the users collection
 const result2 = await db
-  .atomic((schema) => schema.primitives.strings)
-  .add("s1")
-  .add("s2")
+  .atomic((schema) => schema.numbers)
+  .add(1)
+  .add(2)
   .select((schema) => schema.users)
   .set("user_1", {
     username: "oliver",
@@ -418,9 +452,9 @@ const result2 = await db
   .commit()
 
 // Will fail and return Deno.KvCommitError because it is trying
-// to both add and delete from the indexable collection "indexableUsers"
+// to both add and delete from an indexable collection
 const result3 = await db
-  .atomic((schema) => schema.indexableUsers)
+  .atomic((schema) => schema.users)
   .delete("user_1")
   .set("user_1", {
     username: "oliver",
@@ -436,21 +470,21 @@ const result3 = await db
   .commit()
 ```
 
-#### With checking
+### With checking
 
 ```ts
 // Only adds 10 to the value when it has not been changed after being read
 let result = null
-while (!result && !result.ok) {
-  const { id, versionstamp, value } = await db.primitives.bigints.find("id")
+while (!result || !result.ok) {
+  const { id, versionstamp, value } = await db.numbers.find("id")
 
   result = await db
-    .atomic((schema) => schema.primitives.bigints)
+    .atomic((schema) => schema.numbers)
     .check({
       id,
       versionstamp,
     })
-    .set(id, value + 10n)
+    .set(id, value + 10)
     .commit()
 }
 ```
