@@ -179,11 +179,11 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * @param selector - Collection selector function.
    * @returns A new AtomicBuilder instance.
    */
-  atomic: <
+  atomic<
     const TValue extends KvValue,
   >(
     selector: CollectionSelector<Schema<T>, TValue>,
-  ) => AtomicBuilder<Schema<T>, TValue>
+  ): AtomicBuilder<Schema<T>, TValue>
 
   /**
    * Count all document entries in the KV store.
@@ -197,7 +197,7 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * @param options
    * @returns A promise that resolves to a number representing the total count of documents in the KV store.
    */
-  countAll: (options?: CountAllOptions) => Promise<number>
+  countAll(options?: CountAllOptions): Promise<number>
 
   /**
    * Delete all document entries in the KV store.
@@ -210,7 +210,7 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    *
    * @returns A promise that resolves to void.
    */
-  deleteAll: (options?: DeleteAllOptions) => Promise<void>
+  deleteAll(options?: DeleteAllOptions): Promise<void>
 }
 
 export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
