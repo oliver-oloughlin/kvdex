@@ -296,7 +296,6 @@ export class IndexableCollection<
 
   async deleteMany(options?: ListOptions<T1>) {
     const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
-    let atomic = this.kv.atomic()
 
     for await (const entry of iter) {
       const { key, value, versionstamp } = entry
@@ -310,11 +309,11 @@ export class IndexableCollection<
       }
 
       if (!options?.filter || options.filter(doc)) {
+        let atomic = this.kv.atomic()
         atomic = atomic.delete(entry.key)
         atomic = deleteIndices(id, value, atomic, this)
+        await atomic.commit()
       }
-
-      await atomic.commit()
     }
     return {
       cursor: iter.cursor || undefined,

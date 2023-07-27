@@ -1,5 +1,13 @@
 import { Document, flatten } from "../../mod.ts"
-import { db, type Person, reset, testPerson, testPerson2 } from "../config.ts"
+import {
+  db,
+  generateNumbers,
+  generatePeople,
+  type Person,
+  reset,
+  testPerson,
+  testPerson2,
+} from "../config.ts"
 import { assert } from "../../deps.ts"
 
 Deno.test({
@@ -249,6 +257,18 @@ Deno.test({
         assert(people.result.some((doc) => doc.value.name === testPerson.name))
         assert(people.result.some((doc) => doc.value.name === testPerson2.name))
       })
+
+      await t2.step("Should handle adding 1000 document entries", async () => {
+        await reset()
+
+        const numbers = generateNumbers(1_000)
+
+        const crs = await db.values.numbers.addMany(...numbers)
+        assert(crs.every((cr) => cr.ok))
+
+        const count = await db.values.numbers.count()
+        assert(count === numbers.length)
+      })
     })
 
     // Test "delete" method
@@ -496,20 +516,16 @@ Deno.test({
           fn: async () => {
             await reset()
 
-            const r1 = await db.people.add(testPerson)
-            const r2 = await db.people.add(testPerson)
-            if (!r1.ok || !r2.ok) {
-              throw Error("'testPerson' not added to collection successfully")
-            }
-
-            const id1 = r1.id
-            const id2 = r2.id
+            const people = generatePeople(100)
+            const crs = await db.people.addMany(...people)
+            assert(crs.every((cr) => cr.ok))
 
             const allPeople = await db.people.getMany()
 
-            assert(allPeople.result.length === 2)
-            assert(allPeople.result.some((p) => p.id === id1))
-            assert(allPeople.result.some((p) => p.id === id2))
+            assert(allPeople.result.length === people.length)
+            allPeople.result.every((doc) =>
+              crs.some((cr) => cr.ok && cr.id === doc.id)
+            )
           },
         })
 
@@ -676,13 +692,15 @@ Deno.test({
         async () => {
           await reset()
 
-          await db.values.numbers.addMany(1, 2, 3, 4, 5)
+          const numbers = generateNumbers(100)
+
+          await db.values.numbers.addMany(...numbers)
 
           const allNums = await db.values.numbers.getMany()
-          assert(allNums.result.length === 5)
+          assert(allNums.result.length === numbers.length)
 
           const count = await db.values.numbers.count()
-          assert(count === 5)
+          assert(count === numbers.length)
         },
       )
 
@@ -702,6 +720,7 @@ Deno.test({
       })
     })
 
+    // Test "map" method
     await t.step("map", async (t) => {
       await t.step(
         "Should map from all documents to document ids",

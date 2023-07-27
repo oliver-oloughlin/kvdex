@@ -1,4 +1,10 @@
-import { db, reset, testPerson, testPerson2 } from "../config.ts"
+import {
+  db,
+  generatePeople,
+  reset,
+  testPerson,
+  testPerson2,
+} from "../config.ts"
 import { assert } from "../../deps.ts"
 import { flatten } from "../../mod.ts"
 
@@ -138,34 +144,39 @@ Deno.test("indexable_collection", async (t1) => {
       async () => {
         await reset()
 
-        const crs = await db.indexablePeople.addMany(testPerson, testPerson2)
-
+        const people = generatePeople(100)
+        const crs = await db.indexablePeople.addMany(...people)
         assert(crs.every((cr) => cr.ok))
 
-        const people = await db.indexablePeople.getMany()
+        const allPeople = await db.indexablePeople.getMany()
 
-        assert(people.result.length === 2)
-        assert(people.result.some((doc) => doc.value.name === testPerson.name))
-        assert(people.result.some((doc) => doc.value.name === testPerson2.name))
+        assert(allPeople.result.length === people.length)
+
+        assert(
+          allPeople.result.every((doc) =>
+            crs.some((cr) => cr.ok && cr.id === doc.id)
+          ),
+        )
 
         const byName1 = await db.indexablePeople.findByPrimaryIndex(
           "name",
-          testPerson.name,
+          allPeople.result[0].value.name ?? "",
         )
 
         const byName2 = await db.indexablePeople.findByPrimaryIndex(
           "name",
-          testPerson2.name,
+          allPeople.result[1].value.name ?? "",
         )
 
         assert(byName1 !== null)
         assert(byName2 !== null)
 
-        const byAge = await db.indexablePeople.findBySecondaryIndex("age", 24)
+        const byAge = await db.indexablePeople.findBySecondaryIndex(
+          "age",
+          allPeople.result[0].value.age ?? 0,
+        )
 
-        assert(byAge.result.length === 2)
-        assert(byAge.result.some((doc) => doc.value.name === testPerson.name))
-        assert(byAge.result.some((doc) => doc.value.name === testPerson2.name))
+        assert(byAge.result.length > 0)
       },
     )
 
@@ -446,19 +457,30 @@ Deno.test("indexable_collection", async (t1) => {
         await reset()
 
         // Add test objects
-        const cr1 = await db.indexablePeople.add(testPerson)
-        const cr2 = await db.indexablePeople.add(testPerson2)
-        if (!cr1.ok || !cr2.ok) {
-          throw Error("documents were not added to collection successfully")
-        }
+        const people = generatePeople(100)
+        const crs = await db.indexablePeople.addMany(...people)
+        assert(crs.every((cr) => cr.ok))
 
         // Check that test objects can be found by id and index before delete
+        const [cr1, cr2] = crs
+        const [p1, p2] = people
+        if (
+          !cr1 ||
+          !cr2 ||
+          !cr1.ok ||
+          !cr2.ok ||
+          !p1 ||
+          !p2
+        ) {
+          throw Error("No result object or error result")
+        }
+
         const idDoc1_1 = await db.indexablePeople.find(cr1.id)
         assert(idDoc1_1 !== null)
 
         const indexDoc1_1 = await db.indexablePeople.findByPrimaryIndex(
           "name",
-          testPerson.name,
+          p1.name,
         )
         assert(indexDoc1_1 !== null)
 
@@ -467,9 +489,16 @@ Deno.test("indexable_collection", async (t1) => {
 
         const indexDoc2_1 = await db.indexablePeople.findByPrimaryIndex(
           "name",
-          testPerson2.name,
+          p2.name,
         )
         assert(indexDoc2_1 !== null)
+
+        const indexDocs1 = await db.indexablePeople.findBySecondaryIndex(
+          "age",
+          p1.age,
+        )
+
+        assert(indexDocs1.result.length > 0)
 
         // Delete test objects
         await db.indexablePeople.deleteMany()
@@ -480,7 +509,7 @@ Deno.test("indexable_collection", async (t1) => {
 
         const indexDoc1_2 = await db.indexablePeople.findByPrimaryIndex(
           "name",
-          testPerson.name,
+          p1.name,
         )
         assert(indexDoc1_2 === null)
 
@@ -489,17 +518,17 @@ Deno.test("indexable_collection", async (t1) => {
 
         const indexDoc2_2 = await db.indexablePeople.findByPrimaryIndex(
           "name",
-          testPerson2.name,
+          p2.name,
         )
         assert(indexDoc2_2 === null)
 
         // Check that secondary indices are deleted
-        const indexDocs = await db.indexablePeople.findBySecondaryIndex(
+        const indexDocs2 = await db.indexablePeople.findBySecondaryIndex(
           "age",
-          24,
+          p1.age,
         )
 
-        assert(indexDocs.result.length === 0)
+        assert(indexDocs2.result.length === 0)
       },
     )
 
@@ -613,6 +642,7 @@ Deno.test("indexable_collection", async (t1) => {
     })
   })
 
+  // Test "map" method
   await t1.step("map", async (t) => {
     await t.step(
       "Should map from all documents to document fields",

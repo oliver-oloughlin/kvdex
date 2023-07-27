@@ -54,11 +54,31 @@ export const db = createDb(kv, {
 })
 
 export async function reset() {
-  await db.people.deleteMany()
-  await db.indexablePeople.deleteMany()
-  await db.values.numbers.deleteMany()
-  await db.values.strings.deleteMany()
-  await db.values.u64s.deleteMany()
-  await db.arrs.deleteMany()
-  await db.dates.deleteMany()
+  await db.deleteAll()
+}
+
+export function generateNumbers(n: number) {
+  const numbers: number[] = []
+  for (let i = 0; i < n; i++) {
+    numbers.push(i)
+  }
+
+  return numbers
+}
+
+export function generatePeople(n: number) {
+  const people: Person[] = []
+  for (let i = 0; i < n; i++) {
+    people.push({
+      name: `generated_name_${i}`,
+      age: Math.floor(Math.random() * 100),
+      friends: [],
+      address: {
+        city: "Bergen",
+        country: "Norway",
+      },
+    })
+  }
+
+  return people
 }
