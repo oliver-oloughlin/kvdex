@@ -67,7 +67,10 @@ export class AtomicBuilder<
    *
    * **Example:**
    * ```ts
-   * operation.select(schema => schema.users)
+   * db
+   *   .atomic(schema => schema.users)
+   *   // ... some operations
+   *   .select(schema => schema.numbers)
    * ```
    *
    * @param selector - Selector function for selecting a new collection from the database schema.
@@ -354,7 +357,7 @@ export class AtomicBuilder<
    *      id: "num1"
    *    },
    *    {
-   *       type: "set",
+   *      type: "set",
    *      id: "num2",
    *      value: new Deno.KvU64(200n)
    *    }

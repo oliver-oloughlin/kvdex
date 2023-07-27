@@ -30,8 +30,15 @@ export class Collection<
   /**
    * Create a new collection for handling documents in the KV store.
    *
-   * @param kv - The Deno KV instance to be used.
-   * @param collectionIdKey - Key that identifies the collection, an array of Deno.KvKeyPart.
+   * **Example:**
+   * ```ts
+   * const numbers = new Collection<number>({
+   *   kv: await Deno.openKv(),
+   *   key: ["numbers"]
+   * })
+   * ```
+   *
+   * @param def - Collection definition.
    */
   constructor(def: T2) {
     this.kv = def.kv
@@ -199,9 +206,8 @@ export class Collection<
    *
    * await db.users.delete("user1", "user2", "user3")
    * ```
-   *
-   * @param id
-   * @returns A promise that resovles to void
+   * @param ids - IDs of documents to be deleted.
+   * @returns A promise that resovles to void.
    */
   async delete(...ids: KvId[]) {
     let atomic = this.kv.atomic()

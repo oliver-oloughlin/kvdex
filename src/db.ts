@@ -16,8 +16,7 @@ import { extendKey } from "./utils.internal.ts"
 /**
  * Create a new database instance.
  *
- * Builds the database collections and checks for duplicate keys.
- * In the case where two collections have the same key, an error will be thrown.
+ * Builds the database collections and forms the schema.
  *
  * **Example:**
  * ```ts
@@ -28,17 +27,20 @@ import { extendKey } from "./utils.internal.ts"
  *
  * const kv = await Deno.openKv()
  *
- * const db = createDb(kv, (builder) => ({
- *   numbers: builder.collection<number>(["numbers"]),
- *   users: builder.indexableCollection<User>(["users"]).indices({
- *     username: "primary",
- *     age: "secondary"
+ * const db = createDb(kv, {
+ *   numbers: (ctx) => ctx.collection<number>().build(),
+ *   u64s: (ctx) => ctx.collection<Deno.KvU64>().build(),
+ *   users: (ctx) => ctx.indexableCollection<User>().build({
+ *     indices: {
+ *       username: "primary",
+ *       age: "secondary"
+ *     }
  *   })
- * }))
+ * })
  * ```
  *
  * @param kv - The Deno KV instance to be used for storing and retrieving data.
- * @param schemaBuilder - Builder function for building the database schema.
+ * @param schemaDefinition - The schema definition used to build collections and create the database schema.
  * @returns
  */
 export function createDb<const T extends SchemaDefinition>(

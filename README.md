@@ -14,30 +14,30 @@ Zero third-party dependencies.
   - [Models](#models)
   - [Database](#database)
   - [Collection Methods](#collection-methods)
-    - [Find](#find)
-    - [Find Many](#find-many)
-    - [Add](#add)
-    - [Add Many](#add-many)
-    - [Set](#set)
-    - [Update](#update)
-    - [Delete](#delete)
-    - [Delete Many](#delete-many)
-    - [Get Many](#get-many)
-    - [For Each](#for-each)
-    - [Map](#map)
-    - [Count](#count)
+    - [find()](#find)
+    - [findMany()](#findmany)
+    - [add()](#add)
+    - [addMany()](#addmany)
+    - [set()](#set)
+    - [update()](#update)
+    - [delete()](#delete)
+    - [deleteMany()](#deletemany)
+    - [getMany()](#getmany)
+    - [forEach()](#foreach)
+    - [map()](#map)
+    - [count()](#count)
   - [Indexable Collection Methods](#indexable-collection-methods)
-    - [Find By Primary Index](#find-by-primary-index)
-    - [Find By Secondary Index](#find-by-secondary-index)
+    - [findByPrimaryIndex()](#findbyprimaryindex)
+    - [findBySecondaryIndex()](#findbysecondaryindex)
   - [Database Methods](#database-methods)
-    - [Count All](#count-all)
-    - [Delete All](#delete-all)
-    - [Atomic](#atomic)
+    - [countAll()](#countall)
+    - [deleteAll()](#deleteall)
+    - [atomic()](#atomic)
   - [Atomic Operations](#atomic-operations)
     - [Without checking](#without-checking)
     - [With checking](#with-checking)
   - [Utils](#utils)
-    - [Flatten](#flatten)
+    - [flatten()](#flatten)
   - [Development](#development)
   - [License](#license)
 
@@ -92,7 +92,7 @@ The schema definition defines collection builder functions (or nested schema def
 
 ## Collection Methods
 
-### Find
+### find()
 
 The "find" method is used to retrieve a single document with the given id from
 the KV store. The id must adhere to the type Deno.KvKeyPart. 
@@ -108,7 +108,7 @@ const userDoc3 = await db.users.find("oliver", {
 })
 ```
 
-### Find Many
+### findMany()
 
 The "findMany" method is used to retrieve multiple documents with the given
 array of ids from the KV store. The ids must adhere to the type KvId. 
@@ -122,7 +122,7 @@ const userDocs2 = await db.users.findMany(["abc", 123, 123n], {
 })
 ```
 
-### Add
+### add()
 
 The "add" method is used to add a new document to the KV store. An id of type
 string (uuid) will be generated for the document. Upon completion, a
@@ -145,7 +145,7 @@ const result = await db.users.add({
 console.log(result.id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
 ```
 
-### Add Many
+### addMany()
 
 The "addMany" method is used to add multiple document entries to the KV store in
 a single operation. Upon completion, a list of CommitResult objects will be 
@@ -170,7 +170,7 @@ await results = await db.users.addMany(
 )
 ```
 
-### Set
+### set()
 
 The "set" method is very similar to the "add" method, and is used to add a new
 document to the KV store with a given id of type KvId. Upon completion, a
@@ -183,7 +183,7 @@ const result = await db.numbers.set("id_1", 2048)
 console.log(result.id) // "id_1"
 ```
 
-### Update
+### update()
 
 The "update" method is used to update the value of exisiting documents in the KV
 store. For primitive values, arrays and built-in objects (Date, RegExp, etc.),
@@ -202,7 +202,7 @@ const result2 = await db.users.update("user1", {
 })
 ```
 
-### Delete
+### delete()
 
 The "delete" method is used to delete one or more documents with the given ids from the KV
 store.
@@ -213,7 +213,7 @@ await db.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77")
 await db.users.delete("user1", "user2", "user3")
 ```
 
-### Delete Many
+### deleteMany()
 
 The "deleteMany" method is used for deleting multiple documents from the KV
 store without specifying ids. 
@@ -241,7 +241,7 @@ await db.users.deleteMany({
 })
 ```
 
-### Get Many
+### getMany()
 
 The "getMany" method is used for retrieving multiple documents from the KV
 store. It takes an optional options argument that can be used for filtering of
@@ -269,7 +269,7 @@ const { result } = await db.users.getMany({
 })
 ```
 
-### For Each
+### forEach()
 
 The "forEach" method is used for executing a callback function for multiple
 documents in the KV store. It takes an optional options argument that can be
@@ -297,7 +297,7 @@ await db.users.forEach((doc) => console.log(doc.value.username), {
 })
 ```
 
-### Map
+### map()
 
 The "map" method is used for executing a callback function for multiple documents in the KV store, and retrieving the results. 
 It takes an optional options argument that can be used for filtering of documents and pagination. 
@@ -324,7 +324,7 @@ const { result } = await db.users.forEach((doc) => doc.value.username, {
 })
 ```
 
-### Count
+### count()
 
 The "count" method is used to count the number of documents in a collection. 
 It takes an optional options argument that can be used for filtering of documents.
@@ -346,7 +346,7 @@ Indexable collections extend the base Collection class and provide all the same
 methods. Note that add/set methods will always fail if an identical index entry
 already exists.
 
-### Find By Primary Index
+### findByPrimaryIndex()
 
 The "findByPrimaryIndex" method is exclusive to indexable collections and can be
 used to find a document by a primary index.
@@ -356,7 +356,7 @@ used to find a document by a primary index.
 const userDoc = await db.users.findByPrimaryIndex("username", "oliver")
 ```
 
-### Find By Secondary Index
+### findBySecondaryIndex()
 
 The "findBySecondaryIndex" method is exclusive to indexable collections and
 can be used to find documents by a secondary index. Secondary indices are not
@@ -371,7 +371,7 @@ const { result } = await db.users.findBySecondaryIndex("age", 24)
 
 These are methods which can be found at the top level of your database object, and perform operations across multiple collections.
 
-### Count All
+### countAll()
 
 The "countAll" method is used to count the total number of documents across all collections. It takes an optional options argument that can be used to set the consistency mode.
 
@@ -380,7 +380,7 @@ The "countAll" method is used to count the total number of documents across all 
 const count = await db.countAll()
 ```
 
-### Delete All
+### deleteAll()
 
 The "deleteAll" method is used to delete all documents in across all collections. It takes an optional options argument that can be used to set the consistency mode.
 
@@ -389,12 +389,12 @@ The "deleteAll" method is used to delete all documents in across all collections
 await db.deleteAll()
 ```
 
-### Atomic
+### atomic()
 
 The "atomic" method is used to initiate an atomic operation. The method takes a selection function as argument for selecting the initial collection context.
 
 ```ts
-await db.atomic((schema) => schema.users)
+db.atomic((schema) => schema.users)
 ```
 
 ## Atomic Operations
@@ -493,7 +493,7 @@ while (!result || !result.ok) {
 
 Additional utility functions.
 
-### Flatten
+### flatten()
 
 The "flatten" utility function can be used to flatten documents with a value of
 type Model. It will only flatten the first layer of the document, meaning the

@@ -30,8 +30,8 @@ import {
 /**
  * Represents a collection of object documents stored in the KV store.
  *
- * Contains methods for working on documents in the collection,
- * including exclusive indexing methods.
+ * Contains methods for working on documents in a collection,
+ * including methods exclusive to indexable collections.
  */
 export class IndexableCollection<
   const T1 extends Model,
@@ -44,9 +44,19 @@ export class IndexableCollection<
   /**
    * Create a new IndexableCollection for handling object documents in the KV store.
    *
-   * @param kv - The Deno KV instance to be used.
-   * @param collectionKey - Key that identifies the collection, an array of Deno.KvKeyPart.
-   * @param indexRecord - Record of primary and secondary indices.
+   * **Example:**
+   * ```ts
+   * const users = new IndexableCollection<User>({
+   *   kv: await Deno.openKv(),
+   *   key: ["users"],
+   *   indices: {
+   *     username: "primary",
+   *     age: "secondary"
+   *   }
+   * })
+   * ```
+   *
+   * @param def - Indexable Collection Definition.
    */
   constructor(def: T2) {
     super(def)
@@ -195,7 +205,7 @@ export class IndexableCollection<
    *
    * @param index - Index to find by.
    * @param value - Index value.
-   * @param options - Optional list options.
+   * @param options - List options.
    * @returns A promise resolving to an object containing the result list and iterator cursor.
    */
   async findBySecondaryIndex<
