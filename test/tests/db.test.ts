@@ -18,7 +18,12 @@ Deno.test("db", async (t1) => {
           },
         })
 
-        assert(db.numbers.keys.baseKey !== db.nested.numbers.keys.baseKey)
+        const key1 = JSON.stringify(db.numbers.keys.baseKey)
+        const key2 = JSON.stringify(db.nested.numbers.keys.baseKey)
+
+        assert(key1 !== key2)
+        assert(key1 === '["numbers"]')
+        assert(key2 === '["nested","numbers"]')
 
         kv.close()
       },
