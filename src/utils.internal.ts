@@ -1,7 +1,7 @@
-import { IndexableCollection } from "./indexable_collection.ts"
+import type { IndexableCollection } from "./indexable_collection.ts"
 import type {
+  IndexableCollectionDefinition,
   IndexDataEntry,
-  IndexRecord,
   KvId,
   KvKey,
   KvValue,
@@ -57,7 +57,10 @@ export function isKvObject(value: KvValue) {
   return false
 }
 
-export function setIndices<T1 extends Model, T2 extends IndexRecord<T1>>(
+export function setIndices<
+  T1 extends Model,
+  T2 extends IndexableCollectionDefinition<T1>,
+>(
   id: KvId,
   data: T1,
   atomic: Deno.AtomicOperation,
@@ -103,7 +106,10 @@ export function setIndices<T1 extends Model, T2 extends IndexRecord<T1>>(
   return op
 }
 
-export function deleteIndices<T1 extends Model, T2 extends IndexRecord<T1>>(
+export function deleteIndices<
+  T1 extends Model,
+  T2 extends IndexableCollectionDefinition<T1>,
+>(
   id: KvId,
   data: T1,
   atomic: Deno.AtomicOperation,

@@ -1,13 +1,17 @@
 import { AtomicBuilder } from "./atomic_builder.ts"
 import type {
+  CollectionDefinition,
   CountAllOptions,
   DB,
   DeleteAllOptions,
+  KvKey,
   KvValue,
   Schema,
+  SchemaDefinition,
 } from "./types.ts"
-import { CollectionBuilder } from "./collection_builder.ts"
+import { CollectionInitializer } from "./collection_builder.ts"
 import { Collection } from "./collection.ts"
+import { extendKey } from "./utils.internal.ts"
 
 /**
  * Create a new database instance.
@@ -37,13 +41,11 @@ import { Collection } from "./collection.ts"
  * @param schemaBuilder - Builder function for building the database schema.
  * @returns
  */
-export function createDb<const T extends Schema>(
+export function createDb<const T extends SchemaDefinition>(
   kv: Deno.Kv,
-  schemaBuilder: (builder: CollectionBuilder) => T,
+  schemaDefinition: T,
 ): DB<T> {
-  const builder = new CollectionBuilder(kv)
-  const schema = schemaBuilder(builder)
-
+  const schema = _createSchema(schemaDefinition, kv) as Schema<T>
   return {
     ...schema,
     atomic: (selector) => new AtomicBuilder(kv, schema, selector(schema)),
@@ -52,9 +54,33 @@ export function createDb<const T extends Schema>(
   }
 }
 
+function _createSchema<const T extends SchemaDefinition>(
+  def: T,
+  kv: Deno.Kv,
+  treeKey?: KvKey,
+): Schema<T> {
+  const entries = Object.entries(def)
+
+  const schemaEntries = entries.map(([key, value]) => {
+    const extendedKey = treeKey ? extendKey(treeKey, key) : [key] as KvKey
+    if (typeof value === "function") {
+      const initializer = new CollectionInitializer(kv, extendedKey)
+      return [key, value(initializer)]
+    }
+
+    return [key, _createSchema(value, kv, extendedKey)]
+  })
+
+  const schema = Object.fromEntries(schemaEntries)
+
+  return schema as Schema<T>
+}
+
 async function _countAll(
   kv: Deno.Kv,
-  schemaOrCollection: Schema | Collection<KvValue>,
+  schemaOrCollection:
+    | Schema<SchemaDefinition>
+    | Collection<KvValue, CollectionDefinition<KvValue>>,
   options?: CountAllOptions,
 ): Promise<number> {
   if (schemaOrCollection instanceof Collection) {
@@ -70,7 +96,9 @@ async function _countAll(
 
 async function _deleteAll(
   kv: Deno.Kv,
-  schemaOrCollection: Schema | Collection<KvValue>,
+  schemaOrCollection:
+    | Schema<SchemaDefinition>
+    | Collection<KvValue, CollectionDefinition<KvValue>>,
   options?: DeleteAllOptions,
 ) {
   if (schemaOrCollection instanceof Collection) {

@@ -1,66 +1,24 @@
 import { createDb } from "../../mod.ts"
 import { db, reset, testPerson, testPerson2 } from "../config.ts"
-import { assert, assertThrows } from "../../deps.ts"
+import { assert } from "../../deps.ts"
 
 // Test atomic operations
 Deno.test("db", async (t1) => {
   // Test "kvdb" function
   await t1.step("createDb", async (t2) => {
     await t2.step(
-      "Should throw error when creating KVDB with duplicate collection keys",
+      "Should create unique keys for collections with equal name in different nestings",
       async () => {
         const kv = await Deno.openKv()
 
-        assertThrows(() =>
-          createDb(kv, (cb) => ({
-            numbers1: cb.collection<number>(["numbers"]),
-            numbers2: cb.collection<number>(["numbers"]),
-          }))
-        )
-
-        assertThrows(() =>
-          createDb(kv, (cb) => ({
-            numbers: cb.collection<number>(["numbers", 123, 123n]),
-            nested: {
-              numbers: cb.collection<number>(["numbers", 123, 123n]),
-              nested: {
-                numbers: cb.collection<number>(["numbers", 123, 123n]),
-              },
-            },
-          }))
-        )
-
-        kv.close()
-      },
-    )
-
-    await t2.step(
-      "Should not throw error when creating DB with unique collection keys",
-      async () => {
-        const kv = await Deno.openKv()
-
-        assert(() => {
-          createDb(kv, (cb) => ({
-            numbers1: cb.collection<number>(["numbers1"]),
-            numbers2: cb.collection<number>(["numbers2"]),
-          }))
-
-          return true
+        const db = createDb(kv, {
+          numbers: (builder) => builder.collection<number>().build(),
+          nested: {
+            numbers: (builder) => builder.collection<number>().build(),
+          },
         })
 
-        assert(() => {
-          createDb(kv, (cb) => ({
-            numbers: cb.collection<number>(["numbers", 123, 123n]),
-            nested: {
-              numbers: cb.collection<number>(["numbers", 1234, 123n]),
-              nested: {
-                numbers: cb.collection<number>(["numbers", 123, 1234n]),
-              },
-            },
-          }))
-
-          return true
-        })
+        assert(db.numbers.keys.baseKey !== db.nested.numbers.keys.baseKey)
 
         kv.close()
       },
@@ -471,12 +429,12 @@ Deno.test("db", async (t1) => {
       async () => {
         const kv = await Deno.openKv()
 
-        const db = createDb(kv, (builder) => ({
-          strings: builder.collection<string>(["strings"]),
-          numbers: builder.collection<number>(["numbers"]),
-          bigints: builder.collection<bigint>(["bigints"]),
-          u64s: builder.collection<Deno.KvU64>(["u64s"]),
-        }))
+        const db = createDb(kv, {
+          strings: (builder) => builder.collection<string>().build(),
+          numbers: (builder) => builder.collection<number>().build(),
+          bigints: (builder) => builder.collection<bigint>().build(),
+          u64s: (builder) => builder.collection<Deno.KvU64>().build(),
+        })
 
         await db.strings.add("str1")
         await db.numbers.add(1)
@@ -506,21 +464,21 @@ Deno.test("db", async (t1) => {
       async () => {
         const kv = await Deno.openKv()
 
-        const db = createDb(kv, (builder) => ({
-          arrs: builder.collection<Array<string>>(["arrs"]),
-          i8arrs: builder.collection<Int8Array>(["i8arrs"]),
-          i16arrs: builder.collection<Int16Array>(["i16arrs"]),
-          i32arrs: builder.collection<Int32Array>(["i32arrs"]),
-          i64arrs: builder.collection<BigInt64Array>(["i64arrs"]),
-          u8arrs: builder.collection<Uint8Array>(["u8arrs"]),
-          u16arrs: builder.collection<Uint16Array>(["u16arrs"]),
-          u32arrs: builder.collection<Uint32Array>(["u32arrs"]),
-          u64arrs: builder.collection<BigUint64Array>(["u64arrs"]),
-          u8carrs: builder.collection<Uint8ClampedArray>(["u8carrs"]),
-          f32arrs: builder.collection<Float32Array>(["f32arrs"]),
-          f64arrs: builder.collection<Float64Array>(["f64arrs"]),
-          buffers: builder.collection<ArrayBuffer>(["buffers"]),
-        }))
+        const db = createDb(kv, {
+          arrs: (builder) => builder.collection<Array<string>>().build(),
+          i8arrs: (builder) => builder.collection<Int8Array>().build(),
+          i16arrs: (builder) => builder.collection<Int16Array>().build(),
+          i32arrs: (builder) => builder.collection<Int32Array>().build(),
+          i64arrs: (builder) => builder.collection<BigInt64Array>().build(),
+          u8arrs: (builder) => builder.collection<Uint8Array>().build(),
+          u16arrs: (builder) => builder.collection<Uint16Array>().build(),
+          u32arrs: (builder) => builder.collection<Uint32Array>().build(),
+          u64arrs: (builder) => builder.collection<BigUint64Array>().build(),
+          u8carrs: (builder) => builder.collection<Uint8ClampedArray>().build(),
+          f32arrs: (builder) => builder.collection<Float32Array>().build(),
+          f64arrs: (builder) => builder.collection<Float64Array>().build(),
+          buffers: (builder) => builder.collection<ArrayBuffer>().build(),
+        })
 
         await db.arrs.add(["str1", "str2", "str3"])
         await db.i8arrs.add(new Int8Array([1, 2, 3]))
@@ -627,14 +585,14 @@ Deno.test("db", async (t1) => {
       async () => {
         const kv = await Deno.openKv()
 
-        const db = createDb(kv, (builder) => ({
-          dates: builder.collection<Date>(["dates"]),
-          sets: builder.collection<Set<string>>(["sets"]),
-          maps: builder.collection<Map<string, number>>(["maps"]),
-          regExps: builder.collection<RegExp>(["regExps"]),
-          dataVeiws: builder.collection<DataView>(["fdataVeiws"]),
-          errors: builder.collection<Error>(["errors"]),
-        }))
+        const db = createDb(kv, {
+          dates: (builder) => builder.collection<Date>().build(),
+          sets: (builder) => builder.collection<Set<string>>().build(),
+          maps: (builder) => builder.collection<Map<string, number>>().build(),
+          regExps: (builder) => builder.collection<RegExp>().build(),
+          dataVeiws: (builder) => builder.collection<DataView>().build(),
+          errors: (builder) => builder.collection<Error>().build(),
+        })
 
         await db.dates.add(new Date())
         await db.sets.add(new Set())

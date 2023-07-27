@@ -9,12 +9,11 @@ import type {
   CommitResult,
   Document,
   FindOptions,
+  IndexableCollectionDefinition,
   IndexableCollectionKeys,
   IndexDataEntry,
-  IndexRecord,
   IndexType,
   KvId,
-  KvKey,
   ListOptions,
   Model,
   PrimaryIndexKeys,
@@ -36,8 +35,8 @@ import {
  */
 export class IndexableCollection<
   const T1 extends Model,
-  const T2 extends IndexRecord<T1>,
-> extends Collection<T1> {
+  const T2 extends IndexableCollectionDefinition<T1>,
+> extends Collection<T1, T2> {
   readonly primaryIndexList: string[]
   readonly secondaryIndexList: string[]
   readonly keys: IndexableCollectionKeys
@@ -49,23 +48,23 @@ export class IndexableCollection<
    * @param collectionKey - Key that identifies the collection, an array of Deno.KvKeyPart.
    * @param indexRecord - Record of primary and secondary indices.
    */
-  constructor(kv: Deno.Kv, collectionKey: KvKey, indexRecord?: T2) {
-    super(kv, collectionKey)
+  constructor(def: T2) {
+    super(def)
 
     this.keys = {
-      baseKey: collectionKey,
-      idKey: extendKey(collectionKey, COLLECTION_ID_KEY_SUFFIX),
+      baseKey: def.key,
+      idKey: extendKey(def.key, COLLECTION_ID_KEY_SUFFIX),
       primaryIndexKey: extendKey(
-        collectionKey,
+        def.key,
         COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
       ),
       secondaryIndexKey: extendKey(
-        collectionKey,
+        def.key,
         COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
       ),
     }
 
-    const primaryIndexEntries = Object.entries(indexRecord ?? {}) as [
+    const primaryIndexEntries = Object.entries(def.indices) as [
       string,
       undefined | IndexType,
     ][]
@@ -74,7 +73,7 @@ export class IndexableCollection<
       value === "primary"
     ).map(([key]) => key)
 
-    const secondaryIndexEntries = Object.entries(indexRecord ?? {}) as [
+    const secondaryIndexEntries = Object.entries(def.indices) as [
       string,
       undefined | IndexType,
     ][]
@@ -155,7 +154,7 @@ export class IndexableCollection<
    * @param options - Read options.
    * @returns A promise resolving to the document found by selected index, or null if not found.
    */
-  async findByPrimaryIndex<const K extends PrimaryIndexKeys<T1, T2>>(
+  async findByPrimaryIndex<const K extends PrimaryIndexKeys<T1, T2["indices"]>>(
     index: K,
     value: CheckKeyOf<K, T1>,
     options?: FindOptions,
@@ -199,7 +198,9 @@ export class IndexableCollection<
    * @param options - Optional list options.
    * @returns A promise resolving to an object containing the result list and iterator cursor.
    */
-  async findBySecondaryIndex<const K extends SecondaryIndexKeys<T1, T2>>(
+  async findBySecondaryIndex<
+    const K extends SecondaryIndexKeys<T1, T2["indices"]>,
+  >(
     index: K,
     value: CheckKeyOf<K, T1>,
     options?: ListOptions<T1>,
@@ -235,7 +236,7 @@ export class IndexableCollection<
     }
   }
 
-  async delete(...ids: [KvId, ...KvId[]]) {
+  async delete(...ids: KvId[]) {
     await Promise.all(ids.map(async (id) => {
       const idKey = extendKey(this.keys.idKey, id)
       const { value } = await this.kv.get<T1>(idKey)

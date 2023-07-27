@@ -1,11 +1,12 @@
 import type { Collection } from "./collection.ts"
 import type { AtomicBuilder } from "./atomic_builder.ts"
+import { CollectionInitializer } from "./collection_builder.ts"
 
 // Atomic Builder Types
 export type CollectionSelector<
-  T1 extends Schema,
+  T1 extends Schema<SchemaDefinition>,
   T2 extends KvValue,
-> = (schema: T1) => Collection<T2>
+> = (schema: T1) => Collection<T2, CollectionDefinition<T2>>
 
 export type AtomicOperationFn = (
   op: Deno.AtomicOperation,
@@ -70,6 +71,16 @@ export type AtomicMutation<T extends KvValue> =
   )
 
 // Collection Types
+export type CollectionDefinition<T extends KvValue> = {
+  kv: Deno.Kv
+  key: KvKey
+}
+
+export type CollectionPrepDefinition<T extends KvValue> = Omit<
+  CollectionDefinition<T>,
+  "kv" | "key"
+>
+
 export type CollectionKeys = {
   baseKey: KvKey
   idKey: KvKey
@@ -102,6 +113,17 @@ export type CommitResult<T1 extends KvValue, T2 extends KvId> = {
 }
 
 // Indexable Collection Types
+export type IndexableCollectionDefinition<T extends Model> =
+  & CollectionDefinition<T>
+  & {
+    indices: IndexRecord<T>
+  }
+
+export type IndexableCollectionPrepDefinition<T extends Model> = Omit<
+  IndexableCollectionDefinition<T>,
+  "kv" | "key"
+>
+
 export type IndexableCollectionKeys = CollectionKeys & {
   primaryIndexKey: KvKey
   secondaryIndexKey: KvKey
@@ -129,12 +151,22 @@ export type IndexDataEntry<T extends Model> = Omit<T, "__id__"> & {
   __id__: KvId
 }
 
-// DB Types
-export type Schema = {
-  [key: string]: Collection<KvValue> | Schema
+// DB TypesCollection<KvValue, CollectionDefinition<KvValue>>
+export type CollectionBuilderFn = (
+  initializer: CollectionInitializer,
+) => Collection<KvValue, CollectionDefinition<KvValue>>
+
+export type SchemaDefinition = {
+  [key: string]: SchemaDefinition | CollectionBuilderFn
 }
 
-export type DB<TSchema extends Schema> = TSchema & {
+export type Schema<T extends SchemaDefinition> = {
+  [K in keyof T]: T[K] extends SchemaDefinition ? Schema<T[K]>
+    : T[K] extends CollectionBuilderFn ? ReturnType<T[K]>
+    : never
+}
+
+export type DB<T extends SchemaDefinition> = Schema<T> & {
   /**
    * Initiates an atomic operation.
    * Takes a selector function as argument which is used to select an initial collection.
@@ -150,8 +182,8 @@ export type DB<TSchema extends Schema> = TSchema & {
   atomic: <
     const TValue extends KvValue,
   >(
-    selector: CollectionSelector<TSchema, TValue>,
-  ) => AtomicBuilder<TSchema, TValue>
+    selector: CollectionSelector<Schema<T>, TValue>,
+  ) => AtomicBuilder<Schema<T>, TValue>
 
   /**
    * Count all document entries in the KV store.
