@@ -266,8 +266,8 @@ export type KvValue =
   | Float64Array
   | ArrayBuffer
   | Date
-  | Set<unknown>
-  | Map<unknown, unknown>
+  | Set<KvValue>
+  | Map<KvValue, KvValue>
   | RegExp
   | DataView
   | Error
