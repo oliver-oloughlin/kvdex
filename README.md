@@ -366,7 +366,7 @@ Listen for data from the collection queue that was enqueued with ``db.collection
 // Prints the data to console when recevied
 db.users.listenQueue((data) => console.log(data))
 
-// Sends post request when receiving data
+// Sends post request when data is received
 db.users.listenQueue(async (data) => {
   const dataBody = JSON.stringify(data) 
 
@@ -450,7 +450,7 @@ Listen for data from the database queue that was enqueued with ``db.enqueue()``.
 // Prints the data to console when recevied
 db.listenQueue((data) => console.log(data))
 
-// Sends post request when receiving data
+// Sends post request when data is received
 db.listenQueue(async (data) => {
   const dataBody = JSON.stringify(data) 
 

@@ -527,6 +527,27 @@ export class Collection<
     return result
   }
 
+  /**
+   * Add data to the collection queue to be delivered to the queue listener
+   * via ``db.collection.listenQueue()``. The data will only be received by queue
+   * listeners on the specified collection. The method takes an optional options
+   * argument that can be used to set a delivery delay.
+   *
+   * **Example:**
+   * ```ts
+   * // Immediate delivery
+   * await db.users.enqueue("some data")
+   *
+   * // Delay of 2 seconds before delivery
+   * await db.users.enqueue("some data", {
+   *   delay: 2_000
+   * })
+   * ```
+   *
+   * @param data
+   * @param options
+   * @returns
+   */
   async enqueue(data: unknown, options?: EnqueueOptions) {
     const msg: QueueMessage = {
       collectionKey: this.keys.baseKey,
@@ -536,6 +557,31 @@ export class Collection<
     return await this.kv.enqueue(msg, options)
   }
 
+  /**
+   * Listen for data from the collection queue that was enqueued with ``db.collection.enqueue()``.
+   * Will only receive data that was enqueued to the specific collection queue.
+   * Takes a handler function as argument.
+   *
+   * **Example:**
+   * ```ts
+   * // Prints the data to console when recevied
+   * db.users.listenQueue((data) => console.log(data))
+   *
+   * // Sends post request when data is received
+   * db.users.listenQueue(async (data) => {
+   *   const dataBody = JSON.stringify(data)
+   *
+   *   const res = await fetch("...", {
+   *     method: "POST",
+   *     body: dataBody
+   *   })
+   *
+   *   console.log("POSTED:", dataBody, res.ok)
+   * })
+   * ```
+   *
+   * @param handler
+   */
   async listenQueue(handler: QueueMessageHandler) {
     await this.kv.listenQueue(async (msg) => {
       const { collectionKey, data } = msg as QueueMessage

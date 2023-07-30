@@ -212,8 +212,51 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    */
   deleteAll(options?: DeleteAllOptions): Promise<void>
 
+  /**
+   * Add data to the database queue to be delivered to the queue listener
+   * via ``db.listenQueue()``. The data will only be received by queue
+   * listeners on the database queue. The method takes an optional options
+   * argument that can be used to set a delivery delay.
+   *
+   * **Example:**
+   * ```ts
+   * // Immediate delivery
+   * await db.enqueue("some data")
+   *
+   * // Delay of 2 seconds before delivery
+   * await db.enqueue("some data", {
+   *   delay: 2_000
+   * })
+   * ```
+   *
+   * @param data
+   * @param options
+   */
   enqueue(data: unknown, options?: EnqueueOptions): EnqueueResult
 
+  /**
+   * Listen for data from the database queue that was enqueued with ``db.enqueue()``. Will only receive data that was enqueued to the database queue. Takes a handler function as argument.
+   *
+   * **Example:**
+   * ```ts
+   * // Prints the data to console when recevied
+   * db.listenQueue((data) => console.log(data))
+   *
+   * // Sends post request when data is received
+   * db.listenQueue(async (data) => {
+   *   const dataBody = JSON.stringify(data)
+   *
+   *   const res = await fetch("...", {
+   *     method: "POST",
+   *     body: dataBody
+   *   })
+   *
+   *   console.log("POSTED:", dataBody, res.ok)
+   * })
+   * ```
+   *
+   * @param handler
+   */
   listenQueue(handler: QueueMessageHandler): ListenQueueResult
 }
 
