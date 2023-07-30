@@ -26,12 +26,16 @@ Zero third-party dependencies.
     - [forEach()](#foreach)
     - [map()](#map)
     - [count()](#count)
+    - [enqueue()](#enqueue)
+    - [listenQueue()](#listenqueue)
   - [Indexable Collection Methods](#indexable-collection-methods)
     - [findByPrimaryIndex()](#findbyprimaryindex)
     - [findBySecondaryIndex()](#findbysecondaryindex)
   - [Database Methods](#database-methods)
     - [countAll()](#countall)
     - [deleteAll()](#deleteall)
+    - [enqueue()](#enqueue-1)
+    - [listenQueue()](#listenqueue-1)
     - [atomic()](#atomic)
   - [Atomic Operations](#atomic-operations)
     - [Without checking](#without-checking)
@@ -340,6 +344,41 @@ const count = await db.users.count({
 })
 ```
 
+### enqueue()
+
+Add data (of any type) to the collection queue to be delivered to the queue listener via ``db.collection.listenQueue()``. The data will only be received by queue listeners on the specified collection. The method takes an optional options argument that can be used to set a delivery delay.
+
+```ts
+// Immediate delivery
+await db.users.enqueue("some data")
+
+// Delay of 2 seconds before delivery
+await db.users.enqueue("some data", {
+  delay: 2_000
+})
+```
+
+### listenQueue()
+
+Listen for data from the collection queue that was enqueued with ``db.collection.enqueue()``. Will only receive data that was enqueued to the specific collection queue. Takes a handler function as argument.
+
+```ts
+// Prints the data to console when recevied
+db.users.listenQueue((data) => console.log(data))
+
+// Sends post request when receiving data
+db.users.listenQueue(async (data) => {
+  const dataBody = JSON.stringify(data) 
+
+  const res = await fetch("...", {
+    method: "POST",
+    body: dataBody
+  })
+
+  console.log("POSTED:", dataBody, res.ok)
+})
+```
+
 ## Indexable Collection Methods
 
 Indexable collections extend the base Collection class and provide all the same
@@ -387,6 +426,41 @@ The "deleteAll" method is used to delete all documents in across all collections
 ```ts
 // Deletes all documents in the KV store across all collections
 await db.deleteAll()
+```
+
+### enqueue()
+
+Add data (of any type) to the database queue to be delivered to the queue listener via ``db.listenQueue()``. The data will only be received by queue listeners on the database queue. The method takes an optional options argument that can be used to set a delivery delay.
+
+```ts
+// Immediate delivery
+await db.enqueue("some data")
+
+// Delay of 2 seconds before delivery
+await db.enqueue("some data", {
+  delay: 2_000
+})
+```
+
+### listenQueue()
+
+Listen for data from the database queue that was enqueued with ``db.enqueue()``. Will only receive data that was enqueued to the database queue. Takes a handler function as argument.
+
+```ts
+// Prints the data to console when recevied
+db.listenQueue((data) => console.log(data))
+
+// Sends post request when receiving data
+db.listenQueue(async (data) => {
+  const dataBody = JSON.stringify(data) 
+
+  const res = await fetch("...", {
+    method: "POST",
+    body: dataBody
+  })
+
+  console.log("POSTED:", dataBody, res.ok)
+})
 ```
 
 ### atomic()
