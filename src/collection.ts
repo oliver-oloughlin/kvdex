@@ -5,15 +5,23 @@ import type {
   CommitResult,
   CountOptions,
   Document,
+  EnqueueOptions,
   FindManyOptions,
   FindOptions,
   KvId,
   KvObject,
   KvValue,
   ListOptions,
+  QueueMessage,
+  QueueMessageHandler,
   UpdateData,
 } from "./types.ts"
-import { extendKey, getDocumentId, isKvObject } from "./utils.internal.ts"
+import {
+  extendKey,
+  getDocumentId,
+  isKvObject,
+  keyEq,
+} from "./utils.internal.ts"
 
 /**
  * Represents a collection of documents stored in the KV store.
@@ -517,5 +525,26 @@ export class Collection<
     }
 
     return result
+  }
+
+  async enqueue(data: unknown, options?: EnqueueOptions) {
+    const msg: QueueMessage = {
+      collectionKey: this.keys.baseKey,
+      data,
+    }
+
+    return await this.kv.enqueue(msg, options)
+  }
+
+  async listenQueue(handler: QueueMessageHandler) {
+    await this.kv.listenQueue(async (msg) => {
+      const { collectionKey, data } = msg as QueueMessage
+
+      if (
+        Array.isArray(collectionKey) && keyEq(collectionKey, this.keys.baseKey)
+      ) {
+        await handler(data)
+      }
+    })
   }
 }

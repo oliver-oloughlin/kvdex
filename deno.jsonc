@@ -1,7 +1,7 @@
 {
   "tasks": {
-    "test": "deno test --unstable",
-    "prep": "deno fmt && deno test --unstable"
+    "test": "deno test -A --unstable",
+    "prep": "deno fmt && deno test -A --unstable"
   },
   "fmt": {
     "semiColons": false,

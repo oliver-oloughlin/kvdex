@@ -82,3 +82,22 @@ export function generatePeople(n: number) {
 
   return people
 }
+
+export async function sleep(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+export async function useTemporaryKv(
+  fn: (kv: Deno.Kv) => void | Promise<void>,
+) {
+  const dbId = crypto.randomUUID()
+  const dir = await Deno.makeTempDir()
+  const filePath = `${dir}/${dbId}.sqlite`
+  await Deno.writeFile(filePath, new Uint8Array())
+  const kv = await Deno.openKv(filePath)
+  try {
+    await fn(kv)
+  } finally {
+    kv.close()
+  }
+}

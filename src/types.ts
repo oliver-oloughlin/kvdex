@@ -151,7 +151,7 @@ export type IndexDataEntry<T extends Model> = Omit<T, "__id__"> & {
   __id__: KvId
 }
 
-// DB TypesCollection<KvValue, CollectionDefinition<KvValue>>
+// DB Types
 export type CollectionBuilderFn = (
   initializer: CollectionBuilderContext,
 ) => Collection<KvValue, CollectionDefinition<KvValue>>
@@ -211,11 +211,29 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * @returns A promise that resolves to void.
    */
   deleteAll(options?: DeleteAllOptions): Promise<void>
+
+  enqueue(data: unknown, options?: EnqueueOptions): EnqueueResult
+
+  listenQueue(handler: QueueMessageHandler): ListenQueueResult
 }
 
 export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
 
 export type DeleteAllOptions = Pick<Deno.KvListOptions, "consistency">
+
+// Queue Types
+export type QueueMessage = {
+  collectionKey: KvKey | null
+  data: unknown
+}
+
+export type EnqueueOptions = NonNullable<Parameters<Deno.Kv["enqueue"]>[1]>
+
+export type EnqueueResult = ReturnType<Deno.Kv["enqueue"]>
+
+export type ListenQueueResult = ReturnType<Deno.Kv["listenQueue"]>
+
+export type QueueMessageHandler = (data: unknown) => unknown | Promise<unknown>
 
 // KV Types
 export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T> : T

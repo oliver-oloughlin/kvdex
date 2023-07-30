@@ -1,5 +1,12 @@
-import { createDb } from "../../mod.ts"
-import { db, reset, testPerson, testPerson2 } from "../config.ts"
+import { createDb, QueueMessage } from "../../mod.ts"
+import {
+  db,
+  reset,
+  sleep,
+  testPerson,
+  testPerson2,
+  useTemporaryKv,
+} from "../config.ts"
 import { assert } from "../../deps.ts"
 
 // Test atomic operations
@@ -425,6 +432,71 @@ Deno.test("db", async (t1) => {
         assert(count2 === 0)
       },
     )
+  })
+
+  // Test "enqueue" method
+  await t1.step("enqueue", async (t2) => {
+    await t2.step("Should enqueue message with string data", async () => {
+      await useTemporaryKv(async (kv) => {
+        const data = "data"
+        const db = createDb(kv, {})
+        let assertion = false
+
+        await db.enqueue("data")
+
+        kv.listenQueue((msg) => {
+          const qMsg = msg as QueueMessage
+          assertion = qMsg.data === data
+        })
+
+        await sleep(500)
+        assert(assertion)
+      })
+    })
+  })
+
+  // Test "listenQueue" method
+  await t1.step("listenQueue", async (t2) => {
+    await t2.step("Should receive message with string data", async () => {
+      await useTemporaryKv(async (kv) => {
+        const data = "data"
+        const db = createDb(kv, {})
+        let assertion = false
+
+        await kv.enqueue({
+          collectionKey: null,
+          data,
+        } as QueueMessage)
+
+        db.listenQueue((msgData) => {
+          assertion = msgData === data
+        })
+
+        await sleep(500)
+        assert(assertion)
+      })
+    })
+
+    await t2.step("Should not receive collection queue message", async () => {
+      await useTemporaryKv(async (kv) => {
+        const data = "data"
+
+        const db = createDb(kv, {
+          numbers: (ctx) => ctx.collection<number>().build(),
+        })
+
+        await db.numbers.enqueue(data)
+
+        let assertion = true
+
+        db.listenQueue(() => {
+          assertion = false
+        })
+
+        await sleep(500)
+        assert(assertion)
+      })
+    })
   })
 
   // Test valid data types
