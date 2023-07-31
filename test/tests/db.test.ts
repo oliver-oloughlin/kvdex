@@ -1,4 +1,4 @@
-import { createDb, QueueMessage } from "../../mod.ts"
+import { kvdex, QueueMessage } from "../../mod.ts"
 import {
   db,
   reset,
@@ -13,13 +13,13 @@ import { KVDEX_KEY_PREFIX } from "../../src/constants.ts"
 // Test atomic operations
 Deno.test("db", async (t1) => {
   // Test "kvdb" function
-  await t1.step("createDb", async (t2) => {
+  await t1.step("kvdex", async (t2) => {
     await t2.step(
       "Should create unique keys for collections with equal name in different nestings",
       async () => {
         const kv = await Deno.openKv()
 
-        const db = createDb(kv, {
+        const db = kvdex(kv, {
           numbers: (builder) => builder.collection<number>().build(),
           nested: {
             numbers: (builder) => builder.collection<number>().build(),
@@ -440,7 +440,7 @@ Deno.test("db", async (t1) => {
     await t2.step("Should enqueue message with string data", async () => {
       await useTemporaryKv(async (kv) => {
         const data = "data"
-        const db = createDb(kv, {})
+        const db = kvdex(kv, {})
         let assertion = false
 
         await db.enqueue("data")
@@ -461,7 +461,7 @@ Deno.test("db", async (t1) => {
     await t2.step("Should receive message with string data", async () => {
       await useTemporaryKv(async (kv) => {
         const data = "data"
-        const db = createDb(kv, {})
+        const db = kvdex(kv, {})
         let assertion = false
 
         await kv.enqueue({
@@ -482,7 +482,7 @@ Deno.test("db", async (t1) => {
       await useTemporaryKv(async (kv) => {
         const data = "data"
 
-        const db = createDb(kv, {
+        const db = kvdex(kv, {
           numbers: (ctx) => ctx.collection<number>().build(),
         })
 
@@ -507,7 +507,7 @@ Deno.test("db", async (t1) => {
       async () => {
         const kv = await Deno.openKv()
 
-        const db = createDb(kv, {
+        const db = kvdex(kv, {
           strings: (builder) => builder.collection<string>().build(),
           numbers: (builder) => builder.collection<number>().build(),
           bigints: (builder) => builder.collection<bigint>().build(),
@@ -542,7 +542,7 @@ Deno.test("db", async (t1) => {
       async () => {
         const kv = await Deno.openKv()
 
-        const db = createDb(kv, {
+        const db = kvdex(kv, {
           arrs: (builder) => builder.collection<Array<string>>().build(),
           i8arrs: (builder) => builder.collection<Int8Array>().build(),
           i16arrs: (builder) => builder.collection<Int16Array>().build(),
@@ -663,7 +663,7 @@ Deno.test("db", async (t1) => {
       async () => {
         const kv = await Deno.openKv()
 
-        const db = createDb(kv, {
+        const db = kvdex(kv, {
           dates: (builder) => builder.collection<Date>().build(),
           sets: (builder) => builder.collection<Set<string>>().build(),
           maps: (builder) => builder.collection<Map<string, number>>().build(),
