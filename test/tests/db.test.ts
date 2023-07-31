@@ -8,6 +8,7 @@ import {
   useTemporaryKv,
 } from "../config.ts"
 import { assert } from "../../deps.ts"
+import { KVDEX_KEY_PREFIX } from "../../src/constants.ts"
 
 // Test atomic operations
 Deno.test("db", async (t1) => {
@@ -29,8 +30,8 @@ Deno.test("db", async (t1) => {
         const key2 = JSON.stringify(db.nested.numbers.keys.baseKey)
 
         assert(key1 !== key2)
-        assert(key1 === '["numbers"]')
-        assert(key2 === '["nested","numbers"]')
+        assert(key1 === `["${KVDEX_KEY_PREFIX}","numbers"]`)
+        assert(key2 === `["${KVDEX_KEY_PREFIX}","nested","numbers"]`)
 
         kv.close()
       },
