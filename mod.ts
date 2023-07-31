@@ -1,4 +1,4 @@
-export { createDb } from "./src/db.ts"
+export { kvdex } from "./src/db.ts"
 export * from "./src/utils.ts"
 
 export type * from "./src/db.ts"
