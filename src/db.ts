@@ -30,7 +30,7 @@ import { extendKey } from "./utils.internal.ts"
  *
  * const kv = await Deno.openKv()
  *
- * const db = createDb(kv, {
+ * const db = kvdex(kv, {
  *   numbers: (ctx) => ctx.collection<number>().build(),
  *   u64s: (ctx) => ctx.collection<Deno.KvU64>().build(),
  *   users: (ctx) => ctx.indexableCollection<User>().build({
@@ -46,7 +46,7 @@ import { extendKey } from "./utils.internal.ts"
  * @param schemaDefinition - The schema definition used to build collections and create the database schema.
  * @returns
  */
-export function createDb<const T extends SchemaDefinition>(
+export function kvdex<const T extends SchemaDefinition>(
   kv: Deno.Kv,
   schemaDefinition: T,
 ): DB<T> {

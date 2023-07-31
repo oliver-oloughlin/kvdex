@@ -71,15 +71,15 @@ interface User extends Model {
 
 ## Database
 
-``createDb()`` is used for creating a new database instance. It takes a
+``kvdex()`` is used for creating a new database instance. It takes a
 Deno KV instance and a schema definition as arguments.
 
 ```ts
-import { createDb } from "https://deno.land/x/kvdex@v0.7.1/mod.ts"
+import { kvdex } from "https://deno.land/x/kvdex@v0.7.1/mod.ts"
 
 const kv = await Deno.openKv()
 
-const db = createDb(kv, {
+const db = kvdex(kv, {
   numbers: (ctx) => ctx.collection<number>().build(),
   users: (ctx) => ctx.indexableCollection<User>().build({
     indices: {

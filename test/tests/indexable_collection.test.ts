@@ -10,7 +10,7 @@ import {
 } from "../config.ts"
 import { assert } from "../../deps.ts"
 import { flatten, QueueMessage } from "../../mod.ts"
-import { createDb } from "../../src/db.ts"
+import { kvdex } from "../../src/db.ts"
 
 Deno.test("indexable_collection", async (t1) => {
   // Test the configuration
@@ -703,7 +703,7 @@ Deno.test("indexable_collection", async (t1) => {
       await useTemporaryKv(async (kv) => {
         const data = "data"
 
-        const db = createDb(kv, {
+        const db = kvdex(kv, {
           numbers: (ctx) =>
             ctx.indexableCollection<Person>().build({ indices: {} }),
         })
@@ -729,7 +729,7 @@ Deno.test("indexable_collection", async (t1) => {
       await useTemporaryKv(async (kv) => {
         const data = "data"
 
-        const db = createDb(kv, {
+        const db = kvdex(kv, {
           numbers: (ctx) =>
             ctx.indexableCollection<Person>().build({ indices: {} }),
         })
@@ -754,7 +754,7 @@ Deno.test("indexable_collection", async (t1) => {
       await useTemporaryKv(async (kv) => {
         const data = "data"
 
-        const db = createDb(kv, {
+        const db = kvdex(kv, {
           numbers: (ctx) =>
             ctx.indexableCollection<Person>().build({ indices: {} }),
         })

@@ -11,7 +11,7 @@ import {
   useTemporaryKv,
 } from "../config.ts"
 import { assert } from "../../deps.ts"
-import { createDb } from "../../src/db.ts"
+import { kvdex } from "../../src/db.ts"
 
 Deno.test({
   name: "collection",
@@ -769,7 +769,7 @@ Deno.test({
         await useTemporaryKv(async (kv) => {
           const data = "data"
 
-          const db = createDb(kv, {
+          const db = kvdex(kv, {
             numbers: (ctx) => ctx.collection<number>().build(),
           })
 
@@ -794,7 +794,7 @@ Deno.test({
         await useTemporaryKv(async (kv) => {
           const data = "data"
 
-          const db = createDb(kv, {
+          const db = kvdex(kv, {
             numbers: (ctx) => ctx.collection<number>().build(),
           })
 
@@ -818,7 +818,7 @@ Deno.test({
         await useTemporaryKv(async (kv) => {
           const data = "data"
 
-          const db = createDb(kv, {
+          const db = kvdex(kv, {
             numbers: (ctx) => ctx.collection<number>().build(),
           })
 
