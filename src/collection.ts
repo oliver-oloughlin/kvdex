@@ -1,4 +1,4 @@
-import { COLLECTION_ID_KEY_SUFFIX } from "./constants.ts"
+import { COLLECTION_ID_KEY_SUFFIX, KVDEX_KEY_PREFIX } from "./constants.ts"
 import type {
   CollectionDefinition,
   CollectionKeys,
@@ -51,8 +51,12 @@ export class Collection<
   constructor(def: T2) {
     this.kv = def.kv
     this.keys = {
-      baseKey: def.key,
-      idKey: extendKey(def.key, COLLECTION_ID_KEY_SUFFIX),
+      baseKey: extendKey([KVDEX_KEY_PREFIX], ...def.key),
+      idKey: extendKey(
+        [KVDEX_KEY_PREFIX],
+        ...def.key,
+        COLLECTION_ID_KEY_SUFFIX,
+      ),
     }
   }
 

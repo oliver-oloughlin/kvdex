@@ -3,6 +3,7 @@ import {
   COLLECTION_ID_KEY_SUFFIX,
   COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
   COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
+  KVDEX_KEY_PREFIX,
 } from "./constants.ts"
 import type {
   CheckKeyOf,
@@ -65,11 +66,13 @@ export class IndexableCollection<
       baseKey: def.key,
       idKey: extendKey(def.key, COLLECTION_ID_KEY_SUFFIX),
       primaryIndexKey: extendKey(
-        def.key,
+        [KVDEX_KEY_PREFIX],
+        ...def.key,
         COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
       ),
       secondaryIndexKey: extendKey(
-        def.key,
+        [KVDEX_KEY_PREFIX],
+        ...def.key,
         COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
       ),
     }
