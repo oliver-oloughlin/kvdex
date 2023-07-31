@@ -49,10 +49,12 @@ Zero third-party dependencies.
 
 For collections of objects, models can be defined by extending the Model type.
 Optional and nullable properties are allowed. If you wish to use Zod, you can
-create your Zod object schema and use its type as your model.
+create your Zod object schema and use its inferred type as your model.
+
+**_NOTE_:** When using interfaces instead of types, sub-interfaces must also extend the Model type.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.6.1/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.6.2/mod.ts"
 
 interface User extends Model {
   username: string
@@ -69,11 +71,11 @@ interface User extends Model {
 
 ## Database
 
-The "createDb" function is used for creating a new database instance. It takes a
+``createDb()`` is used for creating a new database instance. It takes a
 Deno KV instance and a schema definition as arguments.
 
 ```ts
-import { createDb } from "https://deno.land/x/kvdex@v0.6.1/mod.ts"
+import { createDb } from "https://deno.land/x/kvdex@v0.6.2/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -98,8 +100,8 @@ The schema definition defines collection builder functions (or nested schema def
 
 ### find()
 
-The "find" method is used to retrieve a single document with the given id from
-the KV store. The id must adhere to the type Deno.KvKeyPart. 
+Retrieve a single document with the given id from
+the KV store. The id must adhere to the type KvId. 
 This method takes an optional options argument that can be used to set the consistency mode.
 
 ```ts
@@ -114,7 +116,7 @@ const userDoc3 = await db.users.find("oliver", {
 
 ### findMany()
 
-The "findMany" method is used to retrieve multiple documents with the given
+Retrieve multiple documents with the given
 array of ids from the KV store. The ids must adhere to the type KvId. 
 This method takes an optional options argument that can be used to set the consistency mode.
 
@@ -128,9 +130,8 @@ const userDocs2 = await db.users.findMany(["abc", 123, 123n], {
 
 ### add()
 
-The "add" method is used to add a new document to the KV store. An id of type
-string (uuid) will be generated for the document. Upon completion, a
-CommitResult object will be returned with the document id, versionstamp and ok
+Add a new document to the KV store with an auto-generated id (uuid).
+Upon completion, a CommitResult object will be returned with the document id, versionstamp and ok
 flag.
 
 ```ts
@@ -151,11 +152,8 @@ console.log(result.id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
 
 ### addMany()
 
-The "addMany" method is used to add multiple document entries to the KV store in
-a single operation. Upon completion, a list of CommitResult objects will be 
-returned. For indexable collections, if any entries violate the constraints of
-primary indices, those entries will not be added and the subsequent commit result
-object will indicate this by the ok flag being false.
+Add multiple document entries to the KV store with auto-generated ids (uuid). Upon completion, a list of CommitResult objects will be 
+returned.
 
 ```ts
 // Adds 5 new document entries to the KV store.
@@ -176,8 +174,7 @@ await results = await db.users.addMany(
 
 ### set()
 
-The "set" method is very similar to the "add" method, and is used to add a new
-document to the KV store with a given id of type KvId. Upon completion, a
+Add a new document to the KV store with a given id of type KvId. Upon completion, a
 CommitResult object will be returned with the document id, versionstamp and ok
 flag.
 
@@ -189,8 +186,7 @@ console.log(result.id) // "id_1"
 
 ### update()
 
-The "update" method is used to update the value of exisiting documents in the KV
-store. For primitive values, arrays and built-in objects (Date, RegExp, etc.),
+Update the value of an exisiting document in the KV store. For primitive values, arrays and built-in objects (Date, RegExp, etc.),
 this method overrides the exisiting data with the new value. For custom objects
 (Models), this method performs a partial update, merging the new value with the
 existing data. Upon completion, a CommitResult object will be returned with the
@@ -208,7 +204,7 @@ const result2 = await db.users.update("user1", {
 
 ### delete()
 
-The "delete" method is used to delete one or more documents with the given ids from the KV
+Delete one or more documents with the given ids from the KV
 store.
 
 ```ts
@@ -219,7 +215,7 @@ await db.users.delete("user1", "user2", "user3")
 
 ### deleteMany()
 
-The "deleteMany" method is used for deleting multiple documents from the KV
+Delete multiple documents from the KV
 store without specifying ids. 
 It takes an optional options argument that can be used for filtering of documents to be deleted, and pagination.
 If no options are given, "deleteMany" will delete all documents in the collection.
@@ -247,7 +243,7 @@ await db.users.deleteMany({
 
 ### getMany()
 
-The "getMany" method is used for retrieving multiple documents from the KV
+Retrieve multiple documents from the KV
 store. It takes an optional options argument that can be used for filtering of
 documents to be retrieved, and pagination. If no options are given, "getMany" 
 will retrieve all documents in the collection.
@@ -275,7 +271,7 @@ const { result } = await db.users.getMany({
 
 ### forEach()
 
-The "forEach" method is used for executing a callback function for multiple
+Execute a callback function for multiple
 documents in the KV store. It takes an optional options argument that can be
 used for filtering of documents and pagination. If no options are given,
 the callback function will be executed for all documents in the collection.
@@ -303,7 +299,7 @@ await db.users.forEach((doc) => console.log(doc.value.username), {
 
 ### map()
 
-The "map" method is used for executing a callback function for multiple documents in the KV store, and retrieving the results. 
+Execute a callback function for multiple documents in the KV store and retrieve the results. 
 It takes an optional options argument that can be used for filtering of documents and pagination. 
 If no options are given, the callback function will be executed for all documents in the collection.
 
@@ -330,7 +326,7 @@ const { result } = await db.users.forEach((doc) => doc.value.username, {
 
 ### count()
 
-The "count" method is used to count the number of documents in a collection. 
+Count the number of documents in a collection. 
 It takes an optional options argument that can be used for filtering of documents.
 If no options are given, it will count all documents in the collection.
 
@@ -387,19 +383,17 @@ already exists.
 
 ### findByPrimaryIndex()
 
-The "findByPrimaryIndex" method is exclusive to indexable collections and can be
-used to find a document by a primary index.
+Find a document by a primary index, exclusive to indexable collections.
 
 ```ts
 // Finds a user document with the username = "oliver"
-const userDoc = await db.users.findByPrimaryIndex("username", "oliver")
+const userByUsername = await db.users.findByPrimaryIndex("username", "oliver")
 ```
 
 ### findBySecondaryIndex()
 
-The "findBySecondaryIndex" method is exclusive to indexable collections and
-can be used to find documents by a secondary index. Secondary indices are not
-unique, and therefore the result is an array of documents.
+Find documents by a secondary index, exclusive to indexable collections. Secondary indices are not
+unique, and therefore the result is an array of documents. The method takes an optional options argument that can be used for filtering of documents, and pagination.
 
 ```ts
 // Returns all users with age = 24
@@ -412,7 +406,7 @@ These are methods which can be found at the top level of your database object, a
 
 ### countAll()
 
-The "countAll" method is used to count the total number of documents across all collections. It takes an optional options argument that can be used to set the consistency mode.
+Count the total number of documents across all collections. It takes an optional options argument that can be used to set the consistency mode.
 
 ```ts
 // Gets the total number of documents in the KV store across all collections
@@ -421,7 +415,7 @@ const count = await db.countAll()
 
 ### deleteAll()
 
-The "deleteAll" method is used to delete all documents in across all collections. It takes an optional options argument that can be used to set the consistency mode.
+Delete all documents across all collections. It takes an optional options argument that can be used to set the consistency mode.
 
 ```ts
 // Deletes all documents in the KV store across all collections
@@ -465,7 +459,7 @@ db.listenQueue(async (data) => {
 
 ### atomic()
 
-The "atomic" method is used to initiate an atomic operation. The method takes a selection function as argument for selecting the initial collection context.
+Initiate an atomic operation. The method takes a selection function as argument for selecting the initial collection context.
 
 ```ts
 db.atomic((schema) => schema.users)
@@ -486,7 +480,7 @@ any point in the building chain to switch the collection context. To execute the
 operation, call "commit" at the end of the chain. An atomic operation returns a
 Deno.KvCommitResult object if successful, and Deno.KvCommitError if not.
 
-**NOTE:** For indexable collections, any operations performing deletes will not
+**_NOTE_:** For indexable collections, any operations performing deletes will not
 be truly atomic in the sense that it performs a single isolated operation. The
 reason for this being that the document data must be read before performing the
 initial delete operation, to then perform another delete operation for the index
@@ -569,13 +563,12 @@ Additional utility functions.
 
 ### flatten()
 
-The "flatten" utility function can be used to flatten documents with a value of
-type Model. It will only flatten the first layer of the document, meaning the
-result will be an object containing: id, versionstamp and all the entries in the
+Flatten documents with a value of
+type Model. Only flattens the first layer of the document, meaning the result will be an object containing: id, versionstamp and all the entries in the
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.6.1/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.6.2/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
