@@ -4,8 +4,11 @@ import type {
   CountAllOptions,
   DB,
   DeleteAllOptions,
+  EnqueueOptions,
   KvKey,
   KvValue,
+  QueueMessage,
+  QueueMessageHandler,
   Schema,
   SchemaDefinition,
 } from "./types.ts"
@@ -51,8 +54,10 @@ export function createDb<const T extends SchemaDefinition>(
   return {
     ...schema,
     atomic: (selector) => new AtomicBuilder(kv, schema, selector(schema)),
-    countAll: (options) => _countAll(kv, schema, options),
-    deleteAll: (options) => _deleteAll(kv, schema, options),
+    countAll: async (options) => await _countAll(kv, schema, options),
+    deleteAll: async (options) => await _deleteAll(kv, schema, options),
+    enqueue: async (data, options) => await _enqueue(kv, data, options),
+    listenQueue: async (handler) => await _listenQueue(kv, handler),
   }
 }
 
@@ -113,4 +118,23 @@ async function _deleteAll(
       _deleteAll(kv, val, options)
     ),
   )
+}
+
+async function _enqueue(kv: Deno.Kv, data: unknown, options?: EnqueueOptions) {
+  const msg: QueueMessage = {
+    collectionKey: null,
+    data,
+  }
+
+  return await kv.enqueue(msg, options)
+}
+
+async function _listenQueue(kv: Deno.Kv, handler: QueueMessageHandler) {
+  await kv.listenQueue(async (msg) => {
+    const { collectionKey, data } = msg as QueueMessage
+
+    if (!collectionKey) {
+      await handler(data)
+    }
+  })
 }

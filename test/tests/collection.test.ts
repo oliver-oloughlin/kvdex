@@ -1,14 +1,17 @@
-import { Document, flatten } from "../../mod.ts"
+import { Document, flatten, QueueMessage } from "../../mod.ts"
 import {
   db,
   generateNumbers,
   generatePeople,
   type Person,
   reset,
+  sleep,
   testPerson,
   testPerson2,
+  useTemporaryKv,
 } from "../config.ts"
 import { assert } from "../../deps.ts"
+import { createDb } from "../../src/db.ts"
 
 Deno.test({
   name: "collection",
@@ -758,6 +761,79 @@ Deno.test({
           assert(allNums.length === 2)
         },
       )
+    })
+
+    // Test "enqueue" method
+    await t.step("enqueue", async (t) => {
+      await t.step("Should enqueue message with string data", async () => {
+        await useTemporaryKv(async (kv) => {
+          const data = "data"
+
+          const db = createDb(kv, {
+            numbers: (ctx) => ctx.collection<number>().build(),
+          })
+
+          let assertion = false
+
+          await db.numbers.enqueue("data")
+
+          kv.listenQueue((msg) => {
+            const qMsg = msg as QueueMessage
+            assertion = qMsg.collectionKey !== null && qMsg.data === data
+          })
+
+          await sleep(500)
+          assert(assertion)
+        })
+      })
+    })
+
+    // Test "listenQueue" method
+    await t.step("listenQueue", async (t) => {
+      await t.step("Should receive message with string data", async () => {
+        await useTemporaryKv(async (kv) => {
+          const data = "data"
+
+          const db = createDb(kv, {
+            numbers: (ctx) => ctx.collection<number>().build(),
+          })
+
+          let assertion = false
+
+          await kv.enqueue({
+            collectionKey: db.numbers.keys.baseKey,
+            data,
+          } as QueueMessage)
+
+          db.numbers.listenQueue((msgData) => {
+            assertion = msgData === data
+          })
+
+          await sleep(500)
+          assert(assertion)
+        })
+      })
+
+      await t.step("Should not receive db queue message", async () => {
+        await useTemporaryKv(async (kv) => {
+          const data = "data"
+
+          const db = createDb(kv, {
+            numbers: (ctx) => ctx.collection<number>().build(),
+          })
+
+          await db.enqueue(data)
+
+          let assertion = true
+
+          db.numbers.listenQueue(() => {
+            assertion = false
+          })
+
+          await sleep(500)
+          assert(assertion)
+        })
+      })
     })
 
     // Perform last reset

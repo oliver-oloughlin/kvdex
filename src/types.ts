@@ -151,7 +151,7 @@ export type IndexDataEntry<T extends Model> = Omit<T, "__id__"> & {
   __id__: KvId
 }
 
-// DB TypesCollection<KvValue, CollectionDefinition<KvValue>>
+// DB Types
 export type CollectionBuilderFn = (
   initializer: CollectionBuilderContext,
 ) => Collection<KvValue, CollectionDefinition<KvValue>>
@@ -211,11 +211,75 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * @returns A promise that resolves to void.
    */
   deleteAll(options?: DeleteAllOptions): Promise<void>
+
+  /**
+   * Add data to the database queue to be delivered to the queue listener
+   * via ``db.listenQueue()``. The data will only be received by queue
+   * listeners on the database queue. The method takes an optional options
+   * argument that can be used to set a delivery delay.
+   *
+   * **Example:**
+   * ```ts
+   * // Immediate delivery
+   * await db.enqueue("some data")
+   *
+   * // Delay of 2 seconds before delivery
+   * await db.enqueue("some data", {
+   *   delay: 2_000
+   * })
+   * ```
+   *
+   * @param data
+   * @param options
+   */
+  enqueue(data: unknown, options?: EnqueueOptions): EnqueueResult
+
+  /**
+   * Listen for data from the database queue that was enqueued with ``db.enqueue()``. Will only receive data that was enqueued to the database queue. Takes a handler function as argument.
+   *
+   * **Example:**
+   * ```ts
+   * // Prints the data to console when recevied
+   * db.listenQueue((data) => console.log(data))
+   *
+   * // Sends post request when data is received
+   * db.listenQueue(async (data) => {
+   *   const dataBody = JSON.stringify(data)
+   *
+   *   const res = await fetch("...", {
+   *     method: "POST",
+   *     body: dataBody
+   *   })
+   *
+   *   console.log("POSTED:", dataBody, res.ok)
+   * })
+   * ```
+   *
+   * @param handler
+   */
+  listenQueue(handler: QueueMessageHandler): ListenQueueResult
 }
 
 export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
 
 export type DeleteAllOptions = Pick<Deno.KvListOptions, "consistency">
+
+// Queue Types
+export type QueueMessage = {
+  collectionKey: KvKey | null
+  data: unknown
+}
+
+export type EnqueueOptions = Omit<
+  NonNullable<Parameters<Deno.Kv["enqueue"]>[1]>,
+  "keysIfUndelivered"
+>
+
+export type EnqueueResult = ReturnType<Deno.Kv["enqueue"]>
+
+export type ListenQueueResult = ReturnType<Deno.Kv["listenQueue"]>
+
+export type QueueMessageHandler = (data: unknown) => unknown | Promise<unknown>
 
 // KV Types
 export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T> : T
