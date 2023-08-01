@@ -118,7 +118,9 @@ export class Collection<
 
       if (
         typeof id === "undefined" || versionstamp === null || value === null
-      ) continue
+      ) {
+        continue
+      }
 
       result.push({
         id,
@@ -591,7 +593,8 @@ export class Collection<
       const { collectionKey, data } = msg as QueueMessage
 
       if (
-        Array.isArray(collectionKey) && keyEq(collectionKey, this.keys.baseKey)
+        Array.isArray(collectionKey) &&
+        keyEq(collectionKey, this.keys.baseKey)
       ) {
         await handler(data)
       }

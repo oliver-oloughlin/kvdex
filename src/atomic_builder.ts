@@ -129,19 +129,22 @@ export class AtomicBuilder<
         const indexValue = _data[index] as KvId | undefined
         if (typeof indexValue === "undefined") return
 
-        const indexKey = extendKey(primaryCollectionIndexKey, index, indexValue)
+        const indexKey = extendKey(
+          primaryCollectionIndexKey,
+          index,
+          indexValue,
+        )
 
         const indexEntry: IndexDataEntry<typeof _data> = {
           ..._data,
           __id__: id,
         }
 
-        this.operations.atomicFns.push(
-          (op) =>
-            op.set(indexKey, indexEntry).check({
-              key: indexKey,
-              versionstamp: null,
-            }),
+        this.operations.atomicFns.push((op) =>
+          op.set(indexKey, indexEntry).check({
+            key: indexKey,
+            versionstamp: null,
+          })
         )
       })
 
@@ -156,9 +159,8 @@ export class AtomicBuilder<
           id,
         )
 
-        this.operations.atomicFns.push(
-          (op) =>
-            op.set(indexKey, data).check({ key: indexKey, versionstamp: null }),
+        this.operations.atomicFns.push((op) =>
+          op.set(indexKey, data).check({ key: indexKey, versionstamp: null })
         )
       })
     }
@@ -208,19 +210,22 @@ export class AtomicBuilder<
         const indexValue = _data[index] as KvId | undefined
         if (typeof indexValue === "undefined") return
 
-        const indexKey = extendKey(primaryCollectionIndexKey, index, indexValue)
+        const indexKey = extendKey(
+          primaryCollectionIndexKey,
+          index,
+          indexValue,
+        )
 
         const indexEntry: IndexDataEntry<typeof _data> = {
           ..._data,
           __id__: id,
         }
 
-        this.operations.atomicFns.push(
-          (op) =>
-            op.set(indexKey, indexEntry).check({
-              key: indexKey,
-              versionstamp: null,
-            }),
+        this.operations.atomicFns.push((op) =>
+          op.set(indexKey, indexEntry).check({
+            key: indexKey,
+            versionstamp: null,
+          })
         )
       })
 
@@ -235,9 +240,8 @@ export class AtomicBuilder<
           id,
         )
 
-        this.operations.atomicFns.push(
-          (op) =>
-            op.set(indexKey, data).check({ key: indexKey, versionstamp: null }),
+        this.operations.atomicFns.push((op) =>
+          op.set(indexKey, data).check({ key: indexKey, versionstamp: null })
         )
       })
     }
@@ -426,12 +430,11 @@ export class AtomicBuilder<
               __id__: id,
             }
 
-            this.operations.atomicFns.push(
-              (op) =>
-                op.set(indexKey, indexEntry).check({
-                  key: indexKey,
-                  versionstamp: null,
-                }),
+            this.operations.atomicFns.push((op) =>
+              op.set(indexKey, indexEntry).check({
+                key: indexKey,
+                versionstamp: null,
+              })
             )
           })
 
@@ -449,12 +452,11 @@ export class AtomicBuilder<
               id,
             )
 
-            this.operations.atomicFns.push(
-              (op) =>
-                op.set(indexKey, data).check({
-                  key: indexKey,
-                  versionstamp: null,
-                }),
+            this.operations.atomicFns.push((op) =>
+              op.set(indexKey, data).check({
+                key: indexKey,
+                versionstamp: null,
+              })
             )
           })
         }
@@ -489,11 +491,11 @@ export class AtomicBuilder<
   async commit(): Promise<Deno.KvCommitResult | Deno.KvCommitError> {
     // Check for overlapping keys
     if (
-      this.operations.indexAddCollectionKeys
-        .some((addKey) =>
-          this.operations.indexDeleteCollectionKeys
-            .some((deleteKey) => keyEq(addKey, deleteKey))
+      this.operations.indexAddCollectionKeys.some((addKey) =>
+        this.operations.indexDeleteCollectionKeys.some((deleteKey) =>
+          keyEq(addKey, deleteKey)
         )
+      )
     ) {
       return {
         ok: false,
@@ -515,45 +517,47 @@ export class AtomicBuilder<
 
     // If successful commit, perform delete ops
     if (commitResult.ok) {
-      await Promise.all(preparedIndexDeletes.map(async (preparedDelete) => {
-        const {
-          id,
-          data,
-          primaryCollectionIndexKey,
-          secondaryCollectionIndexKey,
-          primaryIndexList,
-          secondaryIndexList,
-        } = preparedDelete
-
-        let atomic = this.kv.atomic()
-
-        primaryIndexList.forEach((index) => {
-          const indexValue = data[index] as KvId | undefined
-          if (typeof indexValue === "undefined") return
-
-          const indexKey = extendKey(
-            primaryCollectionIndexKey,
-            index,
-            indexValue,
-          )
-          atomic = atomic.delete(indexKey)
-        })
-
-        secondaryIndexList.forEach((index) => {
-          const indexValue = data[index] as KvId | undefined
-          if (typeof indexValue === "undefined") return
-
-          const indexKey = extendKey(
-            secondaryCollectionIndexKey,
-            index,
-            indexValue,
+      await Promise.all(
+        preparedIndexDeletes.map(async (preparedDelete) => {
+          const {
             id,
-          )
-          atomic = atomic.delete(indexKey)
-        })
+            data,
+            primaryCollectionIndexKey,
+            secondaryCollectionIndexKey,
+            primaryIndexList,
+            secondaryIndexList,
+          } = preparedDelete
 
-        await atomic.commit()
-      }))
+          let atomic = this.kv.atomic()
+
+          primaryIndexList.forEach((index) => {
+            const indexValue = data[index] as KvId | undefined
+            if (typeof indexValue === "undefined") return
+
+            const indexKey = extendKey(
+              primaryCollectionIndexKey,
+              index,
+              indexValue,
+            )
+            atomic = atomic.delete(indexKey)
+          })
+
+          secondaryIndexList.forEach((index) => {
+            const indexValue = data[index] as KvId | undefined
+            if (typeof indexValue === "undefined") return
+
+            const indexKey = extendKey(
+              secondaryCollectionIndexKey,
+              index,
+              indexValue,
+              id,
+            )
+            atomic = atomic.delete(indexKey)
+          })
+
+          await atomic.commit()
+        }),
+      )
     }
 
     // Return commit result

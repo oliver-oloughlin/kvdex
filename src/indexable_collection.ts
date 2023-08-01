@@ -63,8 +63,12 @@ export class IndexableCollection<
     super(def)
 
     this.keys = {
-      baseKey: def.key,
-      idKey: extendKey(def.key, COLLECTION_ID_KEY_SUFFIX),
+      baseKey: extendKey([KVDEX_KEY_PREFIX], ...def.key),
+      idKey: extendKey(
+        [KVDEX_KEY_PREFIX],
+        ...def.key,
+        COLLECTION_ID_KEY_SUFFIX,
+      ),
       primaryIndexKey: extendKey(
         [KVDEX_KEY_PREFIX],
         ...def.key,
@@ -82,18 +86,18 @@ export class IndexableCollection<
       undefined | IndexType,
     ][]
 
-    this.primaryIndexList = primaryIndexEntries.filter(([_, value]) =>
-      value === "primary"
-    ).map(([key]) => key)
+    this.primaryIndexList = primaryIndexEntries
+      .filter(([_, value]) => value === "primary")
+      .map(([key]) => key)
 
     const secondaryIndexEntries = Object.entries(def.indices) as [
       string,
       undefined | IndexType,
     ][]
 
-    this.secondaryIndexList = secondaryIndexEntries.filter(([_, value]) =>
-      value === "secondary"
-    ).map(([key]) => key)
+    this.secondaryIndexList = secondaryIndexEntries
+      .filter(([_, value]) => value === "secondary")
+      .map(([key]) => key)
   }
 
   async add(data: T1) {
@@ -213,11 +217,7 @@ export class IndexableCollection<
    */
   async findBySecondaryIndex<
     const K extends SecondaryIndexKeys<T1, T2["indices"]>,
-  >(
-    index: K,
-    value: CheckKeyOf<K, T1>,
-    options?: ListOptions<T1>,
-  ) {
+  >(index: K, value: CheckKeyOf<K, T1>, options?: ListOptions<T1>) {
     const key = extendKey(
       this.keys.secondaryIndexKey,
       index as KvId,
@@ -250,19 +250,21 @@ export class IndexableCollection<
   }
 
   async delete(...ids: KvId[]) {
-    await Promise.all(ids.map(async (id) => {
-      const idKey = extendKey(this.keys.idKey, id)
-      const { value } = await this.kv.get<T1>(idKey)
+    await Promise.all(
+      ids.map(async (id) => {
+        const idKey = extendKey(this.keys.idKey, id)
+        const { value } = await this.kv.get<T1>(idKey)
 
-      if (value === null) {
-        return
-      }
+        if (value === null) {
+          return
+        }
 
-      let atomic = this.kv.atomic().delete(idKey)
-      atomic = deleteIndices(id, value, atomic, this)
+        let atomic = this.kv.atomic().delete(idKey)
+        atomic = deleteIndices(id, value, atomic, this)
 
-      await atomic.commit()
-    }))
+        await atomic.commit()
+      }),
+    )
   }
 
   async update<const TId extends KvId>(

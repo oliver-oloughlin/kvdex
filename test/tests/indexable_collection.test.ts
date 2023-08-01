@@ -8,14 +8,54 @@ import {
   testPerson2,
   useTemporaryKv,
 } from "../config.ts"
-import { assert } from "../../deps.ts"
+import { assert } from "../deps.ts"
 import { flatten, QueueMessage } from "../../mod.ts"
 import { kvdex } from "../../src/db.ts"
+import {
+  COLLECTION_ID_KEY_SUFFIX,
+  COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
+  COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
+  KVDEX_KEY_PREFIX,
+} from "../../src/constants.ts"
 
-Deno.test("indexable_collection", async (t1) => {
+Deno.test("indexable_collection", async (t) => {
+  // Test correctness of collection keys
+  await t.step("keys", async (t) => {
+    await t.step("Collection keys should have kvdex prefix", () => {
+      const keys = Object.entries(db.indexablePeople.keys).map(([_, key]) =>
+        key
+      )
+      assert(keys.every((key) => key[0] === KVDEX_KEY_PREFIX))
+    })
+
+    await t.step("Id key should have id key suffix", () => {
+      const key = db.indexablePeople.keys.idKey
+      const suffix = key[key.length - 1]
+      assert(suffix === COLLECTION_ID_KEY_SUFFIX)
+    })
+
+    await t.step(
+      "Primary index key should have primary index key suffix",
+      () => {
+        const key = db.indexablePeople.keys.primaryIndexKey
+        const suffix = key[key.length - 1]
+        assert(suffix === COLLECTION_PRIMARY_INDEX_KEY_SUFFIX)
+      },
+    )
+
+    await t.step(
+      "Secondary index key should have secondary index key suffix",
+      () => {
+        const key = db.indexablePeople.keys.secondaryIndexKey
+        const suffix = key[key.length - 1]
+        assert(suffix === COLLECTION_SECONDARY_INDEX_KEY_SUFFIX)
+      },
+    )
+  })
+
   // Test the configuration
-  await t1.step("config", async (t2) => {
-    await t2.step("Should not find document by index after reset", async () => {
+  await t.step("config", async (t) => {
+    await t.step("Should not find document by index after reset", async () => {
       await reset()
 
       const indexDoc = await db.indexablePeople.findByPrimaryIndex(
@@ -33,8 +73,8 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "add" method
-  await t1.step("add", async (t2) => {
-    await t2.step(
+  await t.step("add", async (t) => {
+    await t.step(
       "Should add document to collection by id and defined index",
       async () => {
         await reset()
@@ -65,7 +105,7 @@ Deno.test("indexable_collection", async (t1) => {
       },
     )
 
-    await t2.step(
+    await t.step(
       "Should not add document by id or index if any entry already exists",
       async () => {
         await reset()
@@ -80,8 +120,8 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "set" method
-  await t1.step("set", async (t2) => {
-    await t2.step(
+  await t.step("set", async (t) => {
+    await t.step(
       "Should add document to collection by given id and defined index",
       async () => {
         await reset()
@@ -114,7 +154,7 @@ Deno.test("indexable_collection", async (t1) => {
       },
     )
 
-    await t2.step(
+    await t.step(
       "Should not add document by id or index if any entry already exists",
       async () => {
         await reset()
@@ -127,7 +167,7 @@ Deno.test("indexable_collection", async (t1) => {
       },
     )
 
-    await t2.step(
+    await t.step(
       "Should not add document by id or index if id entry already exists",
       async () => {
         await reset()
@@ -142,8 +182,8 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "addMany" method
-  await t1.step("addMany", async (t2) => {
-    await t2.step(
+  await t.step("addMany", async (t) => {
+    await t.step(
       "Should add all document entries and index entries",
       async () => {
         await reset()
@@ -184,7 +224,7 @@ Deno.test("indexable_collection", async (t1) => {
       },
     )
 
-    await t2.step(
+    await t.step(
       "Should not add document entries with duplicate indices",
       async () => {
         await reset()
@@ -212,8 +252,8 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "findByPrimaryIndex" method
-  await t1.step("findByPrimaryIndex", async (t2) => {
-    await t2.step("Should find document by primary index", async () => {
+  await t.step("findByPrimaryIndex", async (t) => {
+    await t.step("Should find document by primary index", async () => {
       await reset()
 
       const cr = await db.indexablePeople.add(testPerson)
@@ -233,8 +273,8 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "findBySecondaryIndex" method
-  await t1.step("findBySecondaryIndex", async (t2) => {
-    await t2.step("Should find documents by secondary index", async () => {
+  await t.step("findBySecondaryIndex", async (t) => {
+    await t.step("Should find documents by secondary index", async () => {
       await reset()
 
       const cr1 = await db.indexablePeople.add(testPerson)
@@ -251,8 +291,8 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "delete" method
-  await t1.step("delete", async (t2) => {
-    await t2.step(
+  await t.step("delete", async (t) => {
+    await t.step(
       "Should delete all index entries of document by id",
       async () => {
         await reset()
@@ -291,7 +331,7 @@ Deno.test("indexable_collection", async (t1) => {
       },
     )
 
-    await t2.step(
+    await t.step(
       "Should delete all index entries of multiple documents by ids",
       async () => {
         await reset()
@@ -354,8 +394,8 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "update" method
-  await t1.step("update", async (t2) => {
-    await t2.step("Should update data with merged value", async () => {
+  await t.step("update", async (t) => {
+    await t.step("Should update data with merged value", async () => {
       await reset()
 
       const cr1 = await db.indexablePeople.add(testPerson)
@@ -418,8 +458,8 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "getMany" method
-  await t1.step("getMany", async (t2) => {
-    await t2.step("Should get exactly one copy of every document", async () => {
+  await t.step("getMany", async (t) => {
+    await t.step("Should get exactly one copy of every document", async () => {
       await reset()
 
       const cr1 = await db.indexablePeople.add(testPerson)
@@ -432,7 +472,7 @@ Deno.test("indexable_collection", async (t1) => {
       assert(all.result.some((doc) => doc.id === cr2.id))
     })
 
-    await t2.step("Should get all documents by pagination", async () => {
+    await t.step("Should get all documents by pagination", async () => {
       await reset()
 
       await db.indexablePeople.add(testPerson)
@@ -454,8 +494,8 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "deleteMany" method
-  await t1.step("deleteMany", async (t2) => {
-    await t2.step(
+  await t.step("deleteMany", async (t) => {
+    await t.step(
       "Should delete all document entries of all documents",
       async () => {
         await reset()
@@ -468,14 +508,7 @@ Deno.test("indexable_collection", async (t1) => {
         // Check that test objects can be found by id and index before delete
         const [cr1, cr2] = crs
         const [p1, p2] = people
-        if (
-          !cr1 ||
-          !cr2 ||
-          !cr1.ok ||
-          !cr2.ok ||
-          !p1 ||
-          !p2
-        ) {
+        if (!cr1 || !cr2 || !cr1.ok || !cr2.ok || !p1 || !p2) {
           throw Error("No result object or error result")
         }
 
@@ -536,7 +569,7 @@ Deno.test("indexable_collection", async (t1) => {
       },
     )
 
-    await t2.step(
+    await t.step(
       "Should only delete document entries of filtered documents",
       async () => {
         await reset()
@@ -593,7 +626,7 @@ Deno.test("indexable_collection", async (t1) => {
       },
     )
 
-    await t2.step("Should delete all records using pagination", async () => {
+    await t.step("Should delete all records using pagination", async () => {
       await reset()
 
       await db.indexablePeople.add(testPerson)
@@ -614,7 +647,7 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "count" method
-  await t1.step("count", async (t) => {
+  await t.step("count", async (t) => {
     await t.step(
       "Should correctly count all documents in collection",
       async () => {
@@ -647,7 +680,7 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "map" method
-  await t1.step("map", async (t) => {
+  await t.step("map", async (t) => {
     await t.step(
       "Should map from all documents to document fields",
       async () => {
@@ -698,7 +731,7 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "enqueue" method
-  await t1.step("enqueue", async (t) => {
+  await t.step("enqueue", async (t) => {
     await t.step("Should enqueue message with string data", async () => {
       await useTemporaryKv(async (kv) => {
         const data = "data"
@@ -724,7 +757,7 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Test "listenQueue" method
-  await t1.step("listenQueue", async (t) => {
+  await t.step("listenQueue", async (t) => {
     await t.step("Should receive message with string data", async () => {
       await useTemporaryKv(async (kv) => {
         const data = "data"
@@ -774,5 +807,5 @@ Deno.test("indexable_collection", async (t1) => {
   })
 
   // Perform last reset
-  await t1.step("RESET", async () => await reset())
+  await t.step("RESET", async () => await reset())
 })
