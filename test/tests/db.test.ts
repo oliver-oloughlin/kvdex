@@ -7,7 +7,7 @@ import {
   testPerson2,
   useTemporaryKv,
 } from "../config.ts"
-import { assert } from "../../deps.ts"
+import { assert } from "../deps.ts"
 import { KVDEX_KEY_PREFIX } from "../../src/constants.ts"
 
 // Test atomic operations
@@ -245,7 +245,10 @@ Deno.test("db", async (t1) => {
       )
       assert(indexDoc2 === null)
 
-      const indexDocs = await db.indexablePeople.findBySecondaryIndex("age", 24)
+      const indexDocs = await db.indexablePeople.findBySecondaryIndex(
+        "age",
+        24,
+      )
       assert(indexDocs.result.length === 0)
     })
 
@@ -573,9 +576,7 @@ Deno.test("db", async (t1) => {
         await db.buffers.add(new ArrayBuffer(16))
 
         await db.arrs.forEach((doc) =>
-          assert(
-            typeof doc.value === "object" && doc.value instanceof Array,
-          )
+          assert(typeof doc.value === "object" && doc.value instanceof Array)
         )
         await db.i8arrs.forEach((doc) =>
           assert(
@@ -684,15 +685,11 @@ Deno.test("db", async (t1) => {
         )
 
         await db.sets.forEach((doc) =>
-          assert(
-            typeof doc.value === "object" && doc.value instanceof Set,
-          )
+          assert(typeof doc.value === "object" && doc.value instanceof Set)
         )
 
         await db.maps.forEach((doc) =>
-          assert(
-            typeof doc.value === "object" && doc.value instanceof Map,
-          )
+          assert(typeof doc.value === "object" && doc.value instanceof Map)
         )
 
         await db.regExps.forEach((doc) =>
