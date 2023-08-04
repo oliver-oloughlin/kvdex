@@ -31,6 +31,8 @@ Zero third-party dependencies.
   - [Indexable Collection Methods](#indexable-collection-methods)
     - [findByPrimaryIndex()](#findbyprimaryindex)
     - [findBySecondaryIndex()](#findbysecondaryindex)
+    - [deleteByPrimaryIndex()](#deletebyprimaryindex)
+    - [deleteBySecondaryIndex()](#deletebysecondaryindex)
   - [Database Methods](#database-methods)
     - [countAll()](#countall)
     - [deleteAll()](#deleteall)
@@ -383,7 +385,7 @@ already exists.
 
 ### findByPrimaryIndex()
 
-Find a document by a primary index, exclusive to indexable collections.
+Find a document by a primary index.
 
 ```ts
 // Finds a user document with the username = "oliver"
@@ -392,12 +394,40 @@ const userByUsername = await db.users.findByPrimaryIndex("username", "oliver")
 
 ### findBySecondaryIndex()
 
-Find documents by a secondary index, exclusive to indexable collections. Secondary indices are not
+Find documents by a secondary index. Secondary indices are not
 unique, and therefore the result is an array of documents. The method takes an optional options argument that can be used for filtering of documents, and pagination.
 
 ```ts
 // Returns all users with age = 24
 const { result } = await db.users.findBySecondaryIndex("age", 24)
+
+// Returns all users with age = 24 AND username that starts with "o"
+const { result } = await db.users.findBySecondaryIndex("age", 24, {
+  filter: (doc) => doc.value.username.startsWith("o")
+})
+```
+
+### deleteByPrimaryIndex()
+
+Delete a document by a primary index.
+
+```ts
+// Deletes user with username = "oliver"
+await db.users.deleteByPrimaryIndex("username", "oliver")
+```
+
+### deleteBySecondaryIndex()
+
+Delete documents by a secondary index. The method takes an optional options argument that can be used for filtering of documents, and pagination.
+
+```ts
+// Deletes all users with age = 24
+await db.users.deleteBySecondaryIndex("age", 24)
+
+// Deletes all users with age = 24 AND username that starts with "o"
+await db.users.deleteBySecondaryIndex("age", 24, {
+  filter: (doc) => doc.value.username.startsWith("o")
+})
 ```
 
 ## Database Methods

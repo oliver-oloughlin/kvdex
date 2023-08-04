@@ -202,12 +202,19 @@ export class IndexableCollection<
   }
 
   /**
-   * Find documents by a secondary index.
+   * Find documents by a secondary index. Secondary indices are not
+   * unique, and therefore the result is an array of documents.
+   * The method takes an optional options argument that can be used for filtering of documents, and pagination.
    *
    * **Example:**
    * ```ts
    * // Returns all users with age = 24
    * const { result } = await db.users.findBySecondaryIndex("age", 24)
+   *
+   * // Returns all users with age = 24 AND username that starts with "o"
+   * const { result } = await db.users.findBySecondaryIndex("age", 24, {
+   *   filter: (doc) => doc.value.username.startsWith("o")
+   * })
    * ```
    *
    * @param index - Index to find by.
@@ -320,6 +327,100 @@ export class IndexableCollection<
         await atomic.commit()
       }
     }
+    return {
+      cursor: iter.cursor || undefined,
+    }
+  }
+
+  /**
+   * Delete a document by a primary index.
+   *
+   * **Example:**
+   * ```ts
+   * // Deletes user with username = "oliver"
+   * await db.users.deleteByPrimaryIndex("username", "oliver")
+   * ```
+   *
+   * @param index - Index to delete by.
+   * @param value - Index value.
+   * @param options - Find options.
+   * @returns A promise that resolves to void.
+   */
+  async deleteByPrimaryIndex<
+    const K extends PrimaryIndexKeys<T1, T2["indices"]>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, T1>,
+    options?: FindOptions,
+  ) {
+    const key = extendKey(
+      this.keys.primaryIndexKey,
+      index as KvId,
+      value as KvId,
+    )
+
+    const result = await this.kv.get<
+      unknown & Pick<IndexDataEntry<T1>, "__id__">
+    >(key, options)
+
+    if (result.value === null || result.versionstamp === null) {
+      return
+    }
+
+    const { __id__ } = result.value
+
+    await this.delete(__id__)
+  }
+
+  /**
+   * Delete documents by a secondary index. The method takes an optional options argument that can be used for filtering of documents, and pagination.
+   *
+   * **Example:**
+   * ```ts
+   * // Deletes all users with age = 24
+   * await db.users.deleteBySecondaryIndex("age", 24)
+   *
+   * // Deletes all users with age = 24 AND username that starts with "o"
+   * await db.users.deleteBySecondaryIndex("age", 24, {
+   *   filter: (doc) => doc.value.username.startsWith("o")
+   * })
+   * ```
+   *
+   * @param index - Index to delete by.
+   * @param value - Index value.
+   * @param options - List options.
+   * @returns A promise that resolves to void.
+   */
+  async deleteBySecondaryIndex<
+    const K extends SecondaryIndexKeys<T1, T2["indices"]>,
+  >(index: K, value: CheckKeyOf<K, T1>, options?: ListOptions<T1>) {
+    const key = extendKey(
+      this.keys.secondaryIndexKey,
+      index as KvId,
+      value as KvId,
+    )
+
+    const iter = this.kv.list<T1>({ prefix: key }, options)
+    const deleteIds: KvId[] = []
+
+    for await (const entry of iter) {
+      const { key, value, versionstamp } = entry
+      const id = getDocumentId(key)
+      if (typeof id === "undefined") continue
+
+      const doc: Document<T1> = {
+        id,
+        versionstamp,
+        value,
+      }
+
+      if (!options?.filter || options.filter(doc)) {
+        deleteIds.push(id)
+      }
+    }
+
+    await this.delete(...deleteIds)
+
     return {
       cursor: iter.cursor || undefined,
     }

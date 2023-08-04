@@ -806,6 +806,169 @@ Deno.test("indexable_collection", async (t) => {
     })
   })
 
+  // Test "deleteByPrimaryIndex" method
+  await t.step("deleteByPrimaryIndex", async (t) => {
+    await t.step("Should delete document entry by primary index", async () => {
+      await reset()
+
+      const cr = await db.indexablePeople.add(testPerson)
+      assert(cr.ok)
+
+      const count1 = await db.indexablePeople.count()
+      assert(count1 > 0)
+
+      const byName1 = await db.indexablePeople.findByPrimaryIndex(
+        "name",
+        testPerson.name,
+      )
+
+      assert(byName1 !== null)
+
+      const byAge1 = await db.indexablePeople.findBySecondaryIndex(
+        "age",
+        testPerson.age,
+      )
+      assert(byAge1.result.length > 0)
+
+      // Perform delete by primary index
+      await db.indexablePeople.deleteByPrimaryIndex("name", testPerson.name)
+
+      const count2 = await db.indexablePeople.count()
+      assert(count2 === 0)
+
+      const byName2 = await db.indexablePeople.findByPrimaryIndex(
+        "name",
+        testPerson.name,
+      )
+
+      assert(byName2 === null)
+
+      const byAge2 = await db.indexablePeople.findBySecondaryIndex(
+        "age",
+        testPerson.age,
+      )
+
+      assert(byAge2.result.length === 0)
+    })
+  })
+
+  // Test "deleteBySecondaryIndex" method
+  await t.step("deleteBySecondaryIndex", async (t) => {
+    await t.step(
+      "Should delete all document entries by secondary index",
+      async () => {
+        await reset()
+
+        const [cr1, cr2] = await db.indexablePeople.addMany(
+          testPerson,
+          testPerson2,
+        )
+        assert(cr1.ok && cr2.ok)
+
+        const count1 = await db.indexablePeople.count()
+        assert(count1 === 2)
+
+        const byName1_1 = await db.indexablePeople.findByPrimaryIndex(
+          "name",
+          testPerson.name,
+        )
+
+        const byName2_1 = await db.indexablePeople.findByPrimaryIndex(
+          "name",
+          testPerson2.name,
+        )
+
+        assert(byName1_1 !== null && byName2_1 !== null)
+
+        const byAge1 = await db.indexablePeople.findBySecondaryIndex(
+          "age",
+          testPerson.age,
+        )
+
+        assert(byAge1.result.length === 2)
+
+        // Perform delete by secondary index
+        await db.indexablePeople.deleteBySecondaryIndex("age", testPerson.age)
+
+        const count2 = await db.indexablePeople.count()
+        assert(count2 === 0)
+
+        const byName1_2 = await db.indexablePeople.findByPrimaryIndex(
+          "name",
+          testPerson.name,
+        )
+
+        const byName2_2 = await db.indexablePeople.findByPrimaryIndex(
+          "name",
+          testPerson2.name,
+        )
+
+        assert(byName1_2 === null && byName2_2 === null)
+
+        const byAge2 = await db.indexablePeople.findBySecondaryIndex(
+          "age",
+          testPerson.age,
+        )
+
+        assert(byAge2.result.length === 0)
+      },
+    )
+
+    await t.step(
+      "Should only delete filtered document entries by secondary index",
+      async () => {
+        await reset()
+
+        const people = generatePeople(100)
+        const crs = await db.indexablePeople.addMany(...people)
+        assert(crs.every((cr) => cr.ok))
+
+        const count1 = await db.indexablePeople.count()
+        assert(count1 === people.length)
+
+        const [p1] = people
+
+        const byName1 = await db.indexablePeople.findByPrimaryIndex(
+          "name",
+          p1.name,
+        )
+
+        assert(byName1 !== null)
+
+        const byAge1 = await db.indexablePeople.findBySecondaryIndex(
+          "age",
+          p1.age,
+        )
+
+        const byAgeCount1 = byAge1.result.length
+        assert(byAgeCount1 > 0)
+
+        // Perform delete by secondary index with filtering
+        await db.indexablePeople.deleteBySecondaryIndex("age", p1.age, {
+          filter: (doc) => doc.value.name === p1.name,
+        })
+
+        const count2 = await db.indexablePeople.count()
+        assert(count2 === people.length - 1)
+
+        const byName2 = await db.indexablePeople.findByPrimaryIndex(
+          "name",
+          p1.name,
+        )
+
+        assert(byName2 === null)
+
+        const byAge2 = await db.indexablePeople.findBySecondaryIndex(
+          "age",
+          p1.age,
+        )
+
+        const byAgeCount2 = byAge2.result.length
+        assert(byAgeCount2 === byAgeCount1 - 1)
+      },
+    )
+  })
+
   // Perform last reset
   await t.step("RESET", async () => await reset())
 })
