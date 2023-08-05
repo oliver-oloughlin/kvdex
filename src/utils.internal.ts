@@ -24,8 +24,8 @@ export function generateId() {
  * @param keyParts - Key parts to add to the input key.
  * @returns An extended kv key.
  */
-export function extendKey(collectionKey: KvKey, ...keyParts: KvKey) {
-  return [...collectionKey, ...keyParts] as KvKey
+export function extendKey(key: KvKey, ...keyParts: KvKey) {
+  return [...key, ...keyParts] as KvKey
 }
 
 /**

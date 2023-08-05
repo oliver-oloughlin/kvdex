@@ -104,10 +104,10 @@ export type FindOptions = Parameters<Deno.Kv["get"]>[1]
 
 export type FindManyOptions = Parameters<Deno.Kv["getMany"]>[1]
 
-export type CommitResult<T1 extends KvValue, T2 extends KvId> = {
+export type CommitResult<T1 extends KvValue> = {
   ok: true
   versionstamp: Document<T1>["versionstamp"]
-  id: T2
+  id: KvId
 } | {
   ok: false
 }

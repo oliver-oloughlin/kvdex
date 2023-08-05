@@ -159,7 +159,7 @@ export class Collection<
       .set(key, data)
       .commit()
 
-    const commitResult: CommitResult<T1, typeof id> = cr.ok
+    const commitResult: CommitResult<T1> = cr.ok
       ? {
         ok: true,
         versionstamp: cr.versionstamp,
@@ -198,7 +198,7 @@ export class Collection<
       .set(key, data)
       .commit()
 
-    const commitResult: CommitResult<T1, typeof id> = cr.ok
+    const commitResult: CommitResult<T1> = cr.ok
       ? {
         ok: true,
         versionstamp: cr.versionstamp,
@@ -256,10 +256,10 @@ export class Collection<
    * @param data - Updated data to be inserted into document
    * @returns
    */
-  async update<const TId extends KvId>(
-    id: TId,
+  async update(
+    id: KvId,
     data: UpdateData<T1>,
-  ): Promise<CommitResult<T1, TId>> {
+  ): Promise<CommitResult<T1>> {
     const key = extendKey(this.keys.idKey, id)
     const { value, versionstamp } = await this.kv.get<T1>(key)
 
