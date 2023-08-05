@@ -234,36 +234,22 @@ export class IndexableCollection<
   }
 
   async delete(...ids: KvId[]) {
-    // Collect document values with id and idKey
-    const docs = await Promise.all(
-      ids.map(async (id) => {
-        const idKey = extendKey(this.keys.idKey, id)
-        const { value } = await this.kv.get<T1>(idKey)
-        return {
-          id,
-          idKey,
-          value: value,
-        }
-      }),
-    )
+    // Run delete operations for each id
+    await Promise.all(ids.map(async (id) => {
+      // Create idKey, get document value
+      const idKey = extendKey(this.keys.idKey, id)
+      const { value } = await this.kv.get<T1>(idKey)
 
-    // Initiate an atomic operation
-    let atomic = this.kv.atomic()
-
-    // Loop over and delete document entries + index entries
-    docs.forEach(({ id, idKey, value }) => {
-      // If no value, continue to next entry
+      // If no value, abort delete
       if (!value) {
         return
       }
 
-      // Set delete operations on atomic operation
-      atomic = atomic.delete(idKey)
+      // Perform delete using atomic operation
+      let atomic = this.kv.atomic().delete(idKey)
       atomic = deleteIndices(id, value, atomic, this)
-    })
-
-    // Commit the atomic operation
-    await atomic.commit()
+      await atomic.commit()
+    }))
   }
 
   async update(
@@ -290,26 +276,34 @@ export class IndexableCollection<
   }
 
   async deleteMany(options?: ListOptions<T1>) {
+    // Get list iterator for collection with given options
     const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
 
-    for await (const entry of iter) {
-      const { key, value, versionstamp } = entry
+    // Loop over iterator entries
+    for await (const { key, value, versionstamp } of iter) {
+      // Get document id, continue to next entry if undefined
       const id = getDocumentId(key)
-      if (typeof id === "undefined") continue
+      if (typeof id === "undefined") {
+        continue
+      }
 
+      // Create document
       const doc: Document<T1> = {
         id,
         versionstamp,
         value,
       }
 
+      // Delete filtered document
       if (!options?.filter || options.filter(doc)) {
         let atomic = this.kv.atomic()
-        atomic = atomic.delete(entry.key)
+        atomic = atomic.delete(key)
         atomic = deleteIndices(id, value, atomic, this)
         await atomic.commit()
       }
     }
+
+    // Return current iterator cursor
     return {
       cursor: iter.cursor || undefined,
     }
@@ -336,22 +330,27 @@ export class IndexableCollection<
     value: CheckKeyOf<K, T1>,
     options?: FindOptions,
   ) {
+    // Create index key
     const key = extendKey(
       this.keys.primaryIndexKey,
       index as KvId,
       value as KvId,
     )
 
+    // Get index entry
     const result = await this.kv.get<
       unknown & Pick<IndexDataEntry<T1>, "__id__">
     >(key, options)
 
+    // If no value, abort delete
     if (result.value === null || result.versionstamp === null) {
       return
     }
 
+    // Extract document id from index entry
     const { __id__ } = result.value
 
+    // Delete document by id
     await this.delete(__id__)
   }
 
@@ -377,37 +376,48 @@ export class IndexableCollection<
   async deleteBySecondaryIndex<
     const K extends SecondaryIndexKeys<T1, T2["indices"]>,
   >(index: K, value: CheckKeyOf<K, T1>, options?: ListOptions<T1>) {
-    const key = extendKey(
+    // Create index key prefix
+    const indexKey = extendKey(
       this.keys.secondaryIndexKey,
       index as KvId,
       value as KvId,
     )
 
-    const iter = this.kv.list<T1>({ prefix: key }, options)
+    // Create list iterator and delete id list
+    const iter = this.kv.list<T1>({ prefix: indexKey }, options)
     const deleteIds: KvId[] = []
 
-    for await (const entry of iter) {
-      const { key, value, versionstamp } = entry
+    // Loop over document entries
+    for await (const { key, value, versionstamp } of iter) {
+      // Get document id, continue to next entry if undefined
       const id = getDocumentId(key)
-      if (typeof id === "undefined") continue
+      if (typeof id === "undefined") {
+        continue
+      }
 
+      // Create document
       const doc: Document<T1> = {
         id,
         versionstamp,
         value,
       }
 
+      // Filter document and add id to delete list
       if (!options?.filter || options.filter(doc)) {
         deleteIds.push(id)
       }
     }
 
+    // Delete documents by delete ids
     await this.delete(...deleteIds)
 
+    // Return current iterator cursor
     return {
       cursor: iter.cursor || undefined,
     }
   }
+
+  /* PRIVATE METHODS */
 
   /**
    * Set a documetn entry with indices.
