@@ -113,30 +113,39 @@ export function setIndices<
   atomic: Deno.AtomicOperation,
   collection: IndexableCollection<T1, T2>,
 ) {
+  // Set mutable copy of atomic operation
   let op = atomic
 
+  // Set primary indices using primary index list
   collection.primaryIndexList.forEach((index) => {
+    // Get the index value from data, if undefined continue to next index
     const indexValue = data[index] as KvId | undefined
     if (typeof indexValue === "undefined") return
 
+    // Create the index key
     const indexKey = extendKey(
       collection.keys.primaryIndexKey,
       index,
       indexValue,
     )
 
+    // Create the index document value
     const indexEntry: IndexDataEntry<T1> = { ...data, __id__: id }
 
+    // Add index insertion to atomic operation, check for exisitng indices
     op = op.set(indexKey, indexEntry).check({
       key: indexKey,
       versionstamp: null,
     })
   })
 
+  // Set secondary indices using secondary index list
   collection.secondaryIndexList.forEach((index) => {
+    // Get the index value from data, if undefined continue to next index
     const indexValue = data[index] as KvId | undefined
     if (typeof indexValue === "undefined") return
 
+    // Create the index key
     const indexKey = extendKey(
       collection.keys.secondaryIndexKey,
       index,
@@ -144,12 +153,14 @@ export function setIndices<
       id,
     )
 
+    // Add index insertion to atomic operation, check for exisitng indices
     op = op.set(indexKey, data).check({
       key: indexKey,
       versionstamp: null,
     })
   })
 
+  // Return the mutated atomic operation
   return op
 }
 
@@ -171,26 +182,41 @@ export function deleteIndices<
   atomic: Deno.AtomicOperation,
   collection: IndexableCollection<T1, T2>,
 ) {
+  // Set mutable copy of atomic operation
   let op = atomic
 
+  // Delete primary indices using primary index list
   collection.primaryIndexList.forEach((index) => {
-    const indexValue = data[index] as KvId
+    // Get the index value from data, if undefined continue to next index
+    const indexValue = data[index] as KvId | undefined
+    if (typeof indexValue === "undefined") return
+
+    // Create the index key
     const indexKey = extendKey(
       collection.keys.primaryIndexKey,
       index,
       indexValue,
     )
+
+    // Add index deletion to atomic operation
     op = op.delete(indexKey)
   })
 
+  // Delete seocndary indices using secondary index list
   collection.secondaryIndexList.forEach((index) => {
-    const indexValue = data[index] as KvId
+    // Get the index value from data, if undefined continue to next index
+    const indexValue = data[index] as KvId | undefined
+    if (typeof indexValue === "undefined") return
+
+    // Create the index key
     const indexKey = extendKey(
       collection.keys.secondaryIndexKey,
       index,
       indexValue,
       id,
     )
+
+    // Add index deletion to atomic operation
     op = op.delete(indexKey)
   })
 
