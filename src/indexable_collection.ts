@@ -23,7 +23,6 @@ import type {
 import {
   deleteIndices,
   extendKey,
-  generateId,
   getDocumentId,
   setIndices,
 } from "./utils.internal.ts"

@@ -1,4 +1,4 @@
-import { Document, flatten, KvId, QueueMessage } from "../../mod.ts"
+import { Document, flatten, QueueMessage } from "../../mod.ts"
 import {
   db,
   generateNumbers,
