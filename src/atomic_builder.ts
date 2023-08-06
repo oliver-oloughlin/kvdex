@@ -5,7 +5,7 @@ import type {
   AtomicMutation,
   CollectionDefinition,
   CollectionSelector,
-  IndexDataEntry,
+  IndexableCollectionDefinition,
   KvId,
   KvValue,
   Model,
@@ -14,10 +14,12 @@ import type {
   SchemaDefinition,
 } from "./types.ts"
 import {
+  deleteIndices,
   extendKey,
   generateId,
   getDocumentId,
   keyEq,
+  setIndices,
 } from "./utils.internal.ts"
 
 /**
@@ -49,9 +51,11 @@ export class AtomicBuilder<
     collection: Collection<T2, CollectionDefinition<T2>>,
     operations?: Operations,
   ) {
+    // Set kv and schema
     this.kv = kv
     this.schema = schema
 
+    // Initiate operations or set from given operations
     this.operations = operations ?? {
       atomicFns: [],
       prepareDeleteFns: [],
@@ -59,6 +63,7 @@ export class AtomicBuilder<
       indexAddCollectionKeys: [],
     }
 
+    // Set colection context
     this.collection = collection
   }
 
@@ -79,6 +84,7 @@ export class AtomicBuilder<
   select<const TValue extends KvValue>(
     selector: CollectionSelector<T1, TValue>,
   ) {
+    // Create new atomic builder using selector
     return new AtomicBuilder(
       this.kv,
       this.schema,
@@ -104,68 +110,9 @@ export class AtomicBuilder<
    * @returns Current AtomicBuilder instance.
    */
   add(data: T2) {
-    const collectionIdKey = this.collection.keys.idKey
+    // Generate id and perform set operation
     const id = generateId()
-    const idKey = extendKey(collectionIdKey, id)
-
-    this.operations.atomicFns.push((op) =>
-      op.check({ key: idKey, versionstamp: null }).set(idKey, data)
-    )
-
-    if (this.collection instanceof IndexableCollection) {
-      const primaryCollectionIndexKey = this.collection.keys.primaryIndexKey
-
-      const secondaryCollectionIndexKey = this.collection.keys.secondaryIndexKey
-
-      const primaryIndexList = this.collection.primaryIndexList
-
-      const secondaryIndexList = this.collection.secondaryIndexList
-
-      const _data = data as Model
-
-      this.operations.indexAddCollectionKeys.push(collectionIdKey)
-
-      primaryIndexList.forEach((index) => {
-        const indexValue = _data[index] as KvId | undefined
-        if (typeof indexValue === "undefined") return
-
-        const indexKey = extendKey(
-          primaryCollectionIndexKey,
-          index,
-          indexValue,
-        )
-
-        const indexEntry: IndexDataEntry<typeof _data> = {
-          ..._data,
-          __id__: id,
-        }
-
-        this.operations.atomicFns.push((op) =>
-          op.set(indexKey, indexEntry).check({
-            key: indexKey,
-            versionstamp: null,
-          })
-        )
-      })
-
-      secondaryIndexList.forEach((index) => {
-        const indexValue = _data[index] as KvId | undefined
-        if (typeof indexValue === "undefined") return
-
-        const indexKey = extendKey(
-          secondaryCollectionIndexKey,
-          index,
-          indexValue,
-          id,
-        )
-
-        this.operations.atomicFns.push((op) =>
-          op.set(indexKey, data).check({ key: indexKey, versionstamp: null })
-        )
-      })
-    }
-
-    return this
+    return this.set(id, data)
   }
 
   /**
@@ -186,66 +133,37 @@ export class AtomicBuilder<
    * @returns Current AtomicBuilder instance.
    */
   set(id: KvId, data: T2) {
+    // Create id key from collection id key and id
     const collectionKey = this.collection.keys.idKey
     const idKey = extendKey(collectionKey, id)
 
+    // Add set operation to atomic ops list
     this.operations.atomicFns.push((op) =>
       op.check({ key: idKey, versionstamp: null }).set(idKey, data)
     )
 
     if (this.collection instanceof IndexableCollection) {
-      const primaryCollectionIndexKey = this.collection.keys.primaryIndexKey
-
-      const secondaryCollectionIndexKey = this.collection.keys.secondaryIndexKey
-
-      const primaryIndexList = this.collection.primaryIndexList
-
-      const secondaryIndexList = this.collection.secondaryIndexList
-
+      // Set data as Model type
       const _data = data as Model
 
+      // Add collection id key for collision detection
       this.operations.indexAddCollectionKeys.push(collectionKey)
 
-      primaryIndexList.forEach((index) => {
-        const indexValue = _data[index] as KvId | undefined
-        if (typeof indexValue === "undefined") return
-
-        const indexKey = extendKey(
-          primaryCollectionIndexKey,
-          index,
-          indexValue,
-        )
-
-        const indexEntry: IndexDataEntry<typeof _data> = {
-          ..._data,
-          __id__: id,
-        }
-
-        this.operations.atomicFns.push((op) =>
-          op.set(indexKey, indexEntry).check({
-            key: indexKey,
-            versionstamp: null,
-          })
-        )
-      })
-
-      secondaryIndexList.forEach((index) => {
-        const indexValue = _data[index] as KvId | undefined
-        if (typeof indexValue === "undefined") return
-
-        const indexKey = extendKey(
-          secondaryCollectionIndexKey,
-          index,
-          indexValue,
+      // Add indexing operations to atomic ops list
+      this.operations.atomicFns.push((op) => {
+        return setIndices(
           id,
-        )
-
-        this.operations.atomicFns.push((op) =>
-          op.set(indexKey, data).check({ key: indexKey, versionstamp: null })
+          _data,
+          op,
+          this.collection as unknown as IndexableCollection<
+            Model,
+            IndexableCollectionDefinition<Model>
+          >,
         )
       })
     }
 
+    // Return current atomic operation builder
     return this
   }
 
@@ -263,36 +181,30 @@ export class AtomicBuilder<
    * @returns Current AtomicBuilder instance.
    */
   delete(id: KvId) {
-    const collectionKey = this.collection.keys.idKey
-    const idKey = extendKey(collectionKey, id)
+    // Create id key from id and collection id key
+    const collectionIdKey = this.collection.keys.idKey
+    const idKey = extendKey(collectionIdKey, id)
 
+    // Add delete operation to atomic ops list
     this.operations.atomicFns.push((op) => op.delete(idKey))
 
+    // If collection is indexable, handle indexing
     if (this.collection instanceof IndexableCollection) {
-      const primaryCollectionIndexKey = this.collection.keys.primaryIndexKey
+      // Add collection key for collision detection
+      this.operations.indexDeleteCollectionKeys.push(collectionIdKey)
 
-      const secondaryCollectionIndexKey = this.collection.keys.secondaryIndexKey
-
-      const primaryIndexList = this.collection.primaryIndexList
-
-      const secondaryIndexList = this.collection.secondaryIndexList
-
-      this.operations.indexDeleteCollectionKeys.push(collectionKey)
-
+      // Add delete preperation function to prepeare delete functions list
       this.operations.prepareDeleteFns.push(async (kv) => {
         const doc = await kv.get<Model>(idKey)
 
         return {
           id,
           data: doc.value ?? {},
-          primaryCollectionIndexKey,
-          secondaryCollectionIndexKey,
-          primaryIndexList,
-          secondaryIndexList,
         }
       })
     }
 
+    // Return current atomic operation builder
     return this
   }
 
@@ -313,6 +225,7 @@ export class AtomicBuilder<
    * @returns Current AtomicBuilder instance.
    */
   check(...atomicChecks: AtomicCheck<T2>[]) {
+    // Create Deno atomic checks from atomci checks input list
     const checks: Deno.AtomicCheck[] = atomicChecks.map(
       ({ id, versionstamp }) => {
         const key = extendKey(this.collection.keys.idKey, id)
@@ -323,7 +236,10 @@ export class AtomicBuilder<
       },
     )
 
+    // Add atomic chech operation to atomic ops list
     this.operations.atomicFns.push((op) => op.check(...checks))
+
+    // Return current atomic opertaion builder
     return this
   }
 
@@ -342,9 +258,14 @@ export class AtomicBuilder<
    * @param value - The value to add to the document value.
    * @returns Current AtomicBuilder instance.
    */
-  sum(id: KvId, value: bigint) {
+  sum(id: KvId, value: T2 extends Deno.KvU64 ? bigint : never) {
+    // Create id key from id and collection id key
     const idKey = extendKey(this.collection.keys.idKey, id)
+
+    // Add sum operation to atomic ops list
     this.operations.atomicFns.push((op) => op.sum(idKey, value))
+
+    // Return current atomic operation builder
     return this
   }
 
@@ -372,6 +293,7 @@ export class AtomicBuilder<
    * @returns Current AtomicBuilder instance.
    */
   mutate(...mutations: AtomicMutation<T2>[]) {
+    // Map from atomic mutations to kv mutations
     const kvMutations: Deno.KvMutation[] = mutations.map(({ id, ...rest }) => {
       const idKey = extendKey(this.collection.keys.idKey, id)
       return {
@@ -380,9 +302,12 @@ export class AtomicBuilder<
       }
     })
 
+    // Add mutation operation to atomic ops list
     this.operations.atomicFns.push((op) => op.mutate(...kvMutations))
 
+    // Addtional checks
     kvMutations.forEach((mut) => {
+      // If mutation type is "set", add check operation to atomic ops list
       if (mut.type === "set") {
         this.operations.atomicFns.push((op) =>
           op.check({
@@ -392,93 +317,56 @@ export class AtomicBuilder<
         )
       }
 
+      // If collection is indexable, handle indexing
       if (this.collection instanceof IndexableCollection) {
+        // Get collection id key
         const collectionIdKey = this.collection.keys.idKey
 
-        const primaryCollectionIndexKey = this.collection.keys.primaryIndexKey
-
-        const secondaryCollectionIndexKey =
-          this.collection.keys.secondaryIndexKey
-
-        const primaryIndexList = this.collection.primaryIndexList
-
-        const secondaryIndexList = this.collection.secondaryIndexList
-
+        // Get document id from mutation key
         const id = getDocumentId(mut.key)
 
-        if (typeof id === "undefined") return
+        // If id is undefined, continue to next mutation
+        if (typeof id === "undefined") {
+          return
+        }
 
+        // If mutation type is "set", handle setting of indices
         if (mut.type === "set") {
+          // Add collection key for collision detection
           this.operations.indexAddCollectionKeys.push(collectionIdKey)
 
-          primaryIndexList.forEach((index) => {
-            if (typeof id === "undefined") return
-
-            const data = mut.value as Model
-            const indexValue = data[index] as KvId | undefined
-
-            if (typeof indexValue === "undefined") return
-
-            const indexKey = extendKey(
-              primaryCollectionIndexKey,
-              index,
-              indexValue,
-            )
-
-            const indexEntry: IndexDataEntry<typeof data> = {
-              ...data,
-              __id__: id,
-            }
-
-            this.operations.atomicFns.push((op) =>
-              op.set(indexKey, indexEntry).check({
-                key: indexKey,
-                versionstamp: null,
-              })
-            )
-          })
-
-          secondaryIndexList.forEach((index) => {
-            if (typeof id === "undefined") return
-
-            const data = mut.value as Model
-            const indexValue = data[index] as KvId | undefined
-            if (typeof indexValue === "undefined") return
-
-            const indexKey = extendKey(
-              secondaryCollectionIndexKey,
-              index,
-              indexValue,
+          // Add indexing operations to atomic ops list
+          this.operations.atomicFns.push((op) => {
+            return setIndices(
               id,
-            )
-
-            this.operations.atomicFns.push((op) =>
-              op.set(indexKey, data).check({
-                key: indexKey,
-                versionstamp: null,
-              })
+              mut.value as Model,
+              op,
+              this.collection as unknown as IndexableCollection<
+                Model,
+                IndexableCollectionDefinition<Model>
+              >,
             )
           })
         }
 
+        // If mutation type is "delete", create and add delete preperation function
         if (mut.type === "delete") {
+          // Add collection key for collision detection
           this.operations.indexDeleteCollectionKeys.push(collectionIdKey)
 
+          // Add delete preperation function to delete preperation functions list
           this.operations.prepareDeleteFns.push(async (kv) => {
             const doc = await kv.get<Model>(mut.key)
             return {
               id,
               data: doc.value ?? {},
-              primaryCollectionIndexKey,
-              secondaryCollectionIndexKey,
-              primaryIndexList,
-              secondaryIndexList,
             }
           })
         }
       }
     })
 
+    // Return current atomic operation builder
     return this
   }
 
@@ -489,7 +377,7 @@ export class AtomicBuilder<
    * @returns A promise that resolves to a Deno.KvCommitResult if the operation is successful, or Deno.KvCommitError if not.
    */
   async commit(): Promise<Deno.KvCommitResult | Deno.KvCommitError> {
-    // Check for overlapping keys
+    // Check for key collisions between add/delete
     if (
       this.operations.indexAddCollectionKeys.some((addKey) =>
         this.operations.indexDeleteCollectionKeys.some((deleteKey) =>
@@ -497,6 +385,7 @@ export class AtomicBuilder<
         )
       )
     ) {
+      // Return commit result with false flag if collisions are detected
       return {
         ok: false,
       }
@@ -513,48 +402,34 @@ export class AtomicBuilder<
       this.kv.atomic(),
     )
 
+    // Execute atomic operation
     const commitResult = await atomicOperation.commit()
 
     // If successful commit, perform delete ops
     if (commitResult.ok) {
       await Promise.all(
         preparedIndexDeletes.map(async (preparedDelete) => {
+          // Get document id and data from prepared delete object
           const {
             id,
             data,
-            primaryCollectionIndexKey,
-            secondaryCollectionIndexKey,
-            primaryIndexList,
-            secondaryIndexList,
           } = preparedDelete
 
-          let atomic = this.kv.atomic()
+          // Initiate atomic operation for index deletions
+          const atomic = this.kv.atomic()
 
-          primaryIndexList.forEach((index) => {
-            const indexValue = data[index] as KvId | undefined
-            if (typeof indexValue === "undefined") return
+          // Set index delete operations using atomic operation
+          deleteIndices(
+            id,
+            data,
+            atomic,
+            this.collection as unknown as IndexableCollection<
+              Model,
+              IndexableCollectionDefinition<Model>
+            >,
+          )
 
-            const indexKey = extendKey(
-              primaryCollectionIndexKey,
-              index,
-              indexValue,
-            )
-            atomic = atomic.delete(indexKey)
-          })
-
-          secondaryIndexList.forEach((index) => {
-            const indexValue = data[index] as KvId | undefined
-            if (typeof indexValue === "undefined") return
-
-            const indexKey = extendKey(
-              secondaryCollectionIndexKey,
-              index,
-              indexValue,
-              id,
-            )
-            atomic = atomic.delete(indexKey)
-          })
-
+          // Execute atomic operation
           await atomic.commit()
         }),
       )

@@ -506,24 +506,32 @@ export class Collection<
     fn: (doc: Document<T1>) => TMapped,
     options?: ListOptions<T1>,
   ) {
+    // Create list iterator with given options, initiate reuslt list
     const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
     const result: TMapped[] = []
 
+    // Loop over each entry
     for await (const entry of iter) {
+      // Get document id, continue to next entry if undefined
       const id = getDocumentId(entry.key)
-      if (typeof id === "undefined") continue
+      if (typeof id === "undefined") {
+        continue
+      }
 
+      // Create document
       const doc: Document<T1> = {
         id,
         versionstamp: entry.versionstamp,
         value: entry.value,
       }
 
+      // Filter document and run callback function, add result to result list
       if (!options?.filter || options.filter(doc)) {
         result.push(fn(doc))
       }
     }
 
+    // Return result list and current iterator cursor
     return {
       result,
       cursor: iter.cursor || undefined,
@@ -548,24 +556,32 @@ export class Collection<
    * @returns A promise that resolves to a number representing the performed count.
    */
   async count(options?: CountOptions<T1>) {
+    // Create list iterator with given options, initiate count variable
     const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
     let result = 0
 
+    // Loop over each document
     for await (const entry of iter) {
+      // Get document id, continue to next entry if undefined
       const id = getDocumentId(entry.key)
-      if (typeof id === "undefined") continue
+      if (typeof id === "undefined") {
+        continue
+      }
 
+      // Create document
       const doc: Document<T1> = {
         id,
         versionstamp: entry.versionstamp,
         value: entry.value,
       }
 
+      // Filter document and increment counter
       if (!options?.filter || options.filter(doc)) {
         result++
       }
     }
 
+    // Return final count
     return result
   }
 
@@ -591,11 +607,13 @@ export class Collection<
    * @returns
    */
   async enqueue(data: unknown, options?: EnqueueOptions) {
+    // Create queue message
     const msg: QueueMessage = {
       collectionKey: this.keys.baseKey,
       data,
     }
 
+    // Enqueue queue message in kv queue
     return await this.kv.enqueue(msg, options)
   }
 
@@ -625,13 +643,17 @@ export class Collection<
    * @param handler
    */
   async listenQueue(handler: QueueMessageHandler) {
+    // Listen for kv queue messages
     await this.kv.listenQueue(async (msg) => {
+      // Destruct queue message
       const { collectionKey, data } = msg as QueueMessage
 
+      // Check that collection key is set and matches current collection context
       if (
         Array.isArray(collectionKey) &&
         keyEq(collectionKey, this.keys.baseKey)
       ) {
+        // Invoke data handler
         await handler(data)
       }
     })

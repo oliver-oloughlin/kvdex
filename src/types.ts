@@ -17,10 +17,6 @@ export type PrepareDeleteFn = (kv: Deno.Kv) => Promise<PreparedIndexDelete>
 export type PreparedIndexDelete = {
   id: KvId
   data: Model
-  primaryCollectionIndexKey: KvKey
-  secondaryCollectionIndexKey: KvKey
-  primaryIndexList: string[]
-  secondaryIndexList: string[]
 }
 
 export type Operations = {
