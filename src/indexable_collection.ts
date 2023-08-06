@@ -106,15 +106,38 @@ export class IndexableCollection<
       .map(([key]) => key)
   }
 
-  async add(data: T1) {
-    // Generate id and set the document entry
-    const id = generateId()
-    return await this.setDocument(id, data)
-  }
-
   async set(id: KvId, data: T1) {
-    // Set the document entry
-    return await this.setDocument(id, data)
+    // Create the document id key
+    const idKey = extendKey(this.keys.idKey, id)
+
+    // Create atomic operation with set mutation and version check
+    let atomic = this.kv
+      .atomic()
+      .check({
+        key: idKey,
+        versionstamp: null,
+      })
+      .set(idKey, data)
+
+    // Set document indices using atomic operation
+    atomic = setIndices(id, data, atomic, this)
+
+    // Execute the atomic operation
+    const cr = await atomic.commit()
+
+    // Create a commit result from atomic commit result
+    const commitResult: CommitResult<T1> = cr.ok
+      ? {
+        ok: true,
+        versionstamp: cr.versionstamp,
+        id,
+      }
+      : {
+        ok: false,
+      }
+
+    // Return the commit result
+    return commitResult
   }
 
   /**
@@ -272,7 +295,7 @@ export class IndexableCollection<
     const newData = { ...value, ...data }
 
     // Set new document data and return commit result
-    return await this.setDocument(id, newData)
+    return await this.set(id, newData)
   }
 
   async deleteMany(options?: ListOptions<T1>) {
@@ -415,48 +438,5 @@ export class IndexableCollection<
     return {
       cursor: iter.cursor || undefined,
     }
-  }
-
-  /* PRIVATE METHODS */
-
-  /**
-   * Set a documetn entry with indices.
-   *
-   * @param id - Document id.
-   * @param data - Docuemnt value.
-   * @returns Promise resolving to a commit result.
-   */
-  private async setDocument(id: KvId, data: T1) {
-    // Create the document id key
-    const idKey = extendKey(this.keys.idKey, id)
-
-    // Create atomic operation with set mutation and version check
-    let atomic = this.kv
-      .atomic()
-      .check({
-        key: idKey,
-        versionstamp: null,
-      })
-      .set(idKey, data)
-
-    // Set document indices using atomic operation
-    atomic = setIndices(id, data, atomic, this)
-
-    // Execute the atomic operation
-    const cr = await atomic.commit()
-
-    // Create a commit result from atomic commit result
-    const commitResult: CommitResult<T1> = cr.ok
-      ? {
-        ok: true,
-        versionstamp: cr.versionstamp,
-        id,
-      }
-      : {
-        ok: false,
-      }
-
-    // Return the commit result
-    return commitResult
   }
 }
