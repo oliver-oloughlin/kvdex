@@ -316,21 +316,17 @@ Deno.test("collection", async (t) => {
       await t.step("Should delete multiple records by ids", async () => {
         await reset()
 
-        const cr1 = await db.people.add(testPerson)
-        const cr2 = await db.people.add(testPerson)
-        const cr3 = await db.people.add(testPerson)
+        const numbers = generateNumbers(200)
+        const crs = await db.values.numbers.addMany(...numbers)
+        assert(crs.every((cr) => cr.ok))
 
-        assert(cr1.ok)
-        assert(cr2.ok)
-        assert(cr3.ok)
+        const count1 = await db.values.numbers.count()
+        assert(count1 === numbers.length)
 
-        const allPeople1 = await db.people.getMany()
-        assert(allPeople1.result.length === 3)
+        await db.values.numbers.delete(...crs.map((cr) => cr.ok ? cr.id : ""))
 
-        await db.people.delete(cr1.id, cr2.id, cr3.id)
-
-        const allPeople2 = await db.people.getMany()
-        assert(allPeople2.result.length === 0)
+        const count2 = await db.values.numbers.count()
+        assert(count2 === 0)
       })
     },
   })

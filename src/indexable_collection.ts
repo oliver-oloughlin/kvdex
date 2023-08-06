@@ -23,7 +23,6 @@ import type {
 import {
   deleteIndices,
   extendKey,
-  generateId,
   getDocumentId,
   setIndices,
 } from "./utils.internal.ts"
@@ -60,8 +59,10 @@ export class IndexableCollection<
    * @param def - Indexable Collection Definition.
    */
   constructor(def: T2) {
+    // Invoke super constructor
     super(def)
 
+    // Set indexable collection keys
     this.keys = {
       baseKey: extendKey([KVDEX_KEY_PREFIX], ...def.key),
       idKey: extendKey(
@@ -81,57 +82,34 @@ export class IndexableCollection<
       ),
     }
 
+    // Get primary index entries from indices
     const primaryIndexEntries = Object.entries(def.indices) as [
       string,
       undefined | IndexType,
     ][]
 
+    // Set primary index list from primary index entries
     this.primaryIndexList = primaryIndexEntries
       .filter(([_, value]) => value === "primary")
       .map(([key]) => key)
 
+    // Get secondary index entries from indices
     const secondaryIndexEntries = Object.entries(def.indices) as [
       string,
       undefined | IndexType,
     ][]
 
+    // Set secondary index list from secondary index entries
     this.secondaryIndexList = secondaryIndexEntries
       .filter(([_, value]) => value === "secondary")
       .map(([key]) => key)
   }
 
-  async add(data: T1) {
-    const id = generateId()
-    const idKey = extendKey(this.keys.idKey, id)
-
-    let atomic = this.kv
-      .atomic()
-      .check({
-        key: idKey,
-        versionstamp: null,
-      })
-      .set(idKey, data)
-
-    atomic = setIndices(id, data, atomic, this)
-
-    const cr = await atomic.commit()
-
-    const commitResult: CommitResult<T1, typeof id> = cr.ok
-      ? {
-        ok: true,
-        versionstamp: cr.versionstamp,
-        id,
-      }
-      : {
-        ok: false,
-      }
-
-    return commitResult
-  }
-
   async set(id: KvId, data: T1) {
+    // Create the document id key
     const idKey = extendKey(this.keys.idKey, id)
 
+    // Create atomic operation with set mutation and version check
     let atomic = this.kv
       .atomic()
       .check({
@@ -140,11 +118,14 @@ export class IndexableCollection<
       })
       .set(idKey, data)
 
+    // Set document indices using atomic operation
     atomic = setIndices(id, data, atomic, this)
 
+    // Execute the atomic operation
     const cr = await atomic.commit()
 
-    const commitResult: CommitResult<T1, typeof id> = cr.ok
+    // Create a commit result from atomic commit result
+    const commitResult: CommitResult<T1> = cr.ok
       ? {
         ok: true,
         versionstamp: cr.versionstamp,
@@ -154,6 +135,7 @@ export class IndexableCollection<
         ok: false,
       }
 
+    // Return the commit result
     return commitResult
   }
 
@@ -176,28 +158,34 @@ export class IndexableCollection<
     value: CheckKeyOf<K, T1>,
     options?: FindOptions,
   ) {
+    // Create the index key
     const key = extendKey(
       this.keys.primaryIndexKey,
       index as KvId,
       value as KvId,
     )
 
+    // Get index entry
     const result = await this.kv.get<
       unknown & Pick<IndexDataEntry<T1>, "__id__">
     >(key, options)
 
+    // If no entry is found, return null
     if (result.value === null || result.versionstamp === null) {
       return null
     }
 
+    // Extract the document data
     const { __id__, ...data } = result.value
 
+    // Create document
     const doc: Document<T1> = {
       id: __id__,
       versionstamp: result.versionstamp,
       value: data as T1,
     }
 
+    // Return document
     return doc
   }
 
@@ -225,31 +213,42 @@ export class IndexableCollection<
   async findBySecondaryIndex<
     const K extends SecondaryIndexKeys<T1, T2["indices"]>,
   >(index: K, value: CheckKeyOf<K, T1>, options?: ListOptions<T1>) {
+    // Create index key prefix
     const key = extendKey(
       this.keys.secondaryIndexKey,
       index as KvId,
       value as KvId,
     )
 
+    // Create list iterator and result list
     const iter = this.kv.list<T1>({ prefix: key }, options)
     const result: Document<T1>[] = []
 
+    // Loop over iterator and add filtered documents to resutl list
     for await (const entry of iter) {
+      // Get entry value and document id
       const { key, value, versionstamp } = entry
       const id = getDocumentId(key)
-      if (typeof id === "undefined") continue
 
+      // If id is undefined, continue to next entry
+      if (typeof id === "undefined") {
+        continue
+      }
+
+      // Create document
       const doc: Document<T1> = {
         id,
         versionstamp,
         value,
       }
 
+      // Filter document
       if (!options?.filter || options.filter(doc)) {
         result.push(doc)
       }
     }
 
+    // Return result and current iterator cursor
     return {
       result,
       cursor: iter.cursor || undefined,
@@ -257,76 +256,76 @@ export class IndexableCollection<
   }
 
   async delete(...ids: KvId[]) {
-    await Promise.all(
-      ids.map(async (id) => {
-        const idKey = extendKey(this.keys.idKey, id)
-        const { value } = await this.kv.get<T1>(idKey)
+    // Run delete operations for each id
+    await Promise.all(ids.map(async (id) => {
+      // Create idKey, get document value
+      const idKey = extendKey(this.keys.idKey, id)
+      const { value } = await this.kv.get<T1>(idKey)
 
-        if (value === null) {
-          return
-        }
+      // If no value, abort delete
+      if (!value) {
+        return
+      }
 
-        let atomic = this.kv.atomic().delete(idKey)
-        atomic = deleteIndices(id, value, atomic, this)
-
-        await atomic.commit()
-      }),
-    )
+      // Perform delete using atomic operation
+      let atomic = this.kv.atomic().delete(idKey)
+      atomic = deleteIndices(id, value, atomic, this)
+      await atomic.commit()
+    }))
   }
 
-  async update<const TId extends KvId>(
-    id: TId,
+  async update(
+    id: KvId,
     data: Partial<T1>,
-  ): Promise<CommitResult<T1, TId>> {
+  ): Promise<CommitResult<T1>> {
+    // Create document key, get document value
     const key = extendKey(this.keys.idKey, id)
     const { value, versionstamp } = await this.kv.get<T1>(key)
 
+    // If no value or versionstamp, return errored commit result
     if (value === null || versionstamp === null) {
       return { ok: false }
     }
 
+    // Delete existing document
     await this.delete(id)
 
+    // Merge old data view updated data
     const newData = { ...value, ...data }
 
-    let atomic = this.kv.atomic().set(key, newData)
-    atomic = setIndices(id, newData, atomic, this)
-    const result = await atomic.commit()
-
-    if (!result.ok) {
-      return {
-        ok: false,
-      }
-    }
-
-    return {
-      ok: true,
-      id,
-      versionstamp: result.versionstamp,
-    }
+    // Set new document data and return commit result
+    return await this.set(id, newData)
   }
 
   async deleteMany(options?: ListOptions<T1>) {
+    // Get list iterator for collection with given options
     const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
 
-    for await (const entry of iter) {
-      const { key, value, versionstamp } = entry
+    // Loop over iterator entries
+    for await (const { key, value, versionstamp } of iter) {
+      // Get document id, continue to next entry if undefined
       const id = getDocumentId(key)
-      if (typeof id === "undefined") continue
+      if (typeof id === "undefined") {
+        continue
+      }
 
+      // Create document
       const doc: Document<T1> = {
         id,
         versionstamp,
         value,
       }
 
+      // Delete filtered document
       if (!options?.filter || options.filter(doc)) {
         let atomic = this.kv.atomic()
-        atomic = atomic.delete(entry.key)
+        atomic = atomic.delete(key)
         atomic = deleteIndices(id, value, atomic, this)
         await atomic.commit()
       }
     }
+
+    // Return current iterator cursor
     return {
       cursor: iter.cursor || undefined,
     }
@@ -353,22 +352,27 @@ export class IndexableCollection<
     value: CheckKeyOf<K, T1>,
     options?: FindOptions,
   ) {
+    // Create index key
     const key = extendKey(
       this.keys.primaryIndexKey,
       index as KvId,
       value as KvId,
     )
 
+    // Get index entry
     const result = await this.kv.get<
       unknown & Pick<IndexDataEntry<T1>, "__id__">
     >(key, options)
 
+    // If no value, abort delete
     if (result.value === null || result.versionstamp === null) {
       return
     }
 
+    // Extract document id from index entry
     const { __id__ } = result.value
 
+    // Delete document by id
     await this.delete(__id__)
   }
 
@@ -394,33 +398,42 @@ export class IndexableCollection<
   async deleteBySecondaryIndex<
     const K extends SecondaryIndexKeys<T1, T2["indices"]>,
   >(index: K, value: CheckKeyOf<K, T1>, options?: ListOptions<T1>) {
-    const key = extendKey(
+    // Create index key prefix
+    const indexKey = extendKey(
       this.keys.secondaryIndexKey,
       index as KvId,
       value as KvId,
     )
 
-    const iter = this.kv.list<T1>({ prefix: key }, options)
+    // Create list iterator and delete id list
+    const iter = this.kv.list<T1>({ prefix: indexKey }, options)
     const deleteIds: KvId[] = []
 
-    for await (const entry of iter) {
-      const { key, value, versionstamp } = entry
+    // Loop over document entries
+    for await (const { key, value, versionstamp } of iter) {
+      // Get document id, continue to next entry if undefined
       const id = getDocumentId(key)
-      if (typeof id === "undefined") continue
+      if (typeof id === "undefined") {
+        continue
+      }
 
+      // Create document
       const doc: Document<T1> = {
         id,
         versionstamp,
         value,
       }
 
+      // Filter document and add id to delete list
       if (!options?.filter || options.filter(doc)) {
         deleteIds.push(id)
       }
     }
 
+    // Delete documents by delete ids
     await this.delete(...deleteIds)
 
+    // Return current iterator cursor
     return {
       cursor: iter.cursor || undefined,
     }

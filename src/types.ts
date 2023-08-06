@@ -17,10 +17,6 @@ export type PrepareDeleteFn = (kv: Deno.Kv) => Promise<PreparedIndexDelete>
 export type PreparedIndexDelete = {
   id: KvId
   data: Model
-  primaryCollectionIndexKey: KvKey
-  secondaryCollectionIndexKey: KvKey
-  primaryIndexList: string[]
-  secondaryIndexList: string[]
 }
 
 export type Operations = {
@@ -104,10 +100,10 @@ export type FindOptions = Parameters<Deno.Kv["get"]>[1]
 
 export type FindManyOptions = Parameters<Deno.Kv["getMany"]>[1]
 
-export type CommitResult<T1 extends KvValue, T2 extends KvId> = {
+export type CommitResult<T1 extends KvValue> = {
   ok: true
   versionstamp: Document<T1>["versionstamp"]
-  id: T2
+  id: KvId
 } | {
   ok: false
 }
