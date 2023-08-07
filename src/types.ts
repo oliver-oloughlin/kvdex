@@ -147,6 +147,15 @@ export type IndexDataEntry<T extends Model> = Omit<T, "__id__"> & {
   __id__: KvId
 }
 
+// Large Collection Types
+export type LargeCollectionDefinition<T extends LargeKvValue> =
+  CollectionDefinition<T>
+
+export type LargeCollectionPrepDefinition<T extends LargeKvValue> = Omit<
+  LargeCollectionDefinition<T>,
+  "kv" | "key"
+>
+
 // DB Types
 export type CollectionBuilderFn = (
   initializer: CollectionBuilderContext,
@@ -298,7 +307,7 @@ export type KvId = Deno.KvKeyPart
 export type Model = KvObject
 
 export type KvObject = {
-  [key: string | number]: KvValue
+  [K: string | number]: KvValue
 }
 
 export type KvArray = KvValue[]
@@ -331,3 +340,15 @@ export type KvValue =
   | RegExp
   | DataView
   | Error
+
+export type LargeKvObject = {
+  [K: string | number]: LargeKvValue
+}
+
+export type LargeKvArray =
+  (LargeKvValue | number | boolean | undefined | null)[]
+
+export type LargeKvValue =
+  | string
+  | LargeKvObject
+  | LargeKvArray

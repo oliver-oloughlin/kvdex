@@ -1,10 +1,13 @@
 import { Collection } from "./collection.ts"
 import { IndexableCollection } from "./indexable_collection.ts"
+import { LargeCollection } from "./large_collection.ts"
 import type {
   CollectionPrepDefinition,
   IndexableCollectionPrepDefinition,
   KvKey,
   KvValue,
+  LargeCollectionPrepDefinition,
+  LargeKvValue,
   Model,
 } from "./types.ts"
 
@@ -23,6 +26,10 @@ export class CollectionBuilderContext {
 
   indexableCollection<const T extends Model>() {
     return new IndexableCollectionBuilder<T>(this.kv, this.key)
+  }
+
+  largeCollection<const T extends LargeKvValue>() {
+    return new LargeCollectionBuilder<T>(this.kv, this.key)
   }
 }
 
@@ -77,6 +84,33 @@ class IndexableCollectionBuilder<const T extends Model> {
     // Create indexable collection using prep definition
     return new IndexableCollection<T, PrepDef & { kv: Deno.Kv; key: KvKey }>({
       ...def,
+      kv: this.kv,
+      key: this.key,
+    })
+  }
+}
+
+/**
+ * Builder object for initilaizing a collection.
+ */
+class LargeCollectionBuilder<const T extends LargeKvValue> {
+  private kv: Deno.Kv
+  private key: KvKey
+
+  constructor(kv: Deno.Kv, key: KvKey) {
+    this.kv = kv
+    this.key = key
+  }
+
+  /**
+   * Build ac collection from the set context and given prep definition.
+   *
+   * @param def - Collection prep definition.
+   * @returns A collection instance.
+   */
+  build<const PrepDef extends LargeCollectionPrepDefinition<T>>(def?: PrepDef) {
+    return new LargeCollection<T, PrepDef & { kv: Deno.Kv; key: KvKey }>({
+      ...def as PrepDef ?? {},
       kv: this.kv,
       key: this.key,
     })

@@ -11,6 +11,11 @@ export interface Person extends Model {
   }
 }
 
+export type LargeData = {
+  name: string
+  numbers: number[]
+}
+
 export const testPerson: Person = {
   name: "Oliver",
   age: 24,
@@ -44,6 +49,7 @@ export const db = kvdex(kv, {
         age: "secondary",
       },
     }),
+  largeDocs: (ctx) => ctx.largeCollection<LargeData>().build(),
   values: {
     numbers: (cb) => cb.collection<number>().build(),
     strings: (cb) => cb.collection<string>().build(),
