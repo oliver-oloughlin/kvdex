@@ -1,15 +1,10 @@
 import type { IndexableCollection } from "./indexable_collection.ts"
-import { LargeCollection } from "./large_collection.ts"
 import type {
-  AtomicCommitResult,
-  CommitResult,
   IndexableCollectionDefinition,
   IndexDataEntry,
   KvId,
   KvKey,
   KvValue,
-  LargeCollectionDefinition,
-  LargeKvValue,
   Model,
 } from "./types.ts"
 
@@ -226,59 +221,4 @@ export function deleteIndices<
   })
 
   return op
-}
-
-export async function setLargeDocument<const T extends LargeKvValue>(
-  id: KvId,
-  data: T,
-  kv: Deno.Kv,
-  collection: LargeCollection<T, LargeCollectionDefinition<T>>,
-): Promise<CommitResult<T>> {
-  const json = JSON.stringify(data)
-  const jsonParts: string[] = []
-  const documentKey = extendKey(collection.keys.idKey, id)
-
-  for (let i = 0; i < json.length; i += 25_000) {
-    jsonParts.push(json.substring(i, i + 25_000))
-  }
-
-  let index = 0
-  const crs: AtomicCommitResult[] = []
-
-  for (let i = 0; i < jsonParts.length; i += 10) {
-    let atomic = kv.atomic()
-    const subParts = jsonParts.slice(i, i + 10)
-
-    subParts.forEach((str) => {
-      const key = extendKey(documentKey, index)
-
-      atomic = atomic
-        .set(key, str)
-        .check({
-          key,
-          versionstamp: null,
-        })
-
-      index++
-    })
-
-    const cr = await atomic.commit()
-    crs.push(cr)
-  }
-
-  const success = crs.length > 0 && crs.every((cr) => cr.ok)
-  if (!success) {
-    return {
-      ok: false,
-    }
-  }
-
-  const cr = crs[0]!
-  const versionstamp = cr.ok ? cr.versionstamp : ""
-
-  return {
-    id,
-    versionstamp,
-    ok: true,
-  }
 }

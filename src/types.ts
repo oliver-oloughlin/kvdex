@@ -156,6 +156,10 @@ export type LargeCollectionPrepDefinition<T extends LargeKvValue> = Omit<
   "kv" | "key"
 >
 
+export type LargeDocumentEntry = {
+  keys: Deno.KvKey[]
+}
+
 // DB Types
 export type CollectionBuilderFn = (
   initializer: CollectionBuilderContext,
