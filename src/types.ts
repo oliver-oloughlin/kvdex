@@ -350,7 +350,7 @@ export type KvValue =
   | Error
 
 export type LargeKvObject = {
-  [K: string | number]: LargeKvValue
+  [K: string | number]: LargeKvValue | number | boolean | undefined | null
 }
 
 export type LargeKvArray =
