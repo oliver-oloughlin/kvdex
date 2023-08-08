@@ -274,63 +274,6 @@ export class IndexableCollection<
     }))
   }
 
-  async update(
-    id: KvId,
-    data: Partial<T1>,
-  ): Promise<CommitResult<T1>> {
-    // Create document key, get document value
-    const key = extendKey(this.keys.idKey, id)
-    const { value, versionstamp } = await this.kv.get<T1>(key)
-
-    // If no value or versionstamp, return errored commit result
-    if (value === null || versionstamp === null) {
-      return { ok: false }
-    }
-
-    // Delete existing document
-    await this.delete(id)
-
-    // Merge old data view updated data
-    const newData = { ...value, ...data }
-
-    // Set new document data and return commit result
-    return await this.set(id, newData)
-  }
-
-  async deleteMany(options?: ListOptions<T1>) {
-    // Get list iterator for collection with given options
-    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
-
-    // Loop over iterator entries
-    for await (const { key, value, versionstamp } of iter) {
-      // Get document id, continue to next entry if undefined
-      const id = getDocumentId(key)
-      if (typeof id === "undefined") {
-        continue
-      }
-
-      // Create document
-      const doc: Document<T1> = {
-        id,
-        versionstamp,
-        value,
-      }
-
-      // Delete filtered document
-      if (!options?.filter || options.filter(doc)) {
-        let atomic = this.kv.atomic()
-        atomic = atomic.delete(key)
-        atomic = deleteIndices(id, value, atomic, this)
-        await atomic.commit()
-      }
-    }
-
-    // Return current iterator cursor
-    return {
-      cursor: iter.cursor || undefined,
-    }
-  }
-
   /**
    * Delete a document by a primary index.
    *

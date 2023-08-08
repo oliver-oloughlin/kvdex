@@ -1,75 +1,103 @@
 import { Collection } from "./collection.ts"
 import {
-  ATOMIC_OPERATION_MUTATION_LIMIT,
-  GET_MANY_KEY_LIMIT,
+  COLLECTION_ID_KEY_SUFFIX,
+  COLLECTION_SEGMENT_KEY_SUFFIX,
+  KVDEX_KEY_PREFIX,
   LARGE_COLLECTION_STRING_LIMIT,
 } from "./constants.ts"
 import type {
-  AtomicCommitResult,
   CommitResult,
   Document,
   FindManyOptions,
   FindOptions,
   KvId,
+  KvKey,
   LargeCollectionDefinition,
+  LargeCollectionKeys,
   LargeDocumentEntry,
   LargeKvValue,
+  ListOptions,
 } from "./types.ts"
-import { extendKey, getDocumentId } from "./utils.internal.ts"
+import {
+  extendKey,
+  getDocumentId,
+  kvGetMany,
+  useAtomics,
+} from "./utils.internal.ts"
 
 export class LargeCollection<
   const T1 extends LargeKvValue,
   T2 extends LargeCollectionDefinition<T1>,
 > extends Collection<T1, T2> {
+  readonly keys: LargeCollectionKeys
+
   constructor(def: T2) {
+    // Invoke super constructor
     super(def)
+
+    // Set large collection keys
+    this.keys = {
+      baseKey: extendKey([KVDEX_KEY_PREFIX], ...def.key),
+      idKey: extendKey(
+        [KVDEX_KEY_PREFIX],
+        ...def.key,
+        COLLECTION_ID_KEY_SUFFIX,
+      ),
+      segmentKey: extendKey(
+        [KVDEX_KEY_PREFIX],
+        ...def.key,
+        COLLECTION_SEGMENT_KEY_SUFFIX,
+      ),
+    }
   }
 
   async set(id: Deno.KvKeyPart, data: T1): Promise<CommitResult<T1>> {
-    // Stringify data, initiate json parts list, create document id key
-    const json = JSON.stringify(data)
-    const jsonParts: string[] = []
+    // Create document id key
     const idKey = extendKey(this.keys.idKey, id)
 
-    // Divide json string by string linit, add parts to json parts list
+    // Check if id already exists
+    const check = await this.kv
+      .atomic()
+      .check({
+        key: idKey,
+        versionstamp: null,
+      })
+      .commit()
+
+    // If id exists, return result with false flag
+    if (!check.ok) {
+      return {
+        ok: false,
+      }
+    }
+
+    // Stringify data and initialize json parts list
+    const json = JSON.stringify(data)
+    const jsonParts: string[] = []
+
+    // Divide json string by string limit, add parts to json parts list
     for (let i = 0; i < json.length; i += LARGE_COLLECTION_STRING_LIMIT) {
       jsonParts.push(json.substring(i, i + LARGE_COLLECTION_STRING_LIMIT))
     }
 
     // Set start index, initiate commit result and keys lists
     let index = 0
-    const setOps: (Promise<AtomicCommitResult>)[] = []
-    const keys: Deno.KvKey[] = []
+    const keys: KvKey[] = []
 
-    // Create atomic
-    for (
-      let i = 0;
-      i < jsonParts.length;
-      i += ATOMIC_OPERATION_MUTATION_LIMIT
-    ) {
-      let atomic = this.kv.atomic()
-      const subParts = jsonParts.slice(i, i + ATOMIC_OPERATION_MUTATION_LIMIT)
+    // Execute set operations for json parts, capture keys and commit results
+    const crs = await useAtomics(this.kv, jsonParts, (str, atomic) => {
+      const key = extendKey(this.keys.segmentKey, id, index)
+      keys.push(key)
+      index++
 
-      subParts.forEach((str) => {
-        const key = extendKey(idKey, index)
-        keys.push(key)
+      return atomic
+        .set(key, str)
+    })
 
-        atomic = atomic
-          .set(key, str)
-          .check({
-            key,
-            versionstamp: null,
-          })
-
-        index++
-      })
-
-      setOps.push(atomic.commit())
-    }
-
-    const crs = await Promise.all(setOps)
+    // Determine whether setting json parts was successful
     const success = crs.length > 0 && crs.every((cr) => cr.ok)
 
+    // If not successful, delete all json part entries
     if (!success) {
       await Promise.all(keys.map((key) => this.kv.delete(key)))
 
@@ -78,57 +106,57 @@ export class LargeCollection<
       }
     }
 
+    // Create large document entry
     const entry: LargeDocumentEntry = {
       keys,
     }
 
+    // Set large document entry
     const cr = await this.kv
       .atomic()
       .set(idKey, entry)
-      .check({
-        key: idKey,
-        versionstamp: null,
-      })
       .commit()
 
-    return cr.ok
-      ? {
-        ok: true,
-        id,
-        versionstamp: cr.versionstamp,
-      }
-      : {
+    // If not successful, delete all json part entries
+    if (!cr.ok) {
+      await Promise.all(keys.map((key) => this.kv.delete(key)))
+
+      return {
         ok: false,
       }
+    }
+
+    // Return commit result
+    return {
+      ok: true,
+      id,
+      versionstamp: cr.versionstamp,
+    }
   }
 
   async find(
     id: Deno.KvKeyPart,
     options?: FindOptions,
   ): Promise<Document<T1> | null> {
+    // Create documetn id key
     const idKey = extendKey(this.keys.idKey, id)
 
+    // Get large document entry
     const { value, versionstamp } = await this.kv.get<LargeDocumentEntry>(
       idKey,
       options,
     )
 
+    // If no value, return null
     if (value === null || versionstamp === null) {
       return null
     }
 
+    // Get document json parts
     const { keys } = value
-    const slicedKeys: Deno.KvKey[][] = []
-    for (let i = 0; i < keys.length; i += GET_MANY_KEY_LIMIT) {
-      slicedKeys.push(keys.slice(i, i + GET_MANY_KEY_LIMIT))
-    }
+    const docEntries = await kvGetMany<string>(keys, this.kv)
 
-    const slicedDocEntries = await Promise.all(slicedKeys.map(async (keys) => {
-      return await this.kv.getMany<string[]>(keys, options)
-    }))
-
-    const docEntries = slicedDocEntries.flat()
-
+    // Construct document json from json parts
     let json = ""
     docEntries.forEach(({ value }) => {
       if (value) {
@@ -136,10 +164,13 @@ export class LargeCollection<
       }
     })
 
+    // This should never happen
     if (!json) {
+      this.delete(id)
       return null
     }
 
+    // Create and return document
     return {
       id,
       value: JSON.parse(json) as T1,
@@ -151,64 +182,128 @@ export class LargeCollection<
     ids: Deno.KvKeyPart[],
     options?: FindManyOptions,
   ): Promise<Document<T1>[]> {
+    // Map ids to document id keys
     const idKeys = ids.map((id) => extendKey(this.keys.idKey, id))
-    const entries = await this.kv.getMany<LargeDocumentEntry[]>(idKeys, options)
 
-    const docs = await Promise.all(
+    // Get large document entries
+    const entries = await kvGetMany<LargeDocumentEntry>(
+      idKeys,
+      this.kv,
+      options,
+    )
+
+    // Initiate result list
+    const result: Document<T1>[] = []
+
+    // Get documents from large document entries
+    await Promise.all(
       entries.map(async ({ key, value, versionstamp }) => {
+        // Get document id
         const id = getDocumentId(key)
 
+        // If no id or value, continue to next entry
         if (
           typeof id === "undefined" || value === null || versionstamp === null
         ) {
-          return null
+          return
         }
 
-        const docEntries = await this.kv.getMany<string[]>(value.keys, options)
+        // Get documetn json parts
+        const docEntries = await kvGetMany<string>(value.keys, this.kv, options)
 
+        // Construct document json from json parts
         let json = ""
-        docEntries.forEach(({ value }) => json += value)
+        docEntries.forEach(({ value }) => {
+          if (value) {
+            json += value
+          }
+        })
 
+        // This should never happen
         if (!json) {
-          return null
+          this.delete(id)
+          return
         }
 
+        // Create document
         const doc: Document<T1> = {
           id,
           value: JSON.parse(json) as T1,
           versionstamp,
         }
 
-        return doc
+        // Add document to result list
+        result.push(doc)
       }),
     )
 
-    return docs.filter((doc) => !!doc) as Document<T1>[]
+    // Return found documents
+    return result
   }
 
   async delete(...ids: KvId[]): Promise<void> {
+    // Perform delete for each id
     await Promise.all(ids.map(async (id) => {
+      // Create document id key, get documetn value
       const idKey = extendKey(this.keys.idKey, id)
       const { value } = await this.kv.get<LargeDocumentEntry>(idKey)
 
+      // If no value, abort delete
       if (!value) {
         return
       }
 
-      const { keys } = value
-      const deleteOps: (() => Promise<unknown>)[] = []
+      // Delete document entry
+      await this.kv.delete(idKey)
 
-      for (let i = 0; i < value.keys.length; i += 10) {
-        let atomic = this.kv.atomic()
+      // Delete document parts
+      await useAtomics(this.kv, value.keys, (key, atomic) => {
+        return atomic.delete(key)
+      })
+    }))
+  }
 
-        keys.slice(i, i + 10).forEach((key) => {
-          atomic = atomic.delete(key)
-        })
+  protected async handleMany(
+    fn: (doc: Document<T1>) => unknown,
+    options?: ListOptions<T1>,
+  ): Promise<{ cursor: string | undefined }> {
+    // Create list iterotr with given options
+    const iter = this.kv.list<LargeDocumentEntry[]>(
+      { prefix: this.keys.idKey },
+      options,
+    )
 
-        deleteOps.push(() => atomic.commit())
+    // Initiate documents list
+    const docs: Document<T1>[] = []
+
+    // Loop over each document entry
+    for await (const { key } of iter) {
+      // Get document id, continue to next entry if undefined
+      const id = getDocumentId(key)
+      if (typeof id === "undefined") {
+        continue
       }
 
-      await Promise.all(deleteOps)
-    }))
+      // Get the constructed document entry
+      const doc = await this.find(id)
+
+      // If no document is found, continue to next entry
+      if (!doc) {
+        continue
+      }
+
+      // Filter document and add to documents list
+      if (!options?.filter || options.filter(doc)) {
+        docs.push(doc)
+      }
+    }
+
+    // Execute callback function for each document
+    await Promise.all(docs.map((doc) => fn(doc)))
+
+    // Return current iterator cursor
+    return {
+      cursor: iter.cursor || undefined,
+    }
   }
 }

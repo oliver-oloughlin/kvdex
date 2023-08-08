@@ -213,22 +213,6 @@ Deno.test("collection", async (t) => {
       })
 
       await t.step({
-        name: "Should find 2 documents",
-        fn: async () => {
-          await reset()
-
-          await db.people.set("123", testPerson)
-          await db.people.set(123n, testPerson)
-
-          const docs = await db.people.findMany(["123", 123, 123n, "abc"])
-
-          assert(docs.length === 2)
-          assert(docs.some((doc) => doc.id === "123"))
-          assert(docs.some((doc) => doc.id === 123n))
-        },
-      })
-
-      await t.step({
         name: "Should find 4 documents",
         fn: async () => {
           await reset()
@@ -255,6 +239,21 @@ Deno.test("collection", async (t) => {
             ),
           )
         },
+      })
+
+      await t.step("Should find 200 documents", async () => {
+        await reset()
+
+        const numbers = generateNumbers(200)
+        const crs = await db.values.numbers.addMany(...numbers)
+        assert(crs.every((cr) => cr.ok))
+
+        const docs = await db.values.numbers.findMany(
+          crs.map((cr) => cr.ok ? cr.id : null!),
+        )
+
+        assert(docs.length === numbers.length)
+        assert(docs.every((doc) => numbers.some((num) => num === doc.value)))
       })
     },
   })

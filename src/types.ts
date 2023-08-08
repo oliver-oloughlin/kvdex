@@ -156,6 +156,10 @@ export type LargeCollectionPrepDefinition<T extends LargeKvValue> = Omit<
   "kv" | "key"
 >
 
+export type LargeCollectionKeys = CollectionKeys & {
+  segmentKey: KvKey
+}
+
 export type LargeDocumentEntry = {
   keys: Deno.KvKey[]
 }

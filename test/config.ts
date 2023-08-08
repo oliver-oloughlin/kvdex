@@ -38,7 +38,7 @@ export const testPerson2: Person = {
   },
 }
 
-const kv = await Deno.openKv()
+export const kv = await Deno.openKv()
 
 export const db = kvdex(kv, {
   people: (cb) => cb.collection<Person>().build(),

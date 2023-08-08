@@ -20,14 +20,29 @@ export class CollectionBuilderContext {
     this.key = key
   }
 
+  /**
+   * Initialize a collection builder.
+   *
+   * @returns Collection Builder.
+   */
   collection<const T extends KvValue>() {
     return new CollectionBuilder<T>(this.kv, this.key)
   }
 
+  /**
+   * Initialize an indexable collection builder.
+   *
+   * @returns Indexable Collection Builder.
+   */
   indexableCollection<const T extends Model>() {
     return new IndexableCollectionBuilder<T>(this.kv, this.key)
   }
 
+  /**
+   * Initialize a large collection builder.
+   *
+   * @returns Large Collection Builder.
+   */
   largeCollection<const T extends LargeKvValue>() {
     return new LargeCollectionBuilder<T>(this.kv, this.key)
   }
@@ -46,7 +61,7 @@ class CollectionBuilder<const T extends KvValue> {
   }
 
   /**
-   * Build ac collection from the set context and given prep definition.
+   * Build a collection from the set context and given prep definition.
    *
    * @param def - Collection prep definition.
    * @returns A collection instance.

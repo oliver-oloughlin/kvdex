@@ -1,10 +1,34 @@
-import { assert } from "https://deno.land/std@0.195.0/assert/assert.ts"
-import { db, LargeData, reset, sleep, useTemporaryKv } from "../config.ts"
+import { assert } from "../deps.ts"
+import { db, kv, LargeData, reset, sleep, useTemporaryKv } from "../config.ts"
 import { testLargeData, testLargeData2 } from "../large_data.ts"
-import { KvId, QueueMessage } from "../../mod.ts"
-import { kvdex } from "../../src/db.ts"
+import { kvdex, KvId, QueueMessage } from "../../mod.ts"
+import {
+  COLLECTION_ID_KEY_SUFFIX,
+  COLLECTION_SEGMENT_KEY_SUFFIX,
+  KVDEX_KEY_PREFIX,
+} from "../../src/constants.ts"
 
 Deno.test("large_collection", async (t) => {
+  // Test correctness of collection keys
+  await t.step("keys", async (t) => {
+    await t.step("Collection keys should have kvdex prefix", () => {
+      const keys = Object.entries(db.largeDocs.keys).map(([_, key]) => key)
+      assert(keys.every((key) => key[0] === KVDEX_KEY_PREFIX))
+    })
+
+    await t.step("Id key should have id key suffix", () => {
+      const idKey = db.largeDocs.keys.idKey
+      const suffix = idKey[idKey.length - 1]
+      assert(suffix === COLLECTION_ID_KEY_SUFFIX)
+    })
+
+    await t.step("Segment key should have segment key suffix", () => {
+      const segmentKey = db.largeDocs.keys.segmentKey
+      const suffix = segmentKey[segmentKey.length - 1]
+      assert(suffix === COLLECTION_SEGMENT_KEY_SUFFIX)
+    })
+  })
+
   // Test "add" method
   await t.step("add", async (t) => {
     await t.step(
@@ -18,6 +42,8 @@ Deno.test("large_collection", async (t) => {
         const largeDoc = await db.largeDocs.find(cr.id)
 
         assert(largeDoc !== null)
+        assert(typeof largeDoc.id === "string")
+        assert(typeof largeDoc.value === "object")
         assert(largeDoc.value.name === testLargeData.name)
       },
     )
@@ -44,14 +70,31 @@ Deno.test("large_collection", async (t) => {
     await t.step("Should set new document entry with given id", async () => {
       await reset()
 
-      const cr = await db.largeDocs.set("id_1", testLargeData)
+      const cr = await db.largeDocs.set(100n, testLargeData)
       assert(cr.ok)
 
       const largeDoc = await db.largeDocs.find(cr.id)
 
       assert(largeDoc !== null)
+      assert(typeof largeDoc.id === "bigint")
+      assert(typeof largeDoc.value === "object")
       assert(largeDoc.value.name === testLargeData.name)
     })
+
+    await t.step(
+      "Should not add document with id that already exists",
+      async () => {
+        await reset()
+
+        const id = "id"
+
+        const cr1 = await db.largeDocs.set(id, testLargeData)
+        assert(cr1.ok)
+
+        const cr2 = await db.largeDocs.set(id, testLargeData)
+        assert(!cr2.ok)
+      },
+    )
   })
 
   // Test "find" method
@@ -69,11 +112,20 @@ Deno.test("large_collection", async (t) => {
       assert(largeDoc !== null)
       assert(largeDoc.value.name === testLargeData.name)
     })
+
+    await t.step("Should not find document by id", async () => {
+      await reset()
+
+      const doc = await db.largeDocs.find("non_existing_id")
+      assert(doc === null)
+    })
   })
 
   // Test "findMany" method
   await t.step("findMany", async (t) => {
     await t.step("Should find mutliple documents by ids", async () => {
+      await reset()
+
       const [cr1, cr2] = await db.largeDocs.addMany(
         testLargeData,
         testLargeData,
@@ -125,6 +177,21 @@ Deno.test("large_collection", async (t) => {
 
         const count2 = await db.largeDocs.count()
         assert(count2 === 0)
+
+        const idIter = kv.list({ prefix: db.largeDocs.keys.idKey })
+        const segmentIter = kv.list({ prefix: db.largeDocs.keys.segmentKey })
+
+        const entries: unknown[] = []
+
+        for await (const entry of idIter) {
+          entries.push(entry.key)
+        }
+
+        for await (const entry of segmentIter) {
+          entries.push(entry)
+        }
+
+        assert(entries.length === 0)
       },
     )
   })
