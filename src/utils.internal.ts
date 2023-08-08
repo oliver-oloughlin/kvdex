@@ -4,7 +4,6 @@ import {
 } from "./constants.ts"
 import type { IndexableCollection } from "./indexable_collection.ts"
 import type {
-  AtomicCommitResult,
   FindManyOptions,
   IndexableCollectionDefinition,
   IndexDataEntry,

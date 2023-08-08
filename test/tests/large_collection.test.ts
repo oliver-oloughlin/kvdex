@@ -1,6 +1,15 @@
 import { assert } from "../deps.ts"
-import { db, kv, LargeData, reset, sleep, useTemporaryKv } from "../config.ts"
-import { testLargeData, testLargeData2 } from "../large_data.ts"
+import {
+  db,
+  generateLargeDatas,
+  kv,
+  LargeData,
+  reset,
+  sleep,
+  testLargeData,
+  testLargeData2,
+  useTemporaryKv,
+} from "../config.ts"
 import { kvdex, KvId, QueueMessage } from "../../mod.ts"
 import {
   COLLECTION_ID_KEY_SUFFIX,
@@ -51,7 +60,7 @@ Deno.test("large_collection", async (t) => {
 
   // Test "addMany" method
   await t.step("addMany", async (t) => {
-    await t.step("Should find multiple documents by ids", async () => {
+    await t.step("Should add 2 documents entries", async () => {
       const [cr1, cr2] = await db.largeDocs.addMany(
         testLargeData,
         testLargeData,
@@ -62,6 +71,17 @@ Deno.test("large_collection", async (t) => {
       assert(docs.length === 2)
       assert(docs.some((doc) => doc.id === cr1.id))
       assert(docs.some((doc) => doc.id === cr2.id))
+    })
+
+    await t.step("Should add 50 document entries", async () => {
+      await reset()
+
+      const largeDatas = generateLargeDatas(50)
+      const crs = await db.largeDocs.addMany(...largeDatas)
+      assert(crs.every((cr) => cr.ok))
+
+      const count = await db.largeDocs.count()
+      assert(count === largeDatas.length)
     })
   })
 
@@ -123,7 +143,7 @@ Deno.test("large_collection", async (t) => {
 
   // Test "findMany" method
   await t.step("findMany", async (t) => {
-    await t.step("Should find mutliple documents by ids", async () => {
+    await t.step("Should 2 mutliple documents by ids", async () => {
       await reset()
 
       const [cr1, cr2] = await db.largeDocs.addMany(
@@ -136,6 +156,44 @@ Deno.test("large_collection", async (t) => {
       assert(docs.length === 2)
       assert(docs.some((doc) => doc.id === cr1.id))
       assert(docs.some((doc) => doc.id === cr2.id))
+    })
+
+    await t.step("Should find 50 documents by ids", async () => {
+      await reset()
+
+      const largeDatas = generateLargeDatas(50)
+      const crs = await db.largeDocs.addMany(...largeDatas)
+      assert(crs.every((cr) => cr.ok))
+
+      const docs = await db.largeDocs.findMany(
+        crs.map((cr) => cr.ok ? cr.id : null!),
+      )
+
+      assert(docs.length === largeDatas.length)
+      assert(
+        docs.every((doc) =>
+          largeDatas.some((data) => data.name === doc.value.name)
+        ),
+      )
+    })
+
+    await t.step("Should not find any documents", async () => {
+      await reset()
+
+      await db.largeDocs.addMany(testLargeData, testLargeData2)
+
+      const docs = await db.largeDocs.findMany([
+        1,
+        2,
+        3,
+        1n,
+        2n,
+        3n,
+        "1",
+        "2",
+        "3",
+      ])
+      assert(docs.length === 0)
     })
   })
 
@@ -151,6 +209,22 @@ Deno.test("large_collection", async (t) => {
       assert(count1 === 1)
 
       await db.largeDocs.delete(cr.id)
+
+      const count2 = await db.largeDocs.count()
+      assert(count2 === 0)
+    })
+
+    await t.step("Should delete 25 documents by ids", async () => {
+      await reset()
+
+      const largeDatas = generateLargeDatas(25)
+      const crs = await db.largeDocs.addMany(...largeDatas)
+      assert(crs.every((cr) => cr.ok))
+
+      const count1 = await db.largeDocs.count()
+      assert(count1 === largeDatas.length)
+
+      await db.largeDocs.delete(...crs.map((cr) => cr.ok ? cr.id : null!))
 
       const count2 = await db.largeDocs.count()
       assert(count2 === 0)
@@ -217,6 +291,36 @@ Deno.test("large_collection", async (t) => {
       assert(doc2?.value.name === testLargeData2.name)
       assert(doc2.value.numbers.length === doc1.value.numbers.length)
     })
+
+    await t.step(
+      "Should overwrite document of string type and document of array type",
+      async () => {
+        await useTemporaryKv(async (kv) => {
+          const db = kvdex(kv, {
+            strings: (ctx) => ctx.largeCollection().build(),
+            arrs: (ctx) => ctx.largeCollection().build(),
+          })
+
+          const val1_1 = "value_1"
+          const val1_2 = "value_2"
+          const val2_1 = ["value_1"]
+          const val2_2 = ["value_2"]
+
+          const cr1_1 = await db.strings.add(val1_1)
+          const cr2_1 = await db.arrs.add(val2_1)
+          assert(cr1_1.ok && cr2_1.ok)
+
+          const cr1_2 = await db.strings.update(cr1_1.id, val1_2)
+          const cr2_2 = await db.arrs.update(cr2_1.id, val2_2)
+          assert(cr1_2.ok && cr2_2.ok)
+
+          const doc1 = await db.strings.find(cr1_1.id)
+          const doc2 = await db.arrs.find(cr2_1.id)
+          assert(doc1?.value === val1_2)
+          assert(JSON.stringify(doc2?.value) === JSON.stringify(val2_2))
+        })
+      },
+    )
   })
 
   // Test "getMany" method
@@ -235,6 +339,26 @@ Deno.test("large_collection", async (t) => {
         const { result } = await db.largeDocs.getMany()
         assert(result.some((doc) => doc.id === cr1.id))
         assert(result.some((doc) => doc.id === cr2.id))
+      },
+    )
+
+    await t.step(
+      "Should only get filtered document entries from the collection",
+      async () => {
+        await reset()
+
+        const crs = await db.largeDocs.addMany(testLargeData, testLargeData2)
+        assert(crs.every((cr) => cr.ok))
+
+        const docs = await db.largeDocs.getMany({
+          filter: (doc) => doc.value.name === testLargeData.name,
+        })
+
+        assert(docs.result.length === 1)
+        assert(docs.result.some((doc) => doc.value.name === testLargeData.name))
+        assert(
+          !docs.result.some((doc) => doc.value.name === testLargeData2.name),
+        )
       },
     )
   })
@@ -257,6 +381,21 @@ Deno.test("large_collection", async (t) => {
         assert(result.some((id) => id === cr2.id))
       },
     )
+
+    await t.step("Should only map filtered documents", async () => {
+      await reset()
+
+      const crs = await db.largeDocs.addMany(testLargeData, testLargeData2)
+      assert(crs.every((cr) => cr.ok))
+
+      const mapped = await db.largeDocs.map((doc) => doc.value.name, {
+        filter: (doc) => doc.value.name === testLargeData.name,
+      })
+
+      assert(mapped.result.length === 1)
+      assert(mapped.result.some((name) => name === testLargeData.name))
+      assert(!mapped.result.some((name) => name === testLargeData2.name))
+    })
   })
 
   // Test "forEach" method
@@ -277,6 +416,25 @@ Deno.test("large_collection", async (t) => {
 
         assert(ids.some((id) => id === cr1.id))
         assert(ids.some((id) => id === cr2.id))
+      },
+    )
+
+    await t.step(
+      "Should only execute callback function for filtered documents",
+      async () => {
+        await reset()
+
+        const crs = await db.largeDocs.addMany(testLargeData, testLargeData2)
+        assert(crs.every((cr) => cr.ok))
+
+        const names: string[] = []
+        await db.largeDocs.forEach((doc) => names.push(doc.value.name), {
+          filter: (doc) => doc.value.name === testLargeData.name,
+        })
+
+        assert(names.length === 1)
+        assert(names.some((name) => name === testLargeData.name))
+        assert(!names.some((name) => name === testLargeData2.name))
       },
     )
   })
@@ -301,6 +459,19 @@ Deno.test("large_collection", async (t) => {
         assert(count2 === 2)
       },
     )
+
+    await t.step("Should only count filtered documents", async () => {
+      await reset()
+
+      const crs = await db.largeDocs.addMany(testLargeData, testLargeData2)
+      assert(crs.every((cr) => cr.ok))
+
+      const count = await db.largeDocs.count({
+        filter: (doc) => doc.value.name === testLargeData.name,
+      })
+
+      assert(count === 1)
+    })
   })
 
   // Test "enqueue" method

@@ -628,7 +628,7 @@ Any contributions are welcomed and appreciated. How to contribute:
 - Add feature / Refactor
 - Add or refactor tests as needed
 - Run tests using `deno task test`
-- Prepare code (format + test) using `deno task prep`
+- Prepare code (lint + format + test) using `deno task prep`
 - Open Pull Request
 
 This project aims at having as high test coverage as possible to improve code quality and to avoid breaking features when refactoring. Therefore it is encouraged that any feature contributions are also accompanied by relevant unit tests to ensure those features remain stable.

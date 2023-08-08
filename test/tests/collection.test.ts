@@ -166,9 +166,7 @@ Deno.test("collection", async (t) => {
           await reset()
 
           const cr = await db.people.add(testPerson)
-          if (!cr.ok) {
-            throw Error("'testPerson' not added to collection successfully")
-          }
+          assert(cr.ok)
 
           const doc = await db.people.find(cr.id)
           assert(typeof doc === "object")
@@ -183,7 +181,7 @@ Deno.test("collection", async (t) => {
           await reset()
 
           const cr = await db.people.add(testPerson)
-          if (!cr.ok) throw Error("'' not added to collection successfully")
+          assert(cr.ok)
 
           const doc = await db.people.find(cr.id, {
             consistency: "eventual",
@@ -274,7 +272,7 @@ Deno.test("collection", async (t) => {
       assert(people.result.some((doc) => doc.value.name === testPerson2.name))
     })
 
-    await t2.step("Should handle adding 1000 document entries", async () => {
+    await t2.step("Should add 1000 document entries", async () => {
       await reset()
 
       const numbers = generateNumbers(1_000)
