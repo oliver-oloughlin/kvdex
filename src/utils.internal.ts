@@ -1,5 +1,10 @@
+import {
+  ATOMIC_OPERATION_MUTATION_LIMIT,
+  GET_MANY_KEY_LIMIT,
+} from "./constants.ts"
 import type { IndexableCollection } from "./indexable_collection.ts"
 import type {
+  FindManyOptions,
   IndexableCollectionDefinition,
   IndexDataEntry,
   KvId,
@@ -221,4 +226,44 @@ export function deleteIndices<
   })
 
   return op
+}
+
+export async function kvGetMany<const T>(
+  keys: Deno.KvKey[],
+  kv: Deno.Kv,
+  options?: FindManyOptions,
+) {
+  const slicedKeys: Deno.KvKey[][] = []
+
+  for (let i = 0; i < keys.length; i += GET_MANY_KEY_LIMIT) {
+    slicedKeys.push(keys.slice(i, i + GET_MANY_KEY_LIMIT))
+  }
+
+  const slicedEntries = await Promise.all(slicedKeys.map((keys) => {
+    return kv.getMany<T[]>(keys, options)
+  }))
+
+  return slicedEntries.flat()
+}
+
+export async function useAtomics<const T>(
+  kv: Deno.Kv,
+  elements: T[],
+  fn: (value: T, op: Deno.AtomicOperation) => Deno.AtomicOperation,
+) {
+  const slicedElements: T[][] = []
+
+  for (let i = 0; i < elements.length; i += ATOMIC_OPERATION_MUTATION_LIMIT) {
+    slicedElements.push(elements.slice(i, i + ATOMIC_OPERATION_MUTATION_LIMIT))
+  }
+
+  return await Promise.all(slicedElements.map(async (elements) => {
+    let atomic = kv.atomic()
+
+    elements.forEach((value) => {
+      atomic = fn(value, atomic)
+    })
+
+    return await atomic.commit()
+  }))
 }

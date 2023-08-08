@@ -11,6 +11,11 @@ export interface Person extends Model {
   }
 }
 
+export type LargeData = {
+  name: string
+  numbers: number[]
+}
+
 export const testPerson: Person = {
   name: "Oliver",
   age: 24,
@@ -33,7 +38,17 @@ export const testPerson2: Person = {
   },
 }
 
-const kv = await Deno.openKv()
+export const testLargeData: LargeData = {
+  name: "large_data_1",
+  numbers: generateNumbers(500_000),
+}
+
+export const testLargeData2: LargeData = {
+  name: "large_data_2",
+  numbers: generateNumbers(500_000),
+}
+
+export const kv = await Deno.openKv()
 
 export const db = kvdex(kv, {
   people: (cb) => cb.collection<Person>().build(),
@@ -44,6 +59,7 @@ export const db = kvdex(kv, {
         age: "secondary",
       },
     }),
+  largeDocs: (ctx) => ctx.largeCollection<LargeData>().build(),
   values: {
     numbers: (cb) => cb.collection<number>().build(),
     strings: (cb) => cb.collection<string>().build(),
@@ -68,6 +84,7 @@ export function generateNumbers(n: number) {
 
 export function generatePeople(n: number) {
   const people: Person[] = []
+
   for (let i = 0; i < n; i++) {
     people.push({
       name: `generated_name_${i}`,
@@ -81,6 +98,19 @@ export function generatePeople(n: number) {
   }
 
   return people
+}
+
+export function generateLargeDatas(n: number) {
+  const largeDatas: LargeData[] = []
+
+  for (let i = 0; i < n; i++) {
+    largeDatas.push({
+      name: `generated_name_${i}`,
+      numbers: generateNumbers(50_000 + Math.random() * 250_000),
+    })
+  }
+
+  return largeDatas
 }
 
 export async function sleep(ms: number) {

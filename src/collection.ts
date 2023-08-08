@@ -22,6 +22,7 @@ import {
   getDocumentId,
   isKvObject,
   keyEq,
+  kvGetMany,
 } from "./utils.internal.ts"
 
 /**
@@ -120,7 +121,7 @@ export class Collection<
   async findMany(ids: KvId[], options?: FindManyOptions) {
     // Create document keys, get document entries
     const keys = ids.map((id) => extendKey(this.keys.idKey, id))
-    const entries = await this.kv.getMany<T1[]>(keys, options)
+    const entries = await kvGetMany<T1>(keys, this.kv, options)
 
     // Create empty result list
     const result: Document<T1>[] = []
@@ -258,44 +259,30 @@ export class Collection<
     id: KvId,
     data: UpdateData<T1>,
   ): Promise<CommitResult<T1>> {
-    // Create document key, get document entry
-    const key = extendKey(this.keys.idKey, id)
-    const { value, versionstamp } = await this.kv.get<T1>(key)
+    // Get document
+    const doc = await this.find(id)
 
-    // If no entry is found, return commit result with false flag
-    if (value === null || versionstamp === null) {
-      return { ok: false }
-    }
-
-    // If document value is of KvObject, perform partial update
-    if (isKvObject(value)) {
-      // Set value and data as KvObject
-      const _value = value as KvObject
-      const _data = data as KvObject
-
-      // Create new data of old value and update data
-      const newData = { ..._value, ..._data }
-
-      // Set the new document value
-      const result = await this.kv.set(key, newData)
-
-      // Return commit result
+    // If no documetn is found, return result with false flag
+    if (!doc) {
       return {
-        ok: true,
-        id,
-        versionstamp: result.versionstamp,
+        ok: false,
       }
     }
 
-    // Set the new document value
-    const result = await this.kv.set(key, data)
+    // Get document value, delete document entry
+    const { value } = doc
+    await this.delete(id)
 
-    // Return commit result
-    return {
-      ok: true,
-      id,
-      versionstamp: result.versionstamp,
+    // If value is KvObject, perform partial merge and set new documetn value
+    if (isKvObject(value)) {
+      return await this.set(id, {
+        ...value as KvObject,
+        ...data as KvObject,
+      } as T1)
     }
+
+    // Set new document value
+    return await this.set(id, data as T1)
   }
 
   /**
@@ -323,7 +310,7 @@ export class Collection<
    * @returns A promise that resolves to a list of Deno.KvCommitResult or Deno.KvCommitError objects
    */
   async addMany(...entries: T1[]) {
-    // Execute add operation for each entry
+    // Add each entry, return commit result list
     return await Promise.all(entries.map((data) => this.add(data)))
   }
 
@@ -347,34 +334,8 @@ export class Collection<
    * @returns A promise that resovles to an object containing the iterator cursor
    */
   async deleteMany(options?: ListOptions<T1>) {
-    // Create list iterator with given options
-    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
-
-    // Loop over each entry
-    for await (const entry of iter) {
-      // Get documetn id, continue to next entry if undefined
-      const id = getDocumentId(entry.key)
-      if (typeof id === "undefined") {
-        continue
-      }
-
-      // Create document
-      const doc: Document<T1> = {
-        id,
-        versionstamp: entry.versionstamp,
-        value: entry.value,
-      }
-
-      // Filter document and perform delete
-      if (!options?.filter || options.filter(doc)) {
-        await this.kv.delete(entry.key)
-      }
-    }
-
-    // Return current iterator cursor
-    return {
-      cursor: iter.cursor || undefined,
-    }
+    // Execute delete operation for each document entry
+    return await this.handleMany((doc) => this.delete(doc.id), options)
   }
 
   /**
@@ -397,35 +358,19 @@ export class Collection<
    * @returns A promise that resovles to an object containing a list of the retrieved documents and the iterator cursor
    */
   async getMany(options?: ListOptions<T1>) {
-    // Create list iterator with given options, initiate result list
-    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
+    // Initiate result list
     const result: Document<T1>[] = []
 
-    // Loop over entries
-    for await (const entry of iter) {
-      // Get document id, continue to next entry if undefined
-      const id = getDocumentId(entry.key)
-      if (typeof id === "undefined") {
-        continue
-      }
-
-      // Create document
-      const doc: Document<T1> = {
-        id,
-        versionstamp: entry.versionstamp,
-        value: entry.value,
-      }
-
-      // Filter and document to result list
-      if (!options?.filter || options.filter(doc)) {
-        result.push(doc)
-      }
-    }
+    // Add each document entry to result list
+    const { cursor } = await this.handleMany(
+      (doc) => result.push(doc),
+      options,
+    )
 
     // Return result list and current iterator cursor
     return {
       result,
-      cursor: iter.cursor || undefined,
+      cursor,
     }
   }
 
@@ -450,34 +395,8 @@ export class Collection<
    * @returns A promise that resovles to an object containing the iterator cursor
    */
   async forEach(fn: (doc: Document<T1>) => void, options?: ListOptions<T1>) {
-    // Create list iterator with given options
-    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
-
-    // Loop over each entry
-    for await (const entry of iter) {
-      // Get document id, continue to next entry if undefined
-      const id = getDocumentId(entry.key)
-      if (typeof id === "undefined") {
-        continue
-      }
-
-      // Create document
-      const doc: Document<T1> = {
-        id,
-        versionstamp: entry.versionstamp,
-        value: entry.value,
-      }
-
-      // Filter document and run callback function
-      if (!options?.filter || options.filter(doc)) {
-        fn(doc)
-      }
-    }
-
-    // Return current iterator cursor
-    return {
-      cursor: iter.cursor || undefined,
-    }
+    // Execute callback function for each document entry
+    return await this.handleMany((doc) => fn(doc), options)
   }
 
   /**
@@ -506,35 +425,19 @@ export class Collection<
     fn: (doc: Document<T1>) => TMapped,
     options?: ListOptions<T1>,
   ) {
-    // Create list iterator with given options, initiate reuslt list
-    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
+    // Initiate result list
     const result: TMapped[] = []
 
-    // Loop over each entry
-    for await (const entry of iter) {
-      // Get document id, continue to next entry if undefined
-      const id = getDocumentId(entry.key)
-      if (typeof id === "undefined") {
-        continue
-      }
-
-      // Create document
-      const doc: Document<T1> = {
-        id,
-        versionstamp: entry.versionstamp,
-        value: entry.value,
-      }
-
-      // Filter document and run callback function, add result to result list
-      if (!options?.filter || options.filter(doc)) {
-        result.push(fn(doc))
-      }
-    }
+    // Execute callback function for each document entry, add to result list
+    const { cursor } = await this.handleMany(
+      (doc) => result.push(fn(doc)),
+      options,
+    )
 
     // Return result list and current iterator cursor
     return {
       result,
-      cursor: iter.cursor || undefined,
+      cursor,
     }
   }
 
@@ -556,32 +459,9 @@ export class Collection<
    * @returns A promise that resolves to a number representing the performed count.
    */
   async count(options?: CountOptions<T1>) {
-    // Create list iterator with given options, initiate count variable
-    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
+    // Initiate count variable, increment for each document entry, return result
     let result = 0
-
-    // Loop over each document
-    for await (const entry of iter) {
-      // Get document id, continue to next entry if undefined
-      const id = getDocumentId(entry.key)
-      if (typeof id === "undefined") {
-        continue
-      }
-
-      // Create document
-      const doc: Document<T1> = {
-        id,
-        versionstamp: entry.versionstamp,
-        value: entry.value,
-      }
-
-      // Filter document and increment counter
-      if (!options?.filter || options.filter(doc)) {
-        result++
-      }
-    }
-
-    // Return final count
+    await this.handleMany(() => result++, options)
     return result
   }
 
@@ -657,5 +537,50 @@ export class Collection<
         await handler(data)
       }
     })
+  }
+
+  /**
+   * Perform operations on lists of documents in the collection.
+   *
+   * @param fn - Callback function.
+   * @param options - List options.
+   * @returns Promise that resolves to object with iterator cursor.
+   */
+  protected async handleMany(
+    fn: (doc: Document<T1>) => unknown,
+    options?: ListOptions<T1>,
+  ) {
+    // Create list iterator with given options, initiate documents list
+    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
+    const docs: Document<T1>[] = []
+
+    // Loop over each document entry
+    for await (const { key, value, versionstamp } of iter) {
+      // Get document id, continue to next entry if undefined
+      const id = getDocumentId(key)
+      if (typeof id === "undefined") {
+        continue
+      }
+
+      // Create document
+      const doc: Document<T1> = {
+        id,
+        versionstamp,
+        value: value,
+      }
+
+      // Filter document and add to documents list
+      if (!options?.filter || options.filter(doc)) {
+        docs.push(doc)
+      }
+    }
+
+    // Execute callback function for each document
+    await Promise.all(docs.map((doc) => fn(doc)))
+
+    // Return current iterator cursor
+    return {
+      cursor: iter.cursor || undefined,
+    }
   }
 }

@@ -33,6 +33,7 @@ Zero third-party dependencies.
     - [findBySecondaryIndex()](#findbysecondaryindex)
     - [deleteByPrimaryIndex()](#deletebyprimaryindex)
     - [deleteBySecondaryIndex()](#deletebysecondaryindex)
+  - [Large Collections](#large-collections)
   - [Database Methods](#database-methods)
     - [countAll()](#countall)
     - [deleteAll()](#deleteall)
@@ -56,7 +57,7 @@ create your Zod object schema and use its inferred type as your model.
 **_NOTE_:** When using interfaces instead of types, sub-interfaces must also extend the Model type.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.8.2/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.9.0/mod.ts"
 
 interface User extends Model {
   username: string
@@ -77,12 +78,13 @@ interface User extends Model {
 Deno KV instance and a schema definition as arguments.
 
 ```ts
-import { kvdex } from "https://deno.land/x/kvdex@v0.8.2/mod.ts"
+import { kvdex } from "https://deno.land/x/kvdex@v0.9.0/mod.ts"
 
 const kv = await Deno.openKv()
 
 const db = kvdex(kv, {
   numbers: (ctx) => ctx.collection<number>().build(),
+  largeStrings: (ctx) => ctx.largeCollection<string>().build(),
   users: (ctx) => ctx.indexableCollection<User>().build({
     indices: {
       username: "primary" // unique
@@ -96,7 +98,7 @@ const db = kvdex(kv, {
 })
 ```
 
-The schema definition defines collection builder functions (or nested schema definitions) which receive a builder context. Standard collections can hold any type adhering to KvValue (string, number, array, object...), while indexable collections can only hold types adhering to Model (objects). For indexable collections, primary (unique) and secondary (non-unique) indexing is supported.
+The schema definition defines collection builder functions (or nested schema definitions) which receive a builder context. Standard collections can hold any type adhering to KvValue (string, number, array, object...), large collections can hold strings, arrays and objects, while indexable collections can only hold types adhering to Model (objects). For indexable collections, primary (unique) and secondary (non-unique) indexing is supported.
 
 ## Collection Methods
 
@@ -430,6 +432,10 @@ await db.users.deleteBySecondaryIndex("age", 24, {
 })
 ```
 
+## Large Collections
+
+Large collections are distinct from standard collections or indexable collections in that they can hold values that exceed the size limit of values in Deno KV. Value types are limited to strings, arrays of number, boolean or LargeKvValue, and objects with LargeKvValue properties. All base collection methods are available for large collections. Document values are divided accross multiple Deno KV entries, which impacts the performance of most operations. Only use this collection type if you think your document values will exceed the approximately 65KB size limit.
+
 ## Database Methods
 
 These are methods which can be found at the top level of your database object, and perform operations across multiple collections.
@@ -598,7 +604,7 @@ type Model. Only flattens the first layer of the document, meaning the result wi
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.8.2/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.9.0/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
@@ -628,7 +634,7 @@ Any contributions are welcomed and appreciated. How to contribute:
 - Add feature / Refactor
 - Add or refactor tests as needed
 - Run tests using `deno task test`
-- Prepare code (format + test) using `deno task prep`
+- Prepare code (lint + format + test) using `deno task prep`
 - Open Pull Request
 
 This project aims at having as high test coverage as possible to improve code quality and to avoid breaking features when refactoring. Therefore it is encouraged that any feature contributions are also accompanied by relevant unit tests to ensure those features remain stable.

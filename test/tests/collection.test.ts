@@ -166,9 +166,7 @@ Deno.test("collection", async (t) => {
           await reset()
 
           const cr = await db.people.add(testPerson)
-          if (!cr.ok) {
-            throw Error("'testPerson' not added to collection successfully")
-          }
+          assert(cr.ok)
 
           const doc = await db.people.find(cr.id)
           assert(typeof doc === "object")
@@ -183,7 +181,7 @@ Deno.test("collection", async (t) => {
           await reset()
 
           const cr = await db.people.add(testPerson)
-          if (!cr.ok) throw Error("'' not added to collection successfully")
+          assert(cr.ok)
 
           const doc = await db.people.find(cr.id, {
             consistency: "eventual",
@@ -209,22 +207,6 @@ Deno.test("collection", async (t) => {
           const docs = await db.people.findMany(["123", 123, 123n, "abc"])
 
           assert(docs.length === 0)
-        },
-      })
-
-      await t.step({
-        name: "Should find 2 documents",
-        fn: async () => {
-          await reset()
-
-          await db.people.set("123", testPerson)
-          await db.people.set(123n, testPerson)
-
-          const docs = await db.people.findMany(["123", 123, 123n, "abc"])
-
-          assert(docs.length === 2)
-          assert(docs.some((doc) => doc.id === "123"))
-          assert(docs.some((doc) => doc.id === 123n))
         },
       })
 
@@ -256,6 +238,21 @@ Deno.test("collection", async (t) => {
           )
         },
       })
+
+      await t.step("Should find 200 documents", async () => {
+        await reset()
+
+        const numbers = generateNumbers(200)
+        const crs = await db.values.numbers.addMany(...numbers)
+        assert(crs.every((cr) => cr.ok))
+
+        const docs = await db.values.numbers.findMany(
+          crs.map((cr) => cr.ok ? cr.id : null!),
+        )
+
+        assert(docs.length === numbers.length)
+        assert(docs.every((doc) => numbers.some((num) => num === doc.value)))
+      })
     },
   })
 
@@ -275,7 +272,7 @@ Deno.test("collection", async (t) => {
       assert(people.result.some((doc) => doc.value.name === testPerson2.name))
     })
 
-    await t2.step("Should handle adding 1000 document entries", async () => {
+    await t2.step("Should add 1000 document entries", async () => {
       await reset()
 
       const numbers = generateNumbers(1_000)

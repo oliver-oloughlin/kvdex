@@ -33,6 +33,7 @@ import { extendKey } from "./utils.internal.ts"
  * const db = kvdex(kv, {
  *   numbers: (ctx) => ctx.collection<number>().build(),
  *   u64s: (ctx) => ctx.collection<Deno.KvU64>().build(),
+ *   largeStrings: (ctx) => ctx.largeCollection<string>().build(),
  *   users: (ctx) => ctx.indexableCollection<User>().build({
  *     indices: {
  *       username: "primary",
