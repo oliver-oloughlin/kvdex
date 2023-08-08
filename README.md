@@ -33,6 +33,7 @@ Zero third-party dependencies.
     - [findBySecondaryIndex()](#findbysecondaryindex)
     - [deleteByPrimaryIndex()](#deletebyprimaryindex)
     - [deleteBySecondaryIndex()](#deletebysecondaryindex)
+  - [Large Collections](#large-collections)
   - [Database Methods](#database-methods)
     - [countAll()](#countall)
     - [deleteAll()](#deleteall)
@@ -83,6 +84,7 @@ const kv = await Deno.openKv()
 
 const db = kvdex(kv, {
   numbers: (ctx) => ctx.collection<number>().build(),
+  largeStrings: (ctx) => ctx.largeCollection<string>().build(),
   users: (ctx) => ctx.indexableCollection<User>().build({
     indices: {
       username: "primary" // unique
@@ -96,7 +98,7 @@ const db = kvdex(kv, {
 })
 ```
 
-The schema definition defines collection builder functions (or nested schema definitions) which receive a builder context. Standard collections can hold any type adhering to KvValue (string, number, array, object...), while indexable collections can only hold types adhering to Model (objects). For indexable collections, primary (unique) and secondary (non-unique) indexing is supported.
+The schema definition defines collection builder functions (or nested schema definitions) which receive a builder context. Standard collections can hold any type adhering to KvValue (string, number, array, object...), large collections can hold strings, arrays and objects, while indexable collections can only hold types adhering to Model (objects). For indexable collections, primary (unique) and secondary (non-unique) indexing is supported.
 
 ## Collection Methods
 
@@ -429,6 +431,10 @@ await db.users.deleteBySecondaryIndex("age", 24, {
   filter: (doc) => doc.value.username.startsWith("o")
 })
 ```
+
+## Large Collections
+
+Large collections are distinct from standard collections or indexable collections in that they can hold values that exceed the size limit of values in Deno.Kv. Value types are limited to strings, arrays of number, boolean or LargeKvValue, and objects with LargeKvValue properties. All base collection methods are available for large collections. Document values are divided accross multiple Deno.Kv entries, which impacts the performance of most operations. Only use this collection type if you think your document values will exceed the approximately 65KB size limit.
 
 ## Database Methods
 
