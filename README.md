@@ -57,7 +57,7 @@ create your Zod object schema and use its inferred type as your model.
 **_NOTE_:** When using interfaces instead of types, sub-interfaces must also extend the Model type.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.8.2/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.9.0/mod.ts"
 
 interface User extends Model {
   username: string
@@ -78,7 +78,7 @@ interface User extends Model {
 Deno KV instance and a schema definition as arguments.
 
 ```ts
-import { kvdex } from "https://deno.land/x/kvdex@v0.8.2/mod.ts"
+import { kvdex } from "https://deno.land/x/kvdex@v0.9.0/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -434,7 +434,7 @@ await db.users.deleteBySecondaryIndex("age", 24, {
 
 ## Large Collections
 
-Large collections are distinct from standard collections or indexable collections in that they can hold values that exceed the size limit of values in Deno.Kv. Value types are limited to strings, arrays of number, boolean or LargeKvValue, and objects with LargeKvValue properties. All base collection methods are available for large collections. Document values are divided accross multiple Deno.Kv entries, which impacts the performance of most operations. Only use this collection type if you think your document values will exceed the approximately 65KB size limit.
+Large collections are distinct from standard collections or indexable collections in that they can hold values that exceed the size limit of values in Deno KV. Value types are limited to strings, arrays of number, boolean or LargeKvValue, and objects with LargeKvValue properties. All base collection methods are available for large collections. Document values are divided accross multiple Deno KV entries, which impacts the performance of most operations. Only use this collection type if you think your document values will exceed the approximately 65KB size limit.
 
 ## Database Methods
 
@@ -604,7 +604,7 @@ type Model. Only flattens the first layer of the document, meaning the result wi
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.8.2/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.9.0/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
