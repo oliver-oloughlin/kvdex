@@ -228,35 +228,58 @@ export function deleteIndices<
   return op
 }
 
+/**
+ * Perform kv.getMany with sliced executions to allow for more keys than internal limit.
+ *
+ * @param keys - List of keys.
+ * @param kv - Deno KV instance.
+ * @param options - Find many options.
+ * @returns List of entries.
+ */
 export async function kvGetMany<const T>(
   keys: Deno.KvKey[],
   kv: Deno.Kv,
   options?: FindManyOptions,
 ) {
+  // Initialize sliced keys list
   const slicedKeys: Deno.KvKey[][] = []
 
+  // Slice keys based on getMany keys limit
   for (let i = 0; i < keys.length; i += GET_MANY_KEY_LIMIT) {
     slicedKeys.push(keys.slice(i, i + GET_MANY_KEY_LIMIT))
   }
 
+  // Execute getMany for each sliced keys entry
   const slicedEntries = await Promise.all(slicedKeys.map((keys) => {
     return kv.getMany<T[]>(keys, options)
   }))
 
+  // Return accumulated result
   return slicedEntries.flat()
 }
 
+/**
+ * Use optimized atomic operations without hitting mutation limit.
+ *
+ * @param kv - Deno KV instance.
+ * @param elements - Pool of elements.
+ * @param fn - Callback function to be called for each element.
+ * @returns Promise that resolves to list of atomic commit results.
+ */
 export async function useAtomics<const T>(
   kv: Deno.Kv,
   elements: T[],
   fn: (value: T, op: Deno.AtomicOperation) => Deno.AtomicOperation,
 ) {
+  // Initiialize sliced elements list
   const slicedElements: T[][] = []
 
+  // Slice elements based on atomic mutations limit
   for (let i = 0; i < elements.length; i += ATOMIC_OPERATION_MUTATION_LIMIT) {
     slicedElements.push(elements.slice(i, i + ATOMIC_OPERATION_MUTATION_LIMIT))
   }
 
+  // Invoke callback function for each element and execute atomic operation
   return await Promise.all(slicedElements.map(async (elements) => {
     let atomic = kv.atomic()
 
