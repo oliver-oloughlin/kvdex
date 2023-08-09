@@ -215,45 +215,21 @@ export class IndexableCollection<
   async findBySecondaryIndex<
     const K extends SecondaryIndexKeys<T1, T2["indices"]>,
   >(index: K, value: CheckKeyOf<K, T1>, options?: ListOptions<T1>) {
-    // Create index key prefix
-    const key = extendKey(
-      this.keys.secondaryIndexKey,
-      index as KvId,
-      value as KvId,
-    )
-
-    // Create list iterator and result list
-    const iter = this.kv.list<T1>({ prefix: key }, options)
+    // Initiate result list
     const result: Document<T1>[] = []
 
-    // Loop over iterator and add filtered documents to resutl list
-    for await (const entry of iter) {
-      // Get entry value and document id
-      const { key, value, versionstamp } = entry
-      const id = getDocumentId(key)
-
-      // If id is undefined, continue to next entry
-      if (typeof id === "undefined") {
-        continue
-      }
-
-      // Create document
-      const doc: Document<T1> = {
-        id,
-        versionstamp,
-        value,
-      }
-
-      // Filter document
-      if (!options?.filter || options.filter(doc)) {
-        result.push(doc)
-      }
-    }
+    // Add documents to result list by secondary index
+    const { cursor } = await this.handleBySecondaryIndex(
+      index,
+      value,
+      (doc) => result.push(doc),
+      options,
+    )
 
     // Return result and current iterator cursor
     return {
       result,
-      cursor: iter.cursor || undefined,
+      cursor,
     }
   }
 
@@ -343,45 +319,13 @@ export class IndexableCollection<
   async deleteBySecondaryIndex<
     const K extends SecondaryIndexKeys<T1, T2["indices"]>,
   >(index: K, value: CheckKeyOf<K, T1>, options?: ListOptions<T1>) {
-    // Create index key prefix
-    const indexKey = extendKey(
-      this.keys.secondaryIndexKey,
-      index as KvId,
-      value as KvId,
+    // Delete documents by secondary index, return iterator cursor
+    return await this.handleBySecondaryIndex(
+      index,
+      value,
+      (doc) => this.delete(doc.id),
+      options,
     )
-
-    // Create list iterator and delete id list
-    const iter = this.kv.list<T1>({ prefix: indexKey }, options)
-    const deleteIds: KvId[] = []
-
-    // Loop over document entries
-    for await (const { key, value, versionstamp } of iter) {
-      // Get document id, continue to next entry if undefined
-      const id = getDocumentId(key)
-      if (typeof id === "undefined") {
-        continue
-      }
-
-      // Create document
-      const doc: Document<T1> = {
-        id,
-        versionstamp,
-        value,
-      }
-
-      // Filter document and add id to delete list
-      if (!options?.filter || options.filter(doc)) {
-        deleteIds.push(id)
-      }
-    }
-
-    // Delete documents by delete ids
-    await this.delete(...deleteIds)
-
-    // Return current iterator cursor
-    return {
-      cursor: iter.cursor || undefined,
-    }
   }
 
   /** PROTECTED METHODS */
@@ -412,5 +356,65 @@ export class IndexableCollection<
       ...value,
       ...data,
     })
+  }
+
+  /**
+   * Perform operations on lists of documents in the collection by secondary index.
+   *
+   * @param index - Index.
+   * @param value - Index value.
+   * @param fn - Callback function.
+   * @param options - List options
+   * @returns - Promise that resolves to object containing iterator cursor.
+   */
+  protected async handleBySecondaryIndex<
+    const K extends SecondaryIndexKeys<T1, T2["indices"]>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, T1>,
+    fn: (doc: Document<T1>) => unknown,
+    options?: ListOptions<T1>,
+  ) {
+    // Create index key prefix
+    const key = extendKey(
+      this.keys.secondaryIndexKey,
+      index as KvId,
+      value as KvId,
+    )
+
+    // Create list iterator and initiate documents list
+    const iter = this.kv.list<T1>({ prefix: key }, options)
+    const docs: Document<T1>[] = []
+
+    // Loop over document entries
+    for await (const { key, value, versionstamp } of iter) {
+      // Get document id
+      const id = getDocumentId(key)
+
+      // If id is undefined, continue to next entry
+      if (typeof id === "undefined") {
+        continue
+      }
+
+      // Create document
+      const doc: Document<T1> = {
+        id,
+        versionstamp,
+        value,
+      }
+
+      // Filter document and add to documetns list
+      if (!options?.filter || options.filter(doc)) {
+        docs.push(doc)
+      }
+    }
+
+    // Execute callback function for each document
+    await Promise.all(docs.map((doc) => fn(doc)))
+
+    // Return current iterator cursor
+    return {
+      cursor: iter.cursor || undefined,
+    }
   }
 }
