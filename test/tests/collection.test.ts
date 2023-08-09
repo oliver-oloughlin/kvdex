@@ -406,6 +406,75 @@ Deno.test("collection", async (t) => {
     })
   })
 
+  // Test "updateMany" method
+  await t.step("updateMany", async (t) => {
+    await t.step("Should update all documents with new value", async () => {
+      await reset()
+
+      const numbers = generateNumbers(50)
+      const crs = await db.values.numbers.addMany(...numbers)
+      assert(crs.every((cr) => cr.ok))
+
+      const count1 = await db.values.numbers.count({
+        filter: (doc) => doc.value === 10,
+      })
+
+      assert(count1 < numbers.length)
+
+      await db.values.numbers.updateMany(10)
+
+      const count2 = await db.values.numbers.count({
+        filter: (doc) => doc.value === 10,
+      })
+
+      assert(count2 === numbers.length)
+    })
+
+    await t.step("Should only update filtered documents", async () => {
+      await reset()
+
+      const cr1 = await db.values.numbers.add(1)
+      const cr2 = await db.values.numbers.add(2)
+      assert(cr1.ok && cr2.ok)
+
+      const { result } = await db.values.numbers.updateMany(10, {
+        filter: (doc) => doc.value === 1,
+      })
+
+      assert(result.every((cr) => cr.ok))
+
+      const doc1 = await db.values.numbers.find(cr1.id)
+      const doc2 = await db.values.numbers.find(cr2.id)
+      assert(doc1?.value === 10)
+      assert(doc2?.value === 2)
+    })
+
+    await t.step("Should perform partial update on all documents", async () => {
+      await reset()
+
+      const people = generatePeople(100)
+      const crs = await db.people.addMany(...people)
+      assert(crs.every((cr) => cr.ok))
+
+      const newName = "new_name"
+
+      const count1 = await db.people.count({
+        filter: (doc) => doc.value.name === newName,
+      })
+
+      assert(count1 < people.length)
+
+      const { result } = await db.people.updateMany({ name: newName })
+      assert(result.every((cr) => cr.ok))
+
+      const count2 = await db.people.count({
+        filter: (doc) => doc.value.name === newName,
+      })
+
+      assert(count2 === people.length)
+    })
+  })
+
   // Test "deleteMany" method
   await t.step("deleteMany", async (t2) => {
     await t2.step({

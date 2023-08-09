@@ -262,27 +262,32 @@ export class Collection<
     // Get document
     const doc = await this.find(id)
 
-    // If no documetn is found, return result with false flag
+    // If no document is found, return result with false flag
     if (!doc) {
       return {
         ok: false,
       }
     }
 
-    // Get document value, delete document entry
-    const { value } = doc
-    await this.delete(id)
+    // Update document and return commit result
+    return await this.updateDocument(doc, data)
+  }
 
-    // If value is KvObject, perform partial merge and set new documetn value
-    if (isKvObject(value)) {
-      return await this.set(id, {
-        ...value as KvObject,
-        ...data as KvObject,
-      } as T1)
+  async updateMany(data: UpdateData<T1>, options?: ListOptions<T1>) {
+    // Initiate result list
+    const result: CommitResult<T1>[] = []
+
+    // Update each document, add commit result to result list
+    const { cursor } = await this.handleMany(async (doc) => {
+      const cr = await this.updateDocument(doc, data)
+      result.push(cr)
+    }, options)
+
+    // Return result list and current iterator cursor
+    return {
+      result,
+      cursor,
     }
-
-    // Set new document value
-    return await this.set(id, data as T1)
   }
 
   /**
@@ -539,6 +544,8 @@ export class Collection<
     })
   }
 
+  /** PROTECTED METHODS */
+
   /**
    * Perform operations on lists of documents in the collection.
    *
@@ -582,5 +589,32 @@ export class Collection<
     return {
       cursor: iter.cursor || undefined,
     }
+  }
+
+  /**
+   * Update a document with new data.
+   *
+   * @param doc - Old document.
+   * @param data - New data.
+   * @returns Promise that resolves to a commit result.
+   */
+  protected async updateDocument(
+    doc: Document<T1>,
+    data: UpdateData<T1>,
+  ) {
+    // Get document value, delete document entry
+    const { value, id } = doc
+    await this.delete(id)
+
+    // If value is KvObject, perform partial merge and set new documetn value
+    if (isKvObject(value)) {
+      return await this.set(id, {
+        ...value as KvObject,
+        ...data as KvObject,
+      } as T1)
+    }
+
+    // Set new document value
+    return await this.set(id, data as T1)
   }
 }

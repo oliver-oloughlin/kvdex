@@ -323,6 +323,53 @@ Deno.test("large_collection", async (t) => {
     )
   })
 
+  // Test "updateMany" method
+  await t.step("updateMany", async (t) => {
+    await t.step("Should partially update all documents", async () => {
+      await reset()
+
+      const crs = await db.largeDocs.addMany(testLargeData, testLargeData2)
+      assert(crs.every((cr) => cr.ok))
+
+      const newName = "new_name"
+
+      const count1 = await db.largeDocs.count({
+        filter: (doc) => doc.value.name === newName,
+      })
+
+      assert(count1 === 0)
+
+      await db.largeDocs.updateMany({ name: newName })
+
+      const count2 = await db.largeDocs.count({
+        filter: (doc) => doc.value.name === newName,
+      })
+
+      assert(count2 === 2)
+    })
+
+    await t.step("Should only update filtered documents", async () => {
+      await reset()
+
+      const cr1 = await db.largeDocs.add(testLargeData)
+      const cr2 = await db.largeDocs.add(testLargeData2)
+      assert(cr1.ok && cr2.ok)
+
+      const newName = "new_name"
+
+      const { result } = await db.largeDocs.updateMany({ name: newName }, {
+        filter: (doc) => doc.value.name === testLargeData.name,
+      })
+
+      assert(result.every((cr) => cr.ok))
+
+      const doc1 = await db.largeDocs.find(cr1.id)
+      const doc2 = await db.largeDocs.find(cr2.id)
+      assert(doc1?.value.name === newName)
+      assert(doc2?.value.name === testLargeData2.name)
+    })
+  })
+
   // Test "getMany" method
   await t.step("getMany", async (t) => {
     await t.step(
