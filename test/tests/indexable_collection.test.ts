@@ -474,6 +474,188 @@ Deno.test("indexable_collection", async (t) => {
     })
   })
 
+  // Test "updateByPrimaryIndex" method
+  await t.step("updateByPrimaryIndex", async (t) => {
+    await t.step(
+      "Should update data with merged value by primary index",
+      async () => {
+        await reset()
+
+        const cr1 = await db.indexablePeople.add(testPerson)
+
+        assert(cr1.ok)
+
+        const cr2 = await db.indexablePeople.updateByPrimaryIndex(
+          "name",
+          testPerson.name,
+          {
+            age: 77,
+            address: {
+              country: "Sweden",
+              city: null,
+            },
+            friends: [],
+          },
+        )
+
+        assert(cr2.ok)
+
+        const idDoc = await db.indexablePeople.find(cr1.id)
+
+        const nameDoc = await db.indexablePeople.findByPrimaryIndex(
+          "name",
+          testPerson.name,
+        )
+
+        const { result } = await db.indexablePeople.findBySecondaryIndex(
+          "age",
+          77,
+        )
+        const [ageDoc] = result
+
+        assert(idDoc !== null)
+        assert(nameDoc !== null)
+        assert(typeof ageDoc !== "undefined" && ageDoc !== null)
+
+        const value1 = flatten(idDoc)
+        const value2 = flatten(nameDoc)
+        const value3 = flatten(ageDoc)
+
+        assert(value1.name === testPerson.name)
+        assert(value1.age === 77)
+        assert(value1.address.country === "Sweden")
+        assert(value1.address.city === null)
+        assert(typeof value1.address.postcode === "undefined")
+        assert(value1.friends.length === 0)
+
+        assert(value2.name === testPerson.name)
+        assert(value2.age === 77)
+        assert(value2.address.country === "Sweden")
+        assert(value2.address.city === null)
+        assert(typeof value2.address.postcode === "undefined")
+        assert(value2.friends.length === 0)
+
+        assert(value3.name === testPerson.name)
+        assert(value3.age === 77)
+        assert(value3.address.country === "Sweden")
+        assert(value3.address.city === null)
+        assert(typeof value3.address.postcode === "undefined")
+        assert(value3.friends.length === 0)
+      },
+    )
+
+    await t.step("Should not update document with index conflict", async () => {
+      await reset()
+
+      const cr1 = await db.indexablePeople.add(testPerson)
+      const cr12 = await db.indexablePeople.add(testPerson2)
+      assert(cr1.ok && cr12.ok)
+
+      const cr3 = await db.indexablePeople.updateByPrimaryIndex(
+        "name",
+        testPerson.name,
+        {
+          name: testPerson2.name,
+        },
+      )
+
+      assert(!cr3.ok)
+
+      const doc1 = await db.indexablePeople.find(cr1.id)
+      assert(doc1?.value.name === testPerson.name)
+    })
+  })
+
+  // Test "updateBySecondaryIndex" method
+  await t.step("updateBySecondaryIndex", async (t) => {
+    await t.step(
+      "Should partially update all documents by secondary index",
+      async () => {
+        await reset()
+
+        const crs = await db.indexablePeople.addMany(testPerson, testPerson2)
+        assert(crs.every((cr) => cr.ok))
+
+        const newAge = 99
+
+        const count1 = await db.indexablePeople.count({
+          filter: (doc) => doc.value.age === newAge,
+        })
+
+        assert(count1 === 0)
+
+        await db.indexablePeople.updateBySecondaryIndex("age", testPerson.age, {
+          age: newAge,
+        })
+
+        const count2 = await db.indexablePeople.count({
+          filter: (doc) => doc.value.age === newAge,
+        })
+
+        assert(count2 === 2)
+      },
+    )
+
+    await t.step(
+      "Should only update filtered documents by secondary index",
+      async () => {
+        await reset()
+
+        const cr1 = await db.indexablePeople.add(testPerson)
+        const cr2 = await db.indexablePeople.add(testPerson2)
+        assert(cr1.ok && cr2.ok)
+
+        const newAge = 99
+
+        const { result } = await db.indexablePeople.updateBySecondaryIndex(
+          "age",
+          testPerson.age,
+          { age: newAge },
+          {
+            filter: (doc) => doc.value.name === testPerson.name,
+          },
+        )
+
+        assert(result.every((cr) => cr.ok))
+
+        const doc1 = await db.indexablePeople.find(cr1.id)
+        const doc2 = await db.indexablePeople.find(cr2.id)
+        assert(doc1?.value.age === newAge)
+        assert(doc2?.value.age === testPerson2.age)
+      },
+    )
+
+    await t.step(
+      "Should only update 1 document with new primary index data",
+      async () => {
+        await reset()
+
+        const cr1 = await db.indexablePeople.add(testPerson)
+        const cr2 = await db.indexablePeople.add(testPerson2)
+        assert(cr1.ok && cr2.ok)
+
+        const newName = "new_name"
+
+        const { result } = await db.indexablePeople.updateBySecondaryIndex(
+          "age",
+          testPerson.age,
+          {
+            name: newName,
+          },
+        )
+
+        assert(result.some((cr) => cr.ok))
+        assert(result.some((cr) => !cr.ok))
+
+        const count = await db.indexablePeople.count({
+          filter: (doc) => doc.value.name === newName,
+        })
+
+        assert(count === 1)
+      },
+    )
+  })
+
   // Test "updateMany" method
   await t.step("updateMany", async (t) => {
     await t.step("Should partially update all documents", async () => {

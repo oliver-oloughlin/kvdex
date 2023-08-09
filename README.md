@@ -32,6 +32,8 @@ Zero third-party dependencies.
   - [Indexable Collection Methods](#indexable-collection-methods)
     - [findByPrimaryIndex()](#findbyprimaryindex)
     - [findBySecondaryIndex()](#findbysecondaryindex)
+    - [updateByPrimaryIndex()](#updatebyprimaryindex)
+    - [updateBySecondaryIndex()](#updatebysecondaryindex)
     - [deleteByPrimaryIndex()](#deletebyprimaryindex)
     - [deleteBySecondaryIndex()](#deletebysecondaryindex)
   - [Large Collections](#large-collections)
@@ -58,7 +60,7 @@ create your Zod object schema and use its inferred type as your model.
 **_NOTE_:** When using interfaces instead of types, sub-interfaces must also extend the Model type.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.9.3/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.9.4/mod.ts"
 
 interface User extends Model {
   username: string
@@ -79,7 +81,7 @@ interface User extends Model {
 Deno KV instance and a schema definition as arguments.
 
 ```ts
-import { kvdex } from "https://deno.land/x/kvdex@v0.9.3/mod.ts"
+import { kvdex } from "https://deno.land/x/kvdex@v0.9.4/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -214,11 +216,11 @@ It takes an optional options argument that can be used for filtering of document
 If no options are given, "updateMany" will update all documents in the collection.
 
 ```ts
-// Updates all user documents and sets name = 67
-await db.users.updateMany({ age: 67 })
+// Updates all user documents and sets age = 67
+const { result } = await db.users.updateMany({ age: 67 })
 
 // Updates all user documents where the user's age is above 20
-await db.users.updateMany({ age: 67 }, {
+const { result } = await db.users.updateMany({ age: 67 }, {
   filter: (doc) => doc.value.age > 20,
 })
 
@@ -432,6 +434,36 @@ const { result } = await db.users.findBySecondaryIndex("age", 24, {
 })
 ```
 
+### updateByPrimaryIndex()
+
+Update a document by a primary index.
+
+```ts
+// Updates a user with username = "oliver" to have age = 56
+const result = await db.users.updateByPrimaryIndex("username", "oliver", { age: 56 })
+```
+
+### updateBySecondaryIndex()
+
+Update documents by a secondary index.
+It takes an optional options argument that can be used for filtering of documents to be updated, and pagination.
+If no options are given, all documents by the given index value will we updated.
+
+```ts
+// Updates all user documents with age = 24 and sets age = 67
+const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
+
+// Updates all user documents where the user's age is 24 and username starts with "o"
+const { result } = await db.users.updateBySecondaryIndex(
+  "age", 
+  24, 
+  { age: 67 }, 
+  {
+    filter: (doc) => doc.value.username.startsWith("o"),
+  }
+)
+```
+
 ### deleteByPrimaryIndex()
 
 Delete a document by a primary index.
@@ -628,7 +660,7 @@ type Model. Only flattens the first layer of the document, meaning the result wi
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.9.3/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.9.4/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
