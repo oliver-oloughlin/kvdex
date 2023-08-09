@@ -273,6 +273,30 @@ export class Collection<
     return await this.updateDocument(doc, data)
   }
 
+  /**
+   * Update the value of multiple existing documents in the collection.
+   *
+   * **Example:**
+   * ```ts
+   * // Updates all user documents and sets name = 67
+   * await db.users.updateMany({ age: 67 })
+   *
+   * // Updates all user documents where the user's age is above 20
+   * await db.users.updateMany({ age: 67 }, {
+   *   filter: (doc) => doc.value.age > 20,
+   * })
+   *
+   * // Only updates first user document, as username is a primary index
+   * const { result } = await db.users.updateMany({ username: "XuserX" })
+   *
+   * const success = result.every(commitResult => commitResult.ok)
+   * console.log(success) // false
+   * ```
+   *
+   * @param data - Updated data to be inserted into documents.
+   * @param options
+   * @returns Promise resolving to an object containing iterator cursor and commit results list.
+   */
   async updateMany(data: UpdateData<T1>, options?: ListOptions<T1>) {
     // Initiate result list
     const result: CommitResult<T1>[] = []
