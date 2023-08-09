@@ -328,6 +328,56 @@ export class IndexableCollection<
     )
   }
 
+  async updateByPrimaryIndex<
+    const K extends PrimaryIndexKeys<T1, T2["indices"]>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, T1>,
+    data: UpdateData<T1>,
+  ): Promise<CommitResult<T1>> {
+    // Find document by primary index
+    const doc = await this.findByPrimaryIndex(index, value)
+
+    // If no document, return result with false flag
+    if (!doc) {
+      return {
+        ok: false,
+      }
+    }
+
+    // Update document, return result
+    return await this.update(doc.id, data)
+  }
+
+  async updateBySecondaryIndex<
+    const K extends SecondaryIndexKeys<T1, T2["indices"]>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, T1>,
+    data: UpdateData<T1>,
+    options?: ListOptions<T1>,
+  ) {
+    // Initiate reuslt list
+    const result: CommitResult<T1>[] = []
+
+    // Update each document by secondary index, add commit result to result list
+    const { cursor } = await this.handleBySecondaryIndex(
+      index,
+      value,
+      async (doc) => {
+        const cr = await this.updateDocument(doc, data)
+        result.push(cr)
+      },
+      options,
+    )
+
+    // Return result list and current iterator cursor
+    return {
+      result,
+      cursor,
+    }
+  }
+
   /** PROTECTED METHODS */
 
   protected async updateDocument(
