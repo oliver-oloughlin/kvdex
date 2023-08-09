@@ -19,8 +19,10 @@ import type {
   Model,
   PrimaryIndexKeys,
   SecondaryIndexKeys,
+  UpdateData,
 } from "./types.ts"
 import {
+  checkIndices,
   deleteIndices,
   extendKey,
   getDocumentId,
@@ -380,5 +382,35 @@ export class IndexableCollection<
     return {
       cursor: iter.cursor || undefined,
     }
+  }
+
+  /** PROTECTED METHODS */
+
+  protected async updateDocument(
+    doc: Document<T1>,
+    data: UpdateData<T1>,
+  ): Promise<CommitResult<T1>> {
+    // Get document value, delete document entry
+    const { value, id } = doc
+
+    // Check for index collisions
+    const atomic = checkIndices(data, this.kv.atomic(), this)
+    const cr = await atomic.commit()
+
+    // If check fails, return result with false flag
+    if (!cr.ok) {
+      return {
+        ok: false,
+      }
+    }
+
+    // Delete document entry
+    await this.delete(id)
+
+    // Set new document value from merged data
+    return await this.set(id, {
+      ...value,
+      ...data,
+    })
   }
 }

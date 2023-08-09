@@ -11,6 +11,7 @@ import type {
   KvKey,
   KvValue,
   Model,
+  UpdateData,
 } from "./types.ts"
 
 /**
@@ -159,7 +160,51 @@ export function setIndices<
     )
 
     // Add index insertion to atomic operation, check for exisitng indices
-    op = op.set(indexKey, data).check({
+    op = op.set(indexKey, data)
+  })
+
+  // Return the mutated atomic operation
+  return op
+}
+
+/**
+ * Check for index collisions when inserting update data.
+ *
+ * @param id - Document id.
+ * @param data - Update data.
+ * @param atomic - Atomic operation.
+ * @param collection - Collection context.
+ * @returns The atomic operation with added checks.
+ */
+export function checkIndices<
+  T1 extends Model,
+  T2 extends UpdateData<T1>,
+  T3 extends IndexableCollectionDefinition<T1>,
+>(
+  data: T2,
+  atomic: Deno.AtomicOperation,
+  collection: IndexableCollection<T1, T3>,
+) {
+  // Set mutable copy of atomic operation
+  let op = atomic
+
+  // Check primary indices using primary index list
+  collection.primaryIndexList.forEach((index) => {
+    // Get the index value from data, if undefined continue to next index
+    const indexValue = data[index] as KvId | undefined
+    if (typeof indexValue === "undefined") {
+      return
+    }
+
+    // Create the index key
+    const indexKey = extendKey(
+      collection.keys.primaryIndexKey,
+      index,
+      indexValue,
+    )
+
+    // Check for existing index entry
+    op = op.check({
       key: indexKey,
       versionstamp: null,
     })

@@ -455,6 +455,97 @@ Deno.test("indexable_collection", async (t) => {
       assert(typeof value3.address.postcode === "undefined")
       assert(value3.friends.length === 0)
     })
+
+    await t.step("Should not update document with index conflict", async () => {
+      await reset()
+
+      const cr1 = await db.indexablePeople.add(testPerson)
+      const cr12 = await db.indexablePeople.add(testPerson2)
+      assert(cr1.ok && cr12.ok)
+
+      const cr3 = await db.indexablePeople.update(cr1.id, {
+        name: testPerson2.name,
+      })
+
+      assert(!cr3.ok)
+
+      const doc1 = await db.indexablePeople.find(cr1.id)
+      assert(doc1?.value.name === testPerson.name)
+    })
+  })
+
+  // Test "updateMany" method
+  await t.step("updateMany", async (t) => {
+    await t.step("Should partially update all documents", async () => {
+      await reset()
+
+      const people = generatePeople(50)
+      const crs = await db.indexablePeople.addMany(...people)
+      assert(crs.every((cr) => cr.ok))
+
+      const newAge = 99
+
+      const count1 = await db.indexablePeople.count({
+        filter: (doc) => doc.value.age === newAge,
+      })
+
+      assert(count1 < people.length)
+
+      await db.indexablePeople.updateMany({ age: newAge })
+
+      const count2 = await db.indexablePeople.count({
+        filter: (doc) => doc.value.age === newAge,
+      })
+
+      assert(count2 === people.length)
+    })
+
+    await t.step("Should only update filtered documents", async () => {
+      await reset()
+
+      const cr1 = await db.indexablePeople.add(testPerson)
+      const cr2 = await db.indexablePeople.add(testPerson2)
+      assert(cr1.ok && cr2.ok)
+
+      const newAge = 99
+
+      const { result } = await db.indexablePeople.updateMany({ age: newAge }, {
+        filter: (doc) => doc.value.name === testPerson.name,
+      })
+
+      assert(result.every((cr) => cr.ok))
+
+      const doc1 = await db.indexablePeople.find(cr1.id)
+      const doc2 = await db.indexablePeople.find(cr2.id)
+      assert(doc1?.value.age === newAge)
+      assert(doc2?.value.age === testPerson2.age)
+    })
+
+    await t.step(
+      "Should only update 1 document with new primary index data",
+      async () => {
+        await reset()
+
+        const cr1 = await db.indexablePeople.add(testPerson)
+        const cr2 = await db.indexablePeople.add(testPerson2)
+        assert(cr1.ok && cr2.ok)
+
+        const newName = "new_name"
+
+        const { result } = await db.indexablePeople.updateMany({
+          name: newName,
+        })
+
+        assert(result.some((cr) => cr.ok))
+        assert(result.some((cr) => !cr.ok))
+
+        const count = await db.indexablePeople.count({
+          filter: (doc) => doc.value.name === newName,
+        })
+
+        assert(count === 1)
+      },
+    )
   })
 
   // Test "getMany" method
