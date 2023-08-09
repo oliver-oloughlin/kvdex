@@ -328,6 +328,20 @@ export class IndexableCollection<
     )
   }
 
+  /**
+   * Update a document by a primary index.
+   *
+   * **Example:**
+   * ```ts
+   * // Updates a user with username = "oliver" to have age = 56
+   * const result = await db.users.updateByPrimaryIndex("username", "oliver", { age: 56 })
+   * ```
+   *
+   * @param index - Index to update by.
+   * @param value - Index value.
+   * @param data - Update data to be inserted into document.
+   * @returns Promise that resolves to a commit result.
+   */
   async updateByPrimaryIndex<
     const K extends PrimaryIndexKeys<T1, T2["indices"]>,
   >(
@@ -349,6 +363,31 @@ export class IndexableCollection<
     return await this.update(doc.id, data)
   }
 
+  /**
+   * Update documents in the collection by a secondary index.
+   *
+   * **Example:**
+   * ```ts
+   * // Updates all user documents with age = 24 and sets age = 67
+   * const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
+   *
+   * // Updates all user documents where the user's age is 24 and username starts with "o"
+   * const { result } = await db.users.updateBySecondaryIndex(
+   *   "age",
+   *   24,
+   *   { age: 67 },
+   *   {
+   *     filter: (doc) => doc.value.username.startsWith("o"),
+   *   }
+   * )
+   * ```
+   *
+   * @param index - Index to update by.
+   * @param value - Index value.
+   * @param data - Update data to be inserted into document.
+   * @param options
+   * @returns Promise that resolves to an object containing result list and iterator cursor.
+   */
   async updateBySecondaryIndex<
     const K extends SecondaryIndexKeys<T1, T2["indices"]>,
   >(

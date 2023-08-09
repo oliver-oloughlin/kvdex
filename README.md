@@ -32,6 +32,8 @@ Zero third-party dependencies.
   - [Indexable Collection Methods](#indexable-collection-methods)
     - [findByPrimaryIndex()](#findbyprimaryindex)
     - [findBySecondaryIndex()](#findbysecondaryindex)
+    - [updateByPrimaryIndex()](#updatebyprimaryindex)
+    - [updateBySecondaryIndex()](#updatebysecondaryindex)
     - [deleteByPrimaryIndex()](#deletebyprimaryindex)
     - [deleteBySecondaryIndex()](#deletebysecondaryindex)
   - [Large Collections](#large-collections)
@@ -214,11 +216,11 @@ It takes an optional options argument that can be used for filtering of document
 If no options are given, "updateMany" will update all documents in the collection.
 
 ```ts
-// Updates all user documents and sets name = 67
-await db.users.updateMany({ age: 67 })
+// Updates all user documents and sets age = 67
+const { result } = await db.users.updateMany({ age: 67 })
 
 // Updates all user documents where the user's age is above 20
-await db.users.updateMany({ age: 67 }, {
+const { result } = await db.users.updateMany({ age: 67 }, {
   filter: (doc) => doc.value.age > 20,
 })
 
@@ -430,6 +432,36 @@ const { result } = await db.users.findBySecondaryIndex("age", 24)
 const { result } = await db.users.findBySecondaryIndex("age", 24, {
   filter: (doc) => doc.value.username.startsWith("o")
 })
+```
+
+### updateByPrimaryIndex()
+
+Update a document by a primary index.
+
+```ts
+// Updates a user with username = "oliver" to have age = 56
+const result = await db.users.updateByPrimaryIndex("username", "oliver", { age: 56 })
+```
+
+### updateBySecondaryIndex()
+
+Update documents by a secondary index.
+It takes an optional options argument that can be used for filtering of documents to be updated, and pagination.
+If no options are given, all documents by the given index value will we updated.
+
+```ts
+// Updates all user documents with age = 24 and sets age = 67
+const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
+
+// Updates all user documents where the user's age is 24 and username starts with "o"
+const { result } = await db.users.updateBySecondaryIndex(
+  "age", 
+  24, 
+  { age: 67 }, 
+  {
+    filter: (doc) => doc.value.username.startsWith("o"),
+  }
+)
 ```
 
 ### deleteByPrimaryIndex()
