@@ -1,5 +1,6 @@
 import type { Collection } from "./collection.ts"
 import { IndexableCollection } from "./indexable_collection.ts"
+import { LargeCollection } from "./large_collection.ts"
 import type {
   AtomicCheck,
   AtomicMutation,
@@ -84,13 +85,7 @@ export class AtomicBuilder<
   select<const TValue extends KvValue>(
     selector: CollectionSelector<T1, TValue>,
   ) {
-    // Create new atomic builder using selector
-    return new AtomicBuilder(
-      this.kv,
-      this.schema,
-      selector(this.schema),
-      this.operations,
-    )
+    return createAtomicBuilder(this.kv, this.schema, selector, this.operations)
   }
 
   /**
@@ -438,4 +433,30 @@ export class AtomicBuilder<
     // Return commit result
     return commitResult
   }
+}
+
+export function createAtomicBuilder<
+  const T1 extends Schema<SchemaDefinition>,
+  T2 extends KvValue,
+>(
+  kv: Deno.Kv,
+  schema: T1,
+  selector: CollectionSelector<T1, T2>,
+  operations?: Operations,
+) {
+  // Select collection context
+  const collection = selector(schema)
+
+  // Check for large collection
+  if (collection instanceof LargeCollection) {
+    throw Error("Atomic operations are not supported for large collections.")
+  }
+
+  // Create new atomic builder
+  return new AtomicBuilder(
+    kv,
+    schema,
+    collection,
+    operations,
+  )
 }

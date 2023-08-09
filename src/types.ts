@@ -1,12 +1,22 @@
 import type { Collection } from "./collection.ts"
 import type { AtomicBuilder } from "./atomic_builder.ts"
 import type { CollectionBuilderContext } from "./collection_builder.ts"
+import type { LargeCollection } from "./large_collection.ts"
 
 // Atomic Builder Types
 export type CollectionSelector<
   T1 extends Schema<SchemaDefinition>,
   T2 extends KvValue,
-> = (schema: T1) => Collection<T2, CollectionDefinition<T2>>
+> = (schema: AtomicSchema<T1>) => Collection<T2, CollectionDefinition<T2>>
+
+export type AtomicSchema<T extends Schema<SchemaDefinition>> = {
+  [
+    K in KeysOfThatDontExtend<
+      T,
+      LargeCollection<LargeKvValue, LargeCollectionDefinition<LargeKvValue>>
+    >
+  ]: T[K] extends Schema<SchemaDefinition> ? AtomicSchema<T[K]> : T[K]
+}
 
 export type AtomicOperationFn = (
   op: Deno.AtomicOperation,
@@ -131,6 +141,10 @@ export type IndexType = "primary" | "secondary"
 
 export type KeysOfThatExtend<T1, T2> = keyof {
   [K in keyof T1 as T1[K] extends T2 ? K : never]: unknown
+}
+
+export type KeysOfThatDontExtend<T1, T2> = keyof {
+  [K in keyof T1 as T1[K] extends T2 ? never : K]: unknown
 }
 
 export type IndexRecord<T extends Model> = {

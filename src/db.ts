@@ -1,4 +1,3 @@
-import { AtomicBuilder } from "./atomic_builder.ts"
 import type {
   CollectionDefinition,
   CountAllOptions,
@@ -15,6 +14,7 @@ import type {
 import { CollectionBuilderContext } from "./collection_builder.ts"
 import { Collection } from "./collection.ts"
 import { extendKey } from "./utils.internal.ts"
+import { createAtomicBuilder } from "./atomic_builder.ts"
 
 /**
  * Create a new database instance.
@@ -54,7 +54,7 @@ export function kvdex<const T extends SchemaDefinition>(
   const schema = _createSchema(schemaDefinition, kv) as Schema<T>
   return {
     ...schema,
-    atomic: (selector) => new AtomicBuilder(kv, schema, selector(schema)),
+    atomic: (selector) => createAtomicBuilder(kv, schema, selector),
     countAll: async (options) => await _countAll(kv, schema, options),
     deleteAll: async (options) => await _deleteAll(kv, schema, options),
     enqueue: async (data, options) => await _enqueue(kv, data, options),
