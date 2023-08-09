@@ -58,7 +58,7 @@ create your Zod object schema and use its inferred type as your model.
 **_NOTE_:** When using interfaces instead of types, sub-interfaces must also extend the Model type.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.9.2/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.9.3/mod.ts"
 
 interface User extends Model {
   username: string
@@ -79,7 +79,7 @@ interface User extends Model {
 Deno KV instance and a schema definition as arguments.
 
 ```ts
-import { kvdex } from "https://deno.land/x/kvdex@v0.9.2/mod.ts"
+import { kvdex } from "https://deno.land/x/kvdex@v0.9.3/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -628,7 +628,7 @@ type Model. Only flattens the first layer of the document, meaning the result wi
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.9.2/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.9.3/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
