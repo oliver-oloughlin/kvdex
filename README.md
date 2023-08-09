@@ -434,7 +434,7 @@ await db.users.deleteBySecondaryIndex("age", 24, {
 
 ## Large Collections
 
-Large collections are distinct from standard collections or indexable collections in that they can hold values that exceed the size limit of values in Deno KV. Value types are limited to strings, arrays of number, boolean or LargeKvValue, and objects with LargeKvValue properties. All base collection methods are available for large collections. Document values are divided accross multiple Deno KV entries, which impacts the performance of most operations. Only use this collection type if you think your document values will exceed the approximately 65KB size limit.
+Large collections are distinct from standard collections or indexable collections in that they can hold values that exceed the size limit of values in Deno KV. Value types are limited to being of LargeKvValue (string, basic objects and arrays). All base collection methods are available for large collections. Document values are divided accross multiple Deno KV entries, which impacts the performance of most operations. Only use this collection type if you think your document values will exceed the approximately 65KB size limit.
 
 ## Database Methods
 
