@@ -8,6 +8,7 @@ import type {
   EnqueueOptions,
   FindManyOptions,
   FindOptions,
+  IdGenerator,
   KvId,
   KvObject,
   KvValue,
@@ -35,6 +36,7 @@ export class Collection<
   const T2 extends CollectionDefinition<T1>,
 > {
   protected kv: Deno.Kv
+  protected idGenerator: IdGenerator
   readonly keys: CollectionKeys
 
   /**
@@ -53,6 +55,8 @@ export class Collection<
   constructor(def: T2) {
     // Set the KV instance
     this.kv = def.kv
+
+    this.idGenerator = def.idGenerator ?? generateId
 
     // Set the collection keys
     this.keys = {
@@ -166,7 +170,7 @@ export class Collection<
    */
   async add(data: T1) {
     // Generate id and set the document entry
-    const id = generateId()
+    const id = await this.idGenerator()
     return await this.set(id, data)
   }
 

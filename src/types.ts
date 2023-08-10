@@ -77,9 +77,16 @@ export type AtomicMutation<T extends KvValue> =
   )
 
 // Collection Types
+export type IdGenerator = () => KvId | Promise<KvId>
+
 export type CollectionDefinition<T extends KvValue> = {
   kv: Deno.Kv
   key: KvKey
+
+  /**
+   * Set a custom function for automatic id generation.
+   */
+  idGenerator?: IdGenerator
 }
 
 export type CollectionPrepDefinition<T extends KvValue> = Omit<
