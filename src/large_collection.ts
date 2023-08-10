@@ -166,7 +166,7 @@ export class LargeCollection<
 
     // This should never happen
     if (!json) {
-      this.delete(id)
+      await this.delete(id)
       return null
     }
 
@@ -221,7 +221,7 @@ export class LargeCollection<
 
         // This should never happen
         if (!json) {
-          this.delete(id)
+          await this.delete(id)
           return
         }
 

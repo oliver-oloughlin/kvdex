@@ -60,7 +60,7 @@ create your Zod object schema and use its inferred type as your model.
 **_NOTE_:** When using interfaces instead of types, sub-interfaces must also extend the Model type.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.9.4/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.9.5/mod.ts"
 
 interface User extends Model {
   username: string
@@ -81,7 +81,7 @@ interface User extends Model {
 Deno KV instance and a schema definition as arguments.
 
 ```ts
-import { kvdex } from "https://deno.land/x/kvdex@v0.9.4/mod.ts"
+import { kvdex } from "https://deno.land/x/kvdex@v0.9.5/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -585,14 +585,14 @@ index entries.
 ### Without checking
 
 ```ts
-// Deletes and adds an entry to the bigints collection
+// Deletes and adds an entry to the numbers collection
 const result1 = await db
   .atomic((schema) => schema.numbers)
   .delete("id_1")
   .set("id_2", 100)
   .commit()
 
-// Adds 2 new entries to the strings collection and 1 new entry to the users collection
+// Adds 2 new entries to the numbers collection and 1 new entry to the users collection
 const result2 = await db
   .atomic((schema) => schema.numbers)
   .add(1)
@@ -633,7 +633,7 @@ const result3 = await db
 ### With checking
 
 ```ts
-// Only adds 10 to the value when it has not been changed after being read
+// Only adds 10 to the value when it has not been changed since being read
 let result = null
 while (!result || !result.ok) {
   const { id, versionstamp, value } = await db.numbers.find("id")
@@ -660,7 +660,7 @@ type Model. Only flattens the first layer of the document, meaning the result wi
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.9.4/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.9.5/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
