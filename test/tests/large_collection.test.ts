@@ -2,6 +2,7 @@ import { assert } from "../deps.ts"
 import {
   db,
   generateLargeDatas,
+  generateNumbers,
   kv,
   LargeData,
   reset,
@@ -35,6 +36,48 @@ Deno.test("large_collection", async (t) => {
       const segmentKey = db.largeDocs.keys.segmentKey
       const suffix = segmentKey[segmentKey.length - 1]
       assert(suffix === COLLECTION_SEGMENT_KEY_SUFFIX)
+    })
+  })
+
+  // Test validity of values in large colelctions
+  await t.step("values", async (t) => {
+    await t.step("Should allow empty string as value", async () => {
+      await useTemporaryKv(async (kv) => {
+        const db = kvdex(kv, {
+          strings: (ctx) => ctx.largeCollection<string>().build(),
+        })
+
+        const cr = await db.strings.add("")
+        assert(cr.ok)
+
+        const count = await db.strings.count()
+        assert(count === 1)
+
+        const doc = await db.strings.find(cr.id)
+        assert(doc !== null)
+        assert(typeof doc.value === "string")
+        assert(doc.value === "")
+      })
+    })
+
+    await t.step("Should allow array of numbers as value", async () => {
+      await useTemporaryKv(async (kv) => {
+        const db = kvdex(kv, {
+          arrs: (ctx) => ctx.largeCollection<number[]>().build(),
+        })
+
+        const numbers = generateNumbers(100_000)
+        const cr = await db.arrs.add(numbers)
+        assert(cr.ok)
+
+        const count = await db.arrs.count()
+        assert(count === 1)
+
+        const doc = await db.arrs.find(cr.id)
+        assert(doc !== null)
+        assert(doc.value instanceof Array)
+        assert(typeof doc.value[0] === "number")
+      })
     })
   })
 

@@ -585,14 +585,14 @@ index entries.
 ### Without checking
 
 ```ts
-// Deletes and adds an entry to the bigints collection
+// Deletes and adds an entry to the numbers collection
 const result1 = await db
   .atomic((schema) => schema.numbers)
   .delete("id_1")
   .set("id_2", 100)
   .commit()
 
-// Adds 2 new entries to the strings collection and 1 new entry to the users collection
+// Adds 2 new entries to the numbers collection and 1 new entry to the users collection
 const result2 = await db
   .atomic((schema) => schema.numbers)
   .add(1)
@@ -633,7 +633,7 @@ const result3 = await db
 ### With checking
 
 ```ts
-// Only adds 10 to the value when it has not been changed after being read
+// Only adds 10 to the value when it has not been changed since being read
 let result = null
 while (!result || !result.ok) {
   const { id, versionstamp, value } = await db.numbers.find("id")
