@@ -4,9 +4,9 @@ import { LargeCollection } from "./large_collection.ts"
 import type {
   AtomicCheck,
   AtomicMutation,
-  CollectionDefinition,
+  CollectionOptions,
   CollectionSelector,
-  IndexableCollectionDefinition,
+  IndexableCollectionOptions,
   KvId,
   KvValue,
   Model,
@@ -36,7 +36,7 @@ export class AtomicBuilder<
   private kv: Deno.Kv
   private schema: T1
   private operations: Operations
-  private collection: Collection<T2, CollectionDefinition<T2>>
+  private collection: Collection<T2, CollectionOptions<T2>>
 
   /**
    * Create a new AtomicBuilder for building and executing atomic operations in the KV store.
@@ -49,7 +49,7 @@ export class AtomicBuilder<
   constructor(
     kv: Deno.Kv,
     schema: T1,
-    collection: Collection<T2, CollectionDefinition<T2>>,
+    collection: Collection<T2, CollectionOptions<T2>>,
     operations?: Operations,
   ) {
     // Set kv and schema
@@ -152,7 +152,7 @@ export class AtomicBuilder<
           op,
           this.collection as unknown as IndexableCollection<
             Model,
-            IndexableCollectionDefinition<Model>
+            IndexableCollectionOptions<Model>
           >,
         )
       })
@@ -338,7 +338,7 @@ export class AtomicBuilder<
               op,
               this.collection as unknown as IndexableCollection<
                 Model,
-                IndexableCollectionDefinition<Model>
+                IndexableCollectionOptions<Model>
               >,
             )
           })
@@ -420,7 +420,7 @@ export class AtomicBuilder<
             atomic,
             this.collection as unknown as IndexableCollection<
               Model,
-              IndexableCollectionDefinition<Model>
+              IndexableCollectionOptions<Model>
             >,
           )
 

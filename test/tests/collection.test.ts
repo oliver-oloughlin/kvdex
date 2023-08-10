@@ -32,6 +32,64 @@ Deno.test("collection", async (t) => {
     })
   })
 
+  // Test different custom id generators
+  await t.step("custom_id_generator", async (t) => {
+    await t.step(
+      "Should generate number ids with custom number id generator",
+      async () => {
+        await useTemporaryKv(async (kv) => {
+          let count = 0
+
+          const db = kvdex(kv, {
+            strings: (ctx) =>
+              ctx.collection<string>().build({
+                idGenerator: () => {
+                  const id = count
+                  count++
+                  return id
+                },
+              }),
+          })
+
+          const cr1 = await db.strings.add("1")
+          const cr2 = await db.strings.add("2")
+          const cr3 = await db.strings.add("3")
+          assert(cr1.ok && cr2.ok && cr3.ok)
+
+          assert(cr1.id === 0)
+          assert(cr2.id === 1)
+          assert(cr3.id === 2)
+        })
+      },
+    )
+
+    await t.step(
+      "Should generate string ids with async id generator",
+      async () => {
+        await useTemporaryKv(async (kv) => {
+          const db = kvdex(kv, {
+            strings: (ctx) =>
+              ctx.collection<string>().build({
+                idGenerator: async (data) => {
+                  await sleep(10)
+                  return JSON.stringify(data)
+                },
+              }),
+          })
+
+          const cr1 = await db.strings.add("1")
+          const cr2 = await db.strings.add("2")
+          const cr3 = await db.strings.add("3")
+          assert(cr1.ok && cr2.ok && cr3.ok)
+
+          assert(typeof cr1.id === "string")
+          assert(typeof cr2.id === "string")
+          assert(typeof cr3.id === "string")
+        })
+      },
+    )
+  })
+
   // Test "add" method
   await t.step("add", async (t) => {
     await reset()

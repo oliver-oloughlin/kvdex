@@ -122,7 +122,7 @@ export async function useTemporaryKv(
 ) {
   const dbId = crypto.randomUUID()
   const dir = await Deno.makeTempDir()
-  const filePath = `${dir}/${dbId}.sqlite`
+  const filePath = `${dir}/${dbId}.sqlite3`
   await Deno.writeFile(filePath, new Uint8Array())
   const kv = await Deno.openKv(filePath)
   try {

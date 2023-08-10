@@ -10,11 +10,12 @@ import type {
   CommitResult,
   Document,
   FindOptions,
-  IndexableCollectionDefinition,
   IndexableCollectionKeys,
+  IndexableCollectionOptions,
   IndexDataEntry,
   IndexType,
   KvId,
+  KvKey,
   ListOptions,
   Model,
   PrimaryIndexKeys,
@@ -37,7 +38,7 @@ import {
  */
 export class IndexableCollection<
   const T1 extends Model,
-  const T2 extends IndexableCollectionDefinition<T1>,
+  const T2 extends IndexableCollectionOptions<T1>,
 > extends Collection<T1, T2> {
   readonly primaryIndexList: string[]
   readonly secondaryIndexList: string[]
@@ -60,26 +61,26 @@ export class IndexableCollection<
    *
    * @param def - Indexable Collection Definition.
    */
-  constructor(def: T2) {
+  constructor(kv: Deno.Kv, key: KvKey, def: T2) {
     // Invoke super constructor
-    super(def)
+    super(kv, key, def)
 
     // Set indexable collection keys
     this.keys = {
-      baseKey: extendKey([KVDEX_KEY_PREFIX], ...def.key),
+      baseKey: extendKey([KVDEX_KEY_PREFIX], ...key),
       idKey: extendKey(
         [KVDEX_KEY_PREFIX],
-        ...def.key,
+        ...key,
         COLLECTION_ID_KEY_SUFFIX,
       ),
       primaryIndexKey: extendKey(
         [KVDEX_KEY_PREFIX],
-        ...def.key,
+        ...key,
         COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
       ),
       secondaryIndexKey: extendKey(
         [KVDEX_KEY_PREFIX],
-        ...def.key,
+        ...key,
         COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
       ),
     }

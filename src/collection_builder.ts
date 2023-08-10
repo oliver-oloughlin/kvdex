@@ -2,11 +2,11 @@ import { Collection } from "./collection.ts"
 import { IndexableCollection } from "./indexable_collection.ts"
 import { LargeCollection } from "./large_collection.ts"
 import type {
-  CollectionPrepDefinition,
-  IndexableCollectionPrepDefinition,
+  CollectionOptions,
+  IndexableCollectionOptions,
   KvKey,
   KvValue,
-  LargeCollectionPrepDefinition,
+  LargeCollectionOptions,
   LargeKvValue,
   Model,
 } from "./types.ts"
@@ -66,12 +66,14 @@ class CollectionBuilder<const T extends KvValue> {
    * @param def - Collection prep definition.
    * @returns A collection instance.
    */
-  build<const PrepDef extends CollectionPrepDefinition<T>>(def?: PrepDef) {
-    return new Collection<T, PrepDef & { kv: Deno.Kv; key: KvKey }>({
-      ...def as PrepDef ?? {},
-      kv: this.kv,
-      key: this.key,
-    })
+  build(
+    def?: CollectionOptions<T>,
+  ) {
+    return new Collection<T, CollectionOptions<T>>(
+      this.kv,
+      this.key,
+      def ?? {},
+    )
   }
 }
 
@@ -93,15 +95,11 @@ class IndexableCollectionBuilder<const T extends Model> {
    * @param def - Indexable prep definition.
    * @returns An indexable collection instance.
    */
-  build<const PrepDef extends IndexableCollectionPrepDefinition<T>>(
-    def: PrepDef,
+  build<const TDef extends IndexableCollectionOptions<T>>(
+    def: TDef,
   ) {
     // Create indexable collection using prep definition
-    return new IndexableCollection<T, PrepDef & { kv: Deno.Kv; key: KvKey }>({
-      ...def,
-      kv: this.kv,
-      key: this.key,
-    })
+    return new IndexableCollection<T, TDef>(this.kv, this.key, def)
   }
 }
 
@@ -123,11 +121,11 @@ class LargeCollectionBuilder<const T extends LargeKvValue> {
    * @param def - Collection prep definition.
    * @returns A collection instance.
    */
-  build<const PrepDef extends LargeCollectionPrepDefinition<T>>(def?: PrepDef) {
-    return new LargeCollection<T, PrepDef & { kv: Deno.Kv; key: KvKey }>({
-      ...def as PrepDef ?? {},
-      kv: this.kv,
-      key: this.key,
-    })
+  build(def?: LargeCollectionOptions<T>) {
+    return new LargeCollection<T, LargeCollectionOptions<T>>(
+      this.kv,
+      this.key,
+      def ?? {},
+    )
   }
 }

@@ -101,7 +101,7 @@ const db = kvdex(kv, {
 })
 ```
 
-The schema definition defines collection builder functions (or nested schema definitions) which receive a builder context. Standard collections can hold any type adhering to KvValue (string, number, array, object...), large collections can hold strings, arrays and objects, while indexable collections can only hold types adhering to Model (objects). For indexable collections, primary (unique) and secondary (non-unique) indexing is supported.
+The schema definition defines collection builder functions (or nested schema definitions) which receive a builder context. Standard collections can hold any type adhering to KvValue (string, number, array, object...), large collections can hold strings, arrays and objects, while indexable collections can only hold types adhering to Model (objects). For indexable collections, primary (unique) and secondary (non-unique) indexing is supported. When building a collection, a custom id generator function can be set which will be used for generating a document id when using collection.add(). However, this function will not be used when running atomic.add(). The default id generator is crypto.randomUUID().
 
 ## Collection Methods
 

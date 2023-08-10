@@ -1,7 +1,7 @@
 import { COLLECTION_ID_KEY_SUFFIX, KVDEX_KEY_PREFIX } from "./constants.ts"
 import type {
-  CollectionDefinition,
   CollectionKeys,
+  CollectionOptions,
   CommitResult,
   CountOptions,
   Document,
@@ -10,6 +10,7 @@ import type {
   FindOptions,
   IdGenerator,
   KvId,
+  KvKey,
   KvObject,
   KvValue,
   ListOptions,
@@ -33,10 +34,10 @@ import {
  */
 export class Collection<
   const T1 extends KvValue,
-  const T2 extends CollectionDefinition<T1>,
+  const T2 extends CollectionOptions<T1>,
 > {
   protected kv: Deno.Kv
-  protected idGenerator: IdGenerator
+  protected idGenerator: IdGenerator<KvValue>
   readonly keys: CollectionKeys
 
   /**
@@ -52,18 +53,18 @@ export class Collection<
    *
    * @param def - Collection definition.
    */
-  constructor(def: T2) {
+  constructor(kv: Deno.Kv, key: KvKey, def: T2) {
     // Set the KV instance
-    this.kv = def.kv
+    this.kv = kv
 
-    this.idGenerator = def.idGenerator ?? generateId
+    this.idGenerator = def.idGenerator as IdGenerator<KvValue> ?? generateId
 
     // Set the collection keys
     this.keys = {
-      baseKey: extendKey([KVDEX_KEY_PREFIX], ...def.key),
+      baseKey: extendKey([KVDEX_KEY_PREFIX], ...key),
       idKey: extendKey(
         [KVDEX_KEY_PREFIX],
-        ...def.key,
+        ...key,
         COLLECTION_ID_KEY_SUFFIX,
       ),
     }
@@ -170,7 +171,7 @@ export class Collection<
    */
   async add(data: T1) {
     // Generate id and set the document entry
-    const id = await this.idGenerator()
+    const id = await this.idGenerator(data)
     return await this.set(id, data)
   }
 
