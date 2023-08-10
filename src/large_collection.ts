@@ -12,8 +12,8 @@ import type {
   FindOptions,
   KvId,
   KvKey,
-  LargeCollectionDefinition,
   LargeCollectionKeys,
+  LargeCollectionOptions,
   LargeDocumentEntry,
   LargeKvValue,
   ListOptions,
@@ -27,25 +27,25 @@ import {
 
 export class LargeCollection<
   const T1 extends LargeKvValue,
-  T2 extends LargeCollectionDefinition<T1>,
+  T2 extends LargeCollectionOptions<T1>,
 > extends Collection<T1, T2> {
   readonly keys: LargeCollectionKeys
 
-  constructor(def: T2) {
+  constructor(kv: Deno.Kv, key: KvKey, def: T2) {
     // Invoke super constructor
-    super(def)
+    super(kv, key, def)
 
     // Set large collection keys
     this.keys = {
-      baseKey: extendKey([KVDEX_KEY_PREFIX], ...def.key),
+      baseKey: extendKey([KVDEX_KEY_PREFIX], ...key),
       idKey: extendKey(
         [KVDEX_KEY_PREFIX],
-        ...def.key,
+        ...key,
         COLLECTION_ID_KEY_SUFFIX,
       ),
       segmentKey: extendKey(
         [KVDEX_KEY_PREFIX],
-        ...def.key,
+        ...key,
         COLLECTION_SEGMENT_KEY_SUFFIX,
       ),
     }

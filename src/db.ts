@@ -1,5 +1,5 @@
 import type {
-  CollectionDefinition,
+  CollectionOptions,
   CountAllOptions,
   DB,
   DeleteAllOptions,
@@ -114,7 +114,7 @@ async function _countAll(
   kv: Deno.Kv,
   schemaOrCollection:
     | Schema<SchemaDefinition>
-    | Collection<KvValue, CollectionDefinition<KvValue>>,
+    | Collection<KvValue, CollectionOptions<KvValue>>,
   options?: CountAllOptions,
 ): Promise<number> {
   // If input is a collection, return the collection count
@@ -143,7 +143,7 @@ async function _deleteAll(
   kv: Deno.Kv,
   schemaOrCollection:
     | Schema<SchemaDefinition>
-    | Collection<KvValue, CollectionDefinition<KvValue>>,
+    | Collection<KvValue, CollectionOptions<KvValue>>,
   options?: DeleteAllOptions,
 ) {
   // If input is a collection, delete all documents in the collection

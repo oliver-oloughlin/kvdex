@@ -7,13 +7,13 @@ import type { LargeCollection } from "./large_collection.ts"
 export type CollectionSelector<
   T1 extends Schema<SchemaDefinition>,
   T2 extends KvValue,
-> = (schema: AtomicSchema<T1>) => Collection<T2, CollectionDefinition<T2>>
+> = (schema: AtomicSchema<T1>) => Collection<T2, CollectionOptions<T2>>
 
 export type AtomicSchema<T extends Schema<SchemaDefinition>> = {
   [
     K in KeysOfThatDontExtend<
       T,
-      LargeCollection<LargeKvValue, LargeCollectionDefinition<LargeKvValue>>
+      LargeCollection<LargeKvValue, LargeCollectionOptions<LargeKvValue>>
     >
   ]: T[K] extends Schema<SchemaDefinition> ? AtomicSchema<T[K]> : T[K]
 }
@@ -77,15 +77,14 @@ export type AtomicMutation<T extends KvValue> =
   )
 
 // Collection Types
-export type CollectionDefinition<T extends KvValue> = {
-  kv: Deno.Kv
-  key: KvKey
-}
+export type IdGenerator<T extends KvValue> = (data: T) => KvId | Promise<KvId>
 
-export type CollectionPrepDefinition<T extends KvValue> = Omit<
-  CollectionDefinition<T>,
-  "kv" | "key"
->
+export type CollectionOptions<T extends KvValue> = {
+  /**
+   * Set a custom function for automatic id generation.
+   */
+  idGenerator?: IdGenerator<T>
+}
 
 export type CollectionKeys = {
   baseKey: KvKey
@@ -119,16 +118,11 @@ export type CommitResult<T1 extends KvValue> = {
 }
 
 // Indexable Collection Types
-export type IndexableCollectionDefinition<T extends Model> =
-  & CollectionDefinition<T>
+export type IndexableCollectionOptions<T extends Model> =
+  & CollectionOptions<T>
   & {
     indices: IndexRecord<T>
   }
-
-export type IndexableCollectionPrepDefinition<T extends Model> = Omit<
-  IndexableCollectionDefinition<T>,
-  "kv" | "key"
->
 
 export type IndexableCollectionKeys = CollectionKeys & {
   primaryIndexKey: KvKey
@@ -162,12 +156,8 @@ export type IndexDataEntry<T extends Model> = Omit<T, "__id__"> & {
 }
 
 // Large Collection Types
-export type LargeCollectionDefinition<T extends LargeKvValue> =
-  CollectionDefinition<T>
-
-export type LargeCollectionPrepDefinition<T extends LargeKvValue> = Omit<
-  LargeCollectionDefinition<T>,
-  "kv" | "key"
+export type LargeCollectionOptions<T extends LargeKvValue> = CollectionOptions<
+  T
 >
 
 export type LargeCollectionKeys = CollectionKeys & {
@@ -181,7 +171,7 @@ export type LargeDocumentEntry = {
 // DB Types
 export type CollectionBuilderFn = (
   initializer: CollectionBuilderContext,
-) => Collection<KvValue, CollectionDefinition<KvValue>>
+) => Collection<KvValue, CollectionOptions<KvValue>>
 
 export type SchemaDefinition = {
   [key: string]: SchemaDefinition | CollectionBuilderFn

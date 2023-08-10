@@ -5,7 +5,7 @@ import {
 import type { IndexableCollection } from "./indexable_collection.ts"
 import type {
   FindManyOptions,
-  IndexableCollectionDefinition,
+  IndexableCollectionOptions,
   IndexDataEntry,
   KvId,
   KvKey,
@@ -112,7 +112,7 @@ export function isKvObject(value: KvValue) {
  */
 export function setIndices<
   T1 extends Model,
-  T2 extends IndexableCollectionDefinition<T1>,
+  T2 extends IndexableCollectionOptions<T1>,
 >(
   id: KvId,
   data: T1,
@@ -179,7 +179,7 @@ export function setIndices<
 export function checkIndices<
   T1 extends Model,
   T2 extends UpdateData<T1>,
-  T3 extends IndexableCollectionDefinition<T1>,
+  T3 extends IndexableCollectionOptions<T1>,
 >(
   data: T2,
   atomic: Deno.AtomicOperation,
@@ -225,7 +225,7 @@ export function checkIndices<
  */
 export function deleteIndices<
   T1 extends Model,
-  T2 extends IndexableCollectionDefinition<T1>,
+  T2 extends IndexableCollectionOptions<T1>,
 >(
   id: KvId,
   data: T1,
