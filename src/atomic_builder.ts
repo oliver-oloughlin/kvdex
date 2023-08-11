@@ -17,7 +17,6 @@ import type {
 import {
   deleteIndices,
   extendKey,
-  generateId,
   getDocumentId,
   keyEq,
   setIndices,
@@ -106,7 +105,7 @@ export class AtomicBuilder<
    */
   add(data: T2) {
     // Generate id and perform set operation
-    const id = generateId()
+    const id = this.collection._idGenerator(data)
     return this.set(id, data)
   }
 
@@ -129,7 +128,7 @@ export class AtomicBuilder<
    */
   set(id: KvId, data: T2) {
     // Create id key from collection id key and id
-    const collectionKey = this.collection.keys.idKey
+    const collectionKey = this.collection._keys.idKey
     const idKey = extendKey(collectionKey, id)
 
     // Add set operation to atomic ops list
@@ -177,7 +176,7 @@ export class AtomicBuilder<
    */
   delete(id: KvId) {
     // Create id key from id and collection id key
-    const collectionIdKey = this.collection.keys.idKey
+    const collectionIdKey = this.collection._keys.idKey
     const idKey = extendKey(collectionIdKey, id)
 
     // Add delete operation to atomic ops list
@@ -223,7 +222,7 @@ export class AtomicBuilder<
     // Create Deno atomic checks from atomci checks input list
     const checks: Deno.AtomicCheck[] = atomicChecks.map(
       ({ id, versionstamp }) => {
-        const key = extendKey(this.collection.keys.idKey, id)
+        const key = extendKey(this.collection._keys.idKey, id)
         return {
           key,
           versionstamp,
@@ -255,7 +254,7 @@ export class AtomicBuilder<
    */
   sum(id: KvId, value: T2 extends Deno.KvU64 ? bigint : never) {
     // Create id key from id and collection id key
-    const idKey = extendKey(this.collection.keys.idKey, id)
+    const idKey = extendKey(this.collection._keys.idKey, id)
 
     // Add sum operation to atomic ops list
     this.operations.atomicFns.push((op) => op.sum(idKey, value))
@@ -290,7 +289,7 @@ export class AtomicBuilder<
   mutate(...mutations: AtomicMutation<T2>[]) {
     // Map from atomic mutations to kv mutations
     const kvMutations: Deno.KvMutation[] = mutations.map(({ id, ...rest }) => {
-      const idKey = extendKey(this.collection.keys.idKey, id)
+      const idKey = extendKey(this.collection._keys.idKey, id)
       return {
         key: idKey,
         ...rest,
@@ -315,7 +314,7 @@ export class AtomicBuilder<
       // If collection is indexable, handle indexing
       if (this.collection instanceof IndexableCollection) {
         // Get collection id key
-        const collectionIdKey = this.collection.keys.idKey
+        const collectionIdKey = this.collection._keys.idKey
 
         // Get document id from mutation key
         const id = getDocumentId(mut.key)

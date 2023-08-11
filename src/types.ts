@@ -77,7 +77,7 @@ export type AtomicMutation<T extends KvValue> =
   )
 
 // Collection Types
-export type IdGenerator<T extends KvValue> = (data: T) => KvId | Promise<KvId>
+export type IdGenerator<T extends KvValue> = (data: T) => KvId
 
 export type CollectionOptions<T extends KvValue> = {
   /**

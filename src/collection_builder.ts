@@ -61,18 +61,18 @@ class CollectionBuilder<const T extends KvValue> {
   }
 
   /**
-   * Build a collection from the set context and given prep definition.
+   * Build a collection from the set context and given options.
    *
-   * @param def - Collection prep definition.
-   * @returns A collection instance.
+   * @param def - Collection options.
+   * @returns A Collection instance.
    */
   build(
-    def?: CollectionOptions<T>,
+    options?: CollectionOptions<T>,
   ) {
     return new Collection<T, CollectionOptions<T>>(
       this.kv,
       this.key,
-      def ?? {},
+      options,
     )
   }
 }
@@ -90,16 +90,16 @@ class IndexableCollectionBuilder<const T extends Model> {
   }
 
   /**
-   * Build an indexable collection from the set context and given prep definition.
+   * Build an indexable collection from the set context and given options.
    *
-   * @param def - Indexable prep definition.
-   * @returns An indexable collection instance.
+   * @param options - IndexableCollection options.
+   * @returns An IndexableCollection instance.
    */
-  build<const TDef extends IndexableCollectionOptions<T>>(
-    def: TDef,
+  build<const T2 extends IndexableCollectionOptions<T>>(
+    options: T2,
   ) {
     // Create indexable collection using prep definition
-    return new IndexableCollection<T, TDef>(this.kv, this.key, def)
+    return new IndexableCollection<T, T2>(this.kv, this.key, options)
   }
 }
 
@@ -116,16 +116,16 @@ class LargeCollectionBuilder<const T extends LargeKvValue> {
   }
 
   /**
-   * Build ac collection from the set context and given prep definition.
+   * Build a large collection from the set context and given options.
    *
-   * @param def - Collection prep definition.
-   * @returns A collection instance.
+   * @param options - LargeCollection options.
+   * @returns A LargeCollection instance.
    */
-  build(def?: LargeCollectionOptions<T>) {
+  build(options?: LargeCollectionOptions<T>) {
     return new LargeCollection<T, LargeCollectionOptions<T>>(
       this.kv,
       this.key,
-      def ?? {},
+      options,
     )
   }
 }

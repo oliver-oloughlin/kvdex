@@ -29,14 +29,27 @@ export class LargeCollection<
   const T1 extends LargeKvValue,
   T2 extends LargeCollectionOptions<T1>,
 > extends Collection<T1, T2> {
-  readonly keys: LargeCollectionKeys
+  readonly _keys: LargeCollectionKeys
 
-  constructor(kv: Deno.Kv, key: KvKey, def: T2) {
+  /**
+   * Create a new LargeCollection for handling large documents in the KV store.
+   *
+   * **Example:**
+   * ```ts
+   * const kv = await Deno.openKv()
+   * const largeStrings = new LargeCollection<string>(kv, ["largeStrings"])
+   * ```
+   *
+   * @param kv
+   * @param key
+   * @param options
+   */
+  constructor(kv: Deno.Kv, key: KvKey, options?: T2) {
     // Invoke super constructor
-    super(kv, key, def)
+    super(kv, key, options)
 
     // Set large collection keys
-    this.keys = {
+    this._keys = {
       baseKey: extendKey([KVDEX_KEY_PREFIX], ...key),
       idKey: extendKey(
         [KVDEX_KEY_PREFIX],
@@ -53,7 +66,7 @@ export class LargeCollection<
 
   async set(id: Deno.KvKeyPart, data: T1): Promise<CommitResult<T1>> {
     // Create document id key
-    const idKey = extendKey(this.keys.idKey, id)
+    const idKey = extendKey(this._keys.idKey, id)
 
     // Check if id already exists
     const check = await this.kv
@@ -86,7 +99,7 @@ export class LargeCollection<
 
     // Execute set operations for json parts, capture keys and commit results
     const crs = await useAtomics(this.kv, jsonParts, (str, atomic) => {
-      const key = extendKey(this.keys.segmentKey, id, index)
+      const key = extendKey(this._keys.segmentKey, id, index)
       keys.push(key)
       index++
 
@@ -139,7 +152,7 @@ export class LargeCollection<
     options?: FindOptions,
   ): Promise<Document<T1> | null> {
     // Create documetn id key
-    const idKey = extendKey(this.keys.idKey, id)
+    const idKey = extendKey(this._keys.idKey, id)
 
     // Get large document entry
     const { value, versionstamp } = await this.kv.get<LargeDocumentEntry>(
@@ -183,7 +196,7 @@ export class LargeCollection<
     options?: FindManyOptions,
   ): Promise<Document<T1>[]> {
     // Map ids to document id keys
-    const idKeys = ids.map((id) => extendKey(this.keys.idKey, id))
+    const idKeys = ids.map((id) => extendKey(this._keys.idKey, id))
 
     // Get large document entries
     const entries = await kvGetMany<LargeDocumentEntry>(
@@ -245,7 +258,7 @@ export class LargeCollection<
     // Perform delete for each id
     await Promise.all(ids.map(async (id) => {
       // Create document id key, get documetn value
-      const idKey = extendKey(this.keys.idKey, id)
+      const idKey = extendKey(this._keys.idKey, id)
       const { value } = await this.kv.get<LargeDocumentEntry>(idKey)
 
       // If no value, abort delete
@@ -269,7 +282,7 @@ export class LargeCollection<
   ): Promise<{ cursor: string | undefined }> {
     // Create list iterotr with given options
     const iter = this.kv.list<LargeDocumentEntry[]>(
-      { prefix: this.keys.idKey },
+      { prefix: this._keys.idKey },
       options,
     )
 

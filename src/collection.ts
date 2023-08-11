@@ -37,30 +37,30 @@ export class Collection<
   const T2 extends CollectionOptions<T1>,
 > {
   protected kv: Deno.Kv
-  protected idGenerator: IdGenerator<KvValue>
-  readonly keys: CollectionKeys
+  readonly _idGenerator: IdGenerator<KvValue>
+  readonly _keys: CollectionKeys
 
   /**
    * Create a new collection for handling documents in the KV store.
    *
    * **Example:**
    * ```ts
-   * const numbers = new Collection<number>({
-   *   kv: await Deno.openKv(),
-   *   key: ["numbers"]
-   * })
+   * const kv = await Deno.openKv()
+   * const numbers = new Collection<number>(kv, ["numbers"])
    * ```
    *
-   * @param def - Collection definition.
+   * @param options - Collection options.
    */
-  constructor(kv: Deno.Kv, key: KvKey, def: T2) {
+  constructor(kv: Deno.Kv, key: KvKey, options?: T2) {
     // Set the KV instance
     this.kv = kv
 
-    this.idGenerator = def.idGenerator as IdGenerator<KvValue> ?? generateId
+    // Set id generator function
+    this._idGenerator = options?.idGenerator as IdGenerator<KvValue> ??
+      generateId
 
     // Set the collection keys
-    this.keys = {
+    this._keys = {
       baseKey: extendKey([KVDEX_KEY_PREFIX], ...key),
       idKey: extendKey(
         [KVDEX_KEY_PREFIX],
@@ -88,7 +88,7 @@ export class Collection<
    */
   async find(id: KvId, options?: FindOptions) {
     // Create document key, get document entry
-    const key = extendKey(this.keys.idKey, id)
+    const key = extendKey(this._keys.idKey, id)
     const result = await this.kv.get<T1>(key, options)
 
     // If no entry exists, return null
@@ -125,7 +125,7 @@ export class Collection<
    */
   async findMany(ids: KvId[], options?: FindManyOptions) {
     // Create document keys, get document entries
-    const keys = ids.map((id) => extendKey(this.keys.idKey, id))
+    const keys = ids.map((id) => extendKey(this._keys.idKey, id))
     const entries = await kvGetMany<T1>(keys, this.kv, options)
 
     // Create empty result list
@@ -171,7 +171,7 @@ export class Collection<
    */
   async add(data: T1) {
     // Generate id and set the document entry
-    const id = await this.idGenerator(data)
+    const id = this._idGenerator(data)
     return await this.set(id, data)
   }
 
@@ -191,7 +191,7 @@ export class Collection<
    */
   async set(id: KvId, data: T1) {
     // Create document key
-    const key = extendKey(this.keys.idKey, id)
+    const key = extendKey(this._keys.idKey, id)
 
     // Set document entry, check for existing entries
     const cr = await this.kv
@@ -233,7 +233,7 @@ export class Collection<
   async delete(...ids: KvId[]) {
     // Perform delete operation for each id
     await Promise.all(ids.map(async (id) => {
-      const key = extendKey(this.keys.idKey, id)
+      const key = extendKey(this._keys.idKey, id)
       await this.kv.delete(key)
     }))
   }
@@ -523,7 +523,7 @@ export class Collection<
   async enqueue(data: unknown, options?: EnqueueOptions) {
     // Create queue message
     const msg: QueueMessage = {
-      collectionKey: this.keys.baseKey,
+      collectionKey: this._keys.baseKey,
       data,
     }
 
@@ -565,7 +565,7 @@ export class Collection<
       // Check that collection key is set and matches current collection context
       if (
         Array.isArray(collectionKey) &&
-        keyEq(collectionKey, this.keys.baseKey)
+        keyEq(collectionKey, this._keys.baseKey)
       ) {
         // Invoke data handler
         await handler(data)
@@ -587,7 +587,7 @@ export class Collection<
     options?: ListOptions<T1>,
   ) {
     // Create list iterator with given options, initiate documents list
-    const iter = this.kv.list<T1>({ prefix: this.keys.idKey }, options)
+    const iter = this.kv.list<T1>({ prefix: this._keys.idKey }, options)
     const docs: Document<T1>[] = []
 
     // Loop over each document entry

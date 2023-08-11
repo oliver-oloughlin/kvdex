@@ -21,12 +21,12 @@ Deno.test("collection", async (t) => {
   // Test correctness of collection keys
   await t.step("keys", async (t) => {
     await t.step("Collection keys should have kvdex prefix", () => {
-      const keys = Object.entries(db.people.keys).map(([_, key]) => key)
+      const keys = Object.entries(db.people._keys).map(([_, key]) => key)
       assert(keys.every((key) => key[0] === KVDEX_KEY_PREFIX))
     })
 
     await t.step("Id key should have id key suffix", () => {
-      const idKey = db.people.keys.idKey
+      const idKey = db.people._keys.idKey
       const suffix = idKey[idKey.length - 1]
       assert(suffix === COLLECTION_ID_KEY_SUFFIX)
     })
@@ -70,8 +70,7 @@ Deno.test("collection", async (t) => {
           const db = kvdex(kv, {
             strings: (ctx) =>
               ctx.collection<string>().build({
-                idGenerator: async (data) => {
-                  await sleep(10)
+                idGenerator: (data) => {
                   return JSON.stringify(data)
                 },
               }),
@@ -929,7 +928,7 @@ Deno.test("collection", async (t) => {
         let assertion = false
 
         await kv.enqueue({
-          collectionKey: db.numbers.keys.baseKey,
+          collectionKey: db.numbers._keys.baseKey,
           data,
         } as QueueMessage)
 
