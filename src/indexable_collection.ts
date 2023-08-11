@@ -42,16 +42,15 @@ export class IndexableCollection<
 > extends Collection<T1, T2> {
   readonly primaryIndexList: string[]
   readonly secondaryIndexList: string[]
-  readonly keys: IndexableCollectionKeys
+  readonly _keys: IndexableCollectionKeys
 
   /**
    * Create a new IndexableCollection for handling object documents in the KV store.
    *
    * **Example:**
    * ```ts
-   * const users = new IndexableCollection<User>({
-   *   kv: await Deno.openKv(),
-   *   key: ["users"],
+   * const kv = await Deno.openKv()
+   * const users = new IndexableCollection<User>(kv, ["users"], {
    *   indices: {
    *     username: "primary",
    *     age: "secondary"
@@ -59,14 +58,14 @@ export class IndexableCollection<
    * })
    * ```
    *
-   * @param def - Indexable Collection Definition.
+   * @param options - Indexable Collection options.
    */
-  constructor(kv: Deno.Kv, key: KvKey, def: T2) {
+  constructor(kv: Deno.Kv, key: KvKey, options: T2) {
     // Invoke super constructor
-    super(kv, key, def)
+    super(kv, key, options)
 
     // Set indexable collection keys
-    this.keys = {
+    this._keys = {
       baseKey: extendKey([KVDEX_KEY_PREFIX], ...key),
       idKey: extendKey(
         [KVDEX_KEY_PREFIX],
@@ -86,7 +85,7 @@ export class IndexableCollection<
     }
 
     // Get primary index entries from indices
-    const primaryIndexEntries = Object.entries(def.indices) as [
+    const primaryIndexEntries = Object.entries(options.indices) as [
       string,
       undefined | IndexType,
     ][]
@@ -97,7 +96,7 @@ export class IndexableCollection<
       .map(([key]) => key)
 
     // Get secondary index entries from indices
-    const secondaryIndexEntries = Object.entries(def.indices) as [
+    const secondaryIndexEntries = Object.entries(options.indices) as [
       string,
       undefined | IndexType,
     ][]
@@ -110,7 +109,7 @@ export class IndexableCollection<
 
   async set(id: KvId, data: T1) {
     // Create the document id key
-    const idKey = extendKey(this.keys.idKey, id)
+    const idKey = extendKey(this._keys.idKey, id)
 
     // Create atomic operation with set mutation and version check
     let atomic = this.kv
@@ -163,7 +162,7 @@ export class IndexableCollection<
   ) {
     // Create the index key
     const key = extendKey(
-      this.keys.primaryIndexKey,
+      this._keys.primaryIndexKey,
       index as KvId,
       value as KvId,
     )
@@ -238,7 +237,7 @@ export class IndexableCollection<
     // Run delete operations for each id
     await Promise.all(ids.map(async (id) => {
       // Create idKey, get document value
-      const idKey = extendKey(this.keys.idKey, id)
+      const idKey = extendKey(this._keys.idKey, id)
       const { value } = await this.kv.get<T1>(idKey)
 
       // If no value, abort delete
@@ -276,7 +275,7 @@ export class IndexableCollection<
   ) {
     // Create index key
     const key = extendKey(
-      this.keys.primaryIndexKey,
+      this._keys.primaryIndexKey,
       index as KvId,
       value as KvId,
     )
@@ -467,7 +466,7 @@ export class IndexableCollection<
   ) {
     // Create index key prefix
     const key = extendKey(
-      this.keys.secondaryIndexKey,
+      this._keys.secondaryIndexKey,
       index as KvId,
       value as KvId,
     )

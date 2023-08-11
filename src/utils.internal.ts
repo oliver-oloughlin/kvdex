@@ -130,7 +130,7 @@ export function setIndices<
 
     // Create the index key
     const indexKey = extendKey(
-      collection.keys.primaryIndexKey,
+      collection._keys.primaryIndexKey,
       index,
       indexValue,
     )
@@ -153,7 +153,7 @@ export function setIndices<
 
     // Create the index key
     const indexKey = extendKey(
-      collection.keys.secondaryIndexKey,
+      collection._keys.secondaryIndexKey,
       index,
       indexValue,
       id,
@@ -198,7 +198,7 @@ export function checkIndices<
 
     // Create the index key
     const indexKey = extendKey(
-      collection.keys.primaryIndexKey,
+      collection._keys.primaryIndexKey,
       index,
       indexValue,
     )
@@ -243,7 +243,7 @@ export function deleteIndices<
 
     // Create the index key
     const indexKey = extendKey(
-      collection.keys.primaryIndexKey,
+      collection._keys.primaryIndexKey,
       index,
       indexValue,
     )
@@ -260,7 +260,7 @@ export function deleteIndices<
 
     // Create the index key
     const indexKey = extendKey(
-      collection.keys.secondaryIndexKey,
+      collection._keys.secondaryIndexKey,
       index,
       indexValue,
       id,

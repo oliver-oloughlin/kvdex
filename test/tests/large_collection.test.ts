@@ -22,18 +22,18 @@ Deno.test("large_collection", async (t) => {
   // Test correctness of collection keys
   await t.step("keys", async (t) => {
     await t.step("Collection keys should have kvdex prefix", () => {
-      const keys = Object.entries(db.largeDocs.keys).map(([_, key]) => key)
+      const keys = Object.entries(db.largeDocs._keys).map(([_, key]) => key)
       assert(keys.every((key) => key[0] === KVDEX_KEY_PREFIX))
     })
 
     await t.step("Id key should have id key suffix", () => {
-      const idKey = db.largeDocs.keys.idKey
+      const idKey = db.largeDocs._keys.idKey
       const suffix = idKey[idKey.length - 1]
       assert(suffix === COLLECTION_ID_KEY_SUFFIX)
     })
 
     await t.step("Segment key should have segment key suffix", () => {
-      const segmentKey = db.largeDocs.keys.segmentKey
+      const segmentKey = db.largeDocs._keys.segmentKey
       const suffix = segmentKey[segmentKey.length - 1]
       assert(suffix === COLLECTION_SEGMENT_KEY_SUFFIX)
     })
@@ -295,8 +295,8 @@ Deno.test("large_collection", async (t) => {
         const count2 = await db.largeDocs.count()
         assert(count2 === 0)
 
-        const idIter = kv.list({ prefix: db.largeDocs.keys.idKey })
-        const segmentIter = kv.list({ prefix: db.largeDocs.keys.segmentKey })
+        const idIter = kv.list({ prefix: db.largeDocs._keys.idKey })
+        const segmentIter = kv.list({ prefix: db.largeDocs._keys.segmentKey })
 
         const entries: unknown[] = []
 
@@ -602,7 +602,7 @@ Deno.test("large_collection", async (t) => {
         let assertion = false
 
         await kv.enqueue({
-          collectionKey: db.largeDocs.keys.baseKey,
+          collectionKey: db.largeDocs._keys.baseKey,
           data,
         } as QueueMessage)
 

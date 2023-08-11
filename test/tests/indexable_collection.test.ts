@@ -22,14 +22,14 @@ Deno.test("indexable_collection", async (t) => {
   // Test correctness of collection keys
   await t.step("keys", async (t) => {
     await t.step("Collection keys should have kvdex prefix", () => {
-      const keys = Object.entries(db.indexablePeople.keys).map(([_, key]) =>
+      const keys = Object.entries(db.indexablePeople._keys).map(([_, key]) =>
         key
       )
       assert(keys.every((key) => key[0] === KVDEX_KEY_PREFIX))
     })
 
     await t.step("Id key should have id key suffix", () => {
-      const key = db.indexablePeople.keys.idKey
+      const key = db.indexablePeople._keys.idKey
       const suffix = key[key.length - 1]
       assert(suffix === COLLECTION_ID_KEY_SUFFIX)
     })
@@ -37,7 +37,7 @@ Deno.test("indexable_collection", async (t) => {
     await t.step(
       "Primary index key should have primary index key suffix",
       () => {
-        const key = db.indexablePeople.keys.primaryIndexKey
+        const key = db.indexablePeople._keys.primaryIndexKey
         const suffix = key[key.length - 1]
         assert(suffix === COLLECTION_PRIMARY_INDEX_KEY_SUFFIX)
       },
@@ -46,7 +46,7 @@ Deno.test("indexable_collection", async (t) => {
     await t.step(
       "Secondary index key should have secondary index key suffix",
       () => {
-        const key = db.indexablePeople.keys.secondaryIndexKey
+        const key = db.indexablePeople._keys.secondaryIndexKey
         const suffix = key[key.length - 1]
         assert(suffix === COLLECTION_SECONDARY_INDEX_KEY_SUFFIX)
       },
@@ -1043,7 +1043,7 @@ Deno.test("indexable_collection", async (t) => {
         let assertion = false
 
         await kv.enqueue({
-          collectionKey: db.numbers.keys.baseKey,
+          collectionKey: db.numbers._keys.baseKey,
           data,
         } as QueueMessage)
 
