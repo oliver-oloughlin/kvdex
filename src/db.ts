@@ -30,10 +30,10 @@ import { createAtomicBuilder } from "./atomic_builder.ts"
  * const kv = await Deno.openKv()
  *
  * const db = kvdex(kv, {
- *   numbers: (ctx) => ctx.collection<number>().build(),
- *   u64s: (ctx) => ctx.collection<Deno.KvU64>().build(),
- *   largeStrings: (ctx) => ctx.largeCollection<string>().build(),
- *   users: (ctx) => ctx.indexableCollection<User>().build({
+ *   numbers: collection<number>().build(),
+ *   u64s: collection<Deno.KvU64>().build(),
+ *   largeStrings: largeCollection<string>().build(),
+ *   users: indexableCollection<User>().build({
  *     indices: {
  *       username: "primary",
  *       age: "secondary"

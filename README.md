@@ -60,7 +60,7 @@ create your Zod object schema and use its inferred type as your model.
 **_NOTE_:** When using interfaces instead of types, sub-interfaces must also extend the Model type.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.10.1/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.11.0/mod.ts"
 
 interface User extends Model {
   username: string
@@ -81,14 +81,19 @@ interface User extends Model {
 Deno KV instance and a schema definition as arguments.
 
 ```ts
-import { kvdex } from "https://deno.land/x/kvdex@v0.10.1/mod.ts"
+import { 
+  kvdex, 
+  collection, 
+  indexableCollection, 
+  largeCollection,
+} from "https://deno.land/x/kvdex@v0.11.0/mod.ts"
 
 const kv = await Deno.openKv()
 
 const db = kvdex(kv, {
-  numbers: (ctx) => ctx.collection<number>().build(),
-  largeStrings: (ctx) => ctx.largeCollection<string>().build(),
-  users: (ctx) => ctx.indexableCollection<User>().build({
+  numbers: collection<number>().build(),
+  largeStrings: largeCollection<string>().build(),
+  users: indexableCollection<User>().build({
     indices: {
       username: "primary" // unique
       age: "secondary" // non-unique
@@ -96,12 +101,12 @@ const db = kvdex(kv, {
   }),
   // Nested collections
   nested: {
-    strings: (ctx) => ctx.collection<string>().build(),
+    strings: collection<string>().build(),
   }
 })
 ```
 
-The schema definition defines collection builder functions (or nested schema definitions) which receive a builder context. Standard collections can hold any type adhering to KvValue (string, number, array, object...), large collections can hold strings, arrays and objects, while indexable collections can only hold types adhering to Model (objects). For indexable collections, primary (unique) and secondary (non-unique) indexing is supported. Upon building a collection, a custom id generator function can be set which will be used to auto-generate ids when adding documents to the collection.
+The schema definition contains collection builders, or nested schema definitions. Standard collections can hold any type adhering to KvValue (string, number, array, object...), large collections can hold strings, arrays and objects, while indexable collections can only hold types adhering to Model (objects). For indexable collections, primary (unique) and secondary (non-unique) indexing is supported. Upon building a collection, a custom id generator function can be set which will be used to auto-generate ids when adding documents to the collection.
 
 ## Collection Methods
 
@@ -660,7 +665,7 @@ type Model. Only flattens the first layer of the document, meaning the result wi
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.10.1/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.11.0/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
