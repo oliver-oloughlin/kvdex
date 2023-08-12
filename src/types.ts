@@ -1,6 +1,5 @@
 import type { Collection } from "./collection.ts"
 import type { AtomicBuilder } from "./atomic_builder.ts"
-import type { CollectionBuilderContext } from "./collection_builder.ts"
 import type { LargeCollection } from "./large_collection.ts"
 
 // Atomic Builder Types
@@ -170,7 +169,8 @@ export type LargeDocumentEntry = {
 
 // DB Types
 export type CollectionBuilderFn = (
-  initializer: CollectionBuilderContext,
+  kv: Deno.Kv,
+  key: KvKey,
 ) => Collection<KvValue, CollectionOptions<KvValue>>
 
 export type SchemaDefinition = {

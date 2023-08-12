@@ -11,7 +11,6 @@ import type {
   Schema,
   SchemaDefinition,
 } from "./types.ts"
-import { CollectionBuilderContext } from "./collection_builder.ts"
 import { Collection } from "./collection.ts"
 import { extendKey } from "./utils.internal.ts"
 import { createAtomicBuilder } from "./atomic_builder.ts"
@@ -83,12 +82,9 @@ function _createSchema<const T extends SchemaDefinition>(
     // Get the current tree key
     const extendedKey = treeKey ? extendKey(treeKey, key) : [key] as KvKey
 
-    // If the entry value is a function => create collection builder context and run function.
+    // If the entry value is a function => build collection and create collection entry
     if (typeof value === "function") {
-      const initializer = new CollectionBuilderContext(kv, extendedKey)
-
-      // Create and return collection entry
-      return [key, value(initializer)]
+      return [key, value(kv, extendedKey)]
     }
 
     // Create and return schema entry
