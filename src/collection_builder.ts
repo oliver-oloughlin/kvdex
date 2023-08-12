@@ -1,65 +1,47 @@
+import { KvKey } from "../mod.ts"
 import { Collection } from "./collection.ts"
 import { IndexableCollection } from "./indexable_collection.ts"
 import { LargeCollection } from "./large_collection.ts"
 import type {
   CollectionOptions,
   IndexableCollectionOptions,
-  KvKey,
   KvValue,
   LargeCollectionOptions,
   LargeKvValue,
   Model,
 } from "./types.ts"
 
-export class CollectionBuilderContext {
-  private kv: Deno.Kv
-  private key: KvKey
+/**
+ * Initialize a collection builder.
+ *
+ * @returns Collection Builder.
+ */
+export function collection<const T extends KvValue>() {
+  return new CollectionBuilder<T>()
+}
 
-  constructor(kv: Deno.Kv, key: KvKey) {
-    this.kv = kv
-    this.key = key
-  }
+/**
+ * Initialize an indexable collection builder.
+ *
+ * @returns Indexable Collection Builder.
+ */
+export function indexableCollection<const T extends Model>() {
+  return new IndexableCollectionBuilder<T>()
+}
 
-  /**
-   * Initialize a collection builder.
-   *
-   * @returns Collection Builder.
-   */
-  collection<const T extends KvValue>() {
-    return new CollectionBuilder<T>(this.kv, this.key)
-  }
-
-  /**
-   * Initialize an indexable collection builder.
-   *
-   * @returns Indexable Collection Builder.
-   */
-  indexableCollection<const T extends Model>() {
-    return new IndexableCollectionBuilder<T>(this.kv, this.key)
-  }
-
-  /**
-   * Initialize a large collection builder.
-   *
-   * @returns Large Collection Builder.
-   */
-  largeCollection<const T extends LargeKvValue>() {
-    return new LargeCollectionBuilder<T>(this.kv, this.key)
-  }
+/**
+ * Initialize a large collection builder.
+ *
+ * @returns Large Collection Builder.
+ */
+export function largeCollection<const T extends LargeKvValue>() {
+  return new LargeCollectionBuilder<T>()
 }
 
 /**
  * Builder object for initilaizing a collection.
  */
 class CollectionBuilder<const T extends KvValue> {
-  private kv: Deno.Kv
-  private key: KvKey
-
-  constructor(kv: Deno.Kv, key: KvKey) {
-    this.kv = kv
-    this.key = key
-  }
-
   /**
    * Build a collection from the set context and given options.
    *
@@ -69,11 +51,12 @@ class CollectionBuilder<const T extends KvValue> {
   build(
     options?: CollectionOptions<T>,
   ) {
-    return new Collection<T, CollectionOptions<T>>(
-      this.kv,
-      this.key,
-      options,
-    )
+    return (kv: Deno.Kv, key: KvKey) =>
+      new Collection<T, CollectionOptions<T>>(
+        kv,
+        key,
+        options,
+      )
   }
 }
 
@@ -81,14 +64,6 @@ class CollectionBuilder<const T extends KvValue> {
  * Builder object for initializing an indexable collection.
  */
 class IndexableCollectionBuilder<const T extends Model> {
-  private kv: Deno.Kv
-  private key: KvKey
-
-  constructor(kv: Deno.Kv, key: KvKey) {
-    this.kv = kv
-    this.key = key
-  }
-
   /**
    * Build an indexable collection from the set context and given options.
    *
@@ -98,8 +73,12 @@ class IndexableCollectionBuilder<const T extends Model> {
   build<const T2 extends IndexableCollectionOptions<T>>(
     options: T2,
   ) {
-    // Create indexable collection using prep definition
-    return new IndexableCollection<T, T2>(this.kv, this.key, options)
+    return (kv: Deno.Kv, key: KvKey) =>
+      new IndexableCollection<T, T2>(
+        kv,
+        key,
+        options,
+      )
   }
 }
 
@@ -107,14 +86,6 @@ class IndexableCollectionBuilder<const T extends Model> {
  * Builder object for initilaizing a collection.
  */
 class LargeCollectionBuilder<const T extends LargeKvValue> {
-  private kv: Deno.Kv
-  private key: KvKey
-
-  constructor(kv: Deno.Kv, key: KvKey) {
-    this.kv = kv
-    this.key = key
-  }
-
   /**
    * Build a large collection from the set context and given options.
    *
@@ -122,10 +93,11 @@ class LargeCollectionBuilder<const T extends LargeKvValue> {
    * @returns A LargeCollection instance.
    */
   build(options?: LargeCollectionOptions<T>) {
-    return new LargeCollection<T, LargeCollectionOptions<T>>(
-      this.kv,
-      this.key,
-      options,
-    )
+    return (kv: Deno.Kv, key: KvKey) =>
+      new LargeCollection<T, LargeCollectionOptions<T>>(
+        kv,
+        key,
+        options,
+      )
   }
 }

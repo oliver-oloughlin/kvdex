@@ -1,4 +1,4 @@
-import { kvdex, QueueMessage } from "../../mod.ts"
+import { collection, kvdex, QueueMessage } from "../../mod.ts"
 import {
   db,
   reset,
@@ -20,9 +20,9 @@ Deno.test("db", async (t1) => {
         const kv = await Deno.openKv()
 
         const db = kvdex(kv, {
-          numbers: (builder) => builder.collection<number>().build(),
+          numbers: collection<number>().build(),
           nested: {
-            numbers: (builder) => builder.collection<number>().build(),
+            numbers: collection<number>().build(),
           },
         })
 
@@ -486,7 +486,7 @@ Deno.test("db", async (t1) => {
         const data = "data"
 
         const db = kvdex(kv, {
-          numbers: (ctx) => ctx.collection<number>().build(),
+          numbers: collection<number>().build(),
         })
 
         await db.numbers.enqueue(data)
@@ -511,10 +511,10 @@ Deno.test("db", async (t1) => {
         const kv = await Deno.openKv()
 
         const db = kvdex(kv, {
-          strings: (builder) => builder.collection<string>().build(),
-          numbers: (builder) => builder.collection<number>().build(),
-          bigints: (builder) => builder.collection<bigint>().build(),
-          u64s: (builder) => builder.collection<Deno.KvU64>().build(),
+          strings: collection<string>().build(),
+          numbers: collection<number>().build(),
+          bigints: collection<bigint>().build(),
+          u64s: collection<Deno.KvU64>().build(),
         })
 
         await db.strings.add("str1")
@@ -546,19 +546,19 @@ Deno.test("db", async (t1) => {
         const kv = await Deno.openKv()
 
         const db = kvdex(kv, {
-          arrs: (builder) => builder.collection<Array<string>>().build(),
-          i8arrs: (builder) => builder.collection<Int8Array>().build(),
-          i16arrs: (builder) => builder.collection<Int16Array>().build(),
-          i32arrs: (builder) => builder.collection<Int32Array>().build(),
-          i64arrs: (builder) => builder.collection<BigInt64Array>().build(),
-          u8arrs: (builder) => builder.collection<Uint8Array>().build(),
-          u16arrs: (builder) => builder.collection<Uint16Array>().build(),
-          u32arrs: (builder) => builder.collection<Uint32Array>().build(),
-          u64arrs: (builder) => builder.collection<BigUint64Array>().build(),
-          u8carrs: (builder) => builder.collection<Uint8ClampedArray>().build(),
-          f32arrs: (builder) => builder.collection<Float32Array>().build(),
-          f64arrs: (builder) => builder.collection<Float64Array>().build(),
-          buffers: (builder) => builder.collection<ArrayBuffer>().build(),
+          arrs: collection<Array<string>>().build(),
+          i8arrs: collection<Int8Array>().build(),
+          i16arrs: collection<Int16Array>().build(),
+          i32arrs: collection<Int32Array>().build(),
+          i64arrs: collection<BigInt64Array>().build(),
+          u8arrs: collection<Uint8Array>().build(),
+          u16arrs: collection<Uint16Array>().build(),
+          u32arrs: collection<Uint32Array>().build(),
+          u64arrs: collection<BigUint64Array>().build(),
+          u8carrs: collection<Uint8ClampedArray>().build(),
+          f32arrs: collection<Float32Array>().build(),
+          f64arrs: collection<Float64Array>().build(),
+          buffers: collection<ArrayBuffer>().build(),
         })
 
         await db.arrs.add(["str1", "str2", "str3"])
@@ -665,12 +665,12 @@ Deno.test("db", async (t1) => {
         const kv = await Deno.openKv()
 
         const db = kvdex(kv, {
-          dates: (builder) => builder.collection<Date>().build(),
-          sets: (builder) => builder.collection<Set<string>>().build(),
-          maps: (builder) => builder.collection<Map<string, number>>().build(),
-          regExps: (builder) => builder.collection<RegExp>().build(),
-          dataVeiws: (builder) => builder.collection<DataView>().build(),
-          errors: (builder) => builder.collection<Error>().build(),
+          dates: collection<Date>().build(),
+          sets: collection<Set<string>>().build(),
+          maps: collection<Map<string, number>>().build(),
+          regExps: collection<RegExp>().build(),
+          dataVeiws: collection<DataView>().build(),
+          errors: collection<Error>().build(),
         })
 
         await db.dates.add(new Date())

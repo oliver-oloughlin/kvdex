@@ -1,4 +1,10 @@
-import { kvdex, type Model } from "../mod.ts"
+import {
+  collection,
+  indexableCollection,
+  kvdex,
+  largeCollection,
+  type Model,
+} from "../mod.ts"
 
 export interface Person extends Model {
   name: string
@@ -51,22 +57,21 @@ export const testLargeData2: LargeData = {
 export const kv = await Deno.openKv()
 
 export const db = kvdex(kv, {
-  people: (cb) => cb.collection<Person>().build(),
-  indexablePeople: (cb) =>
-    cb.indexableCollection<Person>().build({
-      indices: {
-        name: "primary",
-        age: "secondary",
-      },
-    }),
-  largeDocs: (ctx) => ctx.largeCollection<LargeData>().build(),
+  people: collection<Person>().build(),
+  indexablePeople: indexableCollection<Person>().build({
+    indices: {
+      name: "primary",
+      age: "secondary",
+    },
+  }),
+  largeDocs: largeCollection<LargeData>().build(),
   values: {
-    numbers: (cb) => cb.collection<number>().build(),
-    strings: (cb) => cb.collection<string>().build(),
-    u64s: (cb) => cb.collection<Deno.KvU64>().build(),
+    numbers: collection<number>().build(),
+    strings: collection<string>().build(),
+    u64s: collection<Deno.KvU64>().build(),
   },
-  arrs: (cb) => cb.collection<string[]>().build(),
-  dates: (cb) => cb.collection<Date>().build(),
+  arrs: collection<string[]>().build(),
+  dates: collection<Date>().build(),
 })
 
 export async function reset() {

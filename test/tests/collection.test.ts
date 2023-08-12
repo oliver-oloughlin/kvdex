@@ -1,4 +1,4 @@
-import { Document, flatten, QueueMessage } from "../../mod.ts"
+import { collection, Document, flatten, QueueMessage } from "../../mod.ts"
 import {
   db,
   generateNumbers,
@@ -41,14 +41,13 @@ Deno.test("collection", async (t) => {
           let count = 0
 
           const db = kvdex(kv, {
-            strings: (ctx) =>
-              ctx.collection<string>().build({
-                idGenerator: () => {
-                  const id = count
-                  count++
-                  return id
-                },
-              }),
+            strings: collection<string>().build({
+              idGenerator: () => {
+                const id = count
+                count++
+                return id
+              },
+            }),
           })
 
           const cr1 = await db.strings.add("1")
@@ -68,12 +67,11 @@ Deno.test("collection", async (t) => {
       async () => {
         await useTemporaryKv(async (kv) => {
           const db = kvdex(kv, {
-            strings: (ctx) =>
-              ctx.collection<string>().build({
-                idGenerator: (data) => {
-                  return JSON.stringify(data)
-                },
-              }),
+            strings: collection<string>().build({
+              idGenerator: (data) => {
+                return JSON.stringify(data)
+              },
+            }),
           })
 
           const cr1 = await db.strings.add("1")
@@ -897,7 +895,7 @@ Deno.test("collection", async (t) => {
         const data = "data"
 
         const db = kvdex(kv, {
-          numbers: (ctx) => ctx.collection<number>().build(),
+          numbers: collection<number>().build(),
         })
 
         let assertion = false
@@ -922,7 +920,7 @@ Deno.test("collection", async (t) => {
         const data = "data"
 
         const db = kvdex(kv, {
-          numbers: (ctx) => ctx.collection<number>().build(),
+          numbers: collection<number>().build(),
         })
 
         let assertion = false
@@ -946,7 +944,7 @@ Deno.test("collection", async (t) => {
         const data = "data"
 
         const db = kvdex(kv, {
-          numbers: (ctx) => ctx.collection<number>().build(),
+          numbers: collection<number>().build(),
         })
 
         await db.enqueue(data)

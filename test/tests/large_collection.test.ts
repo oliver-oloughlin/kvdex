@@ -11,7 +11,7 @@ import {
   testLargeData2,
   useTemporaryKv,
 } from "../config.ts"
-import { kvdex, KvId, QueueMessage } from "../../mod.ts"
+import { kvdex, KvId, largeCollection, QueueMessage } from "../../mod.ts"
 import {
   COLLECTION_ID_KEY_SUFFIX,
   COLLECTION_SEGMENT_KEY_SUFFIX,
@@ -44,7 +44,7 @@ Deno.test("large_collection", async (t) => {
     await t.step("Should allow empty string as value", async () => {
       await useTemporaryKv(async (kv) => {
         const db = kvdex(kv, {
-          strings: (ctx) => ctx.largeCollection<string>().build(),
+          strings: largeCollection<string>().build(),
         })
 
         const cr = await db.strings.add("")
@@ -63,7 +63,7 @@ Deno.test("large_collection", async (t) => {
     await t.step("Should allow array of numbers as value", async () => {
       await useTemporaryKv(async (kv) => {
         const db = kvdex(kv, {
-          arrs: (ctx) => ctx.largeCollection<number[]>().build(),
+          arrs: largeCollection<number[]>().build(),
         })
 
         const numbers = generateNumbers(100_000)
@@ -340,8 +340,8 @@ Deno.test("large_collection", async (t) => {
       async () => {
         await useTemporaryKv(async (kv) => {
           const db = kvdex(kv, {
-            strings: (ctx) => ctx.largeCollection().build(),
-            arrs: (ctx) => ctx.largeCollection().build(),
+            strings: largeCollection().build(),
+            arrs: largeCollection().build(),
           })
 
           const val1_1 = "value_1"
@@ -571,7 +571,7 @@ Deno.test("large_collection", async (t) => {
         const data = "data"
 
         const db = kvdex(kv, {
-          largeDocs: (ctx) => ctx.largeCollection<LargeData>().build(),
+          largeDocs: largeCollection<LargeData>().build(),
         })
 
         let assertion = false
@@ -596,7 +596,7 @@ Deno.test("large_collection", async (t) => {
         const data = "data"
 
         const db = kvdex(kv, {
-          largeDocs: (ctx) => ctx.largeCollection<LargeData>().build(),
+          largeDocs: largeCollection<LargeData>().build(),
         })
 
         let assertion = false
@@ -620,7 +620,7 @@ Deno.test("large_collection", async (t) => {
         const data = "data"
 
         const db = kvdex(kv, {
-          largeDocs: (ctx) => ctx.largeCollection<LargeData>().build(),
+          largeDocs: largeCollection<LargeData>().build(),
         })
 
         await db.enqueue(data)

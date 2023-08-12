@@ -9,7 +9,7 @@ import {
   useTemporaryKv,
 } from "../config.ts"
 import { assert } from "../deps.ts"
-import { flatten, QueueMessage } from "../../mod.ts"
+import { flatten, indexableCollection, QueueMessage } from "../../mod.ts"
 import { kvdex } from "../../src/db.ts"
 import {
   COLLECTION_ID_KEY_SUFFIX,
@@ -1010,8 +1010,7 @@ Deno.test("indexable_collection", async (t) => {
         const data = "data"
 
         const db = kvdex(kv, {
-          numbers: (ctx) =>
-            ctx.indexableCollection<Person>().build({ indices: {} }),
+          numbers: indexableCollection<Person>().build({ indices: {} }),
         })
 
         let assertion = false
@@ -1036,8 +1035,7 @@ Deno.test("indexable_collection", async (t) => {
         const data = "data"
 
         const db = kvdex(kv, {
-          numbers: (ctx) =>
-            ctx.indexableCollection<Person>().build({ indices: {} }),
+          numbers: indexableCollection<Person>().build({ indices: {} }),
         })
 
         let assertion = false
@@ -1061,8 +1059,7 @@ Deno.test("indexable_collection", async (t) => {
         const data = "data"
 
         const db = kvdex(kv, {
-          numbers: (ctx) =>
-            ctx.indexableCollection<Person>().build({ indices: {} }),
+          numbers: indexableCollection<Person>().build({ indices: {} }),
         })
 
         await db.enqueue(data)

@@ -11,7 +11,6 @@ import type {
   Schema,
   SchemaDefinition,
 } from "./types.ts"
-import { CollectionBuilderContext } from "./collection_builder.ts"
 import { Collection } from "./collection.ts"
 import { extendKey } from "./utils.internal.ts"
 import { createAtomicBuilder } from "./atomic_builder.ts"
@@ -31,10 +30,10 @@ import { createAtomicBuilder } from "./atomic_builder.ts"
  * const kv = await Deno.openKv()
  *
  * const db = kvdex(kv, {
- *   numbers: (ctx) => ctx.collection<number>().build(),
- *   u64s: (ctx) => ctx.collection<Deno.KvU64>().build(),
- *   largeStrings: (ctx) => ctx.largeCollection<string>().build(),
- *   users: (ctx) => ctx.indexableCollection<User>().build({
+ *   numbers: collection<number>().build(),
+ *   u64s: collection<Deno.KvU64>().build(),
+ *   largeStrings: largeCollection<string>().build(),
+ *   users: indexableCollection<User>().build({
  *     indices: {
  *       username: "primary",
  *       age: "secondary"
@@ -83,12 +82,9 @@ function _createSchema<const T extends SchemaDefinition>(
     // Get the current tree key
     const extendedKey = treeKey ? extendKey(treeKey, key) : [key] as KvKey
 
-    // If the entry value is a function => create collection builder context and run function.
+    // If the entry value is a function => build collection and create collection entry
     if (typeof value === "function") {
-      const initializer = new CollectionBuilderContext(kv, extendedKey)
-
-      // Create and return collection entry
-      return [key, value(initializer)]
+      return [key, value(kv, extendedKey)]
     }
 
     // Create and return schema entry
