@@ -121,7 +121,9 @@ export class LargeCollection<
 
     // Create large document entry
     const entry: LargeDocumentEntry = {
-      keys,
+      ids: keys.map((key) => getDocumentId(key)!).filter((id) =>
+        typeof id !== "undefined"
+      ),
     }
 
     // Set large document entry
@@ -165,8 +167,9 @@ export class LargeCollection<
       return null
     }
 
-    // Get document json parts
-    const { keys } = value
+    // Get document segment entries
+    const { ids } = value
+    const keys = ids.map((segId) => extendKey(this._keys.segmentKey, id, segId))
     const docEntries = await kvGetMany<string>(keys, this.kv)
 
     // Construct document json from json parts
@@ -222,7 +225,10 @@ export class LargeCollection<
         }
 
         // Get documetn json parts
-        const docEntries = await kvGetMany<string>(value.keys, this.kv, options)
+        const keys = value.ids.map((segId) =>
+          extendKey(this._keys.segmentKey, id, segId)
+        )
+        const docEntries = await kvGetMany<string>(keys, this.kv, options)
 
         // Construct document json from json parts
         let json = ""
@@ -270,7 +276,8 @@ export class LargeCollection<
       await this.kv.delete(idKey)
 
       // Delete document parts
-      await useAtomics(this.kv, value.keys, (key, atomic) => {
+      await useAtomics(this.kv, value.ids, (segId, atomic) => {
+        const key = extendKey(this._keys.segmentKey, id, segId)
         return atomic.delete(key)
       })
     }))

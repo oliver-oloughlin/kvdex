@@ -164,7 +164,7 @@ export type LargeCollectionKeys = CollectionKeys & {
 }
 
 export type LargeDocumentEntry = {
-  keys: Deno.KvKey[]
+  ids: KvId[]
 }
 
 // DB Types
