@@ -25,6 +25,7 @@ import {
   isKvObject,
   keyEq,
   kvGetMany,
+  parseQueueMessage,
 } from "./utils.internal.ts"
 
 /**
@@ -559,8 +560,16 @@ export class Collection<
   async listenQueue(handler: QueueMessageHandler) {
     // Listen for kv queue messages
     await this.kv.listenQueue(async (msg) => {
+      // Parse queue message
+      const parsed = parseQueueMessage(msg)
+
+      // If failed parse, ignore
+      if (!parsed.ok) {
+        return
+      }
+
       // Destruct queue message
-      const { collectionKey, data } = msg as QueueMessage
+      const { collectionKey, data } = parsed.msg
 
       // Check that collection key is set and matches current collection context
       if (
