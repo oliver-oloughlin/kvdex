@@ -1,7 +1,6 @@
 # kvdex
 
-Database wrapper for Deno's KV store. Simple and type-safe storing/retrieving of
-data.
+ORM-like wrapper for Deno's KV store.
 
 Support for indexing.
 
@@ -11,6 +10,7 @@ Zero third-party dependencies.
 
 - [kvdex](#kvdex)
   - [Table of Contents](#table-of-contents)
+  - [Highlights](#highlights)
   - [Models](#models)
   - [Database](#database)
   - [Collection Methods](#collection-methods)
@@ -51,6 +51,15 @@ Zero third-party dependencies.
   - [Development](#development)
   - [License](#license)
 
+## Highlights
+
+* CRUD operations for selected and ranged documents.
+* Strict type enforcement for all operations.
+* Primary (unique) and secondary (non-unique) indexing.
+* Segmented storage for large objects exceeding the native size limit.
+* Support for pagination.
+* Message queues at database and collection level.
+
 ## Models
 
 For collections of objects, models can be defined by extending the Model type.
@@ -60,7 +69,7 @@ create your Zod object schema and use its inferred type as your model.
 **_NOTE_:** When using interfaces instead of types, sub-interfaces must also extend the Model type.
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex@v0.12.0/mod.ts"
+import type { Model } from "https://deno.land/x/kvdex@v0.12.2/mod.ts"
 
 interface User extends Model {
   username: string
@@ -86,7 +95,7 @@ import {
   collection, 
   indexableCollection, 
   largeCollection,
-} from "https://deno.land/x/kvdex@v0.12.0/mod.ts"
+} from "https://deno.land/x/kvdex@v0.12.2/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -665,7 +674,7 @@ type Model. Only flattens the first layer of the document, meaning the result wi
 document value.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex@v0.12.0/mod.ts"
+import { flatten } from "https://deno.land/x/kvdex@v0.12.2/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
