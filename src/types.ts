@@ -287,6 +287,13 @@ export type QueueMessage = {
   data: unknown
 }
 
+export type ParsedQueueMessage = {
+  ok: true
+  msg: QueueMessage
+} | {
+  ok: false
+}
+
 export type EnqueueOptions = Omit<
   NonNullable<Parameters<Deno.Kv["enqueue"]>[1]>,
   "keysIfUndelivered"

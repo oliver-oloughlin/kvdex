@@ -11,6 +11,8 @@ import type {
   KvKey,
   KvValue,
   Model,
+  ParsedQueueMessage,
+  QueueMessage,
   UpdateData,
 } from "./types.ts"
 
@@ -334,4 +336,38 @@ export async function useAtomics<const T>(
 
     return await atomic.commit()
   }))
+}
+
+/**
+ * Parse incoming queue message.
+ *
+ * @param msg - Queue message.
+ * @returns Parsed queue message.
+ */
+export function parseQueueMessage(msg: unknown): ParsedQueueMessage {
+  // Check for no message
+  if (!msg) {
+    return {
+      ok: false,
+    }
+  }
+
+  // Cast message as QueueMessage
+  const _msg = msg as QueueMessage
+
+  // Check correctness of message parts
+  if (
+    typeof _msg.data === "undefined" ||
+    (!Array.isArray(_msg.collectionKey) && _msg.collectionKey !== null)
+  ) {
+    return {
+      ok: false,
+    }
+  }
+
+  // Return parsed queue message
+  return {
+    ok: true,
+    msg: _msg,
+  }
 }

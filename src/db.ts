@@ -12,7 +12,7 @@ import type {
   SchemaDefinition,
 } from "./types.ts"
 import { Collection } from "./collection.ts"
-import { extendKey } from "./utils.internal.ts"
+import { extendKey, parseQueueMessage } from "./utils.internal.ts"
 import { createAtomicBuilder } from "./atomic_builder.ts"
 
 /**
@@ -184,8 +184,16 @@ async function _enqueue(kv: Deno.Kv, data: unknown, options?: EnqueueOptions) {
 async function _listenQueue(kv: Deno.Kv, handler: QueueMessageHandler) {
   // Listen for messages in the kv queue
   await kv.listenQueue(async (msg) => {
-    // Destruct the queue message
-    const { collectionKey, data } = msg as QueueMessage
+    // Parse queue message
+    const parsed = parseQueueMessage(msg)
+
+    // If failed parse, ignore
+    if (!parsed.ok) {
+      return
+    }
+
+    // Destruct queue message
+    const { collectionKey, data } = parsed.msg
 
     // If no collection key, invoke the handler for database queue data.
     if (!collectionKey) {
