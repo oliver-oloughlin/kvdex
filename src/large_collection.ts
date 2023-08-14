@@ -19,6 +19,7 @@ import type {
   ListOptions,
 } from "./types.ts"
 import {
+  allFulfilled,
   extendKey,
   getDocumentId,
   kvGetMany,
@@ -112,7 +113,7 @@ export class LargeCollection<
 
     // If not successful, delete all json part entries
     if (!success) {
-      await Promise.all(keys.map((key) => this.kv.delete(key)))
+      await allFulfilled(keys.map((key) => this.kv.delete(key)))
 
       return {
         ok: false,
@@ -134,7 +135,7 @@ export class LargeCollection<
 
     // If not successful, delete all json part entries
     if (!cr.ok) {
-      await Promise.all(keys.map((key) => this.kv.delete(key)))
+      await allFulfilled(keys.map((key) => this.kv.delete(key)))
 
       return {
         ok: false,
@@ -212,7 +213,7 @@ export class LargeCollection<
     const result: Document<T1>[] = []
 
     // Get documents from large document entries
-    await Promise.all(
+    await allFulfilled(
       entries.map(async ({ key, value, versionstamp }) => {
         // Get document id
         const id = getDocumentId(key)
@@ -262,7 +263,7 @@ export class LargeCollection<
 
   async delete(...ids: KvId[]): Promise<void> {
     // Perform delete for each id
-    await Promise.all(ids.map(async (id) => {
+    await allFulfilled(ids.map(async (id) => {
       // Create document id key, get documetn value
       const idKey = extendKey(this._keys.idKey, id)
       const { value } = await this.kv.get<LargeDocumentEntry>(idKey)
@@ -319,7 +320,7 @@ export class LargeCollection<
     }
 
     // Execute callback function for each document
-    await Promise.all(docs.map((doc) => fn(doc)))
+    await allFulfilled(docs.map((doc) => fn(doc)))
 
     // Return current iterator cursor
     return {

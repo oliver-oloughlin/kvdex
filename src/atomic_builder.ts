@@ -15,6 +15,7 @@ import type {
   SchemaDefinition,
 } from "./types.ts"
 import {
+  allFulfilled,
   deleteIndices,
   extendKey,
   getDocumentId,
@@ -386,7 +387,7 @@ export class AtomicBuilder<
     }
 
     // Prepare delete ops
-    const preparedIndexDeletes = await Promise.all(
+    const preparedIndexDeletes = await allFulfilled(
       this.operations.prepareDeleteFns.map((fn) => fn(this.kv)),
     )
 
@@ -401,7 +402,7 @@ export class AtomicBuilder<
 
     // If successful commit, perform delete ops
     if (commitResult.ok) {
-      await Promise.all(
+      await allFulfilled(
         preparedIndexDeletes.map(async (preparedDelete) => {
           // Get document id and data from prepared delete object
           const {
