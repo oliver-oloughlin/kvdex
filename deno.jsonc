@@ -5,8 +5,7 @@
     "prep": "deno lint && deno fmt && deno task test"
   },
   "fmt": {
-    "semiColons": false,
-    "exclude": ["README.md"]
+    "semiColons": false
   },
   "test": {
     "include": ["./test/tests"]
