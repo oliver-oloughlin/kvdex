@@ -23,6 +23,7 @@ import type {
   UpdateData,
 } from "./types.ts"
 import {
+  allFulfilled,
   checkIndices,
   deleteIndices,
   extendKey,
@@ -235,7 +236,7 @@ export class IndexableCollection<
 
   async delete(...ids: KvId[]) {
     // Run delete operations for each id
-    await Promise.all(ids.map(async (id) => {
+    await allFulfilled(ids.map(async (id) => {
       // Create idKey, get document value
       const idKey = extendKey(this._keys.idKey, id)
       const { value } = await this.kv.get<T1>(idKey)
@@ -499,7 +500,7 @@ export class IndexableCollection<
     }
 
     // Execute callback function for each document
-    await Promise.all(docs.map((doc) => fn(doc)))
+    await allFulfilled(docs.map((doc) => fn(doc)))
 
     // Return current iterator cursor
     return {

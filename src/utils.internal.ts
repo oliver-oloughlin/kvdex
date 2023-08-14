@@ -297,7 +297,7 @@ export async function kvGetMany<const T>(
   }
 
   // Execute getMany for each sliced keys entry
-  const slicedEntries = await Promise.all(slicedKeys.map((keys) => {
+  const slicedEntries = await allFulfilled(slicedKeys.map((keys) => {
     return kv.getMany<T[]>(keys, options)
   }))
 
@@ -327,7 +327,7 @@ export async function useAtomics<const T>(
   }
 
   // Invoke callback function for each element and execute atomic operation
-  return await Promise.all(slicedElements.map(async (elements) => {
+  return await allFulfilled(slicedElements.map(async (elements) => {
     let atomic = kv.atomic()
 
     elements.forEach((value) => {
@@ -370,4 +370,23 @@ export function parseQueueMessage(msg: unknown): ParsedQueueMessage {
     ok: true,
     msg: _msg,
   }
+}
+
+/**
+ * Get a list of result values from a list of promises.
+ * Only returns the values of fulfilled promises.
+ *
+ * @param promises - List of promises.
+ * @returns Result values from fulfilled promises.
+ */
+export async function allFulfilled<const T>(
+  values: T[],
+) {
+  // Get settled results
+  const settled = await Promise.allSettled(values)
+
+  // Return fulfilled values
+  return settled
+    .map((result) => result.status === "fulfilled" ? result.value : null!)
+    .filter((value) => !!value)
 }

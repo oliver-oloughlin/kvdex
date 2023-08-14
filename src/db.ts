@@ -12,7 +12,7 @@ import type {
   SchemaDefinition,
 } from "./types.ts"
 import { Collection } from "./collection.ts"
-import { extendKey, parseQueueMessage } from "./utils.internal.ts"
+import { allFulfilled, extendKey, parseQueueMessage } from "./utils.internal.ts"
 import { createAtomicBuilder } from "./atomic_builder.ts"
 
 /**
@@ -119,7 +119,7 @@ async function _countAll(
   }
 
   // Recursively count the schema collections.
-  const counts = await Promise.all(
+  const counts = await allFulfilled(
     Object.values(schemaOrCollection).map((val) => _countAll(kv, val, options)),
   )
 
@@ -149,7 +149,7 @@ async function _deleteAll(
   }
 
   // Recursively delete all documents from schema collections
-  await Promise.all(
+  await allFulfilled(
     Object.values(schemaOrCollection).map((val) =>
       _deleteAll(kv, val, options)
     ),

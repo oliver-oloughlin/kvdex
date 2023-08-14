@@ -19,6 +19,7 @@ import type {
   UpdateData,
 } from "./types.ts"
 import {
+  allFulfilled,
   extendKey,
   generateId,
   getDocumentId,
@@ -233,7 +234,7 @@ export class Collection<
    */
   async delete(...ids: KvId[]) {
     // Perform delete operation for each id
-    await Promise.all(ids.map(async (id) => {
+    await allFulfilled(ids.map(async (id) => {
       const key = extendKey(this._keys.idKey, id)
       await this.kv.delete(key)
     }))
@@ -346,7 +347,7 @@ export class Collection<
    */
   async addMany(...entries: T1[]) {
     // Add each entry, return commit result list
-    return await Promise.all(entries.map((data) => this.add(data)))
+    return await allFulfilled(entries.map((data) => this.add(data)))
   }
 
   /**
@@ -621,7 +622,7 @@ export class Collection<
     }
 
     // Execute callback function for each document
-    await Promise.all(docs.map((doc) => fn(doc)))
+    await allFulfilled(docs.map((doc) => fn(doc)))
 
     // Return current iterator cursor
     return {
