@@ -386,7 +386,9 @@ export async function allFulfilled<const T>(
   const settled = await Promise.allSettled(values)
 
   // Return fulfilled values
-  return settled
-    .map((result) => result.status === "fulfilled" ? result.value : null!)
-    .filter((value) => !!value)
+  return settled.reduce(
+    (acc, result) =>
+      result.status === "fulfilled" ? [...acc, result.value] : acc,
+    [] as Awaited<T>[],
+  )
 }
