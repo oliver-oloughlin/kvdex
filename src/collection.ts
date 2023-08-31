@@ -1,5 +1,6 @@
 import { COLLECTION_ID_KEY_SUFFIX, KVDEX_KEY_PREFIX } from "./constants.ts"
 import type {
+  AddOptions,
   CollectionKeys,
   CollectionOptions,
   CommitResult,
@@ -171,9 +172,14 @@ export class Collection<
    * @param data
    * @returns A promise that resovles to a commit result containing the document versionstamp, id and ok flag.
    */
-  async add(data: T1) {
+  async add(data: T1, options?: AddOptions) {
     // Generate id and set the document entry
     const id = this._idGenerator(data)
+
+    if (options && options.retry > 0) {
+      return await this.setRetry(id, data, options)
+    }
+
     return await this.set(id, data)
   }
 
@@ -218,6 +224,41 @@ export class Collection<
 
     // return commit result
     return commitResult
+  }
+
+  /**
+   * Adds a new document with the given id to the KV store.
+   * - If the commit fails, the operation is retried up to the given number of times.
+   * - If the commit fails after the given number of retries, the last commit result is returned.
+   * - If the commit succeeds, the commit result is returned.
+   *
+   * **Example:**
+   * ```ts
+   * const result = await db.users.setRetry("oliver", {
+   *  username: "oli",
+   *  age: 24
+   * }, { retry: 3 })
+   * ```
+   *
+   * @param id
+   * @param data
+   * @param options
+   * @returns A promise that resolves to a commit result containing the document versionstamp, id and ok flag.
+   */
+  async setRetry(
+    id: KvId,
+    data: T1,
+    options: { retry: number },
+  ) {
+    let res: CommitResult<T1> = { ok: false }
+    let count = 0
+
+    while (!res.ok && count < options.retry) {
+      res = await this.set(id, data)
+      count++
+    }
+
+    return res
   }
 
   /**

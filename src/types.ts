@@ -108,6 +108,8 @@ export type FindOptions = Parameters<Deno.Kv["get"]>[1]
 
 export type FindManyOptions = Parameters<Deno.Kv["getMany"]>[1]
 
+export type AddOptions = { retry: number }
+
 export type CommitResult<T1 extends KvValue> = {
   ok: true
   versionstamp: Document<T1>["versionstamp"]

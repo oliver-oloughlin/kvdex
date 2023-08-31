@@ -109,6 +109,25 @@ Deno.test("collection", async (t) => {
         assert(typeof person === "object" && person?.id === cr.id)
       },
     })
+
+    await t.step({
+      name:
+        "Should add record and return commit result with random id of type string and versionstamp of type string",
+      fn: async () => {
+        await reset()
+
+        const cr = await db.people.add(testPerson, { retry: 3 })
+        if (!cr.ok) {
+          throw Error("'testPerson' not added to collection successfully")
+        }
+
+        const person = await db.people.find(cr.id)
+
+        assert(typeof cr.id === "string")
+        assert(typeof cr.versionstamp === "string")
+        assert(typeof person === "object" && person?.id === cr.id)
+      },
+    })
   })
 
   // Test "set" method
@@ -184,6 +203,94 @@ Deno.test("collection", async (t) => {
 
           const cr2 = await db.people.set(123n, testPerson)
           assert(!cr2.ok)
+        },
+      })
+    },
+  })
+
+  // Test "setRetry" method
+  await t.step({
+    name: "setRetry",
+    fn: async (t) => {
+      const options = { retry: 3 }
+
+      await t.step({
+        name:
+          "Should set record and return commit result with id of type string and versionstamp of type string",
+        fn: async () => {
+          await reset()
+
+          const cr = await db.people.setRetry("test_id", testPerson, options)
+          if (!cr.ok) {
+            throw Error("'testPerson' not added to collection successfully")
+          }
+
+          const person = await db.people.find(cr.id)
+
+          assert(typeof cr.id === "string")
+          assert(typeof cr.versionstamp === "string")
+          assert(typeof person === "object" && person?.id === cr.id)
+        },
+      })
+
+      await t.step({
+        name:
+          "Should set record and return commit result with id of type number and versionstamp of type string",
+        fn: async () => {
+          await reset()
+
+          const cr = await db.people.setRetry(123, testPerson, options)
+          if (!cr.ok) {
+            throw Error("'testPerson' not added to collection successfully")
+          }
+
+          const person = await db.people.find(cr.id)
+
+          assert(typeof cr.id === "number")
+          assert(typeof cr.versionstamp === "string")
+          assert(typeof person === "object" && person?.id === cr.id)
+        },
+      })
+
+      await t.step({
+        name:
+          "Should set record and return commit result with id of type bigint and versionstamp of type string",
+        fn: async () => {
+          await reset()
+
+          const cr = await db.people.setRetry(123n, testPerson, options)
+          if (!cr.ok) {
+            throw Error("'testPerson' not added to collection successfully")
+          }
+
+          const person = await db.people.find(cr.id)
+
+          assert(typeof cr.id === "bigint")
+          assert(typeof cr.versionstamp === "string")
+          assert(typeof person === "object" && person?.id === cr.id)
+        },
+      })
+
+      await t.step({
+        name: "Should not override existing record with the same id",
+        fn: async () => {
+          await reset()
+
+          const cr1 = await db.people.setRetry(123n, testPerson, options)
+          if (!cr1.ok) {
+            throw Error("'testPerson' not added to collection successfully")
+          }
+
+          const cr2 = await db.people.setRetry(123n, testPerson, options)
+          assert(!cr2.ok)
+        },
+      })
+
+      // TODO: figure out how to implement this test
+      await t.step({
+        name: "Should return result after 'retry' - 1 attempts",
+        fn: () => {
+          assert(true)
         },
       })
     },
