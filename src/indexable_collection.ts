@@ -414,26 +414,34 @@ export class IndexableCollection<
     })
   }
 
-  protected async setDocument(id: KvId, data: T1, overwrite = false) {
+  protected async setDocument(
+    id: KvId,
+    data: T1,
+    overwrite = false,
+  ): Promise<CommitResult<T1>> {
     // Create the document id key
     const idKey = extendKey(this._keys.idKey, id)
 
-    // Create atomic operation with set mutation
-    let atomic = this.kv.atomic().set(idKey, data)
-
-    // If overwrite is false, check for existing document
-    if (!overwrite) {
-      atomic = atomic.check({
+    // Create atomic operation with set mutation and versionstamp check
+    let atomic = this.kv
+      .atomic()
+      .check({
         key: idKey,
         versionstamp: null,
       })
-    }
+      .set(idKey, data)
 
     // Set document indices using atomic operation
     atomic = setIndices(id, data, atomic, this)
 
     // Execute the atomic operation
     const cr = await atomic.commit()
+
+    // If the operation fails, delete the existing entry and retry
+    if (!cr.ok && overwrite) {
+      await this.delete(id)
+      return await this.setDocument(id, data, false)
+    }
 
     // Create a commit result from atomic commit result
     const commitResult: CommitResult<T1> = cr.ok

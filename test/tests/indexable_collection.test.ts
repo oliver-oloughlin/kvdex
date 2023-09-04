@@ -181,6 +181,57 @@ Deno.test("indexable_collection", async (t) => {
     )
   })
 
+  // Test "write" method
+  await t.step("write", async (t) => {
+    await t.step("Should write new document to the collection", async () => {
+      await reset()
+
+      const id = "id"
+      const value = testPerson
+
+      const cr = await db.indexablePeople.write(id, value)
+      assert(cr.ok)
+      assert(cr.id === id)
+
+      const doc = await db.indexablePeople.find(id)
+      assert(doc !== null)
+      assert(doc.value.name === value.name)
+
+      const count = await db.indexablePeople.count({
+        filter: (doc) => doc.value.name === value.name,
+      })
+
+      assert(count === 1)
+    })
+
+    await t.step(
+      "Should write over existing document in the collection",
+      async () => {
+        await reset()
+
+        const id = "id"
+        const value = testPerson
+
+        const crPrep = await db.indexablePeople.set(id, value)
+        assert(crPrep.ok)
+
+        const cr = await db.indexablePeople.write(id, value)
+        assert(cr.ok)
+        assert(cr.id === id)
+
+        const doc = await db.indexablePeople.find(id)
+        assert(doc !== null)
+        assert(doc.value.name === value.name)
+
+        const count = await db.indexablePeople.count({
+          filter: (doc) => doc.value.name === value.name,
+        })
+
+        assert(count === 1)
+      },
+    )
+  })
+
   // Test "addMany" method
   await t.step("addMany", async (t) => {
     await t.step(
