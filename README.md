@@ -228,20 +228,22 @@ an existing id already exists or not.
 ```ts
 const result1 = await db.numbers.write("id_1", 1024)
 const result2 = await db.numbers.write("id_1", 2048)
+const doc = await db.numbers.find("id_1")
 
 console.log(result1.ok, result1.id) // true id_1
 console.log(result2.ok, result2.id) // true id_1
+console.log(doc.value) // 2048
 ```
 
 ### update()
 
 Update the value of an exisiting document in the KV store. For primitive values,
-arrays and built-in objects (Date, RegExp, etc.), this method overrides the
+arrays and built-in objects (Date, RegExp, etc.), this method overwrites the
 exisiting data with the new value. For custom objects (Models), this method
-performs a partial update, merging the new value with the existing data. Upon
-completion, a CommitResult object will be returned with the document id,
-versionstamp and ok flag. If no document with a matching id exisst in the
-collection, the operation will fail.
+performs a partial update, merging the new value with the existing data (shallow
+merge, not deep). Upon completion, a CommitResult object will be returned with
+the document id, versionstamp and ok flag. If no document with a matching id
+exists in the collection, the operation will fail.
 
 ```ts
 // Updates the document with a new value
