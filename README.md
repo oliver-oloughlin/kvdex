@@ -19,6 +19,7 @@ Zero third-party dependencies.
     - [add()](#add)
     - [addMany()](#addmany)
     - [set()](#set)
+    - [write()](#write)
     - [update()](#update)
     - [updateMany()](#updatemany)
     - [delete()](#delete)
@@ -206,12 +207,30 @@ await results = await db.users.addMany(
 
 Add a new document to the KV store with a given id of type KvId. Upon
 completion, a CommitResult object will be returned with the document id,
-versionstamp and ok flag.
+versionstamp and ok flag. If a document with a matching id already exists in the
+collection, the operation will fail.
 
 ```ts
 const result = await db.numbers.set("id_1", 2048)
 
-console.log(result.id) // "id_1"
+console.log(result.id) // id_1
+```
+
+### write()
+
+Write a document to the KV store with a given id of type KvId. Sets a new
+document entry if no document already exists, overwrites an existing entry if it
+does. Upon completion, a CommitResult object will be returned with the document
+id, verisonstamp and ok flag. Contrary to update(), this method will only
+perform full overwrites, no partial updates. This method will not fail whether
+an existing id already exists or not.
+
+```ts
+const result1 = await db.numbers.write("id_1", 1024)
+const result2 = await db.numbers.write("id_1", 2048)
+
+console.log(result1.ok, result1.id) // true id_1
+console.log(result2.ok, result2.id) // true id_1
 ```
 
 ### update()
@@ -221,7 +240,8 @@ arrays and built-in objects (Date, RegExp, etc.), this method overrides the
 exisiting data with the new value. For custom objects (Models), this method
 performs a partial update, merging the new value with the existing data. Upon
 completion, a CommitResult object will be returned with the document id,
-versionstamp and ok flag.
+versionstamp and ok flag. If no document with a matching id exisst in the
+collection, the operation will fail.
 
 ```ts
 // Updates the document with a new value
