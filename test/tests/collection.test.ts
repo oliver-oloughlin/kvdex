@@ -189,6 +189,57 @@ Deno.test("collection", async (t) => {
     },
   })
 
+  // Test "write" method
+  await t.step("write", async (t) => {
+    await t.step("Should write new document to the collection", async () => {
+      await reset()
+
+      const id = "id"
+      const value = "text"
+
+      const cr = await db.values.strings.write(id, value)
+      assert(cr.ok)
+      assert(cr.id === id)
+
+      const doc = await db.values.strings.find(id)
+      assert(doc !== null)
+      assert(doc.value === value)
+
+      const count = await db.values.strings.count({
+        filter: (doc) => doc.value === value,
+      })
+
+      assert(count === 1)
+    })
+
+    await t.step(
+      "Should write over existing document in the collection",
+      async () => {
+        await reset()
+
+        const id = "id"
+        const value = "text"
+
+        const crPrep = await db.values.strings.set(id, value)
+        assert(crPrep.ok)
+
+        const cr = await db.values.strings.write(id, value)
+        assert(cr.ok)
+        assert(cr.id === id)
+
+        const doc = await db.values.strings.find(id)
+        assert(doc !== null)
+        assert(doc.value === value)
+
+        const count = await db.values.strings.count({
+          filter: (doc) => doc.value === value,
+        })
+
+        assert(count === 1)
+      },
+    )
+  })
+
   // Test "find" method
   await t.step({
     name: "find",

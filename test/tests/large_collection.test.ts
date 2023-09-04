@@ -160,6 +160,57 @@ Deno.test("large_collection", async (t) => {
     )
   })
 
+  // Test "write" method
+  await t.step("write", async (t) => {
+    await t.step("Should write new document to the collection", async () => {
+      await reset()
+
+      const id = "id"
+      const value = testLargeData
+
+      const cr = await db.largeDocs.write(id, value)
+      assert(cr.ok)
+      assert(cr.id === id)
+
+      const doc = await db.largeDocs.find(id)
+      assert(doc !== null)
+      assert(doc.value.name === value.name)
+
+      const count = await db.largeDocs.count({
+        filter: (doc) => doc.value.name === value.name,
+      })
+
+      assert(count === 1)
+    })
+
+    await t.step(
+      "Should write over existing document in the collection",
+      async () => {
+        await reset()
+
+        const id = "id"
+        const value = testLargeData
+
+        const crPrep = await db.largeDocs.set(id, value)
+        assert(crPrep.ok)
+
+        const cr = await db.largeDocs.write(id, value)
+        assert(cr.ok)
+        assert(cr.id === id)
+
+        const doc = await db.largeDocs.find(id)
+        assert(doc !== null)
+        assert(doc.value.name === value.name)
+
+        const count = await db.largeDocs.count({
+          filter: (doc) => doc.value.name === value.name,
+        })
+
+        assert(count === 1)
+      },
+    )
+  })
+
   // Test "find" method
   await t.step("find", async (t) => {
     await t.step("Should find document by id", async () => {
