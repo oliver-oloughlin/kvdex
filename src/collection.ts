@@ -168,8 +168,8 @@ export class Collection<
    * })
    * ```
    *
-   * @param data
-   * @returns A promise that resovles to a commit result containing the document versionstamp, id and ok flag.
+   * @param data - Document value.
+   * @returns Promise resolving to a CommitResult object.
    */
   async add(data: T1) {
     // Generate id and set the document entry
@@ -182,42 +182,38 @@ export class Collection<
    *
    * **Example:**
    * ```ts
-   * const result = await db.users.add("oliver", {
+   * const result = await db.users.set("oliver", {
    *   username: "oli",
    *   age: 24
    * })
    * ```
    *
-   * @param data
-   * @returns A promise that resovles to a commit result containing the document versionstamp, id and ok flag.
+   * @param id - Document id.
+   * @param data - Document value.
+   * @returns Promise resolving to a CommitResult object.
    */
   async set(id: KvId, data: T1) {
-    // Create document key
-    const key = extendKey(this._keys.idKey, id)
+    return await this.setDocument(id, data, false)
+  }
 
-    // Set document entry, check for existing entries
-    const cr = await this.kv
-      .atomic()
-      .check({
-        key,
-        versionstamp: null,
-      })
-      .set(key, data)
-      .commit()
-
-    // Create commit result from atomic commit result
-    const commitResult: CommitResult<T1> = cr.ok
-      ? {
-        ok: true,
-        versionstamp: cr.versionstamp,
-        id,
-      }
-      : {
-        ok: false,
-      }
-
-    // return commit result
-    return commitResult
+  /**
+   * Write a document to the KV store.
+   *
+   * Sets a new document entry if no matching id already exists, overwrites the exisiting entry if it exists.
+   *
+   * **Example:**
+   * ```ts
+   * const result = await db.users.write("anders", {
+   *   username: "andy",
+   *   age: 24
+   * })
+   * ```
+   * @param id - Document id.
+   * @param value - Document value.
+   * @returns Promise resolving to a CommitResult object.
+   */
+  async write(id: KvId, value: T1) {
+    return await this.setDocument(id, value, true)
   }
 
   /**
@@ -628,6 +624,47 @@ export class Collection<
     return {
       cursor: iter.cursor || undefined,
     }
+  }
+
+  /**
+   * Set a document entry in the KV store.
+   *
+   * @param id - Document id.
+   * @param data - Document value.
+   * @param overwrite - Boolean flag determining whether to overwrite existing entry or fail operation.
+   * @returns Promise resolving to a CommitResult object.
+   */
+  protected async setDocument(id: KvId, data: T1, overwrite = false) {
+    // Create document key
+    const key = extendKey(this._keys.idKey, id)
+
+    // Create atomic operation with set mutation
+    let atomic = this.kv.atomic().set(key, data)
+
+    // If overwrite is false, check for existing document
+    if (!overwrite) {
+      atomic = atomic.check({
+        key,
+        versionstamp: null,
+      })
+    }
+
+    // Perform atomic operation
+    const cr = await atomic.commit()
+
+    // Create commit result from atomic commit result
+    const commitResult: CommitResult<T1> = cr.ok
+      ? {
+        ok: true,
+        versionstamp: cr.versionstamp,
+        id,
+      }
+      : {
+        ok: false,
+      }
+
+    // return commit result
+    return commitResult
   }
 
   /**

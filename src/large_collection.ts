@@ -65,91 +65,6 @@ export class LargeCollection<
     }
   }
 
-  async set(id: Deno.KvKeyPart, data: T1): Promise<CommitResult<T1>> {
-    // Create document id key
-    const idKey = extendKey(this._keys.idKey, id)
-
-    // Check if id already exists
-    const check = await this.kv
-      .atomic()
-      .check({
-        key: idKey,
-        versionstamp: null,
-      })
-      .commit()
-
-    // If id exists, return result with false flag
-    if (!check.ok) {
-      return {
-        ok: false,
-      }
-    }
-
-    // Stringify data and initialize json parts list
-    const json = JSON.stringify(data)
-    const jsonParts: string[] = []
-
-    // Divide json string by string limit, add parts to json parts list
-    for (let i = 0; i < json.length; i += LARGE_COLLECTION_STRING_LIMIT) {
-      jsonParts.push(json.substring(i, i + LARGE_COLLECTION_STRING_LIMIT))
-    }
-
-    // Set start index, initiate commit result and keys lists
-    let index = 0
-    const keys: KvKey[] = []
-
-    // Execute set operations for json parts, capture keys and commit results
-    const crs = await useAtomics(this.kv, jsonParts, (str, atomic) => {
-      const key = extendKey(this._keys.segmentKey, id, index)
-      keys.push(key)
-      index++
-
-      return atomic
-        .set(key, str)
-    })
-
-    // Determine whether setting json parts was successful
-    const success = crs.length > 0 && crs.every((cr) => cr.ok)
-
-    // If not successful, delete all json part entries
-    if (!success) {
-      await allFulfilled(keys.map((key) => this.kv.delete(key)))
-
-      return {
-        ok: false,
-      }
-    }
-
-    // Create large document entry
-    const entry: LargeDocumentEntry = {
-      ids: keys.map((key) => getDocumentId(key)!).filter((id) =>
-        typeof id !== "undefined"
-      ),
-    }
-
-    // Set large document entry
-    const cr = await this.kv
-      .atomic()
-      .set(idKey, entry)
-      .commit()
-
-    // If not successful, delete all json part entries
-    if (!cr.ok) {
-      await allFulfilled(keys.map((key) => this.kv.delete(key)))
-
-      return {
-        ok: false,
-      }
-    }
-
-    // Return commit result
-    return {
-      ok: true,
-      id,
-      versionstamp: cr.versionstamp,
-    }
-  }
-
   async find(
     id: Deno.KvKeyPart,
     options?: FindOptions,
@@ -284,6 +199,8 @@ export class LargeCollection<
     }))
   }
 
+  /* PROTECTED METHODS */
+
   protected async handleMany(
     fn: (doc: Document<T1>) => unknown,
     options?: ListOptions<T1>,
@@ -325,6 +242,101 @@ export class LargeCollection<
     // Return current iterator cursor
     return {
       cursor: iter.cursor || undefined,
+    }
+  }
+
+  protected async setDocument(
+    id: Deno.KvKeyPart,
+    data: T1,
+    overwrite = false,
+  ): Promise<CommitResult<T1>> {
+    // Create document id key
+    const idKey = extendKey(this._keys.idKey, id)
+
+    // Check if id already exists
+    const check = await this.kv
+      .atomic()
+      .check({
+        key: idKey,
+        versionstamp: null,
+      })
+      .commit()
+
+    // Check if document already exists
+    if (!check.ok) {
+      // If overwrite is false, return result with false ok flag
+      if (!overwrite) {
+        return {
+          ok: false,
+        }
+      }
+
+      // If overwrite is true, delete existing document entry
+      await this.delete(id)
+    }
+
+    // Stringify data and initialize json parts list
+    const json = JSON.stringify(data)
+    const jsonParts: string[] = []
+
+    // Divide json string by string limit, add parts to json parts list
+    for (let i = 0; i < json.length; i += LARGE_COLLECTION_STRING_LIMIT) {
+      jsonParts.push(json.substring(i, i + LARGE_COLLECTION_STRING_LIMIT))
+    }
+
+    // Set start index, initiate commit result and keys lists
+    let index = 0
+    const keys: KvKey[] = []
+
+    // Execute set operations for json parts, capture keys and commit results
+    const crs = await useAtomics(this.kv, jsonParts, (str, atomic) => {
+      const key = extendKey(this._keys.segmentKey, id, index)
+      keys.push(key)
+      index++
+
+      return atomic
+        .set(key, str)
+    })
+
+    // Determine whether setting json parts was successful
+    const success = crs.length > 0 && crs.every((cr) => cr.ok)
+
+    // If not successful, delete all json part entries
+    if (!success) {
+      await allFulfilled(keys.map((key) => this.kv.delete(key)))
+
+      return {
+        ok: false,
+      }
+    }
+
+    // Create large document entry
+    const entry: LargeDocumentEntry = {
+      ids: keys.map((key) => getDocumentId(key)!).filter((id) =>
+        typeof id !== "undefined"
+      ),
+    }
+
+    // Set large document entry
+    const cr = await this.kv
+      .atomic()
+      .set(idKey, entry)
+      .commit()
+
+    // If not successful, delete all json part entries
+    if (!cr.ok) {
+      await allFulfilled(keys.map((key) => this.kv.delete(key)))
+
+      return {
+        ok: false,
+      }
+    }
+
+    // Return commit result
+    return {
+      ok: true,
+      id,
+      versionstamp: cr.versionstamp,
     }
   }
 }

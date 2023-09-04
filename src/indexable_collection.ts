@@ -108,40 +108,6 @@ export class IndexableCollection<
       .map(([key]) => key)
   }
 
-  async set(id: KvId, data: T1) {
-    // Create the document id key
-    const idKey = extendKey(this._keys.idKey, id)
-
-    // Create atomic operation with set mutation and version check
-    let atomic = this.kv
-      .atomic()
-      .check({
-        key: idKey,
-        versionstamp: null,
-      })
-      .set(idKey, data)
-
-    // Set document indices using atomic operation
-    atomic = setIndices(id, data, atomic, this)
-
-    // Execute the atomic operation
-    const cr = await atomic.commit()
-
-    // Create a commit result from atomic commit result
-    const commitResult: CommitResult<T1> = cr.ok
-      ? {
-        ok: true,
-        versionstamp: cr.versionstamp,
-        id,
-      }
-      : {
-        ok: false,
-      }
-
-    // Return the commit result
-    return commitResult
-  }
-
   /**
    * Find a document by a primary index.
    *
@@ -446,6 +412,42 @@ export class IndexableCollection<
       ...value,
       ...data,
     })
+  }
+
+  protected async setDocument(id: KvId, data: T1, overwrite = false) {
+    // Create the document id key
+    const idKey = extendKey(this._keys.idKey, id)
+
+    // Create atomic operation with set mutation
+    let atomic = this.kv.atomic().set(idKey, data)
+
+    // If overwrite is false, check for existing document
+    if (!overwrite) {
+      atomic = atomic.check({
+        key: idKey,
+        versionstamp: null,
+      })
+    }
+
+    // Set document indices using atomic operation
+    atomic = setIndices(id, data, atomic, this)
+
+    // Execute the atomic operation
+    const cr = await atomic.commit()
+
+    // Create a commit result from atomic commit result
+    const commitResult: CommitResult<T1> = cr.ok
+      ? {
+        ok: true,
+        versionstamp: cr.versionstamp,
+        id,
+      }
+      : {
+        ok: false,
+      }
+
+    // Return the commit result
+    return commitResult
   }
 
   /**
