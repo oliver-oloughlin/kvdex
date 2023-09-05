@@ -240,7 +240,7 @@ Deno.test("indexable_collection", async (t) => {
         await reset()
 
         const people = generatePeople(100)
-        const crs = await db.indexablePeople.addMany(...people)
+        const crs = await db.indexablePeople.addMany(people)
         assert(crs.every((cr) => cr.ok))
 
         const allPeople = await db.indexablePeople.getMany()
@@ -280,7 +280,7 @@ Deno.test("indexable_collection", async (t) => {
       async () => {
         await reset()
 
-        const crs = await db.indexablePeople.addMany(testPerson, testPerson)
+        const crs = await db.indexablePeople.addMany([testPerson, testPerson])
 
         assert(crs.some((cr) => !cr.ok))
 
@@ -624,7 +624,7 @@ Deno.test("indexable_collection", async (t) => {
       async () => {
         await reset()
 
-        const crs = await db.indexablePeople.addMany(testPerson, testPerson2)
+        const crs = await db.indexablePeople.addMany([testPerson, testPerson2])
         assert(crs.every((cr) => cr.ok))
 
         const newAge = 99
@@ -713,7 +713,7 @@ Deno.test("indexable_collection", async (t) => {
       await reset()
 
       const people = generatePeople(50)
-      const crs = await db.indexablePeople.addMany(...people)
+      const crs = await db.indexablePeople.addMany(people)
       assert(crs.every((cr) => cr.ok))
 
       const newAge = 99
@@ -826,7 +826,7 @@ Deno.test("indexable_collection", async (t) => {
 
         // Add test objects
         const people = generatePeople(100)
-        const crs = await db.indexablePeople.addMany(...people)
+        const crs = await db.indexablePeople.addMany(people)
         assert(crs.every((cr) => cr.ok))
 
         // Check that test objects can be found by id and index before delete
@@ -977,7 +977,7 @@ Deno.test("indexable_collection", async (t) => {
       async () => {
         await reset()
 
-        await db.indexablePeople.addMany(testPerson, testPerson2)
+        await db.indexablePeople.addMany([testPerson, testPerson2])
 
         const allPeople = await db.indexablePeople.getMany()
         assert(allPeople.result.length === 2)
@@ -990,7 +990,7 @@ Deno.test("indexable_collection", async (t) => {
     await t.step("Should correctly count filtered documents", async () => {
       await reset()
 
-      await db.indexablePeople.addMany(testPerson, testPerson2)
+      await db.indexablePeople.addMany([testPerson, testPerson2])
 
       const allPeople = await db.indexablePeople.getMany()
       assert(allPeople.result.length === 2)
@@ -1010,7 +1010,7 @@ Deno.test("indexable_collection", async (t) => {
       async () => {
         await reset()
 
-        const crs = await db.indexablePeople.addMany(testPerson, testPerson2)
+        const crs = await db.indexablePeople.addMany([testPerson, testPerson2])
         assert(crs.every((cr) => cr.ok))
 
         const names = await db.indexablePeople.map((doc) => doc.value.name)
@@ -1032,7 +1032,7 @@ Deno.test("indexable_collection", async (t) => {
       async () => {
         await reset()
 
-        const crs = await db.indexablePeople.addMany(testPerson, testPerson2)
+        const crs = await db.indexablePeople.addMany([testPerson, testPerson2])
         assert(crs.every((cr) => cr.ok))
 
         const names = await db.indexablePeople.map((doc) => doc.value.name, {
@@ -1180,10 +1180,10 @@ Deno.test("indexable_collection", async (t) => {
       async () => {
         await reset()
 
-        const [cr1, cr2] = await db.indexablePeople.addMany(
+        const [cr1, cr2] = await db.indexablePeople.addMany([
           testPerson,
           testPerson2,
-        )
+        ])
         assert(cr1.ok && cr2.ok)
 
         const count1 = await db.indexablePeople.count()
@@ -1241,7 +1241,7 @@ Deno.test("indexable_collection", async (t) => {
         await reset()
 
         const people = generatePeople(100)
-        const crs = await db.indexablePeople.addMany(...people)
+        const crs = await db.indexablePeople.addMany(people)
         assert(crs.every((cr) => cr.ok))
 
         const count1 = await db.indexablePeople.count()

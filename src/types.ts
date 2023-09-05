@@ -90,6 +90,8 @@ export type CollectionKeys = {
   idKey: KvKey
 }
 
+export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]>
+
 export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   /**
    * Filter documents based on predicate.
@@ -104,9 +106,11 @@ export type CountOptions<T extends KvValue> =
   & CountAllOptions
   & Pick<ListOptions<T>, "filter">
 
-export type FindOptions = Parameters<Deno.Kv["get"]>[1]
+export type FindOptions = NonNullable<Parameters<Deno.Kv["get"]>[1]>
 
-export type FindManyOptions = Parameters<Deno.Kv["getMany"]>[1]
+export type FindManyOptions = NonNullable<Parameters<Deno.Kv["getMany"]>[1]>
+
+export type UpdateManyOptions<T extends KvValue> = ListOptions<T> & SetOptions
 
 export type CommitResult<T1 extends KvValue> = {
   ok: true
@@ -211,8 +215,8 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * const count = await db.countAll()
    * ```
    *
-   * @param options
-   * @returns A promise that resolves to a number representing the total count of documents in the KV store.
+   * @param options - Count all options, optional.
+   * @returns Promise resolving to a number representing the total count of documents in the KV store.
    */
   countAll(options?: CountAllOptions): Promise<number>
 
@@ -224,8 +228,8 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * // Deletes all documents across all collections
    * await db.deleteAll()
    * ```
-   *
-   * @returns A promise that resolves to void.
+   * @param options - Delete all options, optional.
+   * @returns Promise resolving to void.
    */
   deleteAll(options?: DeleteAllOptions): Promise<void>
 
@@ -246,8 +250,8 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * })
    * ```
    *
-   * @param data
-   * @param options
+   * @param data - Data to be added to the database queue.
+   * @param options - Enqueue options, optional.
    */
   enqueue(data: unknown, options?: EnqueueOptions): EnqueueResult
 
@@ -272,7 +276,7 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * })
    * ```
    *
-   * @param handler
+   * @param handler - Message handler function.
    */
   listenQueue(handler: QueueMessageHandler): ListenQueueResult
 }

@@ -104,10 +104,10 @@ Deno.test("large_collection", async (t) => {
   // Test "addMany" method
   await t.step("addMany", async (t) => {
     await t.step("Should add 2 documents entries", async () => {
-      const [cr1, cr2] = await db.largeDocs.addMany(
+      const [cr1, cr2] = await db.largeDocs.addMany([
         testLargeData,
         testLargeData,
-      )
+      ])
       assert(cr1.ok && cr2.ok)
 
       const docs = await db.largeDocs.findMany([cr1.id, cr2.id])
@@ -120,7 +120,7 @@ Deno.test("large_collection", async (t) => {
       await reset()
 
       const largeDatas = generateLargeDatas(50)
-      const crs = await db.largeDocs.addMany(...largeDatas)
+      const crs = await db.largeDocs.addMany(largeDatas)
       assert(crs.every((cr) => cr.ok))
 
       const count = await db.largeDocs.count()
@@ -240,10 +240,10 @@ Deno.test("large_collection", async (t) => {
     await t.step("Should 2 mutliple documents by ids", async () => {
       await reset()
 
-      const [cr1, cr2] = await db.largeDocs.addMany(
+      const [cr1, cr2] = await db.largeDocs.addMany([
         testLargeData,
         testLargeData,
-      )
+      ])
       assert(cr1.ok && cr2.ok)
 
       const docs = await db.largeDocs.findMany([cr1.id, cr2.id])
@@ -256,7 +256,7 @@ Deno.test("large_collection", async (t) => {
       await reset()
 
       const largeDatas = generateLargeDatas(50)
-      const crs = await db.largeDocs.addMany(...largeDatas)
+      const crs = await db.largeDocs.addMany(largeDatas)
       assert(crs.every((cr) => cr.ok))
 
       const docs = await db.largeDocs.findMany(
@@ -274,7 +274,7 @@ Deno.test("large_collection", async (t) => {
     await t.step("Should not find any documents", async () => {
       await reset()
 
-      await db.largeDocs.addMany(testLargeData, testLargeData2)
+      await db.largeDocs.addMany([testLargeData, testLargeData2])
 
       const docs = await db.largeDocs.findMany([
         1,
@@ -312,7 +312,7 @@ Deno.test("large_collection", async (t) => {
       await reset()
 
       const largeDatas = generateLargeDatas(25)
-      const crs = await db.largeDocs.addMany(...largeDatas)
+      const crs = await db.largeDocs.addMany(largeDatas)
       assert(crs.every((cr) => cr.ok))
 
       const count1 = await db.largeDocs.count()
@@ -332,10 +332,10 @@ Deno.test("large_collection", async (t) => {
       async () => {
         await reset()
 
-        const [cr1, cr2] = await db.largeDocs.addMany(
+        const [cr1, cr2] = await db.largeDocs.addMany([
           testLargeData,
           testLargeData2,
-        )
+        ])
         assert(cr1.ok && cr2.ok)
 
         const count1 = await db.largeDocs.count()
@@ -422,7 +422,7 @@ Deno.test("large_collection", async (t) => {
     await t.step("Should partially update all documents", async () => {
       await reset()
 
-      const crs = await db.largeDocs.addMany(testLargeData, testLargeData2)
+      const crs = await db.largeDocs.addMany([testLargeData, testLargeData2])
       assert(crs.every((cr) => cr.ok))
 
       const newName = "new_name"
@@ -471,10 +471,10 @@ Deno.test("large_collection", async (t) => {
       async () => {
         await reset()
 
-        const [cr1, cr2] = await db.largeDocs.addMany(
+        const [cr1, cr2] = await db.largeDocs.addMany([
           testLargeData,
           testLargeData2,
-        )
+        ])
         assert(cr1.ok && cr2.ok)
 
         const { result } = await db.largeDocs.getMany()
@@ -488,7 +488,7 @@ Deno.test("large_collection", async (t) => {
       async () => {
         await reset()
 
-        const crs = await db.largeDocs.addMany(testLargeData, testLargeData2)
+        const crs = await db.largeDocs.addMany([testLargeData, testLargeData2])
         assert(crs.every((cr) => cr.ok))
 
         const docs = await db.largeDocs.getMany({
@@ -511,10 +511,10 @@ Deno.test("large_collection", async (t) => {
       async () => {
         await reset()
 
-        const [cr1, cr2] = await db.largeDocs.addMany(
+        const [cr1, cr2] = await db.largeDocs.addMany([
           testLargeData,
           testLargeData2,
-        )
+        ])
         assert(cr1.ok && cr2.ok)
 
         const { result } = await db.largeDocs.map((doc) => doc.id)
@@ -526,7 +526,7 @@ Deno.test("large_collection", async (t) => {
     await t.step("Should only map filtered documents", async () => {
       await reset()
 
-      const crs = await db.largeDocs.addMany(testLargeData, testLargeData2)
+      const crs = await db.largeDocs.addMany([testLargeData, testLargeData2])
       assert(crs.every((cr) => cr.ok))
 
       const mapped = await db.largeDocs.map((doc) => doc.value.name, {
@@ -546,10 +546,10 @@ Deno.test("large_collection", async (t) => {
       async () => {
         await reset()
 
-        const [cr1, cr2] = await db.largeDocs.addMany(
+        const [cr1, cr2] = await db.largeDocs.addMany([
           testLargeData,
           testLargeData2,
-        )
+        ])
         assert(cr1.ok && cr2.ok)
 
         const ids: KvId[] = []
@@ -565,7 +565,7 @@ Deno.test("large_collection", async (t) => {
       async () => {
         await reset()
 
-        const crs = await db.largeDocs.addMany(testLargeData, testLargeData2)
+        const crs = await db.largeDocs.addMany([testLargeData, testLargeData2])
         assert(crs.every((cr) => cr.ok))
 
         const names: string[] = []
@@ -590,10 +590,10 @@ Deno.test("large_collection", async (t) => {
         const count1 = await db.largeDocs.count()
         assert(count1 === 0)
 
-        const [cr1, cr2] = await db.largeDocs.addMany(
+        const [cr1, cr2] = await db.largeDocs.addMany([
           testLargeData,
           testLargeData2,
-        )
+        ])
         assert(cr1.ok && cr2.ok)
 
         const count2 = await db.largeDocs.count()
@@ -604,7 +604,7 @@ Deno.test("large_collection", async (t) => {
     await t.step("Should only count filtered documents", async () => {
       await reset()
 
-      const crs = await db.largeDocs.addMany(testLargeData, testLargeData2)
+      const crs = await db.largeDocs.addMany([testLargeData, testLargeData2])
       assert(crs.every((cr) => cr.ok))
 
       const count = await db.largeDocs.count({

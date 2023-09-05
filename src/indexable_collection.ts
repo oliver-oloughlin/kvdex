@@ -20,7 +20,9 @@ import type {
   Model,
   PrimaryIndexKeys,
   SecondaryIndexKeys,
+  SetOptions,
   UpdateData,
+  UpdateManyOptions,
 } from "./types.ts"
 import {
   allFulfilled,
@@ -119,7 +121,7 @@ export class IndexableCollection<
    *
    * @param index - Index to find by.
    * @param value - Index value.
-   * @param options - Read options.
+   * @param options - Find options, optional.
    * @returns A promise resolving to the document found by selected index, or null if not found.
    */
   async findByPrimaryIndex<const K extends PrimaryIndexKeys<T1, T2["indices"]>>(
@@ -176,7 +178,7 @@ export class IndexableCollection<
    *
    * @param index - Index to find by.
    * @param value - Index value.
-   * @param options - List options.
+   * @param options - List options, optional.
    * @returns A promise resolving to an object containing the result list and iterator cursor.
    */
   async findBySecondaryIndex<
@@ -230,7 +232,7 @@ export class IndexableCollection<
    *
    * @param index - Index to delete by.
    * @param value - Index value.
-   * @param options - Find options.
+   * @param options - Find options, optional.
    * @returns A promise that resolves to void.
    */
   async deleteByPrimaryIndex<
@@ -280,7 +282,7 @@ export class IndexableCollection<
    *
    * @param index - Index to delete by.
    * @param value - Index value.
-   * @param options - List options.
+   * @param options - List options, optional.
    * @returns A promise that resolves to void.
    */
   async deleteBySecondaryIndex<
@@ -307,6 +309,7 @@ export class IndexableCollection<
    * @param index - Index to update by.
    * @param value - Index value.
    * @param data - Update data to be inserted into document.
+   * @param options - Set options, optional.
    * @returns Promise that resolves to a commit result.
    */
   async updateByPrimaryIndex<
@@ -315,6 +318,7 @@ export class IndexableCollection<
     index: K,
     value: CheckKeyOf<K, T1>,
     data: UpdateData<T1>,
+    options?: SetOptions,
   ): Promise<CommitResult<T1>> {
     // Find document by primary index
     const doc = await this.findByPrimaryIndex(index, value)
@@ -327,7 +331,7 @@ export class IndexableCollection<
     }
 
     // Update document, return result
-    return await this.update(doc.id, data)
+    return await this.update(doc.id, data, options)
   }
 
   /**
@@ -352,7 +356,7 @@ export class IndexableCollection<
    * @param index - Index to update by.
    * @param value - Index value.
    * @param data - Update data to be inserted into document.
-   * @param options
+   * @param options - Update many options, optional.
    * @returns Promise that resolves to an object containing result list and iterator cursor.
    */
   async updateBySecondaryIndex<
@@ -361,7 +365,7 @@ export class IndexableCollection<
     index: K,
     value: CheckKeyOf<K, T1>,
     data: UpdateData<T1>,
-    options?: ListOptions<T1>,
+    options?: UpdateManyOptions<T1>,
   ) {
     // Initiate reuslt list
     const result: CommitResult<T1>[] = []
@@ -371,7 +375,7 @@ export class IndexableCollection<
       index,
       value,
       async (doc) => {
-        const cr = await this.updateDocument(doc, data)
+        const cr = await this.updateDocument(doc, data, options)
         result.push(cr)
       },
       options,
@@ -389,6 +393,7 @@ export class IndexableCollection<
   protected async updateDocument(
     doc: Document<T1>,
     data: UpdateData<T1>,
+    options: SetOptions | undefined,
   ): Promise<CommitResult<T1>> {
     // Get document value, delete document entry
     const { value, id } = doc
@@ -408,15 +413,21 @@ export class IndexableCollection<
     await this.delete(id)
 
     // Set new document value from merged data
-    return await this.set(id, {
-      ...value,
-      ...data,
-    })
+    return await this.setDocument(
+      id,
+      {
+        ...value,
+        ...data,
+      },
+      options,
+      true,
+    )
   }
 
   protected async setDocument(
     id: KvId,
     data: T1,
+    options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<T1>> {
     // Create the document id key
@@ -429,10 +440,10 @@ export class IndexableCollection<
         key: idKey,
         versionstamp: null,
       })
-      .set(idKey, data)
+      .set(idKey, data, options)
 
     // Set document indices using atomic operation
-    atomic = setIndices(id, data, atomic, this)
+    atomic = setIndices(id, data, atomic, this, options)
 
     // Execute the atomic operation
     const cr = await atomic.commit()
@@ -440,7 +451,7 @@ export class IndexableCollection<
     // If the operation fails, delete the existing entry and retry
     if (!cr.ok && overwrite) {
       await this.delete(id)
-      return await this.setDocument(id, data, false)
+      return await this.setDocument(id, data, options, false)
     }
 
     // Create a commit result from atomic commit result
@@ -464,7 +475,7 @@ export class IndexableCollection<
    * @param index - Index.
    * @param value - Index value.
    * @param fn - Callback function.
-   * @param options - List options
+   * @param options - List options or undefined.
    * @returns - Promise that resolves to object containing iterator cursor.
    */
   protected async handleBySecondaryIndex<
@@ -473,7 +484,7 @@ export class IndexableCollection<
     index: K,
     value: CheckKeyOf<K, T1>,
     fn: (doc: Document<T1>) => unknown,
-    options?: ListOptions<T1>,
+    options: ListOptions<T1> | undefined,
   ) {
     // Create index key prefix
     const key = extendKey(

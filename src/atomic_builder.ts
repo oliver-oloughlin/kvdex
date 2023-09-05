@@ -13,6 +13,7 @@ import type {
   Operations,
   Schema,
   SchemaDefinition,
+  SetOptions,
 } from "./types.ts"
 import {
   allFulfilled,
@@ -102,12 +103,13 @@ export class AtomicBuilder<
    * ```
    *
    * @param data - Document data to be added.
+   * @param options - Set options, optional.
    * @returns Current AtomicBuilder instance.
    */
-  add(data: T2) {
+  add(data: T2, options?: SetOptions) {
     // Generate id and perform set operation
     const id = this.collection._idGenerator(data)
-    return this.set(id, data)
+    return this.set(id, data, options)
   }
 
   /**
@@ -125,16 +127,17 @@ export class AtomicBuilder<
    *
    * @param id - Id of the document to be added.
    * @param data - Document data to be added.
+   * @param options - Set options, optional.
    * @returns Current AtomicBuilder instance.
    */
-  set(id: KvId, data: T2) {
+  set(id: KvId, data: T2, options?: SetOptions) {
     // Create id key from collection id key and id
     const collectionKey = this.collection._keys.idKey
     const idKey = extendKey(collectionKey, id)
 
     // Add set operation to atomic ops list
     this.operations.atomicFns.push((op) =>
-      op.check({ key: idKey, versionstamp: null }).set(idKey, data)
+      op.check({ key: idKey, versionstamp: null }).set(idKey, data, options)
     )
 
     if (this.collection instanceof IndexableCollection) {
@@ -154,6 +157,7 @@ export class AtomicBuilder<
             Model,
             IndexableCollectionOptions<Model>
           >,
+          options,
         )
       })
     }
@@ -340,6 +344,9 @@ export class AtomicBuilder<
                 Model,
                 IndexableCollectionOptions<Model>
               >,
+              {
+                ...mut,
+              },
             )
           })
         }

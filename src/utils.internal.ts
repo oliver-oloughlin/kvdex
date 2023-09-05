@@ -13,6 +13,7 @@ import type {
   Model,
   ParsedQueueMessage,
   QueueMessage,
+  SetOptions,
   UpdateData,
 } from "./types.ts"
 
@@ -110,6 +111,7 @@ export function isKvObject(value: KvValue) {
  * @param data - Document value.
  * @param atomic - An initialized atomic operation.
  * @param collection - The collection context.
+ * @param options - Set options or undefined.
  * @returns The atomic operation with added mutations.
  */
 export function setIndices<
@@ -120,6 +122,7 @@ export function setIndices<
   data: T1,
   atomic: Deno.AtomicOperation,
   collection: IndexableCollection<T1, T2>,
+  options: SetOptions | undefined,
 ) {
   // Set mutable copy of atomic operation
   let op = atomic
@@ -141,7 +144,7 @@ export function setIndices<
     const indexEntry: IndexDataEntry<T1> = { ...data, __id__: id }
 
     // Add index insertion to atomic operation, check for exisitng indices
-    op = op.set(indexKey, indexEntry).check({
+    op = op.set(indexKey, indexEntry, options).check({
       key: indexKey,
       versionstamp: null,
     })
@@ -162,7 +165,7 @@ export function setIndices<
     )
 
     // Add index insertion to atomic operation, check for exisitng indices
-    op = op.set(indexKey, data)
+    op = op.set(indexKey, data, options)
   })
 
   // Return the mutated atomic operation
@@ -328,13 +331,18 @@ export async function useAtomics<const T>(
 
   // Invoke callback function for each element and execute atomic operation
   return await allFulfilled(slicedElements.map(async (elements) => {
-    let atomic = kv.atomic()
+    try {
+      let atomic = kv.atomic()
 
-    elements.forEach((value) => {
-      atomic = fn(value, atomic)
-    })
+      elements.forEach((value) => {
+        atomic = fn(value, atomic)
+      })
 
-    return await atomic.commit()
+      return await atomic.commit()
+    } catch (e) {
+      console.error(e)
+      return { ok: false } as Deno.KvCommitError
+    }
   }))
 }
 

@@ -8,7 +8,7 @@ export const COLLECTION_SECONDARY_INDEX_KEY_SUFFIX = "__index_secondary__"
 
 export const COLLECTION_SEGMENT_KEY_SUFFIX = "__segment__"
 
-export const ATOMIC_OPERATION_MUTATION_LIMIT = 10
+export const ATOMIC_OPERATION_MUTATION_LIMIT = 20
 
 export const GET_MANY_KEY_LIMIT = 10
 

@@ -349,7 +349,7 @@ Deno.test("collection", async (t) => {
         await reset()
 
         const numbers = generateNumbers(200)
-        const crs = await db.values.numbers.addMany(...numbers)
+        const crs = await db.values.numbers.addMany(numbers)
         assert(crs.every((cr) => cr.ok))
 
         const docs = await db.values.numbers.findMany(
@@ -367,7 +367,7 @@ Deno.test("collection", async (t) => {
     await t2.step("Should add all document entries", async () => {
       await reset()
 
-      const crs = await db.people.addMany(testPerson, testPerson2)
+      const crs = await db.people.addMany([testPerson, testPerson2])
 
       assert(crs.every((cr) => cr.ok))
 
@@ -383,7 +383,7 @@ Deno.test("collection", async (t) => {
 
       const numbers = generateNumbers(1_000)
 
-      const crs = await db.values.numbers.addMany(...numbers)
+      const crs = await db.values.numbers.addMany(numbers)
       assert(crs.every((cr) => cr.ok))
 
       const count = await db.values.numbers.count()
@@ -420,7 +420,7 @@ Deno.test("collection", async (t) => {
         await reset()
 
         const numbers = generateNumbers(200)
-        const crs = await db.values.numbers.addMany(...numbers)
+        const crs = await db.values.numbers.addMany(numbers)
         assert(crs.every((cr) => cr.ok))
 
         const count1 = await db.values.numbers.count()
@@ -518,7 +518,7 @@ Deno.test("collection", async (t) => {
       await reset()
 
       const numbers = generateNumbers(50)
-      const crs = await db.values.numbers.addMany(...numbers)
+      const crs = await db.values.numbers.addMany(numbers)
       assert(crs.every((cr) => cr.ok))
 
       const count1 = await db.values.numbers.count({
@@ -559,7 +559,7 @@ Deno.test("collection", async (t) => {
       await reset()
 
       const people = generatePeople(100)
-      const crs = await db.people.addMany(...people)
+      const crs = await db.people.addMany(people)
       assert(crs.every((cr) => cr.ok))
 
       const newName = "new_name"
@@ -699,7 +699,7 @@ Deno.test("collection", async (t) => {
           await reset()
 
           const people = generatePeople(100)
-          const crs = await db.people.addMany(...people)
+          const crs = await db.people.addMany(people)
           assert(crs.every((cr) => cr.ok))
 
           const allPeople = await db.people.getMany()
@@ -876,7 +876,7 @@ Deno.test("collection", async (t) => {
 
         const numbers = generateNumbers(100)
 
-        await db.values.numbers.addMany(...numbers)
+        await db.values.numbers.addMany(numbers)
 
         const allNums = await db.values.numbers.getMany()
         assert(allNums.result.length === numbers.length)
@@ -889,7 +889,7 @@ Deno.test("collection", async (t) => {
     await t.step("Should correctly count filtered documents", async () => {
       await reset()
 
-      await db.values.numbers.addMany(1, 2, 3, 3, 4, 5, 6)
+      await db.values.numbers.addMany([1, 2, 3, 3, 4, 5, 6])
 
       const allNums = await db.values.numbers.getMany()
       assert(allNums.result.length === 7)
@@ -907,7 +907,7 @@ Deno.test("collection", async (t) => {
     await t.step("Should map from all documents to document ids", async () => {
       await reset()
 
-      const crs = await db.values.numbers.addMany(1, 2, 3, 4, 5)
+      const crs = await db.values.numbers.addMany([1, 2, 3, 4, 5])
       assert(crs.every((cr) => cr.ok))
 
       const ids = await db.values.numbers.map((doc) => doc.id)
@@ -923,7 +923,7 @@ Deno.test("collection", async (t) => {
       async () => {
         await reset()
 
-        const crs = await db.values.numbers.addMany(1, 2, 3, 4, 5)
+        const crs = await db.values.numbers.addMany([1, 2, 3, 4, 5])
         assert(crs.every((cr) => cr.ok))
 
         const ids = await db.values.numbers.map((doc) => doc.id, {
