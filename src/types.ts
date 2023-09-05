@@ -90,6 +90,8 @@ export type CollectionKeys = {
   idKey: KvKey
 }
 
+export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]>
+
 export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   /**
    * Filter documents based on predicate.
@@ -104,9 +106,11 @@ export type CountOptions<T extends KvValue> =
   & CountAllOptions
   & Pick<ListOptions<T>, "filter">
 
-export type FindOptions = Parameters<Deno.Kv["get"]>[1]
+export type FindOptions = NonNullable<Parameters<Deno.Kv["get"]>[1]>
 
-export type FindManyOptions = Parameters<Deno.Kv["getMany"]>[1]
+export type FindManyOptions = NonNullable<Parameters<Deno.Kv["getMany"]>[1]>
+
+export type UpdateManyOptions<T extends KvValue> = ListOptions<T> & SetOptions
 
 export type CommitResult<T1 extends KvValue> = {
   ok: true

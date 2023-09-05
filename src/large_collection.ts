@@ -17,6 +17,7 @@ import type {
   LargeDocumentEntry,
   LargeKvValue,
   ListOptions,
+  SetOptions,
 } from "./types.ts"
 import {
   allFulfilled,
@@ -248,6 +249,7 @@ export class LargeCollection<
   protected async setDocument(
     id: Deno.KvKeyPart,
     data: T1,
+    options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<T1>> {
     // Create document id key
@@ -295,7 +297,7 @@ export class LargeCollection<
       index++
 
       return atomic
-        .set(key, str)
+        .set(key, str, options)
     })
 
     // Determine whether setting json parts was successful
@@ -320,7 +322,7 @@ export class LargeCollection<
     // Set large document entry
     const cr = await this.kv
       .atomic()
-      .set(idKey, entry)
+      .set(idKey, entry, options)
       .commit()
 
     // If not successful, delete all json part entries

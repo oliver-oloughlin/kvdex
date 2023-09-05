@@ -16,7 +16,9 @@ import type {
   ListOptions,
   QueueMessage,
   QueueMessageHandler,
+  SetOptions,
   UpdateData,
+  UpdateManyOptions,
 } from "./types.ts"
 import {
   allFulfilled,
@@ -171,10 +173,10 @@ export class Collection<
    * @param data - Document value.
    * @returns Promise resolving to a CommitResult object.
    */
-  async add(data: T1) {
+  async add(data: T1, options?: SetOptions) {
     // Generate id and set the document entry
     const id = this._idGenerator(data)
-    return await this.set(id, data)
+    return await this.set(id, data, options)
   }
 
   /**
@@ -192,8 +194,8 @@ export class Collection<
    * @param data - Document value.
    * @returns Promise resolving to a CommitResult object.
    */
-  async set(id: KvId, data: T1) {
-    return await this.setDocument(id, data, false)
+  async set(id: KvId, data: T1, options?: SetOptions) {
+    return await this.setDocument(id, data, options, false)
   }
 
   /**
@@ -212,8 +214,8 @@ export class Collection<
    * @param value - Document value.
    * @returns Promise resolving to a CommitResult object.
    */
-  async write(id: KvId, value: T1) {
-    return await this.setDocument(id, value, true)
+  async write(id: KvId, value: T1, options?: SetOptions) {
+    return await this.setDocument(id, value, options, true)
   }
 
   /**
@@ -261,6 +263,7 @@ export class Collection<
   async update(
     id: KvId,
     data: UpdateData<T1>,
+    options?: SetOptions,
   ): Promise<CommitResult<T1>> {
     // Get document
     const doc = await this.find(id)
@@ -273,7 +276,7 @@ export class Collection<
     }
 
     // Update document and return commit result
-    return await this.updateDocument(doc, data)
+    return await this.updateDocument(doc, data, options)
   }
 
   /**
@@ -300,13 +303,16 @@ export class Collection<
    * @param options
    * @returns Promise resolving to an object containing iterator cursor and commit results list.
    */
-  async updateMany(data: UpdateData<T1>, options?: ListOptions<T1>) {
+  async updateMany(
+    data: UpdateData<T1>,
+    options?: UpdateManyOptions<T1>,
+  ) {
     // Initiate result list
     const result: CommitResult<T1>[] = []
 
     // Update each document, add commit result to result list
     const { cursor } = await this.handleMany(async (doc) => {
-      const cr = await this.updateDocument(doc, data)
+      const cr = await this.updateDocument(doc, data, options)
       result.push(cr)
     }, options)
 
@@ -341,9 +347,9 @@ export class Collection<
    * @param entries - Data entries to be added.
    * @returns A promise that resolves to a list of Deno.KvCommitResult or Deno.KvCommitError objects
    */
-  async addMany(...entries: T1[]) {
+  async addMany(entries: T1[], options?: SetOptions) {
     // Add each entry, return commit result list
-    return await allFulfilled(entries.map((data) => this.add(data)))
+    return await allFulfilled(entries.map((data) => this.add(data, options)))
   }
 
   /**
@@ -634,12 +640,17 @@ export class Collection<
    * @param overwrite - Boolean flag determining whether to overwrite existing entry or fail operation.
    * @returns Promise resolving to a CommitResult object.
    */
-  protected async setDocument(id: KvId, data: T1, overwrite = false) {
+  protected async setDocument(
+    id: KvId,
+    data: T1,
+    options: SetOptions | undefined,
+    overwrite = false,
+  ) {
     // Create document key
     const key = extendKey(this._keys.idKey, id)
 
     // Create atomic operation with set mutation
-    let atomic = this.kv.atomic().set(key, data)
+    let atomic = this.kv.atomic().set(key, data, options)
 
     // If overwrite is false, check for existing document
     if (!overwrite) {
@@ -677,20 +688,25 @@ export class Collection<
   protected async updateDocument(
     doc: Document<T1>,
     data: UpdateData<T1>,
+    options: SetOptions | undefined,
   ) {
     // Get document value, delete document entry
     const { value, id } = doc
-    await this.delete(id)
 
     // If value is KvObject, perform partial merge and set new documetn value
     if (isKvObject(value)) {
-      return await this.set(id, {
-        ...value as KvObject,
-        ...data as KvObject,
-      } as T1)
+      return await this.setDocument(
+        id,
+        {
+          ...value as KvObject,
+          ...data as KvObject,
+        } as T1,
+        options,
+        true,
+      )
     }
 
     // Set new document value
-    return await this.set(id, data as T1)
+    return await this.setDocument(id, data as T1, options, true)
   }
 }

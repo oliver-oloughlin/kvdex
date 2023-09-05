@@ -404,10 +404,10 @@ Deno.test("db", async (t1) => {
       async () => {
         await reset()
 
-        await db.values.numbers.addMany(1, 2, 3, 4, 5)
-        await db.values.strings.addMany("1", "2", "3", "4", "5")
-        await db.people.addMany(testPerson, testPerson, testPerson)
-        await db.indexablePeople.addMany(testPerson, testPerson2)
+        await db.values.numbers.addMany([1, 2, 3, 4, 5])
+        await db.values.strings.addMany(["1", "2", "3", "4", "5"])
+        await db.people.addMany([testPerson, testPerson, testPerson])
+        await db.indexablePeople.addMany([testPerson, testPerson2])
 
         const count = await db.countAll()
         assert(count === 15)
@@ -422,10 +422,10 @@ Deno.test("db", async (t1) => {
       async () => {
         await reset()
 
-        await db.values.numbers.addMany(1, 2, 3, 4, 5)
-        await db.values.strings.addMany("1", "2", "3", "4", "5")
-        await db.people.addMany(testPerson, testPerson, testPerson)
-        await db.indexablePeople.addMany(testPerson, testPerson2)
+        await db.values.numbers.addMany([1, 2, 3, 4, 5])
+        await db.values.strings.addMany(["1", "2", "3", "4", "5"])
+        await db.people.addMany([testPerson, testPerson, testPerson])
+        await db.indexablePeople.addMany([testPerson, testPerson2])
 
         const count1 = await db.countAll()
         assert(count1 === 15)
