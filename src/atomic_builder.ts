@@ -103,6 +103,7 @@ export class AtomicBuilder<
    * ```
    *
    * @param data - Document data to be added.
+   * @param options - Set options, optional.
    * @returns Current AtomicBuilder instance.
    */
   add(data: T2, options?: SetOptions) {
@@ -126,6 +127,7 @@ export class AtomicBuilder<
    *
    * @param id - Id of the document to be added.
    * @param data - Document data to be added.
+   * @param options - Set options, optional.
    * @returns Current AtomicBuilder instance.
    */
   set(id: KvId, data: T2, options?: SetOptions) {

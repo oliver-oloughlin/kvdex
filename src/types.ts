@@ -215,8 +215,8 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * const count = await db.countAll()
    * ```
    *
-   * @param options
-   * @returns A promise that resolves to a number representing the total count of documents in the KV store.
+   * @param options - Count all options, optional.
+   * @returns Promise resolving to a number representing the total count of documents in the KV store.
    */
   countAll(options?: CountAllOptions): Promise<number>
 
@@ -228,8 +228,8 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * // Deletes all documents across all collections
    * await db.deleteAll()
    * ```
-   *
-   * @returns A promise that resolves to void.
+   * @param options - Delete all options, optional.
+   * @returns Promise resolving to void.
    */
   deleteAll(options?: DeleteAllOptions): Promise<void>
 
@@ -250,8 +250,8 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * })
    * ```
    *
-   * @param data
-   * @param options
+   * @param data - Data to be added to the database queue.
+   * @param options - Enqueue options, optional.
    */
   enqueue(data: unknown, options?: EnqueueOptions): EnqueueResult
 
@@ -276,7 +276,7 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * })
    * ```
    *
-   * @param handler
+   * @param handler - Message handler function.
    */
   listenQueue(handler: QueueMessageHandler): ListenQueueResult
 }

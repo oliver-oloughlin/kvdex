@@ -111,7 +111,7 @@ export function isKvObject(value: KvValue) {
  * @param data - Document value.
  * @param atomic - An initialized atomic operation.
  * @param collection - The collection context.
- * @param options - Set options.
+ * @param options - Set options or undefined.
  * @returns The atomic operation with added mutations.
  */
 export function setIndices<

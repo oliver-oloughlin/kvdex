@@ -121,7 +121,7 @@ export class IndexableCollection<
    *
    * @param index - Index to find by.
    * @param value - Index value.
-   * @param options - Read options.
+   * @param options - Find options, optional.
    * @returns A promise resolving to the document found by selected index, or null if not found.
    */
   async findByPrimaryIndex<const K extends PrimaryIndexKeys<T1, T2["indices"]>>(
@@ -178,7 +178,7 @@ export class IndexableCollection<
    *
    * @param index - Index to find by.
    * @param value - Index value.
-   * @param options - List options.
+   * @param options - List options, optional.
    * @returns A promise resolving to an object containing the result list and iterator cursor.
    */
   async findBySecondaryIndex<
@@ -232,7 +232,7 @@ export class IndexableCollection<
    *
    * @param index - Index to delete by.
    * @param value - Index value.
-   * @param options - Find options.
+   * @param options - Find options, optional.
    * @returns A promise that resolves to void.
    */
   async deleteByPrimaryIndex<
@@ -282,7 +282,7 @@ export class IndexableCollection<
    *
    * @param index - Index to delete by.
    * @param value - Index value.
-   * @param options - List options.
+   * @param options - List options, optional.
    * @returns A promise that resolves to void.
    */
   async deleteBySecondaryIndex<
@@ -309,6 +309,7 @@ export class IndexableCollection<
    * @param index - Index to update by.
    * @param value - Index value.
    * @param data - Update data to be inserted into document.
+   * @param options - Set options, optional.
    * @returns Promise that resolves to a commit result.
    */
   async updateByPrimaryIndex<
@@ -355,7 +356,7 @@ export class IndexableCollection<
    * @param index - Index to update by.
    * @param value - Index value.
    * @param data - Update data to be inserted into document.
-   * @param options
+   * @param options - Update many options, optional.
    * @returns Promise that resolves to an object containing result list and iterator cursor.
    */
   async updateBySecondaryIndex<
@@ -474,7 +475,7 @@ export class IndexableCollection<
    * @param index - Index.
    * @param value - Index value.
    * @param fn - Callback function.
-   * @param options - List options
+   * @param options - List options or undefined.
    * @returns - Promise that resolves to object containing iterator cursor.
    */
   protected async handleBySecondaryIndex<
@@ -483,7 +484,7 @@ export class IndexableCollection<
     index: K,
     value: CheckKeyOf<K, T1>,
     fn: (doc: Document<T1>) => unknown,
-    options?: ListOptions<T1>,
+    options: ListOptions<T1> | undefined,
   ) {
     // Create index key prefix
     const key = extendKey(
