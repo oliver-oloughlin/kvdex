@@ -210,24 +210,39 @@ Deno.test("indexable_collection", async (t) => {
         await reset()
 
         const id = "id"
+
+        const crPrep = await db.indexablePeople.set(id, testPerson)
+        assert(crPrep.ok)
+
+        const cr = await db.indexablePeople.write(id, testPerson2)
+        assert(cr.ok)
+        assert(cr.id === id)
+
+        const doc = await db.indexablePeople.find(id)
+        assert(doc !== null)
+        assert(doc.value.name === testPerson2.name)
+
+        const count = await db.indexablePeople.count({
+          filter: (doc) => doc.value.name === testPerson2.name,
+        })
+
+        assert(count === 1)
+      },
+    )
+
+    await t.step(
+      "Should not write over existing document in the collection with index collisions",
+      async () => {
+        await reset()
+
+        const id = "id"
         const value = testPerson
 
         const crPrep = await db.indexablePeople.set(id, value)
         assert(crPrep.ok)
 
         const cr = await db.indexablePeople.write(id, value)
-        assert(cr.ok)
-        assert(cr.id === id)
-
-        const doc = await db.indexablePeople.find(id)
-        assert(doc !== null)
-        assert(doc.value.name === value.name)
-
-        const count = await db.indexablePeople.count({
-          filter: (doc) => doc.value.name === value.name,
-        })
-
-        assert(count === 1)
+        assert(!cr.ok)
       },
     )
   })

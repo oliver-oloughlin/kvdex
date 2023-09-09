@@ -302,11 +302,21 @@ export class LargeCollection<
 
     // Determine whether setting json parts was successful
     const success = crs.length > 0 && crs.every((cr) => cr.ok)
+    const retry = options?.retry ?? 0
 
     // If not successful, delete all json part entries
     if (!success) {
       await allFulfilled(keys.map((key) => this.kv.delete(key)))
 
+      // Retry operation if there are remaining attempts
+      if (retry > 0) {
+        return await this.setDocument(id, data, {
+          ...options,
+          retry: retry - 1,
+        }, overwrite)
+      }
+
+      // Return failed operation
       return {
         ok: false,
       }
@@ -329,6 +339,15 @@ export class LargeCollection<
     if (!cr.ok) {
       await allFulfilled(keys.map((key) => this.kv.delete(key)))
 
+      // Retry operation if there are remaining attempts
+      if (retry > 0) {
+        return await this.setDocument(id, data, {
+          ...options,
+          retry: retry - 1,
+        }, overwrite)
+      }
+
+      // Return failed operation
       return {
         ok: false,
       }

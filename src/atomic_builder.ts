@@ -4,6 +4,7 @@ import { LargeCollection } from "./large_collection.ts"
 import type {
   AtomicCheck,
   AtomicMutation,
+  AtomicSetOptions,
   CollectionOptions,
   CollectionSelector,
   IndexableCollectionOptions,
@@ -13,7 +14,6 @@ import type {
   Operations,
   Schema,
   SchemaDefinition,
-  SetOptions,
 } from "./types.ts"
 import {
   allFulfilled,
@@ -106,7 +106,7 @@ export class AtomicBuilder<
    * @param options - Set options, optional.
    * @returns Current AtomicBuilder instance.
    */
-  add(data: T2, options?: SetOptions) {
+  add(data: T2, options?: AtomicSetOptions) {
     // Generate id and perform set operation
     const id = this.collection._idGenerator(data)
     return this.set(id, data, options)
@@ -130,7 +130,7 @@ export class AtomicBuilder<
    * @param options - Set options, optional.
    * @returns Current AtomicBuilder instance.
    */
-  set(id: KvId, data: T2, options?: SetOptions) {
+  set(id: KvId, data: T2, options?: AtomicSetOptions) {
     // Create id key from collection id key and id
     const collectionKey = this.collection._keys.idKey
     const idKey = extendKey(collectionKey, id)
