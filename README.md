@@ -735,7 +735,6 @@ import { flatten } from "https://deno.land/x/kvdex/mod.ts"
 
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
-
 const flattened = flatten(doc)
 
 // Document:
@@ -749,7 +748,7 @@ const flattened = flatten(doc)
 // {
 //   id,
 //   versionstamp,
-//   ...userDocument.value
+//   ...value
 // }
 ```
 

@@ -6,9 +6,23 @@ import type { Document, FlattenedDocument, Model } from "./types.ts"
  *
  * **Example:**
  * ```ts
- * const userDoc = await db.users.find("oliver")
+ * // We assume the document exists in the KV store
+ * const doc = await db.users.find(123n)
+ * const flattened = flatten(doc)
  *
- * const user = flatten(userDoc)
+ * // Document:
+ * // {
+ * //   id,
+ * //   versionstamp,
+ * //   value
+ * // }
+ *
+ * // Flattened:
+ * // {
+ * //   id,
+ * //   versionstamp,
+ * //   ...value
+ * // }
  * ```
  *
  * @param document - The document to flatten.

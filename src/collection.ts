@@ -177,7 +177,7 @@ export class Collection<
   async add(data: T1, options?: SetOptions) {
     // Generate id and set the document entry
     const id = this._idGenerator(data)
-    return await this.set(id, data, options)
+    return await this.setDocument(id, data, options, false)
   }
 
   /**
@@ -651,7 +651,7 @@ export class Collection<
     data: T1,
     options: SetOptions | undefined,
     overwrite = false,
-  ) {
+  ): Promise<CommitResult<T1>> {
     // Create document key
     const key = extendKey(this._keys.idKey, id)
 
@@ -668,6 +668,17 @@ export class Collection<
 
     // Perform atomic operation
     const cr = await atomic.commit()
+
+    // Retry failed operation if remaining attempts
+    const retry = options?.retry ?? 0
+    if (!cr.ok && retry > 0) {
+      return await this.setDocument(
+        id,
+        data,
+        { ...options, retry: retry - 1 },
+        overwrite,
+      )
+    }
 
     // Create commit result from atomic commit result
     const commitResult: CommitResult<T1> = cr.ok

@@ -433,13 +433,38 @@ export class IndexableCollection<
     // Create the document id key
     const idKey = extendKey(this._keys.idKey, id)
 
+    // Check for index collision
+    const indicesCheck = await checkIndices(data, this.kv.atomic(), this)
+      .commit()
+
+    // If index collision is detected, return failed operation
+    if (!indicesCheck.ok) {
+      return {
+        ok: false,
+      }
+    }
+
+    // Check for id collision
+    const idCheck = await this.kv.atomic().check({
+      key: idKey,
+      versionstamp: null,
+    }).commit()
+
+    // If id collision is detected and overwrite is false, return failed operation.
+    if (!idCheck.ok) {
+      if (!overwrite) {
+        return {
+          ok: false,
+        }
+      }
+
+      // Delete existing document before setting new entry
+      await this.delete(id)
+    }
+
     // Create atomic operation with set mutation and versionstamp check
     let atomic = this.kv
       .atomic()
-      .check({
-        key: idKey,
-        versionstamp: null,
-      })
       .set(idKey, data, options)
 
     // Set document indices using atomic operation
@@ -448,10 +473,15 @@ export class IndexableCollection<
     // Execute the atomic operation
     const cr = await atomic.commit()
 
-    // If the operation fails, delete the existing entry and retry
-    if (!cr.ok && overwrite) {
-      await this.delete(id)
-      return await this.setDocument(id, data, options, false)
+    // Retry failed operation if remaining attempts
+    const retry = options?.retry ?? 0
+    if (!cr.ok && retry > 0) {
+      return await this.setDocument(
+        id,
+        data,
+        { ...options, retry: retry - 1 },
+        overwrite,
+      )
     }
 
     // Create a commit result from atomic commit result

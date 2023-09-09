@@ -4,6 +4,7 @@ import {
 } from "./constants.ts"
 import type { IndexableCollection } from "./indexable_collection.ts"
 import type {
+  AtomicSetOptions,
   FindManyOptions,
   IndexableCollectionOptions,
   IndexDataEntry,
@@ -13,7 +14,6 @@ import type {
   Model,
   ParsedQueueMessage,
   QueueMessage,
-  SetOptions,
   UpdateData,
 } from "./types.ts"
 
@@ -122,7 +122,7 @@ export function setIndices<
   data: T1,
   atomic: Deno.AtomicOperation,
   collection: IndexableCollection<T1, T2>,
-  options: SetOptions | undefined,
+  options: AtomicSetOptions | undefined,
 ) {
   // Set mutable copy of atomic operation
   let op = atomic
@@ -183,7 +183,7 @@ export function setIndices<
  */
 export function checkIndices<
   T1 extends Model,
-  T2 extends UpdateData<T1>,
+  T2 extends T1 | UpdateData<T1>,
   T3 extends IndexableCollectionOptions<T1>,
 >(
   data: T2,

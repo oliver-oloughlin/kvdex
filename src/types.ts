@@ -75,6 +75,10 @@ export type AtomicMutation<T extends KvValue> =
     }
   )
 
+export type AtomicSetOptions = NonNullable<
+  Parameters<ReturnType<Deno.Kv["atomic"]>["set"]>["2"]
+>
+
 // Collection Types
 export type IdGenerator<T extends KvValue> = (data: T) => KvId
 
@@ -90,7 +94,9 @@ export type CollectionKeys = {
   idKey: KvKey
 }
 
-export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]>
+export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
+  retry?: number
+}
 
 export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   /**
