@@ -124,9 +124,6 @@ export function setIndices<
   collection: IndexableCollection<T1, T2>,
   options: AtomicSetOptions | undefined,
 ) {
-  // Set mutable copy of atomic operation
-  let op = atomic
-
   // Set primary indices using primary index list
   collection.primaryIndexList.forEach((index) => {
     // Get the index value from data, if undefined continue to next index
@@ -144,7 +141,7 @@ export function setIndices<
     const indexEntry: IndexDataEntry<T1> = { ...data, __id__: id }
 
     // Add index insertion to atomic operation, check for exisitng indices
-    op = op.set(indexKey, indexEntry, options).check({
+    atomic.set(indexKey, indexEntry, options).check({
       key: indexKey,
       versionstamp: null,
     })
@@ -165,11 +162,11 @@ export function setIndices<
     )
 
     // Add index insertion to atomic operation, check for exisitng indices
-    op = op.set(indexKey, data, options)
+    atomic.set(indexKey, data, options)
   })
 
   // Return the mutated atomic operation
-  return op
+  return atomic
 }
 
 /**
@@ -190,9 +187,6 @@ export function checkIndices<
   atomic: Deno.AtomicOperation,
   collection: IndexableCollection<T1, T3>,
 ) {
-  // Set mutable copy of atomic operation
-  let op = atomic
-
   // Check primary indices using primary index list
   collection.primaryIndexList.forEach((index) => {
     // Get the index value from data, if undefined continue to next index
@@ -209,14 +203,14 @@ export function checkIndices<
     )
 
     // Check for existing index entry
-    op = op.check({
+    atomic.check({
       key: indexKey,
       versionstamp: null,
     })
   })
 
   // Return the mutated atomic operation
-  return op
+  return atomic
 }
 
 /**
@@ -237,9 +231,6 @@ export function deleteIndices<
   atomic: Deno.AtomicOperation,
   collection: IndexableCollection<T1, T2>,
 ) {
-  // Set mutable copy of atomic operation
-  let op = atomic
-
   // Delete primary indices using primary index list
   collection.primaryIndexList.forEach((index) => {
     // Get the index value from data, if undefined continue to next index
@@ -254,7 +245,7 @@ export function deleteIndices<
     )
 
     // Add index deletion to atomic operation
-    op = op.delete(indexKey)
+    atomic.delete(indexKey)
   })
 
   // Delete seocndary indices using secondary index list
@@ -272,10 +263,10 @@ export function deleteIndices<
     )
 
     // Add index deletion to atomic operation
-    op = op.delete(indexKey)
+    atomic.delete(indexKey)
   })
 
-  return op
+  return atomic
 }
 
 /**

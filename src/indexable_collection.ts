@@ -215,8 +215,8 @@ export class IndexableCollection<
       }
 
       // Perform delete using atomic operation
-      let atomic = this.kv.atomic().delete(idKey)
-      atomic = deleteIndices(id, value, atomic, this)
+      const atomic = this.kv.atomic().delete(idKey)
+      deleteIndices(id, value, atomic, this)
       await atomic.commit()
     }))
   }
@@ -463,12 +463,12 @@ export class IndexableCollection<
     }
 
     // Create atomic operation with set mutation and versionstamp check
-    let atomic = this.kv
+    const atomic = this.kv
       .atomic()
       .set(idKey, data, options)
 
     // Set document indices using atomic operation
-    atomic = setIndices(id, data, atomic, this, options)
+    setIndices(id, data, atomic, this, options)
 
     // Execute the atomic operation
     const cr = await atomic.commit()
