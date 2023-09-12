@@ -89,25 +89,36 @@ export class LargeCollection<
     const keys = ids.map((segId) => extendKey(this._keys.segmentKey, id, segId))
     const docEntries = await kvGetMany<string>(keys, this.kv)
 
-    // Construct document json from json parts
-    let json = ""
-    docEntries.forEach(({ value }) => {
-      if (value) {
-        json += value
-      }
-    })
+    // Gather json parts and check validity
+    const jsonParts = docEntries.reduce(
+      (parts, entry) => entry.value ? [...parts, entry.value] : parts,
+      [] as string[],
+    )
 
-    // This should never happen
-    if (!json) {
-      await this.delete(id)
-      return null
+    if (jsonParts.length !== docEntries.length) {
+      throw new Error(
+        `Corrupted document data - some JSON parts are missing
+        JSON parts: ${jsonParts}
+        `,
+      )
     }
 
-    // Create and return document
-    return {
-      id,
-      value: JSON.parse(json) as T1,
-      versionstamp,
+    const json = jsonParts.join("")
+
+    try {
+      // Create and return document
+      return {
+        id,
+        value: JSON.parse(json) as T1,
+        versionstamp,
+      }
+    } catch (_e) {
+      // Throw if JSON.parse fails
+      throw new Error(
+        `Corrupted document data - failed to parse JSON
+        JSON: ${json}
+        `,
+      )
     }
   }
 
