@@ -84,31 +84,8 @@ export class LargeCollection<
       return null
     }
 
-    // Get document segment entries
-    const { ids } = value
-    const keys = ids.map((segId) => extendKey(this._keys.segmentKey, id, segId))
-    const docEntries = await kvGetMany<string>(keys, this.kv)
-
-    // Construct document json from json parts
-    let json = ""
-    docEntries.forEach(({ value }) => {
-      if (value) {
-        json += value
-      }
-    })
-
-    // This should never happen
-    if (!json) {
-      await this.delete(id)
-      return null
-    }
-
-    // Create and return document
-    return {
-      id,
-      value: JSON.parse(json) as T1,
-      versionstamp,
-    }
+    // Return constructed document
+    return await this.constructLargeDocument(id, value, versionstamp)
   }
 
   async findMany(
@@ -141,34 +118,8 @@ export class LargeCollection<
           return
         }
 
-        // Get documetn json parts
-        const keys = value.ids.map((segId) =>
-          extendKey(this._keys.segmentKey, id, segId)
-        )
-        const docEntries = await kvGetMany<string>(keys, this.kv, options)
-
-        // Construct document json from json parts
-        let json = ""
-        docEntries.forEach(({ value }) => {
-          if (value) {
-            json += value
-          }
-        })
-
-        // This should never happen
-        if (!json) {
-          await this.delete(id)
-          return
-        }
-
-        // Create document
-        const doc: Document<T1> = {
-          id,
-          value: JSON.parse(json) as T1,
-          versionstamp,
-        }
-
-        // Add document to result list
+        // Construct document and add to result list
+        const doc = await this.constructLargeDocument(id, value, versionstamp)
         result.push(doc)
       }),
     )
@@ -358,6 +309,49 @@ export class LargeCollection<
       ok: true,
       id,
       versionstamp: cr.versionstamp,
+    }
+  }
+
+  private async constructLargeDocument(
+    id: KvId,
+    value: LargeDocumentEntry,
+    versionstamp: Document<T1>["versionstamp"],
+  ): Promise<Document<T1>> {
+    // Get document segment entries
+    const { ids } = value
+    const keys = ids.map((segId) => extendKey(this._keys.segmentKey, id, segId))
+    const docEntries = await kvGetMany<string>(keys, this.kv)
+
+    // Gather json parts and check validity
+    const jsonParts = docEntries.reduce(
+      (parts, entry) => entry.value ? [...parts, entry.value] : parts,
+      [] as string[],
+    )
+
+    if (jsonParts.length !== docEntries.length) {
+      throw new Error(
+        `Corrupted document data - some JSON parts are missing
+        JSON parts: ${jsonParts}
+        `,
+      )
+    }
+
+    const json = jsonParts.join("")
+
+    try {
+      // Create and return document
+      return {
+        id,
+        value: JSON.parse(json) as T1,
+        versionstamp,
+      }
+    } catch (_e) {
+      // Throw if JSON.parse fails
+      throw new Error(
+        `Corrupted document data - failed to parse JSON
+        JSON: ${json}
+        `,
+      )
     }
   }
 }

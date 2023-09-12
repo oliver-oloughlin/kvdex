@@ -1,16 +1,25 @@
 # kvdex
 
-ORM-like wrapper for Deno's KV store.
+`kvdex` is an ORM-like wrapper for Deno KV with zero third-party dependencies.
+It's purpose is to enhance the experience of using Deno's KV store through
+additional features such as indexing and typed collections, while maintaining as
+much of the native functionality as possible, such as atomic operations.
 
-Support for indexing.
+## Highlights
 
-Zero third-party dependencies.
+- CRUD operations for selected and ranged documents with strict type
+  enforcement.
+- Primary (unique) and secondary (non-unique) indexing.
+- Segmented storage for large objects exceeding the native size limit.
+- Support for pagination and filtering.
+- Message queues at database and collection level.
+- Support for atomic operations.
 
 ## Table of Contents
 
 - [kvdex](#kvdex)
-  - [Table of Contents](#table-of-contents)
   - [Highlights](#highlights)
+  - [Table of Contents](#table-of-contents)
   - [Models](#models)
   - [Database](#database)
   - [Collection Methods](#collection-methods)
@@ -51,16 +60,6 @@ Zero third-party dependencies.
     - [flatten()](#flatten)
   - [Development](#development)
   - [License](#license)
-
-## Highlights
-
-- CRUD operations for selected and ranged documents.
-- Strict type enforcement for all operations.
-- Primary (unique) and secondary (non-unique) indexing.
-- Segmented storage for large objects exceeding the native size limit.
-- Support for pagination.
-- Message queues at database and collection level.
-- Support for atomic operations.
 
 ## Models
 
