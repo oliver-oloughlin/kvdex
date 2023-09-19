@@ -587,6 +587,37 @@ export class Collection<
     })
   }
 
+  /**
+   * Find an undelivered document entry by id from the collection queue.
+   *
+   * @param id - Document id.
+   * @param options - Find options, optional.
+   * @returns Document if found, null if not.
+   */
+  async findUndelivered<T extends KvValue = KvValue>(
+    id: KvId,
+    options?: FindOptions,
+  ) {
+    // Create document key, get document entry
+    const key = extendKey(this._keys.idKey, id)
+    const result = await this.kv.get<T>(key, options)
+
+    // If no entry exists, return null
+    if (result.value === null || result.versionstamp === null) {
+      return null
+    }
+
+    // Create the document
+    const doc: Document<T> = {
+      id,
+      versionstamp: result.versionstamp,
+      value: result.value,
+    }
+
+    // Return the document
+    return doc
+  }
+
   /** PROTECTED METHODS */
 
   /**

@@ -3,7 +3,10 @@ import type {
   CountAllOptions,
   DB,
   DeleteAllOptions,
+  Document,
   EnqueueOptions,
+  FindOptions,
+  KvId,
   KvKey,
   KvValue,
   QueueMessageHandler,
@@ -18,6 +21,7 @@ import {
   prepareEnqueue,
 } from "./utils.internal.ts"
 import { AtomicBuilder } from "./atomic_builder.ts"
+import { KVDEX_KEY_PREFIX } from "./constants.ts"
 
 /**
  * Create a new database instance.
@@ -58,10 +62,11 @@ export function kvdex<const T extends SchemaDefinition>(
   return {
     ...schema,
     atomic: (selector) => new AtomicBuilder(kv, schema, selector(schema)),
-    countAll: async (options) => await _countAll(kv, schema, options),
-    deleteAll: async (options) => await _deleteAll(kv, schema, options),
-    enqueue: async (data, options) => await _enqueue(kv, data, options),
+    countAll: async (opts) => await _countAll(kv, schema, opts),
+    deleteAll: async (opts) => await _deleteAll(kv, schema, opts),
+    enqueue: async (data, opts) => await _enqueue(kv, data, opts),
     listenQueue: async (handler) => await _listenQueue(kv, handler),
+    findUndelivered: async (id, opts) => await _findUndelivered(kv, id, opts),
   }
 }
 
@@ -202,4 +207,36 @@ async function _listenQueue<T extends KvValue>(
       await handler(data)
     }
   })
+}
+
+/**
+ * Find an undelivered document entry by id.
+ *
+ * @param id - Document id.
+ * @param options - Find options, optional.
+ * @returns Document if found, null if not.
+ */
+async function _findUndelivered<T extends KvValue = KvValue>(
+  kv: Deno.Kv,
+  id: KvId,
+  options?: FindOptions,
+) {
+  // Create document key, get document entry
+  const key = extendKey([KVDEX_KEY_PREFIX], id)
+  const result = await kv.get<T>(key, options)
+
+  // If no entry exists, return null
+  if (result.value === null || result.versionstamp === null) {
+    return null
+  }
+
+  // Create the document
+  const doc: Document<T> = {
+    id,
+    versionstamp: result.versionstamp,
+    value: result.value,
+  }
+
+  // Return the document
+  return doc
 }

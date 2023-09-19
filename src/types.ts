@@ -255,7 +255,7 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * @param data - Data to be added to the database queue.
    * @param options - Enqueue options, optional.
    */
-  enqueue(data: KvValue, options?: EnqueueOptions): EnqueueResult
+  enqueue(data: KvValue, options?: EnqueueOptions): Promise<EnqueueResult>
 
   /**
    * Listen for data from the database queue that was enqueued with ``db.enqueue()``. Will only receive data that was enqueued to the database queue. Takes a handler function as argument.
@@ -283,6 +283,18 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
   listenQueue<T extends KvValue = KvValue>(
     handler: QueueMessageHandler<T>,
   ): ListenQueueResult
+
+  /**
+   * Find an undelivered document entry by id from the database queue.
+   *
+   * @param id - Document id.
+   * @param options - Find options, optional.
+   * @returns Document if found, null if not.
+   */
+  findUndelivered<T extends KvValue = KvValue>(
+    id: KvId,
+    options?: FindOptions,
+  ): Promise<Document<T> | null>
 }
 
 export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
@@ -315,7 +327,7 @@ export type EnqueueOptions =
     idsIfUndelivered?: KvId[]
   }
 
-export type EnqueueResult = ReturnType<Deno.Kv["enqueue"]>
+export type EnqueueResult = Awaited<ReturnType<Deno.Kv["enqueue"]>>
 
 export type ListenQueueResult = ReturnType<Deno.Kv["listenQueue"]>
 
