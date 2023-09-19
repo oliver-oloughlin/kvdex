@@ -1,4 +1,5 @@
 import type { Collection } from "./collection.ts"
+import { InvalidAtomicBuilderCollectionError } from "./errors.ts"
 import { IndexableCollection } from "./indexable_collection.ts"
 import { LargeCollection } from "./large_collection.ts"
 import type {
@@ -7,6 +8,7 @@ import type {
   AtomicSetOptions,
   CollectionOptions,
   CollectionSelector,
+  EnqueueOptions,
   IndexableCollectionOptions,
   KvId,
   KvValue,
@@ -21,6 +23,7 @@ import {
   extendKey,
   getDocumentId,
   keyEq,
+  prepareEnqueue,
   setIndices,
 } from "./utils.internal.ts"
 
@@ -53,13 +56,18 @@ export class AtomicBuilder<
     collection: Collection<T2, CollectionOptions<T2>>,
     operations?: Operations,
   ) {
+    // Check for large collection
+    if (collection instanceof LargeCollection) {
+      throw new InvalidAtomicBuilderCollectionError()
+    }
+
     // Set kv and schema
     this.kv = kv
     this.schema = schema
 
     // Initiate operations or set from given operations
     this.operations = operations ?? {
-      atomicFns: [],
+      atomic: kv.atomic(),
       prepareDeleteFns: [],
       indexDeleteCollectionKeys: [],
       indexAddCollectionKeys: [],
@@ -86,7 +94,12 @@ export class AtomicBuilder<
   select<const TValue extends KvValue>(
     selector: CollectionSelector<T1, TValue>,
   ) {
-    return createAtomicBuilder(this.kv, this.schema, selector, this.operations)
+    return new AtomicBuilder(
+      this.kv,
+      this.schema,
+      selector(this.schema),
+      this.operations,
+    )
   }
 
   /**
@@ -135,9 +148,11 @@ export class AtomicBuilder<
     const collectionKey = this.collection._keys.idKey
     const idKey = extendKey(collectionKey, id)
 
-    // Add set operation to atomic ops list
-    this.operations.atomicFns.push((op) =>
-      op.check({ key: idKey, versionstamp: null }).set(idKey, data, options)
+    // Add set operation
+    this.operations.atomic.check({ key: idKey, versionstamp: null }).set(
+      idKey,
+      data,
+      options,
     )
 
     if (this.collection instanceof IndexableCollection) {
@@ -147,22 +162,20 @@ export class AtomicBuilder<
       // Add collection id key for collision detection
       this.operations.indexAddCollectionKeys.push(collectionKey)
 
-      // Add indexing operations to atomic ops list
-      this.operations.atomicFns.push((op) => {
-        return setIndices(
-          id,
-          _data,
-          op,
-          this.collection as unknown as IndexableCollection<
-            Model,
-            IndexableCollectionOptions<Model>
-          >,
-          options,
-        )
-      })
+      // Add indexing operations
+      setIndices(
+        id,
+        _data,
+        this.operations.atomic,
+        this.collection as unknown as IndexableCollection<
+          Model,
+          IndexableCollectionOptions<Model>
+        >,
+        options,
+      )
     }
 
-    // Return current atomic operation builder
+    // Return current AtomicBuilder
     return this
   }
 
@@ -184,8 +197,8 @@ export class AtomicBuilder<
     const collectionIdKey = this.collection._keys.idKey
     const idKey = extendKey(collectionIdKey, id)
 
-    // Add delete operation to atomic ops list
-    this.operations.atomicFns.push((op) => op.delete(idKey))
+    // Add delete operation
+    this.operations.atomic.delete(idKey)
 
     // If collection is indexable, handle indexing
     if (this.collection instanceof IndexableCollection) {
@@ -203,7 +216,7 @@ export class AtomicBuilder<
       })
     }
 
-    // Return current atomic operation builder
+    // Return current AtomicBuilder
     return this
   }
 
@@ -235,10 +248,10 @@ export class AtomicBuilder<
       },
     )
 
-    // Add atomic chech operation to atomic ops list
-    this.operations.atomicFns.push((op) => op.check(...checks))
+    // Add chech operation
+    this.operations.atomic.check(...checks)
 
-    // Return current atomic opertaion builder
+    // Return current AtomicBuilder
     return this
   }
 
@@ -262,9 +275,9 @@ export class AtomicBuilder<
     const idKey = extendKey(this.collection._keys.idKey, id)
 
     // Add sum operation to atomic ops list
-    this.operations.atomicFns.push((op) => op.sum(idKey, value))
+    this.operations.atomic.sum(idKey, value)
 
-    // Return current atomic operation builder
+    // Return current AtomicBuilder
     return this
   }
 
@@ -302,18 +315,16 @@ export class AtomicBuilder<
     })
 
     // Add mutation operation to atomic ops list
-    this.operations.atomicFns.push((op) => op.mutate(...kvMutations))
+    this.operations.atomic.mutate(...kvMutations)
 
     // Addtional checks
     kvMutations.forEach((mut) => {
-      // If mutation type is "set", add check operation to atomic ops list
+      // If mutation type is "set", add check operation
       if (mut.type === "set") {
-        this.operations.atomicFns.push((op) =>
-          op.check({
-            key: mut.key,
-            versionstamp: null,
-          })
-        )
+        this.operations.atomic.check({
+          key: mut.key,
+          versionstamp: null,
+        })
       }
 
       // If collection is indexable, handle indexing
@@ -335,20 +346,18 @@ export class AtomicBuilder<
           this.operations.indexAddCollectionKeys.push(collectionIdKey)
 
           // Add indexing operations to atomic ops list
-          this.operations.atomicFns.push((op) => {
-            return setIndices(
-              id,
-              mut.value as Model,
-              op,
-              this.collection as unknown as IndexableCollection<
-                Model,
-                IndexableCollectionOptions<Model>
-              >,
-              {
-                ...mut,
-              },
-            )
-          })
+          setIndices(
+            id,
+            mut.value as Model,
+            this.operations.atomic,
+            this.collection as unknown as IndexableCollection<
+              Model,
+              IndexableCollectionOptions<Model>
+            >,
+            {
+              ...mut,
+            },
+          )
         }
 
         // If mutation type is "delete", create and add delete preperation function
@@ -368,7 +377,16 @@ export class AtomicBuilder<
       }
     })
 
-    // Return current atomic operation builder
+    // Return current AtomicBuilder
+    return this
+  }
+
+  enqueue(data: KvValue, options?: EnqueueOptions) {
+    // Prepare and add enqueue operation
+    const prep = prepareEnqueue(this.collection._keys.baseKey, data, options)
+    this.operations.atomic.enqueue(prep.msg, prep.options)
+
+    // Return current AtomicBuilder
     return this
   }
 
@@ -398,14 +416,8 @@ export class AtomicBuilder<
       this.operations.prepareDeleteFns.map((fn) => fn(this.kv)),
     )
 
-    // Perform atomic operation
-    const atomicOperation = this.operations.atomicFns.reduce(
-      (op, opFn) => opFn(op),
-      this.kv.atomic(),
-    )
-
     // Execute atomic operation
-    const commitResult = await atomicOperation.commit()
+    const commitResult = await this.operations.atomic.commit()
 
     // If successful commit, perform delete ops
     if (commitResult.ok) {
@@ -440,30 +452,4 @@ export class AtomicBuilder<
     // Return commit result
     return commitResult
   }
-}
-
-export function createAtomicBuilder<
-  const T1 extends Schema<SchemaDefinition>,
-  T2 extends KvValue,
->(
-  kv: Deno.Kv,
-  schema: T1,
-  selector: CollectionSelector<T1, T2>,
-  operations?: Operations,
-) {
-  // Select collection context
-  const collection = selector(schema)
-
-  // Check for large collection
-  if (collection instanceof LargeCollection) {
-    throw Error("Atomic operations are not supported for large collections.")
-  }
-
-  // Create new atomic builder
-  return new AtomicBuilder(
-    kv,
-    schema,
-    collection,
-    operations,
-  )
 }

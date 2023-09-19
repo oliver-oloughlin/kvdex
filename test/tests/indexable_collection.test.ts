@@ -9,7 +9,12 @@ import {
   useTemporaryKv,
 } from "../config.ts"
 import { assert } from "../deps.ts"
-import { flatten, indexableCollection, QueueMessage } from "../../mod.ts"
+import {
+  flatten,
+  indexableCollection,
+  KvValue,
+  QueueMessage,
+} from "../../mod.ts"
 import { kvdex } from "../../src/db.ts"
 import {
   COLLECTION_ID_KEY_SUFFIX,
@@ -1084,7 +1089,7 @@ Deno.test("indexable_collection", async (t) => {
         await db.numbers.enqueue("data")
 
         kv.listenQueue((msg) => {
-          const qMsg = msg as QueueMessage
+          const qMsg = msg as QueueMessage<KvValue>
           assertion = qMsg.collectionKey !== null && qMsg.data === data
         })
 
@@ -1109,7 +1114,7 @@ Deno.test("indexable_collection", async (t) => {
         await kv.enqueue({
           collectionKey: db.numbers._keys.baseKey,
           data,
-        } as QueueMessage)
+        } as QueueMessage<KvValue>)
 
         db.numbers.listenQueue((msgData) => {
           assertion = msgData === data

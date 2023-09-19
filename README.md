@@ -25,6 +25,7 @@ much of the native functionality as possible, such as atomic operations.
   - [Collection Methods](#collection-methods)
     - [find()](#find)
     - [findMany()](#findmany)
+    - [findUndelivered()](#findundelivered)
     - [add()](#add)
     - [addMany()](#addmany)
     - [set()](#set)
@@ -52,6 +53,7 @@ much of the native functionality as possible, such as atomic operations.
     - [deleteAll()](#deleteall)
     - [enqueue()](#enqueue-1)
     - [listenQueue()](#listenqueue-1)
+    - [findUndelivered()](#findundelivered-1)
     - [atomic()](#atomic)
   - [Atomic Operations](#atomic-operations)
     - [Without checking](#without-checking)
@@ -154,6 +156,20 @@ that can be used to set the consistency mode.
 const userDocs1 = await db.users.findMany(["abc", 123, 123n])
 
 const userDocs2 = await db.users.findMany(["abc", 123, 123n], {
+  consistency: "eventual", // "strong" by default
+})
+```
+
+### findUndelivered()
+
+Retrieve a document entry that was not delivered during an enqueue() operation
+in the collection queue. This method takes an optional options argument that can
+be used to set the consistency mode.
+
+```ts
+const doc1 = await db.users.findUndelivered("undelivered_id")
+
+const doc2 = await db.users.findUndelivered("undelivered_id", {
   consistency: "eventual", // "strong" by default
 })
 ```
@@ -614,6 +630,20 @@ db.listenQueue(async (data) => {
   })
 
   console.log("POSTED:", dataBody, res.ok)
+})
+```
+
+### findUndelivered()
+
+Retrieve a document entry that was not delivered during an enqueue() operation
+in the database queue. This method takes an optional options argument that can
+be used to set the consistency mode.
+
+```ts
+const doc1 = await db.findUndelivered("undelivered_id")
+
+const doc2 = await db.findUndelivered("undelivered_id", {
+  consistency: "eventual", // "strong" by default
 })
 ```
 

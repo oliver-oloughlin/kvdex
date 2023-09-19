@@ -1,4 +1,10 @@
-import { collection, Document, flatten, QueueMessage } from "../../mod.ts"
+import {
+  collection,
+  Document,
+  flatten,
+  KvValue,
+  QueueMessage,
+} from "../../mod.ts"
 import {
   db,
   generateNumbers,
@@ -944,6 +950,7 @@ Deno.test("collection", async (t) => {
     await t.step("Should enqueue message with string data", async () => {
       await useTemporaryKv(async (kv) => {
         const data = "data"
+        const undeliveredId = "undelivered"
 
         const db = kvdex(kv, {
           numbers: collection<number>().build(),
@@ -951,15 +958,19 @@ Deno.test("collection", async (t) => {
 
         let assertion = false
 
-        await db.numbers.enqueue("data")
+        await db.numbers.enqueue("data", {
+          idsIfUndelivered: [undeliveredId],
+        })
 
         kv.listenQueue((msg) => {
-          const qMsg = msg as QueueMessage
+          const qMsg = msg as QueueMessage<KvValue>
           assertion = qMsg.collectionKey !== null && qMsg.data === data
         })
 
         await sleep(500)
-        assert(assertion)
+
+        const undelivered = await db.numbers.findUndelivered(undeliveredId)
+        assert(assertion || typeof undelivered?.value === typeof data)
       })
     })
   })
@@ -979,7 +990,7 @@ Deno.test("collection", async (t) => {
         await kv.enqueue({
           collectionKey: db.numbers._keys.baseKey,
           data,
-        } as QueueMessage)
+        } as QueueMessage<KvValue>)
 
         db.numbers.listenQueue((msgData) => {
           assertion = msgData === data

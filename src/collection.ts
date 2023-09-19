@@ -1,4 +1,8 @@
-import { COLLECTION_ID_KEY_SUFFIX, KVDEX_KEY_PREFIX } from "./constants.ts"
+import {
+  COLLECTION_ID_KEY_SUFFIX,
+  KVDEX_KEY_PREFIX,
+  UNDELIVERED_KEY_SUFFIX,
+} from "./constants.ts"
 import type {
   CollectionKeys,
   CollectionOptions,
@@ -14,7 +18,6 @@ import type {
   KvObject,
   KvValue,
   ListOptions,
-  QueueMessage,
   QueueMessageHandler,
   SetOptions,
   UpdateData,
@@ -29,6 +32,7 @@ import {
   keyEq,
   kvGetMany,
   parseQueueMessage,
+  prepareEnqueue,
 } from "./utils.internal.ts"
 
 /**
@@ -529,15 +533,10 @@ export class Collection<
    * @param options - Enqueue options, optional.
    * @returns - Promise resolving to Deno.KvCommitResult.
    */
-  async enqueue(data: unknown, options?: EnqueueOptions) {
-    // Create queue message
-    const msg: QueueMessage = {
-      collectionKey: this._keys.baseKey,
-      data,
-    }
-
-    // Enqueue queue message in kv queue
-    return await this.kv.enqueue(msg, options)
+  async enqueue(data: KvValue, options?: EnqueueOptions) {
+    // Prepare and perform enqueue operation
+    const prep = prepareEnqueue(this._keys.baseKey, data, options)
+    return await this.kv.enqueue(prep.msg, prep.options)
   }
 
   /**
@@ -565,11 +564,13 @@ export class Collection<
    *
    * @param handler - Message handler function.
    */
-  async listenQueue(handler: QueueMessageHandler) {
+  async listenQueue<T extends KvValue = KvValue>(
+    handler: QueueMessageHandler<T>,
+  ) {
     // Listen for kv queue messages
     await this.kv.listenQueue(async (msg) => {
       // Parse queue message
-      const parsed = parseQueueMessage(msg)
+      const parsed = parseQueueMessage<T>(msg)
 
       // If failed parse, ignore
       if (!parsed.ok) {
@@ -588,6 +589,46 @@ export class Collection<
         await handler(data)
       }
     })
+  }
+
+  /**
+   * Find an undelivered document entry by id from the collection queue.
+   *
+   * **Example**
+   * ```ts
+   * const doc1 = await db.users.findUndelivered("undelivered_id")
+   *
+   * const doc2 = await db.users.findUndelivered("undelivered_id", {
+   *   consistency: "eventual", // "strong" by default
+   * })
+   * ```
+   *
+   * @param id - Document id.
+   * @param options - Find options, optional.
+   * @returns Document if found, null if not.
+   */
+  async findUndelivered<T extends KvValue = KvValue>(
+    id: KvId,
+    options?: FindOptions,
+  ) {
+    // Create document key, get document entry
+    const key = extendKey(this._keys.idKey, UNDELIVERED_KEY_SUFFIX, id)
+    const result = await this.kv.get<T>(key, options)
+
+    // If no entry exists, return null
+    if (result.value === null || result.versionstamp === null) {
+      return null
+    }
+
+    // Create the document
+    const doc: Document<T> = {
+      id,
+      versionstamp: result.versionstamp,
+      value: result.value,
+    }
+
+    // Return the document
+    return doc
   }
 
   /** PROTECTED METHODS */

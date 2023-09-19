@@ -1,4 +1,4 @@
-import { collection, kvdex, QueueMessage } from "../../mod.ts"
+import { collection, kvdex, KvValue, QueueMessage } from "../../mod.ts"
 import {
   db,
   reset,
@@ -449,7 +449,7 @@ Deno.test("db", async (t1) => {
         await db.enqueue("data")
 
         kv.listenQueue((msg) => {
-          const qMsg = msg as QueueMessage
+          const qMsg = msg as QueueMessage<KvValue>
           assertion = qMsg.data === data
         })
 
@@ -470,7 +470,7 @@ Deno.test("db", async (t1) => {
         await kv.enqueue({
           collectionKey: null,
           data,
-        } as QueueMessage)
+        } as QueueMessage<KvValue>)
 
         db.listenQueue((msgData) => {
           assertion = msgData === data
@@ -713,6 +713,39 @@ Deno.test("db", async (t1) => {
         kv.close()
       },
     )
+  })
+
+  // Test atomic "enqueue" method
+  await t1.step("atomic_enqueue", async (t2) => {
+    await t2.step("Should enqueue message with string data", async () => {
+      await useTemporaryKv(async (kv) => {
+        const data = "data"
+        const undeliveredId = "undelivered"
+
+        const db = kvdex(kv, {
+          numbers: collection<number>().build(),
+        })
+
+        let assertion = false
+
+        await db
+          .atomic((schema) => schema.numbers)
+          .enqueue("data", {
+            idsIfUndelivered: [undeliveredId],
+          })
+          .commit()
+
+        kv.listenQueue((msg) => {
+          const qMsg = msg as QueueMessage<KvValue>
+          assertion = qMsg.collectionKey !== null && qMsg.data === data
+        })
+
+        await sleep(500)
+
+        const undelivered = await db.numbers.findUndelivered(undeliveredId)
+        assert(assertion || typeof undelivered?.value === typeof data)
+      })
+    })
   })
 
   // Perform last reset

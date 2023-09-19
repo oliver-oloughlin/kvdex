@@ -11,7 +11,13 @@ import {
   testLargeData2,
   useTemporaryKv,
 } from "../config.ts"
-import { kvdex, KvId, largeCollection, QueueMessage } from "../../mod.ts"
+import {
+  kvdex,
+  KvId,
+  KvValue,
+  largeCollection,
+  QueueMessage,
+} from "../../mod.ts"
 import {
   COLLECTION_ID_KEY_SUFFIX,
   COLLECTION_SEGMENT_KEY_SUFFIX,
@@ -630,7 +636,7 @@ Deno.test("large_collection", async (t) => {
         await db.largeDocs.enqueue("data")
 
         kv.listenQueue((msg) => {
-          const qMsg = msg as QueueMessage
+          const qMsg = msg as QueueMessage<KvValue>
           assertion = qMsg.collectionKey !== null && qMsg.data === data
         })
 
@@ -655,7 +661,7 @@ Deno.test("large_collection", async (t) => {
         await kv.enqueue({
           collectionKey: db.largeDocs._keys.baseKey,
           data,
-        } as QueueMessage)
+        } as QueueMessage<KvValue>)
 
         db.largeDocs.listenQueue((msgData) => {
           assertion = msgData === data

@@ -17,10 +17,6 @@ export type AtomicSchema<T extends Schema<SchemaDefinition>> = {
   ]: T[K] extends Schema<SchemaDefinition> ? AtomicSchema<T[K]> : T[K]
 }
 
-export type AtomicOperationFn = (
-  op: Deno.AtomicOperation,
-) => Deno.AtomicOperation
-
 export type PrepareDeleteFn = (kv: Deno.Kv) => Promise<PreparedIndexDelete>
 
 export type PreparedIndexDelete = {
@@ -29,7 +25,7 @@ export type PreparedIndexDelete = {
 }
 
 export type Operations = {
-  atomicFns: AtomicOperationFn[]
+  atomic: Deno.AtomicOperation
   prepareDeleteFns: PrepareDeleteFn[]
   indexDeleteCollectionKeys: KvKey[]
   indexAddCollectionKeys: KvKey[]
@@ -259,7 +255,7 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * @param data - Data to be added to the database queue.
    * @param options - Enqueue options, optional.
    */
-  enqueue(data: unknown, options?: EnqueueOptions): EnqueueResult
+  enqueue(data: KvValue, options?: EnqueueOptions): Promise<EnqueueResult>
 
   /**
    * Listen for data from the database queue that was enqueued with ``db.enqueue()``. Will only receive data that was enqueued to the database queue. Takes a handler function as argument.
@@ -284,7 +280,30 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    *
    * @param handler - Message handler function.
    */
-  listenQueue(handler: QueueMessageHandler): ListenQueueResult
+  listenQueue<T extends KvValue = KvValue>(
+    handler: QueueMessageHandler<T>,
+  ): ListenQueueResult
+
+  /**
+   * Find an undelivered document entry by id from the database queue.
+   *
+   * **Example**
+   * ```ts
+   * const doc1 = await db.findUndelivered("undelivered_id")
+   *
+   * const doc2 = await db.findUndelivered("undelivered_id", {
+   *   consistency: "eventual", // "strong" by default
+   * })
+   * ```
+   *
+   * @param id - Document id.
+   * @param options - Find options, optional.
+   * @returns Document if found, null if not.
+   */
+  findUndelivered<T extends KvValue = KvValue>(
+    id: KvId,
+    options?: FindOptions,
+  ): Promise<Document<T> | null>
 }
 
 export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
@@ -292,28 +311,43 @@ export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
 export type DeleteAllOptions = Pick<Deno.KvListOptions, "consistency">
 
 // Queue Types
-export type QueueMessage = {
+export type QueueMessage<T extends KvValue> = {
   collectionKey: KvKey | null
-  data: unknown
+  data: T
 }
 
-export type ParsedQueueMessage = {
+export type ParsedQueueMessage<T extends KvValue> = {
   ok: true
-  msg: QueueMessage
+  msg: QueueMessage<T>
 } | {
   ok: false
 }
 
-export type EnqueueOptions = Omit<
-  NonNullable<Parameters<Deno.Kv["enqueue"]>[1]>,
-  "keysIfUndelivered"
+export type DenoKvEnqueueOptions = NonNullable<
+  Parameters<Deno.Kv["enqueue"]>[1]
 >
 
-export type EnqueueResult = ReturnType<Deno.Kv["enqueue"]>
+export type EnqueueOptions =
+  & Omit<
+    DenoKvEnqueueOptions,
+    "keysIfUndelivered"
+  >
+  & {
+    idsIfUndelivered?: KvId[]
+  }
+
+export type EnqueueResult = Awaited<ReturnType<Deno.Kv["enqueue"]>>
 
 export type ListenQueueResult = ReturnType<Deno.Kv["listenQueue"]>
 
-export type QueueMessageHandler = (data: unknown) => unknown | Promise<unknown>
+export type QueueMessageHandler<T extends KvValue> = (
+  data: T,
+) => unknown | Promise<unknown>
+
+export type PreparedEnqueue<T extends KvValue> = {
+  msg: QueueMessage<T>
+  options: DenoKvEnqueueOptions
+}
 
 // KV Types
 export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T> : T
