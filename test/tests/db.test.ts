@@ -1,4 +1,4 @@
-import { collection, kvdex, QueueMessage } from "../../mod.ts"
+import { collection, kvdex, KvValue, QueueMessage } from "../../mod.ts"
 import {
   db,
   reset,
@@ -449,7 +449,7 @@ Deno.test("db", async (t1) => {
         await db.enqueue("data")
 
         kv.listenQueue((msg) => {
-          const qMsg = msg as QueueMessage
+          const qMsg = msg as QueueMessage<KvValue>
           assertion = qMsg.data === data
         })
 
@@ -470,7 +470,7 @@ Deno.test("db", async (t1) => {
         await kv.enqueue({
           collectionKey: null,
           data,
-        } as QueueMessage)
+        } as QueueMessage<KvValue>)
 
         db.listenQueue((msgData) => {
           assertion = msgData === data

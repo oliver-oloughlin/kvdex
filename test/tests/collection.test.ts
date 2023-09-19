@@ -1,4 +1,10 @@
-import { collection, Document, flatten, QueueMessage } from "../../mod.ts"
+import {
+  collection,
+  Document,
+  flatten,
+  KvValue,
+  QueueMessage,
+} from "../../mod.ts"
 import {
   db,
   generateNumbers,
@@ -954,7 +960,7 @@ Deno.test("collection", async (t) => {
         await db.numbers.enqueue("data")
 
         kv.listenQueue((msg) => {
-          const qMsg = msg as QueueMessage
+          const qMsg = msg as QueueMessage<KvValue>
           assertion = qMsg.collectionKey !== null && qMsg.data === data
         })
 
@@ -979,7 +985,7 @@ Deno.test("collection", async (t) => {
         await kv.enqueue({
           collectionKey: db.numbers._keys.baseKey,
           data,
-        } as QueueMessage)
+        } as QueueMessage<KvValue>)
 
         db.numbers.listenQueue((msgData) => {
           assertion = msgData === data

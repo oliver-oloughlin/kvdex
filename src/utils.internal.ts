@@ -1,10 +1,12 @@
 import {
   ATOMIC_OPERATION_MUTATION_LIMIT,
   GET_MANY_KEY_LIMIT,
+  KVDEX_KEY_PREFIX,
 } from "./constants.ts"
 import type { IndexableCollection } from "./indexable_collection.ts"
 import type {
   AtomicSetOptions,
+  EnqueueOptions,
   FindManyOptions,
   IndexableCollectionOptions,
   IndexDataEntry,
@@ -13,6 +15,7 @@ import type {
   KvValue,
   Model,
   ParsedQueueMessage,
+  PreparedEnqueue,
   QueueMessage,
   UpdateData,
 } from "./types.ts"
@@ -343,7 +346,9 @@ export async function useAtomics<const T>(
  * @param msg - Queue message.
  * @returns Parsed queue message.
  */
-export function parseQueueMessage(msg: unknown): ParsedQueueMessage {
+export function parseQueueMessage<T extends KvValue>(
+  msg: unknown,
+): ParsedQueueMessage<T> {
   // Check for no message
   if (!msg) {
     return {
@@ -352,7 +357,7 @@ export function parseQueueMessage(msg: unknown): ParsedQueueMessage {
   }
 
   // Cast message as QueueMessage
-  const _msg = msg as QueueMessage
+  const _msg = msg as QueueMessage<T>
 
   // Check correctness of message parts
   if (
@@ -390,4 +395,38 @@ export async function allFulfilled<const T>(
       result.status === "fulfilled" ? [...acc, result.value] : acc,
     [] as Awaited<T>[],
   )
+}
+
+/**
+ * Prepare the queue message and options for an enqueue operation.
+ *
+ * @param key - Collection key or null for database enqueue
+ * @param data - Queue message data
+ * @param options - Enqueue options
+ * @returns Prepared enqueue
+ */
+export function prepareEnqueue(
+  key: KvKey | null,
+  data: KvValue,
+  options: EnqueueOptions | undefined,
+): PreparedEnqueue<KvValue> {
+  // Create queue message
+  const msg: QueueMessage<KvValue> = {
+    collectionKey: key,
+    data,
+  }
+
+  // Create keys if undelivered
+  const keysIfUndelivered = options?.idsIfUndelivered?.map((id) =>
+    extendKey(key ?? [KVDEX_KEY_PREFIX], id)
+  )
+
+  // Return prepared enqueue
+  return {
+    msg,
+    options: {
+      ...options,
+      keysIfUndelivered,
+    },
+  }
 }

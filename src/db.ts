@@ -6,14 +6,18 @@ import type {
   EnqueueOptions,
   KvKey,
   KvValue,
-  QueueMessage,
   QueueMessageHandler,
   Schema,
   SchemaDefinition,
 } from "./types.ts"
 import { Collection } from "./collection.ts"
-import { allFulfilled, extendKey, parseQueueMessage } from "./utils.internal.ts"
-import { createAtomicBuilder } from "./atomic_builder.ts"
+import {
+  allFulfilled,
+  extendKey,
+  parseQueueMessage,
+  prepareEnqueue,
+} from "./utils.internal.ts"
+import { AtomicBuilder } from "./atomic_builder.ts"
 
 /**
  * Create a new database instance.
@@ -53,7 +57,7 @@ export function kvdex<const T extends SchemaDefinition>(
   const schema = _createSchema(schemaDefinition, kv) as Schema<T>
   return {
     ...schema,
-    atomic: (selector) => createAtomicBuilder(kv, schema, selector),
+    atomic: (selector) => new AtomicBuilder(kv, schema, selector(schema)),
     countAll: async (options) => await _countAll(kv, schema, options),
     deleteAll: async (options) => await _deleteAll(kv, schema, options),
     enqueue: async (data, options) => await _enqueue(kv, data, options),
@@ -164,15 +168,10 @@ async function _deleteAll(
  * @param options - Enqueue options.
  * @returns Promise resolving to void.
  */
-async function _enqueue(kv: Deno.Kv, data: unknown, options?: EnqueueOptions) {
-  // Create a queue message without collection key
-  const msg: QueueMessage = {
-    collectionKey: null,
-    data,
-  }
-
-  // Enqueue the queue message with the kv instance
-  return await kv.enqueue(msg, options)
+async function _enqueue(kv: Deno.Kv, data: KvValue, options?: EnqueueOptions) {
+  // Prepare and perform enqueue operation
+  const prep = prepareEnqueue(null, data, options)
+  return await kv.enqueue(prep.msg, prep.options)
 }
 
 /**
@@ -181,11 +180,14 @@ async function _enqueue(kv: Deno.Kv, data: unknown, options?: EnqueueOptions) {
  * @param kv - Deno KV instance.
  * @param handler - Data handler function.
  */
-async function _listenQueue(kv: Deno.Kv, handler: QueueMessageHandler) {
+async function _listenQueue<T extends KvValue>(
+  kv: Deno.Kv,
+  handler: QueueMessageHandler<T>,
+) {
   // Listen for messages in the kv queue
   await kv.listenQueue(async (msg) => {
     // Parse queue message
-    const parsed = parseQueueMessage(msg)
+    const parsed = parseQueueMessage<T>(msg)
 
     // If failed parse, ignore
     if (!parsed.ok) {
