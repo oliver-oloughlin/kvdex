@@ -590,6 +590,15 @@ export class Collection<
   /**
    * Find an undelivered document entry by id from the collection queue.
    *
+   * **Example**
+   * ```ts
+   * const doc1 = await db.users.findUndelivered("undelivered_id")
+   *
+   * const doc2 = await db.users.findUndelivered("undelivered_id", {
+   *   consistency: "eventual", // "strong" by default
+   * })
+   * ```
+   *
    * @param id - Document id.
    * @param options - Find options, optional.
    * @returns Document if found, null if not.

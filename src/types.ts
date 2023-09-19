@@ -287,6 +287,15 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
   /**
    * Find an undelivered document entry by id from the database queue.
    *
+   * **Example**
+   * ```ts
+   * const doc1 = await db.findUndelivered("undelivered_id")
+   *
+   * const doc2 = await db.findUndelivered("undelivered_id", {
+   *   consistency: "eventual", // "strong" by default
+   * })
+   * ```
+   *
    * @param id - Document id.
    * @param options - Find options, optional.
    * @returns Document if found, null if not.
