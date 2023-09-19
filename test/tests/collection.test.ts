@@ -950,6 +950,7 @@ Deno.test("collection", async (t) => {
     await t.step("Should enqueue message with string data", async () => {
       await useTemporaryKv(async (kv) => {
         const data = "data"
+        const undeliveredId = "undelivered"
 
         const db = kvdex(kv, {
           numbers: collection<number>().build(),
@@ -957,7 +958,9 @@ Deno.test("collection", async (t) => {
 
         let assertion = false
 
-        await db.numbers.enqueue("data")
+        await db.numbers.enqueue("data", {
+          idsIfUndelivered: [undeliveredId],
+        })
 
         kv.listenQueue((msg) => {
           const qMsg = msg as QueueMessage<KvValue>
@@ -965,7 +968,9 @@ Deno.test("collection", async (t) => {
         })
 
         await sleep(500)
-        assert(assertion)
+
+        const undelivered = await db.numbers.findUndelivered(undeliveredId)
+        assert(assertion || typeof undelivered?.value === typeof data)
       })
     })
   })

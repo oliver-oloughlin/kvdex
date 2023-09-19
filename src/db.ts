@@ -21,7 +21,7 @@ import {
   prepareEnqueue,
 } from "./utils.internal.ts"
 import { AtomicBuilder } from "./atomic_builder.ts"
-import { KVDEX_KEY_PREFIX } from "./constants.ts"
+import { KVDEX_KEY_PREFIX, UNDELIVERED_KEY_SUFFIX } from "./constants.ts"
 
 /**
  * Create a new database instance.
@@ -222,7 +222,7 @@ async function _findUndelivered<T extends KvValue = KvValue>(
   options?: FindOptions,
 ) {
   // Create document key, get document entry
-  const key = extendKey([KVDEX_KEY_PREFIX], id)
+  const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_SUFFIX, id)
   const result = await kv.get<T>(key, options)
 
   // If no entry exists, return null

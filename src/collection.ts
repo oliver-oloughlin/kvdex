@@ -1,4 +1,8 @@
-import { COLLECTION_ID_KEY_SUFFIX, KVDEX_KEY_PREFIX } from "./constants.ts"
+import {
+  COLLECTION_ID_KEY_SUFFIX,
+  KVDEX_KEY_PREFIX,
+  UNDELIVERED_KEY_SUFFIX,
+} from "./constants.ts"
 import type {
   CollectionKeys,
   CollectionOptions,
@@ -608,7 +612,7 @@ export class Collection<
     options?: FindOptions,
   ) {
     // Create document key, get document entry
-    const key = extendKey(this._keys.idKey, id)
+    const key = extendKey(this._keys.idKey, UNDELIVERED_KEY_SUFFIX, id)
     const result = await this.kv.get<T>(key, options)
 
     // If no entry exists, return null

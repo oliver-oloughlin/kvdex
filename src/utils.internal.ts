@@ -2,6 +2,7 @@ import {
   ATOMIC_OPERATION_MUTATION_LIMIT,
   GET_MANY_KEY_LIMIT,
   KVDEX_KEY_PREFIX,
+  UNDELIVERED_KEY_SUFFIX,
 } from "./constants.ts"
 import type { IndexableCollection } from "./indexable_collection.ts"
 import type {
@@ -418,7 +419,7 @@ export function prepareEnqueue(
 
   // Create keys if undelivered
   const keysIfUndelivered = options?.idsIfUndelivered?.map((id) =>
-    extendKey(key ?? [KVDEX_KEY_PREFIX], id)
+    extendKey(key ?? [KVDEX_KEY_PREFIX], UNDELIVERED_KEY_SUFFIX, id)
   )
 
   // Return prepared enqueue

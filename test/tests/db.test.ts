@@ -715,6 +715,39 @@ Deno.test("db", async (t1) => {
     )
   })
 
+  // Test atomic "enqueue" method
+  await t1.step("atomic_enqueue", async (t2) => {
+    await t2.step("Should enqueue message with string data", async () => {
+      await useTemporaryKv(async (kv) => {
+        const data = "data"
+        const undeliveredId = "undelivered"
+
+        const db = kvdex(kv, {
+          numbers: collection<number>().build(),
+        })
+
+        let assertion = false
+
+        await db
+          .atomic((schema) => schema.numbers)
+          .enqueue("data", {
+            idsIfUndelivered: [undeliveredId],
+          })
+          .commit()
+
+        kv.listenQueue((msg) => {
+          const qMsg = msg as QueueMessage<KvValue>
+          assertion = qMsg.collectionKey !== null && qMsg.data === data
+        })
+
+        await sleep(500)
+
+        const undelivered = await db.numbers.findUndelivered(undeliveredId)
+        assert(assertion || typeof undelivered?.value === typeof data)
+      })
+    })
+  })
+
   // Perform last reset
   await t1.step("RESET", async () => await reset())
 })
