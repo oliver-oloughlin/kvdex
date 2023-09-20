@@ -102,6 +102,10 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
    * @returns true or false
    */
   filter?: (doc: Document<T>) => boolean
+
+  startId?: KvId
+
+  endId?: KvId
 }
 
 export type CountOptions<T extends KvValue> =
@@ -194,7 +198,7 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * Initiates an atomic operation.
    * Takes a selector function as argument which is used to select an initial collection.
    *
-   * **Example:**
+   * @example
    * ```ts
    * db.atomic(schema => schema.users)
    * ```
@@ -211,7 +215,7 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
   /**
    * Count all document entries in the KV store.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Returns the total number of documents in the KV store across all collections
    * const count = await db.countAll()
@@ -225,7 +229,7 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
   /**
    * Delete all document entries in the KV store.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Deletes all documents across all collections
    * await db.deleteAll()
@@ -241,7 +245,7 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
    * listeners on the database queue. The method takes an optional options
    * argument that can be used to set a delivery delay.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Immediate delivery
    * await db.enqueue("some data")
@@ -260,7 +264,7 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
   /**
    * Listen for data from the database queue that was enqueued with ``db.enqueue()``. Will only receive data that was enqueued to the database queue. Takes a handler function as argument.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Prints the data to console when recevied
    * db.listenQueue((data) => console.log(data))
@@ -287,7 +291,7 @@ export type DB<T extends SchemaDefinition> = Schema<T> & {
   /**
    * Find an undelivered document entry by id from the database queue.
    *
-   * **Example**
+   * @example
    * ```ts
    * const doc1 = await db.findUndelivered("undelivered_id")
    *

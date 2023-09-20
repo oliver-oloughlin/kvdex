@@ -25,6 +25,7 @@ import type {
 } from "./types.ts"
 import {
   allFulfilled,
+  createListSelector,
   extendKey,
   generateId,
   getDocumentId,
@@ -51,7 +52,7 @@ export class Collection<
   /**
    * Create a new collection for handling documents in the KV store.
    *
-   * **Example:**
+   * @example
    * ```ts
    * const kv = await Deno.openKv()
    * const numbers = new Collection<number>(kv, ["numbers"])
@@ -81,7 +82,7 @@ export class Collection<
   /**
    * Finds a document with the given id in the KV store.
    *
-   * **Example:**
+   * @example
    * ```ts
    * const userDoc1 = await db.users.find("user1")
    *
@@ -118,7 +119,7 @@ export class Collection<
   /**
    * Finds multiple documents with the given array of ids in the KV store.
    *
-   * **Example:**
+   * @example
    * ```ts
    * const userDocs1 = await db.users.findMany(["user1", "user2", "user3"])
    *
@@ -166,7 +167,7 @@ export class Collection<
   /**
    * Adds a new document to the KV store with a randomely generated id.
    *
-   * **Example:**
+   * @example
    * ```ts
    * const result = await db.users.add({
    *   username: "oli",
@@ -187,7 +188,7 @@ export class Collection<
   /**
    * Adds a new document with the given id to the KV store.
    *
-   * **Example:**
+   * @example
    * ```ts
    * const result = await db.users.set("oliver", {
    *   username: "oli",
@@ -209,7 +210,7 @@ export class Collection<
    *
    * Sets a new document entry if no matching id already exists, overwrites the exisiting entry if it exists.
    *
-   * **Example:**
+   * @example
    * ```ts
    * const result = await db.users.write("anders", {
    *   username: "andy",
@@ -228,7 +229,7 @@ export class Collection<
   /**
    * Deletes one or more documents with the given ids from the KV store.
    *
-   * **Example:**
+   * @example
    * ```ts
    * await db.users.delete("oliver")
    *
@@ -254,7 +255,7 @@ export class Collection<
    * For custom object types, this method merges the
    * new data with the exisiting data.
    *
-   * **Example:**
+   * @example
    * ```ts
    * const result1 = await db.numbers.update("num1", 10)
    *
@@ -290,7 +291,7 @@ export class Collection<
   /**
    * Update the value of multiple existing documents in the collection.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Updates all user documents and sets name = 67
    * await db.users.updateMany({ age: 67 })
@@ -334,7 +335,7 @@ export class Collection<
   /**
    * Adds multiple documents to the KV store.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Adds 5 new document entries to the KV store.
    * await results = await db.numbers.addMany([1, 2, 3, 4, 5])
@@ -366,7 +367,7 @@ export class Collection<
    *
    * If no options are given, all documents are deleted.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Delete all
    * await db.users.deleteMany()
@@ -390,7 +391,7 @@ export class Collection<
    *
    * If no options are given, all documents are retrieved.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Get all users
    * const { result } = await db.users.getMany()
@@ -426,7 +427,7 @@ export class Collection<
    *
    * If no options are given, the callback function is executed for all documents in the collection.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Print all usernames
    * await db.users.forEach(doc => console.log(doc.value.username))
@@ -453,7 +454,7 @@ export class Collection<
    *
    * The results from the callback function are returned as a list.
    *
-   * **Example**
+   * @example
    * ```ts
    * // Maps from all user documents to a list of all user document ids
    * const { result } = await db.users.map(doc => doc.id)
@@ -491,7 +492,7 @@ export class Collection<
   /**
    * Counts the number of documents in the collection.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Returns the total number of user documents in the KV store
    * const count = await db.users.count()
@@ -518,7 +519,7 @@ export class Collection<
    * listeners on the specified collection. The method takes an optional options
    * argument that can be used to set a delivery delay.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Immediate delivery
    * await db.users.enqueue("some data")
@@ -544,7 +545,7 @@ export class Collection<
    * Will only receive data that was enqueued to the specific collection queue.
    * Takes a handler function as argument.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Prints the data to console when recevied
    * db.users.listenQueue((data) => console.log(data))
@@ -594,7 +595,7 @@ export class Collection<
   /**
    * Find an undelivered document entry by id from the collection queue.
    *
-   * **Example**
+   * @example
    * ```ts
    * const doc1 = await db.users.findUndelivered("undelivered_id")
    *
@@ -645,7 +646,8 @@ export class Collection<
     options?: ListOptions<T1>,
   ) {
     // Create list iterator with given options, initiate documents list
-    const iter = this.kv.list<T1>({ prefix: this._keys.idKey }, options)
+    const selector = createListSelector(this._keys.idKey, options)
+    const iter = this.kv.list<T1>(selector, options)
     const docs: Document<T1>[] = []
 
     // Loop over each document entry

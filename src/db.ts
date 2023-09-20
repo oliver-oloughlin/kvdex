@@ -28,7 +28,7 @@ import { KVDEX_KEY_PREFIX, UNDELIVERED_KEY_SUFFIX } from "./constants.ts"
  *
  * Builds the database collections and forms the schema.
  *
- * **Example:**
+ * @example
  * ```ts
  * interface User extends Model {
  *   username: string

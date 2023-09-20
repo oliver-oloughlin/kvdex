@@ -14,6 +14,7 @@ import type {
   KvId,
   KvKey,
   KvValue,
+  ListOptions,
   Model,
   ParsedQueueMessage,
   PreparedEnqueue,
@@ -429,5 +430,28 @@ export function prepareEnqueue(
       ...options,
       keysIfUndelivered,
     },
+  }
+}
+
+export function createListSelector(
+  prefixKey: KvKey,
+  options: Pick<ListOptions<KvValue>, "startId" | "endId"> | undefined,
+): Deno.KvListSelector {
+  const start = typeof options?.startId !== "undefined"
+    ? [...prefixKey, options.startId!]
+    : undefined
+
+  const end = typeof options?.endId !== "undefined"
+    ? [...prefixKey, options.endId!]
+    : undefined
+
+  const prefix = Array.isArray(start) && Array.isArray(end)
+    ? undefined!
+    : prefixKey
+
+  return {
+    prefix,
+    start,
+    end,
   }
 }

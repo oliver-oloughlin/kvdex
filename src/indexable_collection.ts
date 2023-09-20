@@ -27,6 +27,7 @@ import type {
 import {
   allFulfilled,
   checkIndices,
+  createListSelector,
   deleteIndices,
   extendKey,
   getDocumentId,
@@ -50,7 +51,7 @@ export class IndexableCollection<
   /**
    * Create a new IndexableCollection for handling object documents in the KV store.
    *
-   * **Example:**
+   * @example
    * ```ts
    * const kv = await Deno.openKv()
    * const users = new IndexableCollection<User>(kv, ["users"], {
@@ -113,7 +114,7 @@ export class IndexableCollection<
   /**
    * Find a document by a primary index.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Finds a user document with the username = "oli"
    * const userDoc = await db.users.findByPrimaryIndex("username", "oli")
@@ -165,7 +166,7 @@ export class IndexableCollection<
    * unique, and therefore the result is an array of documents.
    * The method takes an optional options argument that can be used for filtering of documents, and pagination.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Returns all users with age = 24
    * const { result } = await db.users.findBySecondaryIndex("age", 24)
@@ -224,7 +225,7 @@ export class IndexableCollection<
   /**
    * Delete a document by a primary index.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Deletes user with username = "oliver"
    * await db.users.deleteByPrimaryIndex("username", "oliver")
@@ -269,7 +270,7 @@ export class IndexableCollection<
   /**
    * Delete documents by a secondary index. The method takes an optional options argument that can be used for filtering of documents, and pagination.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Deletes all users with age = 24
    * await db.users.deleteBySecondaryIndex("age", 24)
@@ -300,7 +301,7 @@ export class IndexableCollection<
   /**
    * Update a document by a primary index.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Updates a user with username = "oliver" to have age = 56
    * const result = await db.users.updateByPrimaryIndex("username", "oliver", { age: 56 })
@@ -337,7 +338,7 @@ export class IndexableCollection<
   /**
    * Update documents in the collection by a secondary index.
    *
-   * **Example:**
+   * @example
    * ```ts
    * // Updates all user documents with age = 24 and sets age = 67
    * const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
@@ -516,15 +517,17 @@ export class IndexableCollection<
     fn: (doc: Document<T1>) => unknown,
     options: ListOptions<T1> | undefined,
   ) {
-    // Create index key prefix
-    const key = extendKey(
+    // Set prefix and create list selector
+    const prefix = extendKey(
       this._keys.secondaryIndexKey,
       index as KvId,
       value as KvId,
     )
 
+    const selector = createListSelector(prefix, options)
+
     // Create list iterator and initiate documents list
-    const iter = this.kv.list<T1>({ prefix: key }, options)
+    const iter = this.kv.list<T1>(selector, options)
     const docs: Document<T1>[] = []
 
     // Loop over document entries

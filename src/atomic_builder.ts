@@ -80,7 +80,7 @@ export class AtomicBuilder<
   /**
    * Select a new collection context.
    *
-   * **Example:**
+   * @example
    * ```ts
    * db
    *   .atomic(schema => schema.users)
@@ -105,7 +105,7 @@ export class AtomicBuilder<
   /**
    * Add a new document to the KV store with a randomely generated id.
    *
-   * **Example:**
+   * @example
    * ```ts
    * db
    *  .atomic(schema => schema.users)
@@ -128,7 +128,7 @@ export class AtomicBuilder<
   /**
    * Adds a new document to the KV store with the given id.
    *
-   * **Example:**
+   * @example
    * ```ts
    * db
    *  .atomic(schema => schema.users)
@@ -182,7 +182,7 @@ export class AtomicBuilder<
   /**
    * Deletes a document from the KV store with the given id.
    *
-   * **Example:**
+   * @example
    * ```ts
    * db
    *  .atomic(schema => schema.users)
@@ -223,7 +223,7 @@ export class AtomicBuilder<
   /**
    * Check if documents have been changed since a specific versionstamp.
    *
-   * **Example:**
+   * @example
    * ```ts
    * db
    *  .atomic(schema => schema.users)
@@ -259,7 +259,7 @@ export class AtomicBuilder<
    * Adds the given value to the value of the document with the given id.
    * Sum only works for documents of type Deno.KvU64 and will throw an error for documents of any other type.
    *
-   * **Example:**
+   * @example
    * ```ts
    * db
    *  .atomic(schema => schema.u64s) // Select collection of Deno.KvU64 values
@@ -284,7 +284,7 @@ export class AtomicBuilder<
   /**
    * Specifies atomic mutations to be formed on documents.
    *
-   * **Example:**
+   * @example
    * ```ts
    * db
    *  .atomic(schema => schema.u64s)
