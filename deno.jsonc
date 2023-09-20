@@ -1,8 +1,7 @@
 {
   "lock": false,
   "tasks": {
-    "test": "deno test -A --unstable",
-    "prep": "deno lint && deno fmt && deno task test"
+    "test": "deno lint && deno fmt && deno test -A --unstable"
   },
   "fmt": {
     "semiColons": false

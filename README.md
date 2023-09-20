@@ -10,7 +10,8 @@ much of the native functionality as possible, such as atomic operations.
 - CRUD operations for selected and ranged documents with strict type
   enforcement.
 - Primary (unique) and secondary (non-unique) indexing.
-- Segmented storage for large objects exceeding the native size limit.
+- Automatically segmented storage for large objects that exceed the native size
+  limit.
 - Support for pagination and filtering.
 - Message queues at database and collection level.
 - Support for atomic operations.
@@ -562,11 +563,11 @@ await db.users.deleteBySecondaryIndex("age", 24, {
 
 Large collections are distinct from standard collections or indexable
 collections in that they can hold values that exceed the size limit of values in
-Deno KV. Value types are limited to being of LargeKvValue (string, basic objects
-and arrays). All base collection methods are available for large collections.
-Document values are divided accross multiple Deno KV entries, which impacts the
-performance of most operations. Only use this collection type if you think your
-document values will exceed the approximately 65KB size limit.
+Deno KV, currently 64KB. Value types are limited to being of LargeKvValue
+(string, JSON objects and arrays). All base collection methods are available for
+large collections. Document values are divided accross multiple Deno KV entries,
+which impacts the performance of most operations. Only use this collection type
+if you believe your document values will exceed size limit.
 
 ## Database Methods
 
@@ -788,8 +789,7 @@ Any contributions are welcomed and appreciated. How to contribute:
 - Clone this repository
 - Add feature / Refactor
 - Add or refactor tests as needed
-- Run tests using `deno task test`
-- Prepare code (lint + format + test) using `deno task prep`
+- Ensure code quality (lint + format + test) using `deno task test`
 - Open Pull Request
 
 This project aims at having as high test coverage as possible to improve code
