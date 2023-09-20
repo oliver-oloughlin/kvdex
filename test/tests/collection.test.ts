@@ -2,6 +2,7 @@ import {
   collection,
   Document,
   flatten,
+  KvId,
   KvValue,
   QueueMessage,
 } from "../../mod.ts"
@@ -1021,6 +1022,73 @@ Deno.test("collection", async (t) => {
         assert(assertion)
       })
     })
+  })
+
+  await t.step("start_end_ids", async (t) => {
+    await t.step("Should start from set startId", async () => {
+      await reset()
+
+      const ids: KvId[] = []
+
+      for (let i = 0; i < 20; i++) {
+        const cr = await db.values.numbers.add(i)
+        assert(cr.ok)
+        ids.push(cr.id)
+
+        await sleep(10)
+      }
+
+      const { result } = await db.values.numbers.getMany({ startId: ids[10] })
+
+      assert(
+        ids.slice(0, 10).every((id) =>
+          !result.map((doc) => doc.id).includes(id)
+        ),
+      )
+    })
+
+    await t.step("Should end at set endId", async () => {
+      await reset()
+
+      const ids: KvId[] = []
+
+      for (let i = 0; i < 20; i++) {
+        const cr = await db.values.numbers.add(i)
+        assert(cr.ok)
+        ids.push(cr.id)
+
+        await sleep(10)
+      }
+
+      const { result } = await db.values.numbers.getMany({ endId: ids[10] })
+
+      const docIds = result.map((doc) => doc.id)
+      const slicedIds = ids.slice(0, 10)
+
+      assert(slicedIds.every((id) => docIds.includes(id)))
+      assert(docIds.every((id) => slicedIds.includes(id)))
+    })
+  })
+
+  await t.step("Should get selection from start and end ids", async () => {
+    await reset()
+
+    const ids: KvId[] = []
+
+    for (let i = 0; i < 20; i++) {
+      const cr = await db.values.numbers.add(i)
+      assert(cr.ok)
+      ids.push(cr.id)
+
+      await sleep(10)
+    }
+
+    const { result } = await db.values.numbers.getMany({
+      startId: ids[10],
+      endId: ids[11],
+    })
+
+    assert(result[0].id === ids[10])
   })
 
   // Perform last reset

@@ -21,6 +21,7 @@ import type {
 } from "./types.ts"
 import {
   allFulfilled,
+  createListSelector,
   extendKey,
   getDocumentId,
   kvGetMany,
@@ -36,7 +37,7 @@ export class LargeCollection<
   /**
    * Create a new LargeCollection for handling large documents in the KV store.
    *
-   * **Example:**
+   * @example
    * ```ts
    * const kv = await Deno.openKv()
    * const largeStrings = new LargeCollection<string>(kv, ["largeStrings"])
@@ -157,11 +158,9 @@ export class LargeCollection<
     fn: (doc: Document<T1>) => unknown,
     options?: ListOptions<T1>,
   ): Promise<{ cursor: string | undefined }> {
-    // Create list iterotr with given options
-    const iter = this.kv.list<LargeDocumentEntry[]>(
-      { prefix: this._keys.idKey },
-      options,
-    )
+    // Create list iterator with given options
+    const selector = createListSelector(this._keys.idKey, options)
+    const iter = this.kv.list<LargeDocumentEntry[]>(selector, options)
 
     // Initiate documents list
     const docs: Document<T1>[] = []

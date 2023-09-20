@@ -5,6 +5,7 @@ import {
   largeCollection,
   type Model,
 } from "../mod.ts"
+import { ulid } from "./deps.ts"
 
 export interface Person extends Model {
   name: string
@@ -66,7 +67,7 @@ export const db = kvdex(kv, {
   }),
   largeDocs: largeCollection<LargeData>().build(),
   values: {
-    numbers: collection<number>().build(),
+    numbers: collection<number>().build({ idGenerator: () => ulid() }),
     strings: collection<string>().build(),
     u64s: collection<Deno.KvU64>().build(),
   },
