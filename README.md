@@ -804,4 +804,5 @@ dependencies. Please kleep this in mind when making any contributions.
 
 ## License
 
-Published under [MIT License](./LICENSE.md)
+Published under
+[MIT License](https://github.com/oliver-oloughlin/kvdex/blob/main/LICENSE)
