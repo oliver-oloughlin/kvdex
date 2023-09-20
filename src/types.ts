@@ -31,15 +31,6 @@ export type Operations = {
   indexAddCollectionKeys: KvKey[]
 }
 
-export type AtomicCommitResult =
-  | {
-    ok: true
-    versionstamp: Document<KvValue>["versionstamp"]
-  }
-  | {
-    ok: false
-  }
-
 export type AtomicCheck<T extends KvValue> = {
   id: Document<T>["id"]
   versionstamp: Document<T>["versionstamp"]
@@ -122,8 +113,6 @@ export type CommitResult<T1 extends KvValue> = {
   ok: true
   versionstamp: Document<T1>["versionstamp"]
   id: KvId
-} | {
-  ok: false
 }
 
 // Indexable Collection Types

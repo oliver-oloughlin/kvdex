@@ -273,11 +273,11 @@ export class Collection<
     id: KvId,
     data: UpdateData<T1>,
     options?: SetOptions,
-  ): Promise<CommitResult<T1>> {
+  ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Get document
     const doc = await this.find(id)
 
-    // If no document is found, return result with false flag
+    // If no document is found, return commit error
     if (!doc) {
       return {
         ok: false,
@@ -310,14 +310,14 @@ export class Collection<
    *
    * @param data - Updated data to be inserted into documents.
    * @param options - Update many options, optional.
-   * @returns Promise resolving to an object containing iterator cursor and commit results list.
+   * @returns Promise resolving to an object containing iterator cursor and result list.
    */
   async updateMany(
     data: UpdateData<T1>,
     options?: UpdateManyOptions<T1>,
   ) {
     // Initiate result list
-    const result: CommitResult<T1>[] = []
+    const result: (CommitResult<T1> | Deno.KvCommitError)[] = []
 
     // Update each document, add commit result to result list
     const { cursor } = await this.handleMany(async (doc) => {
@@ -694,7 +694,7 @@ export class Collection<
     data: T1,
     options: SetOptions | undefined,
     overwrite = false,
-  ): Promise<CommitResult<T1>> {
+  ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Create document key
     const key = extendKey(this._keys.idKey, id)
 
@@ -723,8 +723,8 @@ export class Collection<
       )
     }
 
-    // Create commit result from atomic commit result
-    const commitResult: CommitResult<T1> = cr.ok
+    // return commit result or error
+    return cr.ok
       ? {
         ok: true,
         versionstamp: cr.versionstamp,
@@ -733,9 +733,6 @@ export class Collection<
       : {
         ok: false,
       }
-
-    // return commit result
-    return commitResult
   }
 
   /**

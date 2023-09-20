@@ -320,11 +320,11 @@ export class IndexableCollection<
     value: CheckKeyOf<K, T1>,
     data: UpdateData<T1>,
     options?: SetOptions,
-  ): Promise<CommitResult<T1>> {
+  ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Find document by primary index
     const doc = await this.findByPrimaryIndex(index, value)
 
-    // If no document, return result with false flag
+    // If no document, return commit error
     if (!doc) {
       return {
         ok: false,
@@ -369,7 +369,7 @@ export class IndexableCollection<
     options?: UpdateManyOptions<T1>,
   ) {
     // Initiate reuslt list
-    const result: CommitResult<T1>[] = []
+    const result: (CommitResult<T1> | Deno.KvCommitError)[] = []
 
     // Update each document by secondary index, add commit result to result list
     const { cursor } = await this.handleBySecondaryIndex(
@@ -395,7 +395,7 @@ export class IndexableCollection<
     doc: Document<T1>,
     data: UpdateData<T1>,
     options: SetOptions | undefined,
-  ): Promise<CommitResult<T1>> {
+  ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Get document value, delete document entry
     const { value, id } = doc
 
@@ -403,7 +403,7 @@ export class IndexableCollection<
     const atomic = checkIndices(data, this.kv.atomic(), this)
     const cr = await atomic.commit()
 
-    // If check fails, return result with false flag
+    // If check fails, return commit error
     if (!cr.ok) {
       return {
         ok: false,
@@ -430,7 +430,7 @@ export class IndexableCollection<
     data: T1,
     options: SetOptions | undefined,
     overwrite = false,
-  ): Promise<CommitResult<T1>> {
+  ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Create the document id key
     const idKey = extendKey(this._keys.idKey, id)
 
@@ -438,7 +438,7 @@ export class IndexableCollection<
     const indicesCheck = await checkIndices(data, this.kv.atomic(), this)
       .commit()
 
-    // If index collision is detected, return failed operation
+    // If index collision is detected, return commit error
     if (!indicesCheck.ok) {
       return {
         ok: false,
@@ -485,8 +485,8 @@ export class IndexableCollection<
       )
     }
 
-    // Create a commit result from atomic commit result
-    const commitResult: CommitResult<T1> = cr.ok
+    // Return commit result or error
+    return cr.ok
       ? {
         ok: true,
         versionstamp: cr.versionstamp,
@@ -495,9 +495,6 @@ export class IndexableCollection<
       : {
         ok: false,
       }
-
-    // Return the commit result
-    return commitResult
   }
 
   /**

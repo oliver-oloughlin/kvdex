@@ -201,7 +201,7 @@ export class LargeCollection<
     data: T1,
     options: SetOptions | undefined,
     overwrite = false,
-  ): Promise<CommitResult<T1>> {
+  ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Create document id key
     const idKey = extendKey(this._keys.idKey, id)
 
@@ -216,7 +216,7 @@ export class LargeCollection<
 
     // Check if document already exists
     if (!check.ok) {
-      // If overwrite is false, return result with false ok flag
+      // If overwrite is false, return commit error
       if (!overwrite) {
         return {
           ok: false,
