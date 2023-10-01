@@ -9,18 +9,13 @@ import {
   useTemporaryKv,
 } from "../config.ts"
 import { assert } from "../deps.ts"
-import {
-  flatten,
-  indexableCollection,
-  KvValue,
-  QueueMessage,
-} from "../../mod.ts"
+import { indexableCollection, KvValue, QueueMessage } from "../../mod.ts"
 import { kvdex } from "../../src/db.ts"
 import {
-  COLLECTION_ID_KEY_SUFFIX,
-  COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
-  COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
+  ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
+  PRIMARY_INDEX_KEY_PREFIX,
+  SECONDARY_INDEX_KEY_PREFIX,
 } from "../../src/constants.ts"
 
 Deno.test("indexable_collection", async (t) => {
@@ -36,7 +31,7 @@ Deno.test("indexable_collection", async (t) => {
     await t.step("Id key should have id key suffix", () => {
       const key = db.indexablePeople._keys.idKey
       const suffix = key[key.length - 1]
-      assert(suffix === COLLECTION_ID_KEY_SUFFIX)
+      assert(suffix === ID_KEY_PREFIX)
     })
 
     await t.step(
@@ -44,7 +39,7 @@ Deno.test("indexable_collection", async (t) => {
       () => {
         const key = db.indexablePeople._keys.primaryIndexKey
         const suffix = key[key.length - 1]
-        assert(suffix === COLLECTION_PRIMARY_INDEX_KEY_SUFFIX)
+        assert(suffix === PRIMARY_INDEX_KEY_PREFIX)
       },
     )
 
@@ -53,7 +48,7 @@ Deno.test("indexable_collection", async (t) => {
       () => {
         const key = db.indexablePeople._keys.secondaryIndexKey
         const suffix = key[key.length - 1]
-        assert(suffix === COLLECTION_SECONDARY_INDEX_KEY_SUFFIX)
+        assert(suffix === SECONDARY_INDEX_KEY_PREFIX)
       },
     )
   })
@@ -501,9 +496,9 @@ Deno.test("indexable_collection", async (t) => {
       assert(nameDoc !== null)
       assert(typeof ageDoc !== "undefined" && ageDoc !== null)
 
-      const value1 = flatten(idDoc)
-      const value2 = flatten(nameDoc)
-      const value3 = flatten(ageDoc)
+      const value1 = idDoc.flat()
+      const value2 = nameDoc.flat()
+      const value3 = ageDoc.flat()
 
       assert(value1.name === testPerson.name)
       assert(value1.age === 77)
@@ -588,9 +583,9 @@ Deno.test("indexable_collection", async (t) => {
         assert(nameDoc !== null)
         assert(typeof ageDoc !== "undefined" && ageDoc !== null)
 
-        const value1 = flatten(idDoc)
-        const value2 = flatten(nameDoc)
-        const value3 = flatten(ageDoc)
+        const value1 = idDoc.flat()
+        const value2 = nameDoc.flat()
+        const value3 = ageDoc.flat()
 
         assert(value1.name === testPerson.name)
         assert(value1.age === 77)

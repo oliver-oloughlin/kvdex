@@ -19,9 +19,9 @@ import {
   QueueMessage,
 } from "../../mod.ts"
 import {
-  COLLECTION_ID_KEY_SUFFIX,
-  COLLECTION_SEGMENT_KEY_SUFFIX,
+  ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
+  SEGMENT_KEY_PREFIX,
 } from "../../src/constants.ts"
 
 Deno.test("large_collection", async (t) => {
@@ -35,13 +35,13 @@ Deno.test("large_collection", async (t) => {
     await t.step("Id key should have id key suffix", () => {
       const idKey = db.largeDocs._keys.idKey
       const suffix = idKey[idKey.length - 1]
-      assert(suffix === COLLECTION_ID_KEY_SUFFIX)
+      assert(suffix === ID_KEY_PREFIX)
     })
 
     await t.step("Segment key should have segment key suffix", () => {
       const segmentKey = db.largeDocs._keys.segmentKey
       const suffix = segmentKey[segmentKey.length - 1]
-      assert(suffix === COLLECTION_SEGMENT_KEY_SUFFIX)
+      assert(suffix === SEGMENT_KEY_PREFIX)
     })
   })
 

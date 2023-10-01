@@ -1,7 +1,7 @@
-import type { Collection } from "./collection.ts"
+import type { Collection } from "./Collection.ts"
 import { InvalidAtomicBuilderCollectionError } from "./errors.ts"
-import { IndexableCollection } from "./indexable_collection.ts"
-import { LargeCollection } from "./large_collection.ts"
+import { IndexableCollection } from "./IndexableCollection.ts"
+import { LargeCollection } from "./LargeCollection.ts"
 import type {
   AtomicCheck,
   AtomicMutation,

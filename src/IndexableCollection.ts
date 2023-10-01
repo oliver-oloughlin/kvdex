@@ -1,14 +1,13 @@
-import { Collection } from "./collection.ts"
+import { Collection } from "./Collection.ts"
 import {
-  COLLECTION_ID_KEY_SUFFIX,
-  COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
-  COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
+  ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
+  PRIMARY_INDEX_KEY_PREFIX,
+  SECONDARY_INDEX_KEY_PREFIX,
 } from "./constants.ts"
 import type {
   CheckKeyOf,
   CommitResult,
-  Document,
   FindOptions,
   IndexableCollectionKeys,
   IndexableCollectionOptions,
@@ -33,6 +32,7 @@ import {
   getDocumentId,
   setIndices,
 } from "./utils.internal.ts"
+import { Document } from "./Document.ts"
 
 /**
  * Represents a collection of object documents stored in the KV store.
@@ -74,17 +74,17 @@ export class IndexableCollection<
       idKey: extendKey(
         [KVDEX_KEY_PREFIX],
         ...key,
-        COLLECTION_ID_KEY_SUFFIX,
+        ID_KEY_PREFIX,
       ),
       primaryIndexKey: extendKey(
         [KVDEX_KEY_PREFIX],
         ...key,
-        COLLECTION_PRIMARY_INDEX_KEY_SUFFIX,
+        PRIMARY_INDEX_KEY_PREFIX,
       ),
       secondaryIndexKey: extendKey(
         [KVDEX_KEY_PREFIX],
         ...key,
-        COLLECTION_SECONDARY_INDEX_KEY_SUFFIX,
+        SECONDARY_INDEX_KEY_PREFIX,
       ),
     }
 
@@ -150,15 +150,12 @@ export class IndexableCollection<
     // Extract the document data
     const { __id__, ...data } = result.value
 
-    // Create document
-    const doc: Document<T1> = {
+    // Return document
+    return new Document<T1>({
       id: __id__,
       versionstamp: result.versionstamp,
       value: data as T1,
-    }
-
-    // Return document
-    return doc
+    })
   }
 
   /**
@@ -538,11 +535,11 @@ export class IndexableCollection<
       }
 
       // Create document
-      const doc: Document<T1> = {
+      const doc = new Document<T1>({
         id,
         versionstamp,
         value,
-      }
+      })
 
       // Filter document and add to documetns list
       if (!options?.filter || options.filter(doc)) {

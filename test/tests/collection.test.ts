@@ -1,11 +1,4 @@
-import {
-  collection,
-  Document,
-  flatten,
-  KvId,
-  KvValue,
-  QueueMessage,
-} from "../../mod.ts"
+import { collection, Document, KvId, KvValue, QueueMessage } from "../../mod.ts"
 import {
   db,
   generateNumbers,
@@ -19,10 +12,7 @@ import {
 } from "../config.ts"
 import { assert } from "../deps.ts"
 import { kvdex } from "../../src/db.ts"
-import {
-  COLLECTION_ID_KEY_SUFFIX,
-  KVDEX_KEY_PREFIX,
-} from "../../src/constants.ts"
+import { ID_KEY_PREFIX, KVDEX_KEY_PREFIX } from "../../src/constants.ts"
 
 Deno.test("collection", async (t) => {
   // Test correctness of collection keys
@@ -35,7 +25,7 @@ Deno.test("collection", async (t) => {
     await t.step("Id key should have id key suffix", () => {
       const idKey = db.people._keys.idKey
       const suffix = idKey[idKey.length - 1]
-      assert(suffix === COLLECTION_ID_KEY_SUFFIX)
+      assert(suffix === ID_KEY_PREFIX)
     })
   })
 
@@ -508,7 +498,7 @@ Deno.test("collection", async (t) => {
 
       assert(doc !== null)
 
-      const value = flatten(doc)
+      const value = doc.flat()
 
       assert(value.name === testPerson.name)
       assert(value.age === 77)

@@ -1,14 +1,13 @@
 import {
-  COLLECTION_ID_KEY_SUFFIX,
+  ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
-  UNDELIVERED_KEY_SUFFIX,
+  UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
 import type {
   CollectionKeys,
   CollectionOptions,
   CommitResult,
   CountOptions,
-  Document,
   EnqueueOptions,
   FindManyOptions,
   FindOptions,
@@ -35,6 +34,7 @@ import {
   parseQueueMessage,
   prepareEnqueue,
 } from "./utils.internal.ts"
+import { Document } from "./Document.ts"
 
 /**
  * Represents a collection of documents stored in the KV store.
@@ -74,7 +74,7 @@ export class Collection<
       idKey: extendKey(
         [KVDEX_KEY_PREFIX],
         ...key,
-        COLLECTION_ID_KEY_SUFFIX,
+        ID_KEY_PREFIX,
       ),
     }
   }
@@ -105,15 +105,12 @@ export class Collection<
       return null
     }
 
-    // Create the document
-    const doc: Document<T1> = {
+    // Return document
+    return new Document<T1>({
       id,
       versionstamp: result.versionstamp,
       value: result.value,
-    }
-
-    // Return the document
-    return doc
+    })
   }
 
   /**
@@ -153,11 +150,13 @@ export class Collection<
       }
 
       // Add document to result list
-      result.push({
-        id,
-        versionstamp,
-        value,
-      })
+      result.push(
+        new Document<T1>({
+          id,
+          versionstamp,
+          value,
+        }),
+      )
     }
 
     // Return result list
@@ -613,7 +612,7 @@ export class Collection<
     options?: FindOptions,
   ) {
     // Create document key, get document entry
-    const key = extendKey(this._keys.idKey, UNDELIVERED_KEY_SUFFIX, id)
+    const key = extendKey(this._keys.baseKey, UNDELIVERED_KEY_PREFIX, id)
     const result = await this.kv.get<T>(key, options)
 
     // If no entry exists, return null
@@ -621,15 +620,12 @@ export class Collection<
       return null
     }
 
-    // Create the document
-    const doc: Document<T> = {
+    // Return document
+    return new Document<T>({
       id,
       versionstamp: result.versionstamp,
       value: result.value,
-    }
-
-    // Return the document
-    return doc
+    })
   }
 
   /** PROTECTED METHODS */
@@ -659,11 +655,11 @@ export class Collection<
       }
 
       // Create document
-      const doc: Document<T1> = {
+      const doc = new Document<T1>({
         id,
         versionstamp,
         value: value,
-      }
+      })
 
       // Filter document and add to documents list
       if (!options?.filter || options.filter(doc)) {
