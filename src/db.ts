@@ -19,7 +19,7 @@ import {
   extendKey,
   parseQueueMessage,
   prepareEnqueue,
-} from "./utils.internal.ts"
+} from "./utils.ts"
 import { AtomicBuilder } from "./atomic_builder.ts"
 import { KVDEX_KEY_PREFIX, UNDELIVERED_KEY_PREFIX } from "./constants.ts"
 

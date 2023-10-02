@@ -31,7 +31,7 @@ import {
   extendKey,
   getDocumentId,
   setIndices,
-} from "./utils.internal.ts"
+} from "./utils.ts"
 import { Document } from "./Document.ts"
 
 /**

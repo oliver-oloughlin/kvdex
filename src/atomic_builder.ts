@@ -25,7 +25,7 @@ import {
   keyEq,
   prepareEnqueue,
   setIndices,
-} from "./utils.internal.ts"
+} from "./utils.ts"
 
 /**
  * Builder object for creating and executing atomic operations in the KV store.
@@ -58,7 +58,9 @@ export class AtomicBuilder<
   ) {
     // Check for large collection
     if (collection instanceof LargeCollection) {
-      throw new InvalidAtomicBuilderCollectionError()
+      throw new InvalidAtomicBuilderCollectionError(
+        "Atomic operations are not supported for LargeCollection",
+      )
     }
 
     // Set kv and schema

@@ -13,5 +13,8 @@ export { LargeCollection } from "./src/LargeCollection.ts"
 export { AtomicBuilder } from "./src/atomic_builder.ts"
 export { Document } from "./src/Document.ts"
 
+// Expose errors
+export * from "./src/errors.ts"
+
 // Expose types
 export type * from "./src/types.ts"

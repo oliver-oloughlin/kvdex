@@ -6,7 +6,7 @@ import type {
   KvValue,
   KvVersionstamp,
 } from "./types.ts"
-import { isKvObject } from "./utils.internal.ts"
+import { isKvObject } from "./utils.ts"
 
 export class Document<T extends KvValue> {
   readonly id: KvId

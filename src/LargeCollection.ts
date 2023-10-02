@@ -25,8 +25,9 @@ import {
   getDocumentId,
   kvGetMany,
   useAtomics,
-} from "./utils.internal.ts"
+} from "./utils.ts"
 import { Document } from "./Document.ts"
+import { CorruptedDocumentDataError } from "./errors.ts"
 
 export class LargeCollection<
   const T1 extends LargeKvValue,
@@ -328,7 +329,7 @@ export class LargeCollection<
     )
 
     if (jsonParts.length !== docEntries.length) {
-      throw new Error(
+      throw new CorruptedDocumentDataError(
         `Corrupted document data - some JSON parts are missing
         JSON parts: ${jsonParts}
         `,
@@ -346,7 +347,7 @@ export class LargeCollection<
       })
     } catch (_e) {
       // Throw if JSON.parse fails
-      throw new Error(
+      throw new CorruptedDocumentDataError(
         `Corrupted document data - failed to parse JSON
         JSON: ${json}
         `,

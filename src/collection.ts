@@ -33,7 +33,7 @@ import {
   kvGetMany,
   parseQueueMessage,
   prepareEnqueue,
-} from "./utils.internal.ts"
+} from "./utils.ts"
 import { Document } from "./Document.ts"
 
 /**
