@@ -25,7 +25,7 @@ import {
   keyEq,
   prepareEnqueue,
   setIndices,
-} from "./utils.internal.ts"
+} from "./utils.ts"
 
 /**
  * Builder object for creating and executing atomic operations in the KV store.
@@ -58,7 +58,9 @@ export class AtomicBuilder<
   ) {
     // Check for large collection
     if (collection instanceof LargeCollection) {
-      throw new InvalidAtomicBuilderCollectionError()
+      throw new InvalidAtomicBuilderCollectionError(
+        "Atomic operations are not supported for LargeCollection",
+      )
     }
 
     // Set kv and schema
@@ -276,6 +278,60 @@ export class AtomicBuilder<
 
     // Add sum operation to atomic ops list
     this.operations.atomic.sum(idKey, value)
+
+    // Return current AtomicBuilder
+    return this
+  }
+
+  /**
+   * Sets the document value to the minimum of the existing and the given value.
+   *
+   * min only works for documents of type Deno.KvU64 and will throw an error for documents of any other type.
+   *
+   * @example
+   * ```ts
+   * db
+   *  .atomic(schema => schema.u64s) // Select collection of Deno.KvU64 values
+   *  .min("num1", 100n)
+   * ```
+   *
+   * @param id - Id of document that contains the value to be updated.
+   * @param value - The value to compare with the existing value.
+   * @returns Current AtomicBuilder instance.
+   */
+  min(id: KvId, value: T2 extends Deno.KvU64 ? bigint : never) {
+    // Create id key from id and collection id key
+    const idKey = extendKey(this.collection._keys.idKey, id)
+
+    // Add min operation to atomic ops list
+    this.operations.atomic.min(idKey, value)
+
+    // Return current AtomicBuilder
+    return this
+  }
+
+  /**
+   * Sets the document value to the maximum of the existing and the given value.
+   *
+   * max only works for documents of type Deno.KvU64 and will throw an error for documents of any other type.
+   *
+   * @example
+   * ```ts
+   * db
+   *  .atomic(schema => schema.u64s) // Select collection of Deno.KvU64 values
+   *  .max("num1", 100n)
+   * ```
+   *
+   * @param id - Id of document that contains the value to be updated.
+   * @param value - The value to compare with the existing value.
+   * @returns Current AtomicBuilder instance.
+   */
+  max(id: KvId, value: T2 extends Deno.KvU64 ? bigint : never) {
+    // Create id key from id and collection id key
+    const idKey = extendKey(this.collection._keys.idKey, id)
+
+    // Add max operation to atomic ops list
+    this.operations.atomic.max(idKey, value)
 
     // Return current AtomicBuilder
     return this

@@ -1,6 +1,7 @@
 import type { Collection } from "./collection.ts"
 import type { AtomicBuilder } from "./atomic_builder.ts"
 import type { LargeCollection } from "./large_collection.ts"
+import type { Document } from "./document.ts"
 
 // Atomic Builder Types
 export type CollectionSelector<
@@ -44,6 +45,7 @@ export type AtomicMutation<T extends KvValue> =
     | {
       type: "set"
       value: T
+      expireIn?: number
     }
     | {
       type: "sum"
@@ -345,16 +347,21 @@ export type PreparedEnqueue<T extends KvValue> = {
 // KV Types
 export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T> : T
 
-export type FlattenedDocument<T extends Model> = T & {
-  id: Document<T>["id"]
-  versionstamp: Document<T>["versionstamp"]
+export type FlatDocumentData<T extends KvValue> =
+  & Omit<DocumentData<T>, "value">
+  & (
+    T extends Model ? T : {
+      readonly value: T
+    }
+  )
+
+export type DocumentData<T extends KvValue> = {
+  readonly id: KvId
+  readonly versionstamp: KvVersionstamp<T>
+  readonly value: T
 }
 
-export type Document<T extends KvValue> = {
-  id: KvId
-  versionstamp: Deno.KvEntry<T>["versionstamp"]
-  value: T
-}
+export type KvVersionstamp<T extends KvValue> = Deno.KvEntry<T>["versionstamp"]
 
 export type KvKey = [Deno.KvKeyPart, ...Deno.KvKey]
 

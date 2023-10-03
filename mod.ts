@@ -1,6 +1,5 @@
-// Expose kvdex, collection builders and utils functions
-export { kvdex } from "./src/db.ts"
-export * from "./src/utils.ts"
+// Expose kvdex and collection builders
+export { kvdex } from "./src/kvdex.ts"
 export {
   collection,
   indexableCollection,
@@ -12,6 +11,10 @@ export { Collection } from "./src/collection.ts"
 export { IndexableCollection } from "./src/indexable_collection.ts"
 export { LargeCollection } from "./src/large_collection.ts"
 export { AtomicBuilder } from "./src/atomic_builder.ts"
+export { Document } from "./src/document.ts"
+
+// Expose errors
+export * from "./src/errors.ts"
 
 // Expose types
 export type * from "./src/types.ts"

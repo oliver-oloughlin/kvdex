@@ -7,6 +7,6 @@
     "semiColons": false
   },
   "test": {
-    "include": ["./test/tests"]
+    "include": ["./tests"]
   }
 }
