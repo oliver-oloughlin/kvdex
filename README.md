@@ -752,7 +752,8 @@ while (!result || !result.ok) {
 
 ## Document Methods
 
-Document functions.
+These are methods on the Document object which perform actions/mutations on the
+document contents.
 
 ### flat()
 

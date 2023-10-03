@@ -1,7 +1,7 @@
 import type {
   CollectionOptions,
+  CollectionSelector,
   CountAllOptions,
-  DB,
   DeleteAllOptions,
   EnqueueOptions,
   FindOptions,
@@ -57,16 +57,137 @@ import { KVDEX_KEY_PREFIX, UNDELIVERED_KEY_PREFIX } from "./constants.ts"
 export function kvdex<const T extends SchemaDefinition>(
   kv: Deno.Kv,
   schemaDefinition: T,
-): DB<T> {
+) {
   const schema = _createSchema(schemaDefinition, kv) as Schema<T>
-  return {
-    ...schema,
-    atomic: (selector) => new AtomicBuilder(kv, schema, selector(schema)),
-    countAll: async (opts) => await _countAll(kv, schema, opts),
-    deleteAll: async (opts) => await _deleteAll(kv, schema, opts),
-    enqueue: async (data, opts) => await _enqueue(kv, data, opts),
-    listenQueue: async (handler) => await _listenQueue(kv, handler),
-    findUndelivered: async (id, opts) => await _findUndelivered(kv, id, opts),
+  const db = new KvDex(kv, schema)
+  return Object.assign(db, schema)
+}
+
+export class KvDex<const T extends Schema<SchemaDefinition>> {
+  private kv: Deno.Kv
+  private schema: T
+
+  constructor(kv: Deno.Kv, schema: T) {
+    this.kv = kv
+    this.schema = schema
+  }
+
+  /**
+   * Initiates an atomic operation.
+   * Takes a selector function as argument which is used to select an initial collection.
+   *
+   * @example
+   * ```ts
+   * db.atomic(schema => schema.users)
+   * ```
+   *
+   * @param selector - Collection selector function.
+   * @returns A new AtomicBuilder instance.
+   */
+  atomic<const T1 extends KvValue>(selector: CollectionSelector<T, T1>) {
+    return new AtomicBuilder(this.kv, this.schema, selector(this.schema))
+  }
+
+  /**
+   * Count all document entries in the KV store.
+   *
+   * @example
+   * ```ts
+   * // Returns the total number of documents in the KV store across all collections
+   * const count = await db.countAll()
+   * ```
+   *
+   * @param options - Count all options, optional.
+   * @returns Promise resolving to a number representing the total count of documents in the KV store.
+   */
+  async countAll(options?: CountAllOptions) {
+    return await _countAll(this.kv, this.schema, options)
+  }
+
+  /**
+   * Delete all document entries in the KV store.
+   *
+   * @example
+   * ```ts
+   * // Deletes all documents across all collections
+   * await db.deleteAll()
+   * ```
+   * @param options - Delete all options, optional.
+   * @returns Promise resolving to void.
+   */
+  async deleteAll(options?: DeleteAllOptions) {
+    return await _deleteAll(this.kv, this.schema, options)
+  }
+
+  /**
+   * Add data to the database queue to be delivered to the queue listener
+   * via ``db.listenQueue()``. The data will only be received by queue
+   * listeners on the database queue. The method takes an optional options
+   * argument that can be used to set a delivery delay.
+   *
+   * @example
+   * ```ts
+   * // Immediate delivery
+   * await db.enqueue("some data")
+   *
+   * // Delay of 2 seconds before delivery
+   * await db.enqueue("some data", {
+   *   delay: 2_000
+   * })
+   * ```
+   *
+   * @param data - Data to be added to the database queue.
+   * @param options - Enqueue options, optional.
+   */
+  async enqueue(data: KvValue, options?: EnqueueOptions) {
+    return await _enqueue(this.kv, data, options)
+  }
+
+  /**
+   * Listen for data from the database queue that was enqueued with ``db.enqueue()``. Will only receive data that was enqueued to the database queue. Takes a handler function as argument.
+   *
+   * @example
+   * ```ts
+   * // Prints the data to console when recevied
+   * db.listenQueue((data) => console.log(data))
+   *
+   * // Sends post request when data is received
+   * db.listenQueue(async (data) => {
+   *   const dataBody = JSON.stringify(data)
+   *
+   *   const res = await fetch("...", {
+   *     method: "POST",
+   *     body: dataBody
+   *   })
+   *
+   *   console.log("POSTED:", dataBody, res.ok)
+   * })
+   * ```
+   *
+   * @param handler - Message handler function.
+   */
+  async listenQueue(handler: QueueMessageHandler<KvValue>) {
+    return await _listenQueue(this.kv, handler)
+  }
+
+  /**
+   * Find an undelivered document entry by id from the database queue.
+   *
+   * @example
+   * ```ts
+   * const doc1 = await db.findUndelivered("undelivered_id")
+   *
+   * const doc2 = await db.findUndelivered("undelivered_id", {
+   *   consistency: "eventual", // "strong" by default
+   * })
+   * ```
+   *
+   * @param id - Document id.
+   * @param options - Find options, optional.
+   * @returns Document if found, null if not.
+   */
+  async findUndelivered(id: KvId, options?: FindOptions) {
+    return await _findUndelivered(this.kv, id, options)
   }
 }
 
