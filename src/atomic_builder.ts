@@ -292,11 +292,11 @@ export class AtomicBuilder<
    * ```ts
    * db
    *  .atomic(schema => schema.u64s) // Select collection of Deno.KvU64 values
-   *  .sum("num1", 100n)
+   *  .min("num1", 100n)
    * ```
    *
    * @param id - Id of document that contains the value to be updated.
-   * @param value - The value to add to the document value.
+   * @param value - The value to compare with the existing value.
    * @returns Current AtomicBuilder instance.
    */
   min(id: KvId, value: T2 extends Deno.KvU64 ? bigint : never) {
@@ -319,11 +319,11 @@ export class AtomicBuilder<
    * ```ts
    * db
    *  .atomic(schema => schema.u64s) // Select collection of Deno.KvU64 values
-   *  .sum("num1", 100n)
+   *  .max("num1", 100n)
    * ```
    *
    * @param id - Id of document that contains the value to be updated.
-   * @param value - The value to add to the document value.
+   * @param value - The value to compare with the existing value.
    * @returns Current AtomicBuilder instance.
    */
   max(id: KvId, value: T2 extends Deno.KvU64 ? bigint : never) {
