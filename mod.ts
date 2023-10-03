@@ -7,6 +7,7 @@ export {
 } from "./src/collection_builder.ts"
 
 // Expose classes
+export { KvDex } from "./src/kvdex.ts"
 export { Collection } from "./src/collection.ts"
 export { IndexableCollection } from "./src/indexable_collection.ts"
 export { LargeCollection } from "./src/large_collection.ts"
