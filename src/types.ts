@@ -2,6 +2,30 @@ import type { Collection } from "./collection.ts"
 import type { LargeCollection } from "./large_collection.ts"
 import type { Document } from "./document.ts"
 
+// Utility Types
+export type CollectionBuilderFn = (
+  kv: Deno.Kv,
+  key: KvKey,
+) => Collection<KvValue, CollectionOptions<KvValue>>
+
+export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
+
+export type KeysOfThatExtend<T1, T2> = keyof {
+  [K in keyof T1 as T1[K] extends T2 ? K : never]: unknown
+}
+
+export type KeysOfThatDontExtend<T1, T2> = keyof {
+  [K in keyof T1 as T1[K] extends T2 ? never : K]: unknown
+}
+
+export type CommitResult<T1 extends KvValue> = {
+  ok: true
+  versionstamp: Document<T1>["versionstamp"]
+  id: KvId
+}
+
+export type IdGenerator<T extends KvValue> = (data: T) => KvId
+
 // Atomic Builder Types
 export type CollectionSelector<
   T1 extends Schema<SchemaDefinition>,
@@ -68,8 +92,6 @@ export type AtomicSetOptions = NonNullable<
 >
 
 // Collection Types
-export type IdGenerator<T extends KvValue> = (data: T) => KvId
-
 export type CollectionOptions<T extends KvValue> = {
   /**
    * Set a custom function for automatic id generation.
@@ -80,40 +102,6 @@ export type CollectionOptions<T extends KvValue> = {
 export type CollectionKeys = {
   baseKey: KvKey
   idKey: KvKey
-}
-
-export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
-  retry?: number
-}
-
-export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
-  /**
-   * Filter documents based on predicate.
-   *
-   * @param doc - Document
-   * @returns true or false
-   */
-  filter?: (doc: Document<T>) => boolean
-
-  startId?: KvId
-
-  endId?: KvId
-}
-
-export type CountOptions<T extends KvValue> =
-  & CountAllOptions
-  & Pick<ListOptions<T>, "filter">
-
-export type FindOptions = NonNullable<Parameters<Deno.Kv["get"]>[1]>
-
-export type FindManyOptions = NonNullable<Parameters<Deno.Kv["getMany"]>[1]>
-
-export type UpdateManyOptions<T extends KvValue> = ListOptions<T> & SetOptions
-
-export type CommitResult<T1 extends KvValue> = {
-  ok: true
-  versionstamp: Document<T1>["versionstamp"]
-  id: KvId
 }
 
 // Indexable Collection Types
@@ -128,17 +116,7 @@ export type IndexableCollectionKeys = CollectionKeys & {
   secondaryIndexKey: KvKey
 }
 
-export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
-
 export type IndexType = "primary" | "secondary"
-
-export type KeysOfThatExtend<T1, T2> = keyof {
-  [K in keyof T1 as T1[K] extends T2 ? K : never]: unknown
-}
-
-export type KeysOfThatDontExtend<T1, T2> = keyof {
-  [K in keyof T1 as T1[K] extends T2 ? never : K]: unknown
-}
 
 export type IndexRecord<T extends Model> = {
   [key in KeysOfThatExtend<T, KvId>]?: IndexType
@@ -167,12 +145,40 @@ export type LargeDocumentEntry = {
   ids: KvId[]
 }
 
-// DB Types
-export type CollectionBuilderFn = (
-  kv: Deno.Kv,
-  key: KvKey,
-) => Collection<KvValue, CollectionOptions<KvValue>>
+// Method Option types
+export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
+  retry?: number
+}
 
+export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
+  /**
+   * Filter documents based on predicate.
+   *
+   * @param doc - Document
+   * @returns true or false
+   */
+  filter?: (doc: Document<T>) => boolean
+
+  startId?: KvId
+
+  endId?: KvId
+}
+
+export type CountOptions<T extends KvValue> =
+  & CountAllOptions
+  & Pick<ListOptions<T>, "filter">
+
+export type FindOptions = NonNullable<Parameters<Deno.Kv["get"]>[1]>
+
+export type FindManyOptions = NonNullable<Parameters<Deno.Kv["getMany"]>[1]>
+
+export type UpdateManyOptions<T extends KvValue> = ListOptions<T> & SetOptions
+
+export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
+
+export type DeleteAllOptions = Pick<Deno.KvListOptions, "consistency">
+
+// Schema Types
 export type SchemaDefinition = {
   [key: string]: SchemaDefinition | CollectionBuilderFn
 }
@@ -182,10 +188,6 @@ export type Schema<T extends SchemaDefinition> = {
     : T[K] extends CollectionBuilderFn ? ReturnType<T[K]>
     : never
 }
-
-export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
-
-export type DeleteAllOptions = Pick<Deno.KvListOptions, "consistency">
 
 // Queue Types
 export type QueueMessage<T extends KvValue> = {
@@ -226,7 +228,7 @@ export type PreparedEnqueue<T extends KvValue> = {
   options: DenoKvEnqueueOptions
 }
 
-// KV Types
+// Data Types
 export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T> : T
 
 export type FlatDocumentData<T extends KvValue> =
@@ -243,6 +245,7 @@ export type DocumentData<T extends KvValue> = {
   readonly value: T
 }
 
+// KV Types
 export type KvVersionstamp<T extends KvValue> = Deno.KvEntry<T>["versionstamp"]
 
 export type KvKey = [Deno.KvKeyPart, ...Deno.KvKey]
