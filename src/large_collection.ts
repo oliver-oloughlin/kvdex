@@ -1,13 +1,12 @@
 import { Collection } from "./collection.ts"
 import {
-  COLLECTION_ID_KEY_SUFFIX,
-  COLLECTION_SEGMENT_KEY_SUFFIX,
+  ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   LARGE_COLLECTION_STRING_LIMIT,
+  SEGMENT_KEY_PREFIX,
 } from "./constants.ts"
 import type {
   CommitResult,
-  Document,
   FindManyOptions,
   FindOptions,
   KvId,
@@ -26,7 +25,9 @@ import {
   getDocumentId,
   kvGetMany,
   useAtomics,
-} from "./utils.internal.ts"
+} from "./utils.ts"
+import { Document } from "./document.ts"
+import { CorruptedDocumentDataError } from "./errors.ts"
 
 export class LargeCollection<
   const T1 extends LargeKvValue,
@@ -57,12 +58,12 @@ export class LargeCollection<
       idKey: extendKey(
         [KVDEX_KEY_PREFIX],
         ...key,
-        COLLECTION_ID_KEY_SUFFIX,
+        ID_KEY_PREFIX,
       ),
       segmentKey: extendKey(
         [KVDEX_KEY_PREFIX],
         ...key,
-        COLLECTION_SEGMENT_KEY_SUFFIX,
+        SEGMENT_KEY_PREFIX,
       ),
     }
   }
@@ -328,7 +329,7 @@ export class LargeCollection<
     )
 
     if (jsonParts.length !== docEntries.length) {
-      throw new Error(
+      throw new CorruptedDocumentDataError(
         `Corrupted document data - some JSON parts are missing
         JSON parts: ${jsonParts}
         `,
@@ -339,14 +340,14 @@ export class LargeCollection<
 
     try {
       // Create and return document
-      return {
+      return new Document<T1>({
         id,
-        value: JSON.parse(json) as T1,
+        value: JSON.parse(json),
         versionstamp,
-      }
+      })
     } catch (_e) {
       // Throw if JSON.parse fails
-      throw new Error(
+      throw new CorruptedDocumentDataError(
         `Corrupted document data - failed to parse JSON
         JSON: ${json}
         `,

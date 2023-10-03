@@ -3,7 +3,6 @@ import type {
   CountAllOptions,
   DB,
   DeleteAllOptions,
-  Document,
   EnqueueOptions,
   FindOptions,
   KvId,
@@ -14,14 +13,15 @@ import type {
   SchemaDefinition,
 } from "./types.ts"
 import { Collection } from "./collection.ts"
+import { Document } from "./document.ts"
 import {
   allFulfilled,
   extendKey,
   parseQueueMessage,
   prepareEnqueue,
-} from "./utils.internal.ts"
+} from "./utils.ts"
 import { AtomicBuilder } from "./atomic_builder.ts"
-import { KVDEX_KEY_PREFIX, UNDELIVERED_KEY_SUFFIX } from "./constants.ts"
+import { KVDEX_KEY_PREFIX, UNDELIVERED_KEY_PREFIX } from "./constants.ts"
 
 /**
  * Create a new database instance.
@@ -222,7 +222,7 @@ async function _findUndelivered<T extends KvValue = KvValue>(
   options?: FindOptions,
 ) {
   // Create document key, get document entry
-  const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_SUFFIX, id)
+  const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id)
   const result = await kv.get<T>(key, options)
 
   // If no entry exists, return null
@@ -230,13 +230,10 @@ async function _findUndelivered<T extends KvValue = KvValue>(
     return null
   }
 
-  // Create the document
-  const doc: Document<T> = {
+  // Return document
+  return new Document<T>({
     id,
     versionstamp: result.versionstamp,
     value: result.value,
-  }
-
-  // Return the document
-  return doc
+  })
 }

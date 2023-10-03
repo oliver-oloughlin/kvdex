@@ -16,7 +16,7 @@ on:
 
 permissions:
   contents: read
-
+ 
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -37,4 +37,4 @@ jobs:
         run: deno lint
 
       - name: Run tests
-        run: deno task test
+        run: deno test -A --unstable

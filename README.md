@@ -59,8 +59,8 @@ much of the native functionality as possible, such as atomic operations.
   - [Atomic Operations](#atomic-operations)
     - [Without checking](#without-checking)
     - [With checking](#with-checking)
-  - [Utils](#utils)
-    - [flatten()](#flatten)
+  - [Document Methods](#document-methods)
+    - [flat()](#flat)
   - [Development](#development)
   - [License](#license)
 
@@ -750,22 +750,20 @@ while (!result || !result.ok) {
 }
 ```
 
-## Utils
+## Document Methods
 
-Additional utility functions.
+Document functions.
 
-### flatten()
+### flat()
 
-Flatten documents with a value of type Model. Only flattens the first layer of
-the document, meaning the result will be an object containing: id, versionstamp
-and all the entries in the document value.
+Flatten top layer of document data. Returns an object containing the id,
+versionstamp and value entries for documents of type Model, else simply returns
+the document data.
 
 ```ts
-import { flatten } from "https://deno.land/x/kvdex/mod.ts"
-
 // We assume the document exists in the KV store
 const doc = await db.users.find(123n)
-const flattened = flatten(doc)
+const flattened = doc.flat()
 
 // Document:
 // {
