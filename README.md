@@ -7,11 +7,9 @@ much of the native functionality as possible, such as atomic operations.
 
 ## Highlights
 
-- CRUD operations for selected and ranged documents with strict type
-  enforcement.
+- CRUD operations for selected and ranged documents with strong typing.
 - Primary (unique) and secondary (non-unique) indexing.
-- Automatically segmented storage for large objects that exceed the native size
-  limit.
+- Segmented storage for large objects that exceed the native size limit.
 - Support for pagination and filtering.
 - Message queues at database and collection level.
 - Support for atomic operations.
