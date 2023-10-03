@@ -1,31 +1,46 @@
-import { collection, Document, kvdex } from "../../mod.ts"
-import { ID_KEY_PREFIX, KVDEX_KEY_PREFIX } from "../../src/constants.ts"
+import { Document, indexableCollection, kvdex } from "../../mod.ts"
+import {
+  ID_KEY_PREFIX,
+  KVDEX_KEY_PREFIX,
+  PRIMARY_INDEX_KEY_PREFIX,
+  SECONDARY_INDEX_KEY_PREFIX,
+} from "../../src/constants.ts"
 import { extendKey, keyEq } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
 import { mockUser1 } from "../mocks.ts"
 import { User } from "../models.ts"
 import { generateUsers, useDb, useKv } from "../utils.ts"
 
-Deno.test("collection - properties", async (t) => {
+Deno.test("indexable_collection - properties", async (t) => {
   await t.step("Keys should have the correct prefixes", async () => {
     await useDb((db) => {
-      const baseKey = db.users._keys.baseKey
-      const idKey = db.users._keys.idKey
-      const prefix = extendKey([KVDEX_KEY_PREFIX], "users")
+      const baseKey = db.i_users._keys.baseKey
+      const idKey = db.i_users._keys.idKey
+      const primaryIndexKey = db.i_users._keys.primaryIndexKey
+      const secondaryIndexKey = db.i_users._keys.secondaryIndexKey
+      const prefix = extendKey([KVDEX_KEY_PREFIX], "i_users")
 
       assert(keyEq(baseKey, prefix))
       assert(keyEq(idKey, extendKey(prefix, ID_KEY_PREFIX)))
+      assert(
+        keyEq(primaryIndexKey, extendKey(prefix, PRIMARY_INDEX_KEY_PREFIX)),
+      )
+      assert(
+        keyEq(secondaryIndexKey, extendKey(prefix, SECONDARY_INDEX_KEY_PREFIX)),
+      )
     })
   })
 
   await t.step("Should generate ids with custom id generator", async () => {
     await useKv((kv) => {
       const db = kvdex(kv, {
-        users1: collection<User>().build({
+        users1: indexableCollection<User>().build({
           idGenerator: () => Math.random(),
+          indices: {},
         }),
-        users2: collection<User>().build({
+        users2: indexableCollection<User>().build({
           idGenerator: (data) => data.username,
+          indices: {},
         }),
       })
 
@@ -40,13 +55,13 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select using pagination", async () => {
     await useDb(async (db) => {
       const users = generateUsers(1_000)
-      const crs = await db.users.addMany(users)
+      const crs = await db.i_users.addMany(users)
       assert(crs.every((cr) => cr.ok))
 
       const selected: Document<User>[] = []
       let cursor: string | undefined = undefined
       do {
-        const query = await db.users.getMany({
+        const query = await db.i_users.getMany({
           cursor,
           limit: users.length / 10,
         })
@@ -66,14 +81,14 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select filtered", async () => {
     await useDb(async (db) => {
       const users = generateUsers(10)
-      const crs = await db.users.addMany(users)
-      const count1 = await db.users.count()
+      const crs = await db.i_users.addMany(users)
+      const count1 = await db.i_users.count()
       assert(crs.every((cr) => cr.ok))
       assert(count1 === users.length)
 
       const sliced = users.slice(5, 7)
 
-      const { result } = await db.users.getMany({
+      const { result } = await db.i_users.getMany({
         filter: (doc) =>
           sliced.map((user) => user.username).includes(
             doc.value.username,
@@ -92,13 +107,13 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select in reverse", async () => {
     await useDb(async (db) => {
       const users = generateUsers(10)
-      const crs = await db.users.addMany(users)
-      const count1 = await db.users.count()
+      const crs = await db.i_users.addMany(users)
+      const count1 = await db.i_users.count()
       assert(crs.every((cr) => cr.ok))
       assert(count1 === users.length)
 
-      const query1 = await db.users.getMany()
-      const query2 = await db.users.getMany({ reverse: true })
+      const query1 = await db.i_users.getMany()
+      const query2 = await db.i_users.getMany({ reverse: true })
 
       assert(
         JSON.stringify(query1.result) ===
@@ -110,15 +125,15 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select from start id", async () => {
     await useDb(async (db) => {
       const users = generateUsers(10)
-      const crs = await db.users.addMany(users)
-      const count1 = await db.users.count()
+      const crs = await db.i_users.addMany(users)
+      const count1 = await db.i_users.count()
       assert(crs.every((cr) => cr.ok))
       assert(count1 === users.length)
 
       const index = 5
 
-      const query1 = await db.users.getMany()
-      const query2 = await db.users.getMany({
+      const query1 = await db.i_users.getMany()
+      const query2 = await db.i_users.getMany({
         startId: query1.result.at(index)?.id,
       })
 
@@ -134,15 +149,15 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select until end id", async () => {
     await useDb(async (db) => {
       const users = generateUsers(10)
-      const crs = await db.users.addMany(users)
-      const count1 = await db.users.count()
+      const crs = await db.i_users.addMany(users)
+      const count1 = await db.i_users.count()
       assert(crs.every((cr) => cr.ok))
       assert(count1 === users.length)
 
       const index = 5
 
-      const query1 = await db.users.getMany()
-      const query2 = await db.users.getMany({
+      const query1 = await db.i_users.getMany()
+      const query2 = await db.i_users.getMany({
         endId: query1.result.at(index)?.id,
       })
 
@@ -158,16 +173,16 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select from start id to end id", async () => {
     await useDb(async (db) => {
       const users = generateUsers(10)
-      const crs = await db.users.addMany(users)
-      const count1 = await db.users.count()
+      const crs = await db.i_users.addMany(users)
+      const count1 = await db.i_users.count()
       assert(crs.every((cr) => cr.ok))
       assert(count1 === users.length)
 
       const index1 = 5
       const index2 = 7
 
-      const query1 = await db.users.getMany()
-      const query2 = await db.users.getMany({
+      const query1 = await db.i_users.getMany()
+      const query2 = await db.i_users.getMany({
         startId: query1.result.at(index1)?.id,
         endId: query1.result.at(index2)?.id,
       })

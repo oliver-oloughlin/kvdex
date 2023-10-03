@@ -45,6 +45,7 @@ export type AtomicMutation<T extends KvValue> =
     | {
       type: "set"
       value: T
+      expireIn?: number
     }
     | {
       type: "sum"

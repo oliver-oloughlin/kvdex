@@ -284,6 +284,60 @@ export class AtomicBuilder<
   }
 
   /**
+   * Sets the document value to the minimum of the existing and the given value.
+   *
+   * min only works for documents of type Deno.KvU64 and will throw an error for documents of any other type.
+   *
+   * @example
+   * ```ts
+   * db
+   *  .atomic(schema => schema.u64s) // Select collection of Deno.KvU64 values
+   *  .sum("num1", 100n)
+   * ```
+   *
+   * @param id - Id of document that contains the value to be updated.
+   * @param value - The value to add to the document value.
+   * @returns Current AtomicBuilder instance.
+   */
+  min(id: KvId, value: T2 extends Deno.KvU64 ? bigint : never) {
+    // Create id key from id and collection id key
+    const idKey = extendKey(this.collection._keys.idKey, id)
+
+    // Add min operation to atomic ops list
+    this.operations.atomic.min(idKey, value)
+
+    // Return current AtomicBuilder
+    return this
+  }
+
+  /**
+   * Sets the document value to the maximum of the existing and the given value.
+   *
+   * max only works for documents of type Deno.KvU64 and will throw an error for documents of any other type.
+   *
+   * @example
+   * ```ts
+   * db
+   *  .atomic(schema => schema.u64s) // Select collection of Deno.KvU64 values
+   *  .sum("num1", 100n)
+   * ```
+   *
+   * @param id - Id of document that contains the value to be updated.
+   * @param value - The value to add to the document value.
+   * @returns Current AtomicBuilder instance.
+   */
+  max(id: KvId, value: T2 extends Deno.KvU64 ? bigint : never) {
+    // Create id key from id and collection id key
+    const idKey = extendKey(this.collection._keys.idKey, id)
+
+    // Add max operation to atomic ops list
+    this.operations.atomic.max(idKey, value)
+
+    // Return current AtomicBuilder
+    return this
+  }
+
+  /**
    * Specifies atomic mutations to be formed on documents.
    *
    * @example

@@ -1,5 +1,5 @@
 // Expose kvdex and collection builders
-export { kvdex } from "./src/db.ts"
+export { kvdex } from "./src/kvdex.ts"
 export {
   collection,
   indexableCollection,

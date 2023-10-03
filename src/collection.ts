@@ -209,6 +209,8 @@ export class Collection<
    *
    * Sets a new document entry if no matching id already exists, overwrites the exisiting entry if it exists.
    *
+   * Does not overwrite existing entries if there is a primary index collision.
+   *
    * @example
    * ```ts
    * const result = await db.users.write("anders", {
