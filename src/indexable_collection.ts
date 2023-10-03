@@ -1,4 +1,4 @@
-import { Collection } from "./Collection.ts"
+import { Collection } from "./collection.ts"
 import {
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
@@ -32,7 +32,7 @@ import {
   getDocumentId,
   setIndices,
 } from "./utils.ts"
-import { Document } from "./Document.ts"
+import { Document } from "./document.ts"
 
 /**
  * Represents a collection of object documents stored in the KV store.

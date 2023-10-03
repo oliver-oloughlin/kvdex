@@ -1,4 +1,4 @@
-import { Collection } from "./Collection.ts"
+import { Collection } from "./collection.ts"
 import {
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,

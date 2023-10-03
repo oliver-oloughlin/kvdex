@@ -1,7 +1,7 @@
 import { KvKey } from "../mod.ts"
-import { Collection } from "./Collection.ts"
-import { IndexableCollection } from "./IndexableCollection.ts"
-import { LargeCollection } from "./LargeCollection.ts"
+import { Collection } from "./collection.ts"
+import { IndexableCollection } from "./indexable_collection.ts"
+import { LargeCollection } from "./large_collection.ts"
 import type {
   CollectionOptions,
   IndexableCollectionOptions,

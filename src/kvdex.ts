@@ -12,7 +12,7 @@ import type {
   Schema,
   SchemaDefinition,
 } from "./types.ts"
-import { Collection } from "./Collection.ts"
+import { Collection } from "./collection.ts"
 import { Document } from "./Document.ts"
 import {
   allFulfilled,

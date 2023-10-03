@@ -4,7 +4,7 @@ import {
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
-import type { IndexableCollection } from "./IndexableCollection.ts"
+import type { IndexableCollection } from "./indexable_collection.ts"
 import type {
   AtomicSetOptions,
   EnqueueOptions,

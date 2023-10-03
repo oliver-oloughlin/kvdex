@@ -1,6 +1,6 @@
-import type { Collection } from "./Collection.ts"
+import type { Collection } from "./collection.ts"
 import type { AtomicBuilder } from "./atomic_builder.ts"
-import type { LargeCollection } from "./LargeCollection.ts"
+import type { LargeCollection } from "./large_collection.ts"
 import type { Document } from "./Document.ts"
 
 // Atomic Builder Types

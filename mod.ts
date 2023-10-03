@@ -7,9 +7,9 @@ export {
 } from "./src/collection_builder.ts"
 
 // Expose classes
-export { Collection } from "./src/Collection.ts"
-export { IndexableCollection } from "./src/IndexableCollection.ts"
-export { LargeCollection } from "./src/LargeCollection.ts"
+export { Collection } from "./src/collection.ts"
+export { IndexableCollection } from "./src/indexable_collection.ts"
+export { LargeCollection } from "./src/large_collection.ts"
 export { AtomicBuilder } from "./src/atomic_builder.ts"
 export { Document } from "./src/Document.ts"
 
