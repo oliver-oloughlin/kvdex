@@ -1,9 +1,9 @@
-import { collection, kvdex, KvValue, QueueMessage } from "../../mod.ts"
+import { collection, kvdex, QueueMessage, QueueValue } from "../../mod.ts"
 import {
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "../../src/constants.ts"
-import { extendKey } from "../../src/utils.ts"
+import { createHandlerId, extendKey } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
 import { sleep, useKv } from "../utils.ts"
 
@@ -17,15 +17,17 @@ Deno.test("collection - listenQueue", async (t) => {
         numbers: collection<number>().build(),
       })
 
+      const handlerId = createHandlerId(db.numbers._keys.baseKey, undefined)
+
       let assertion = false
 
       db.numbers.listenQueue((msgData) => {
         assertion = msgData === data
       })
 
-      const msg: QueueMessage<KvValue> = {
-        collectionKey: db.numbers._keys.baseKey,
-        data,
+      const msg: QueueMessage<QueueValue> = {
+        __handlerId__: handlerId,
+        __data__: data,
       }
 
       await kv.enqueue(msg, {

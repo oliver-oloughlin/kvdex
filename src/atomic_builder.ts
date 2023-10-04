@@ -14,6 +14,7 @@ import type {
   KvValue,
   Model,
   Operations,
+  QueueValue,
   Schema,
   SchemaDefinition,
 } from "./types.ts"
@@ -437,9 +438,14 @@ export class AtomicBuilder<
     return this
   }
 
-  enqueue(data: KvValue, options?: EnqueueOptions) {
+  enqueue(data: QueueValue, options?: EnqueueOptions) {
     // Prepare and add enqueue operation
-    const prep = prepareEnqueue(this.collection._keys.baseKey, data, options)
+    const prep = prepareEnqueue(
+      this.collection._keys.baseKey,
+      data,
+      options,
+    )
+
     this.operations.atomic.enqueue(prep.msg, prep.options)
 
     // Return current AtomicBuilder

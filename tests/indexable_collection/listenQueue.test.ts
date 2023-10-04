@@ -1,9 +1,14 @@
-import { indexableCollection, kvdex, KvValue, QueueMessage } from "../../mod.ts"
+import {
+  indexableCollection,
+  kvdex,
+  QueueMessage,
+  QueueValue,
+} from "../../mod.ts"
 import {
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "../../src/constants.ts"
-import { extendKey } from "../../src/utils.ts"
+import { createHandlerId, extendKey } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
 import { User } from "../models.ts"
 import { sleep, useKv } from "../utils.ts"
@@ -18,15 +23,17 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
         i_users: indexableCollection<User>().build({ indices: {} }),
       })
 
+      const handlerId = createHandlerId(db.i_users._keys.baseKey, undefined)
+
       let assertion = false
 
       db.i_users.listenQueue((msgData) => {
         assertion = msgData === data
       })
 
-      const msg: QueueMessage<KvValue> = {
-        collectionKey: db.i_users._keys.baseKey,
-        data,
+      const msg: QueueMessage<QueueValue> = {
+        __handlerId__: handlerId,
+        __data__: data,
       }
 
       await kv.enqueue(msg, {

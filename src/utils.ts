@@ -1,7 +1,6 @@
 import {
   ATOMIC_OPERATION_MUTATION_LIMIT,
   GET_MANY_KEY_LIMIT,
-  KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
 import type { IndexableCollection } from "./indexable_collection.ts"
@@ -19,6 +18,7 @@ import type {
   ParsedQueueMessage,
   PreparedEnqueue,
   QueueMessage,
+  QueueValue,
   UpdateData,
 } from "./types.ts"
 
@@ -343,42 +343,6 @@ export async function useAtomics<const T>(
 }
 
 /**
- * Parse incoming queue message.
- *
- * @param msg - Queue message.
- * @returns Parsed queue message.
- */
-export function parseQueueMessage<T extends KvValue>(
-  msg: unknown,
-): ParsedQueueMessage<T> {
-  // Check for no message
-  if (!msg) {
-    return {
-      ok: false,
-    }
-  }
-
-  // Cast message as QueueMessage
-  const _msg = msg as QueueMessage<T>
-
-  // Check correctness of message parts
-  if (
-    typeof _msg.data === "undefined" ||
-    (!Array.isArray(_msg.collectionKey) && _msg.collectionKey !== null)
-  ) {
-    return {
-      ok: false,
-    }
-  }
-
-  // Return parsed queue message
-  return {
-    ok: true,
-    msg: _msg,
-  }
-}
-
-/**
  * Get a list of result values from a list of promises.
  * Only returns the values of fulfilled promises.
  *
@@ -407,20 +371,20 @@ export async function allFulfilled<const T>(
  * @param options - Enqueue options
  * @returns Prepared enqueue
  */
-export function prepareEnqueue(
-  key: KvKey | null,
-  data: KvValue,
+export function prepareEnqueue<const T extends QueueValue>(
+  key: KvKey,
+  data: T,
   options: EnqueueOptions | undefined,
-): PreparedEnqueue<KvValue> {
+): PreparedEnqueue<T> {
   // Create queue message
-  const msg: QueueMessage<KvValue> = {
-    collectionKey: key,
-    data,
+  const msg: QueueMessage<T> = {
+    __data__: data,
+    __handlerId__: createHandlerId(key, options?.topic),
   }
 
   // Create keys if undelivered
   const keysIfUndelivered = options?.idsIfUndelivered?.map((id) =>
-    extendKey(key ?? [KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id)
+    extendKey(key, UNDELIVERED_KEY_PREFIX, id)
   )
 
   // Return prepared enqueue
@@ -433,22 +397,82 @@ export function prepareEnqueue(
   }
 }
 
-export function createListSelector(
+/**
+ * Create a handler id from a key and topic.
+ *
+ * @param key - Kv key.
+ * @param topic - Queue topic.
+ * @returns A handler id.
+ */
+export function createHandlerId(
+  key: KvKey,
+  topic: string | undefined,
+) {
+  return `${JSON.stringify(key)}${topic ?? ""}`
+}
+
+/**
+ * Parse incoming queue message.
+ *
+ * @param msg - Queue message.
+ * @returns Parsed queue message.
+ */
+export function parseQueueMessage<T extends QueueValue>(
+  msg: unknown,
+): ParsedQueueMessage<T> {
+  // Check for no message
+  if (!msg) {
+    return {
+      ok: false,
+    }
+  }
+
+  // Cast message as QueueMessage
+  const _msg = msg as QueueMessage<T>
+
+  // Check correctness of message parts
+  if (
+    !_msg.__handlerId__ || _msg.__data__ === undefined
+  ) {
+    return {
+      ok: false,
+    }
+  }
+
+  // Return parsed queue message
+  return {
+    ok: true,
+    msg: _msg,
+  }
+}
+
+/**
+ * Create a list selector from a prefix key and list options.
+ *
+ * @param prefixKey - Key prefix.
+ * @param options - List options.
+ * @returns A list selector.
+ */
+export function createListSelector<const T extends KvValue>(
   prefixKey: KvKey,
-  options: Pick<ListOptions<KvValue>, "startId" | "endId"> | undefined,
+  options: ListOptions<T> | undefined,
 ): Deno.KvListSelector {
+  // Create start key
   const start = typeof options?.startId !== "undefined"
     ? [...prefixKey, options.startId!]
     : undefined
 
+  // Create end key
   const end = typeof options?.endId !== "undefined"
     ? [...prefixKey, options.endId!]
     : undefined
 
+  // Conditionally set prefix key
   const prefix = Array.isArray(start) && Array.isArray(end)
     ? undefined!
     : prefixKey
 
+  // Return list selector
   return {
     prefix,
     start,

@@ -17,21 +17,22 @@ import type {
   KvObject,
   KvValue,
   ListOptions,
+  QueueListenerOptions,
   QueueMessageHandler,
+  QueueValue,
   SetOptions,
   UpdateData,
   UpdateManyOptions,
 } from "./types.ts"
 import {
   allFulfilled,
+  createHandlerId,
   createListSelector,
   extendKey,
   generateId,
   getDocumentId,
   isKvObject,
-  keyEq,
   kvGetMany,
-  parseQueueMessage,
   prepareEnqueue,
 } from "./utils.ts"
 import { Document } from "./document.ts"
@@ -45,7 +46,11 @@ export class Collection<
   const T1 extends KvValue,
   const T2 extends CollectionOptions<T1>,
 > {
+  private queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>
+  private idempotentListener: () => void
+
   protected kv: Deno.Kv
+
   readonly _idGenerator: IdGenerator<KvValue>
   readonly _keys: CollectionKeys
 
@@ -60,7 +65,17 @@ export class Collection<
    *
    * @param options - Collection options.
    */
-  constructor(kv: Deno.Kv, key: KvKey, options?: T2) {
+  constructor(
+    kv: Deno.Kv,
+    key: KvKey,
+    queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+    idempotentListener: () => void,
+    options?: T2,
+  ) {
+    // Set reference to queue handlers and idempotent listener
+    this.queueHandlers = queueHandlers
+    this.idempotentListener = idempotentListener
+
     // Set the KV instance
     this.kv = kv
 
@@ -535,9 +550,15 @@ export class Collection<
    * @param options - Enqueue options, optional.
    * @returns - Promise resolving to Deno.KvCommitResult.
    */
-  async enqueue(data: KvValue, options?: EnqueueOptions) {
-    // Prepare and perform enqueue operation
-    const prep = prepareEnqueue(this._keys.baseKey, data, options)
+  async enqueue(data: QueueValue, options?: EnqueueOptions) {
+    // Prepare message and options for enqueue
+    const prep = prepareEnqueue(
+      this._keys.baseKey,
+      data,
+      options,
+    )
+
+    // Enqueue message with options
     return await this.kv.enqueue(prep.msg, prep.options)
   }
 
@@ -565,32 +586,23 @@ export class Collection<
    * ```
    *
    * @param handler - Message handler function.
+   * @param options - Queue listener options.
+   * @returns void.
    */
-  async listenQueue<T extends KvValue = KvValue>(
+  listenQueue<T extends QueueValue = QueueValue>(
     handler: QueueMessageHandler<T>,
+    options?: QueueListenerOptions,
   ) {
-    // Listen for kv queue messages
-    await this.kv.listenQueue(async (msg) => {
-      // Parse queue message
-      const parsed = parseQueueMessage<T>(msg)
+    // Create handler id
+    const handlerId = createHandlerId(this._keys.baseKey, options?.topic)
 
-      // If failed parse, ignore
-      if (!parsed.ok) {
-        return
-      }
+    // Add new handler to specified handlers
+    const handlers = this.queueHandlers.get(handlerId) ?? []
+    handlers.push(handler as QueueMessageHandler<QueueValue>)
+    this.queueHandlers.set(handlerId, handlers)
 
-      // Destruct queue message
-      const { collectionKey, data } = parsed.msg
-
-      // Check that collection key is set and matches current collection context
-      if (
-        Array.isArray(collectionKey) &&
-        keyEq(collectionKey, this._keys.baseKey)
-      ) {
-        // Invoke data handler
-        await handler(data)
-      }
-    })
+    // Activate idempotent listener
+    this.idempotentListener()
   }
 
   /**

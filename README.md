@@ -1,9 +1,10 @@
 # kvdex
 
-`kvdex` is an ORM-like wrapper for Deno KV with zero third-party dependencies.
-It's purpose is to enhance the experience of using Deno's KV store through
-additional features such as indexing and typed collections, while maintaining as
-much of the native functionality as possible, such as atomic operations.
+`kvdex` is a high level abstraction layer for Deno KV with zero third-party
+dependencies. It's purpose is to enhance the experience of using Deno's KV store
+through additional features such as indexing, and strongly typed collections,
+and cron jobs, while maintaining as much of the native functionality as
+possible, like atomic operations and queue listeners.
 
 ## Highlights
 
@@ -11,7 +12,8 @@ much of the native functionality as possible, such as atomic operations.
 - Primary (unique) and secondary (non-unique) indexing.
 - Segmented storage for large objects that exceed the native size limit.
 - Support for pagination and filtering.
-- Message queues at database and collection level.
+- Repeating cron jobs.
+- Message queues at database and collection level with topics.
 - Support for atomic operations.
 
 ## Table of Contents
@@ -53,6 +55,7 @@ much of the native functionality as possible, such as atomic operations.
     - [enqueue()](#enqueue-1)
     - [listenQueue()](#listenqueue-1)
     - [findUndelivered()](#findundelivered-1)
+    - [cron()](#cron)
     - [atomic()](#atomic)
   - [Atomic Operations](#atomic-operations)
     - [Without checking](#without-checking)
@@ -432,18 +435,19 @@ const count = await db.users.count({
 
 ### enqueue()
 
-Add data (of any type) to the collection queue to be delivered to the queue
-listener via `db.collection.listenQueue()`. The data will only be received by
-queue listeners on the specified collection. The method takes an optional
-options argument that can be used to set a delivery delay.
+Add data to the collection queue to be delivered to the queue listener via
+`db.collection.listenQueue()`. The data will only be received by queue listeners
+on the specified collection and topic. The method takes an optional options
+argument that can be used to set a delivery delay and topic.
 
 ```ts
 // Immediate delivery
 await db.users.enqueue("some data")
 
 // Delay of 2 seconds before delivery
-await db.users.enqueue("some data", {
+await db.users.enqueue("cake", {
   delay: 2_000,
+  topic: "food",
 })
 ```
 
@@ -451,7 +455,8 @@ await db.users.enqueue("some data", {
 
 Listen for data from the collection queue that was enqueued with
 `db.collection.enqueue()`. Will only receive data that was enqueued to the
-specific collection queue. Takes a handler function as argument.
+specific collection queue and topic. Expects a handler function as argument, as
+well as optional options that can be used to set the topic.
 
 ```ts
 // Prints the data to console when recevied
@@ -463,11 +468,11 @@ db.users.listenQueue(async (data) => {
 
   const res = await fetch("...", {
     method: "POST",
-    body: dataBody,
+    body: data,
   })
 
   console.log("POSTED:", dataBody, res.ok)
-})
+}, { topic: "posts" })
 ```
 
 ## Indexable Collection Methods
@@ -594,26 +599,28 @@ await db.deleteAll()
 
 ### enqueue()
 
-Add data (of any type) to the database queue to be delivered to the queue
-listener via `db.listenQueue()`. The data will only be received by queue
-listeners on the database queue. The method takes an optional options argument
-that can be used to set a delivery delay.
+Add data to the database queue to be delivered to the queue listener via
+`db.listenQueue()`. The data will only be received by queue listeners on the
+database queue and specified topic. The method takes an optional options
+argument that can be used to set a delivery delay and topic.
 
 ```ts
 // Immediate delivery
 await db.enqueue("some data")
 
 // Delay of 2 seconds before delivery
-await db.enqueue("some data", {
+await db.enqueue("cake", {
   delay: 2_000,
+  topic: "food",
 })
 ```
 
 ### listenQueue()
 
 Listen for data from the database queue that was enqueued with `db.enqueue()`.
-Will only receive data that was enqueued to the database queue. Takes a handler
-function as argument.
+Will only receive data that was enqueued to the database queue and specified
+topic. Expects a handler function as argument, as well as optional options that
+can be used to set the topic.
 
 ```ts
 // Prints the data to console when recevied
@@ -625,11 +632,11 @@ db.listenQueue(async (data) => {
 
   const res = await fetch("...", {
     method: "POST",
-    body: dataBody,
+    body: data,
   })
 
   console.log("POSTED:", dataBody, res.ok)
-})
+}, { topic: "posts" })
 ```
 
 ### findUndelivered()
@@ -643,6 +650,26 @@ const doc1 = await db.findUndelivered("undelivered_id")
 
 const doc2 = await db.findUndelivered("undelivered_id", {
   consistency: "eventual", // "strong" by default
+})
+```
+
+### cron()
+
+Create a cron job that will run on interval, either indefinitely or until an
+exit condition is met. If no interval is set, the next job will run immediately
+after the previous has finished. Like with queue listeners, there can be
+multiple cron jobs defined.
+
+```ts
+// Will repeat indeefinitely without delay
+db.cron(() => console.log("Hello World!"))
+
+// First job starts with a 10 second delay, after that there is a 5 second delay between jobs
+// Will terminate after the 10th run (count starts at 0), or if the job returns n < 0.25
+db.cron(() => Math.random(), {
+  startDelay: 10_000,
+  interval: 5_000,
+  exit: ({ count, result }) => count >= 10 || result < 0.25,
 })
 ```
 

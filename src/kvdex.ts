@@ -2,13 +2,17 @@ import type {
   CollectionOptions,
   CollectionSelector,
   CountAllOptions,
+  CronMessage,
+  CronOptions,
   DeleteAllOptions,
   EnqueueOptions,
   FindOptions,
   KvId,
   KvKey,
   KvValue,
+  QueueListenerOptions,
   QueueMessageHandler,
+  QueueValue,
   Schema,
   SchemaDefinition,
 } from "./types.ts"
@@ -16,6 +20,7 @@ import { Collection } from "./collection.ts"
 import { Document } from "./document.ts"
 import {
   allFulfilled,
+  createHandlerId,
   extendKey,
   parseQueueMessage,
   prepareEnqueue,
@@ -58,18 +63,57 @@ export function kvdex<const T extends SchemaDefinition>(
   kv: Deno.Kv,
   schemaDefinition: T,
 ) {
-  const schema = _createSchema(schemaDefinition, kv) as Schema<T>
-  const db = new KvDex(kv, schema)
+  let listenerIsActivated = false
+  const queueHandlers = new Map<string, QueueMessageHandler<QueueValue>[]>()
+
+  const idempotentListener = () => {
+    if (listenerIsActivated) {
+      return
+    }
+
+    listenerIsActivated = true
+
+    kv.listenQueue(async (msg) => {
+      const parsed = parseQueueMessage(msg)
+      if (!parsed.ok) {
+        return
+      }
+
+      const { __data__, __handlerId__ } = parsed.msg
+      const handlers = queueHandlers.get(__handlerId__)
+
+      await allFulfilled(handlers?.map((handler) => handler(__data__)) ?? [])
+    })
+  }
+
+  const schema = _createSchema(
+    schemaDefinition,
+    kv,
+    queueHandlers,
+    idempotentListener,
+  ) as Schema<T>
+
+  const db = new KvDex(kv, schema, queueHandlers, idempotentListener)
+
   return Object.assign(db, schema)
 }
 
 export class KvDex<const T extends Schema<SchemaDefinition>> {
   private kv: Deno.Kv
   private schema: T
+  private queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>
+  private idempotentListener: () => void
 
-  constructor(kv: Deno.Kv, schema: T) {
+  constructor(
+    kv: Deno.Kv,
+    schema: T,
+    queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+    idempotentListener: () => void,
+  ) {
     this.kv = kv
     this.schema = schema
+    this.queueHandlers = queueHandlers
+    this.idempotentListener = idempotentListener
   }
 
   /**
@@ -90,6 +134,10 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
 
   /**
    * Count all document entries in the KV store.
+   *
+   * Does not count index entries or segmented entries as additional documents.
+   *
+   * Does not count undelivered queue messages.
    *
    * @example
    * ```ts
@@ -139,8 +187,15 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    * @param data - Data to be added to the database queue.
    * @param options - Enqueue options, optional.
    */
-  async enqueue(data: KvValue, options?: EnqueueOptions) {
-    return await _enqueue(this.kv, data, options)
+  async enqueue(data: QueueValue, options?: EnqueueOptions) {
+    // Prepare and perform enqueue operation
+    const prep = prepareEnqueue(
+      [KVDEX_KEY_PREFIX],
+      data,
+      options,
+    )
+
+    return await this.kv.enqueue(prep.msg, prep.options)
   }
 
   /**
@@ -165,9 +220,22 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    * ```
    *
    * @param handler - Message handler function.
+   * @param options - Queue listener options.
    */
-  async listenQueue(handler: QueueMessageHandler<KvValue>) {
-    return await _listenQueue(this.kv, handler)
+  listenQueue<const T extends QueueValue>(
+    handler: QueueMessageHandler<T>,
+    options?: QueueListenerOptions,
+  ) {
+    // Create handler id
+    const handlerId = createHandlerId([KVDEX_KEY_PREFIX], options?.topic)
+
+    // Add new handler to specified handlers
+    const handlers = this.queueHandlers.get(handlerId) ?? []
+    handlers.push(handler as QueueMessageHandler<QueueValue>)
+    this.queueHandlers.set(handlerId, handlers)
+
+    // Activate idempotent listener
+    this.idempotentListener()
   }
 
   /**
@@ -186,8 +254,109 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    * @param options - Find options, optional.
    * @returns Document if found, null if not.
    */
-  async findUndelivered(id: KvId, options?: FindOptions) {
-    return await _findUndelivered(this.kv, id, options)
+  async findUndelivered<const T extends KvValue>(
+    id: KvId,
+    options?: FindOptions,
+  ) {
+    // Create document key, get document entry
+    const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id)
+    const result = await this.kv.get<T>(key, options)
+
+    // If no entry exists, return null
+    if (result.value === null || result.versionstamp === null) {
+      return null
+    }
+
+    // Return document
+    return new Document<T>({
+      id,
+      versionstamp: result.versionstamp,
+      value: result.value,
+    })
+  }
+
+  /**
+   * Create a cron job that will repeat at a given interval.
+   *
+   * If no interval is set the next job will start immediately after the previous has finished.
+   *
+   * Will repeat indefinitely if no exit predicate is set.
+   *
+   * @example
+   * ```ts
+   * // Will repeat indeefinitely without delay
+   * db.cron(() => console.log("Hello World!"))
+   *
+   * // First job starts with a 10 second delay, after that there is a 5 second delay between jobs
+   * // Will terminate after the 10th run (count starts at 0), or if the job returns n < 0.25
+   * db.cron(() => Math.random(), {
+   *   startDelay: 10_000,
+   *   interval: 5_000,
+   *   exit: ({ count, result }) => count >= 10 || result < 0.25,
+   * })
+   * ```
+   *
+   * @param job - Work that will be run for each job interval.
+   * @param options - Cron options.
+   */
+  async cron<T1>(
+    job: () => T1,
+    options?: CronOptions<Awaited<T1>>,
+  ) {
+    // Create cron handler id
+    const id = crypto.randomUUID()
+
+    // Create cron job enqueuer
+    const enqueue = async (
+      cronMsg: CronMessage,
+      delay: number | undefined,
+    ) => {
+      // Enqueue cron job until delivered
+      for (let i = 0; i < (options?.retries ?? 10); i++) {
+        await this.enqueue(cronMsg, {
+          idsIfUndelivered: [id],
+          delay,
+          topic: id,
+        })
+
+        // Check if message was delivered, break loop if successful
+        const doc = await this.findUndelivered(id)
+
+        if (doc === null) {
+          break
+        }
+      }
+    }
+
+    // Add cron job listener
+    this.listenQueue<CronMessage>(async (msg) => {
+      // Run cron job
+      const result = await job()
+
+      // Check if exit criteria is met, end repeating cron job if true
+      const exit = await options?.exitOn?.(
+        { count: msg.count, result },
+      ) ?? false
+
+      if (exit) {
+        return
+      }
+
+      // Set the next interval
+      const interval = options?.setInterval
+        ? await options?.setInterval!({ count: msg.count, result })
+        : options?.interval
+
+      // Enqueue next cron job
+      await enqueue({
+        count: msg.count + 1,
+      }, interval)
+    }, { topic: id })
+
+    // Enqueue first cron job
+    await enqueue({
+      count: 0,
+    }, options?.startDelay)
   }
 }
 
@@ -202,6 +371,8 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
 function _createSchema<const T extends SchemaDefinition>(
   def: T,
   kv: Deno.Kv,
+  queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+  idempotentListener: () => void,
   treeKey?: KvKey,
 ): Schema<T> {
   // Get all the definition entries
@@ -214,11 +385,14 @@ function _createSchema<const T extends SchemaDefinition>(
 
     // If the entry value is a function => build collection and create collection entry
     if (typeof value === "function") {
-      return [key, value(kv, extendedKey)]
+      return [key, value(kv, extendedKey, queueHandlers, idempotentListener)]
     }
 
     // Create and return schema entry
-    return [key, _createSchema(value, kv, extendedKey)]
+    return [
+      key,
+      _createSchema(value, kv, queueHandlers, idempotentListener, extendedKey),
+    ]
   })
 
   // Create schema object from schema entries
@@ -284,77 +458,4 @@ async function _deleteAll(
       _deleteAll(kv, val, options)
     ),
   )
-}
-
-/**
- * Enqueue data in the database queue.
- *
- * @param kv - Deno KV instance.
- * @param data - Data to be enqueued.
- * @param options - Enqueue options.
- * @returns Promise resolving to void.
- */
-async function _enqueue(kv: Deno.Kv, data: KvValue, options?: EnqueueOptions) {
-  // Prepare and perform enqueue operation
-  const prep = prepareEnqueue(null, data, options)
-  return await kv.enqueue(prep.msg, prep.options)
-}
-
-/**
- * Listen for data in the database queue.
- *
- * @param kv - Deno KV instance.
- * @param handler - Data handler function.
- */
-async function _listenQueue<T extends KvValue>(
-  kv: Deno.Kv,
-  handler: QueueMessageHandler<T>,
-) {
-  // Listen for messages in the kv queue
-  await kv.listenQueue(async (msg) => {
-    // Parse queue message
-    const parsed = parseQueueMessage<T>(msg)
-
-    // If failed parse, ignore
-    if (!parsed.ok) {
-      return
-    }
-
-    // Destruct queue message
-    const { collectionKey, data } = parsed.msg
-
-    // If no collection key, invoke the handler for database queue data.
-    if (!collectionKey) {
-      await handler(data)
-    }
-  })
-}
-
-/**
- * Find an undelivered document entry by id.
- *
- * @param id - Document id.
- * @param options - Find options, optional.
- * @returns Document if found, null if not.
- */
-async function _findUndelivered<T extends KvValue = KvValue>(
-  kv: Deno.Kv,
-  id: KvId,
-  options?: FindOptions,
-) {
-  // Create document key, get document entry
-  const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id)
-  const result = await kv.get<T>(key, options)
-
-  // If no entry exists, return null
-  if (result.value === null || result.versionstamp === null) {
-    return null
-  }
-
-  // Return document
-  return new Document<T>({
-    id,
-    versionstamp: result.versionstamp,
-    value: result.value,
-  })
 }

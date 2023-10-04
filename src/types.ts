@@ -6,6 +6,8 @@ import type { Document } from "./document.ts"
 export type CollectionBuilderFn = (
   kv: Deno.Kv,
   key: KvKey,
+  queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+  idempotentListener: () => void,
 ) => Collection<KvValue, CollectionOptions<KvValue>>
 
 export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
@@ -25,6 +27,53 @@ export type CommitResult<T1 extends KvValue> = {
 }
 
 export type IdGenerator<T extends KvValue> = (data: T) => KvId
+
+// Cron types
+export type CronOptions<T> = {
+  /**
+   * Interval in milliseconds for cron job.
+   *
+   * If not set, job will repeat without delay.
+   */
+  interval?: number
+
+  /** Conditionally set the next interval in milliseconds. */
+  setInterval?: (
+    { count, result }: { count: number; result: T },
+  ) => number | Promise<number>
+
+  /** Exit predicate used to end cron job. */
+  exitOn?: (
+    { count, result }: { count: number; result: T },
+  ) => boolean | Promise<boolean>
+
+  /**
+   * Delay before running the first job.
+   *
+   * If not set, will run first job immediately.
+   */
+  startDelay?: number
+
+  /**
+   * Number of retry attempts upon failed job deliver.
+   *
+   * When all retry attempts are spent the cron job will exit.
+   *
+   * @default 10
+   */
+  retries?: number
+}
+
+export type CronMessage = {
+  count: number
+}
+
+export type ParsedCronMessage = {
+  ok: true
+  msg: CronMessage
+} | {
+  ok: false
+}
 
 // Atomic Builder Types
 export type CollectionSelector<
@@ -178,6 +227,20 @@ export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
 
 export type DeleteAllOptions = Pick<Deno.KvListOptions, "consistency">
 
+export type EnqueueOptions =
+  & Omit<
+    KvEnqueueOptions,
+    "keysIfUndelivered"
+  >
+  & {
+    idsIfUndelivered?: KvId[]
+    topic?: string
+  }
+
+export type QueueListenerOptions = {
+  topic?: string
+}
+
 // Schema Types
 export type SchemaDefinition = {
   [key: string]: SchemaDefinition | CollectionBuilderFn
@@ -190,42 +253,27 @@ export type Schema<T extends SchemaDefinition> = {
 }
 
 // Queue Types
-export type QueueMessage<T extends KvValue> = {
-  collectionKey: KvKey | null
-  data: T
+export type QueueValue = Exclude<KvValue, undefined>
+
+export type QueueMessage<T extends QueueValue> = {
+  __handlerId__: string
+  __data__: T
 }
 
-export type ParsedQueueMessage<T extends KvValue> = {
+export type ParsedQueueMessage<T extends QueueValue> = {
   ok: true
   msg: QueueMessage<T>
 } | {
   ok: false
 }
 
-export type DenoKvEnqueueOptions = NonNullable<
-  Parameters<Deno.Kv["enqueue"]>[1]
->
-
-export type EnqueueOptions =
-  & Omit<
-    DenoKvEnqueueOptions,
-    "keysIfUndelivered"
-  >
-  & {
-    idsIfUndelivered?: KvId[]
-  }
-
 export type EnqueueResult = Awaited<ReturnType<Deno.Kv["enqueue"]>>
 
-export type ListenQueueResult = ReturnType<Deno.Kv["listenQueue"]>
+export type QueueMessageHandler<T extends QueueValue> = (data: T) => unknown
 
-export type QueueMessageHandler<T extends KvValue> = (
-  data: T,
-) => unknown | Promise<unknown>
-
-export type PreparedEnqueue<T extends KvValue> = {
+export type PreparedEnqueue<T extends QueueValue> = {
   msg: QueueMessage<T>
-  options: DenoKvEnqueueOptions
+  options: KvEnqueueOptions
 }
 
 // Data Types
@@ -246,6 +294,10 @@ export type DocumentData<T extends KvValue> = {
 }
 
 // KV Types
+export type KvEnqueueOptions = NonNullable<
+  Parameters<Deno.Kv["enqueue"]>[1]
+>
+
 export type KvVersionstamp<T extends KvValue> = Deno.KvEntry<T>["versionstamp"]
 
 export type KvKey = [Deno.KvKeyPart, ...Deno.KvKey]
