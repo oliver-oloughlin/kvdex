@@ -63,16 +63,21 @@ export function kvdex<const T extends SchemaDefinition>(
   kv: Deno.Kv,
   schemaDefinition: T,
 ) {
+  // Set listener activated flag and queue handlers map
   let listenerIsActivated = false
   const queueHandlers = new Map<string, QueueMessageHandler<QueueValue>[]>()
 
+  // Create idempotent listener activator
   const idempotentListener = () => {
+    // If listener is already activated, cancel
     if (listenerIsActivated) {
       return
     }
 
+    // Set listener activated flag
     listenerIsActivated = true
 
+    // Add queue listener
     kv.listenQueue(async (msg) => {
       const parsed = parseQueueMessage(msg)
       if (!parsed.ok) {
@@ -86,6 +91,7 @@ export function kvdex<const T extends SchemaDefinition>(
     })
   }
 
+  // Create schema
   const schema = _createSchema(
     schemaDefinition,
     kv,
@@ -93,8 +99,10 @@ export function kvdex<const T extends SchemaDefinition>(
     idempotentListener,
   ) as Schema<T>
 
+  // Create KvDex object
   const db = new KvDex(kv, schema, queueHandlers, idempotentListener)
 
+  // Return schema and db combination
   return Object.assign(db, schema)
 }
 
@@ -170,8 +178,8 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
   /**
    * Add data to the database queue to be delivered to the queue listener
    * via ``db.listenQueue()``. The data will only be received by queue
-   * listeners on the database queue. The method takes an optional options
-   * argument that can be used to set a delivery delay.
+   * listeners on the database queue and specified topic. The method takes an optional options
+   * argument that can be used to set a delivery delay and topic.
    *
    * @example
    * ```ts
@@ -179,8 +187,9 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    * await db.enqueue("some data")
    *
    * // Delay of 2 seconds before delivery
-   * await db.enqueue("some data", {
-   *   delay: 2_000
+   * await db.enqueue("cake", {
+   *   delay: 2_000,
+   *  topic: "food"
    * })
    * ```
    *
@@ -206,7 +215,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    * // Prints the data to console when recevied
    * db.listenQueue((data) => console.log(data))
    *
-   * // Sends post request when data is received
+   * // Sends post request when data is received in the "posts" topic
    * db.listenQueue(async (data) => {
    *   const dataBody = JSON.stringify(data)
    *
@@ -216,7 +225,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    *   })
    *
    *   console.log("POSTED:", dataBody, res.ok)
-   * })
+   * }, { topic: "posts" })
    * ```
    *
    * @param handler - Message handler function.

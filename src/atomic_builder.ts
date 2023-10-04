@@ -438,6 +438,34 @@ export class AtomicBuilder<
     return this
   }
 
+  /**
+   * Add data to the collection queue to be delivered to the queue listener
+   * via ``db.collection.listenQueue()``. The data will only be received by queue
+   * listeners on the specified collection and topic. The method takes an optional options
+   * argument that can be used to set a delivery delay and topic.
+   *
+   * @example
+   * ```ts
+   * // Immediate delivery
+   * await db
+   *   .atomic(schema => schema.users)
+   *   .enqueue("soem data")
+   *   .commit()
+   *
+   * // Delay of 2 seconds before delivery, sent to the "food" topic
+   * await db
+   *   .atomic(schema => schema.users)
+   *   .enqueue("cake", {
+   *     delay: 2_000,
+   *     topic: "food"
+   *   })
+   *   .commit()
+   * ```
+   *
+   * @param data - Data to be added to the collection queue.
+   * @param options - Enqueue options, optional.
+   * @returns - Promise resolving to Deno.KvCommitResult.
+   */
   enqueue(data: QueueValue, options?: EnqueueOptions) {
     // Prepare and add enqueue operation
     const prep = prepareEnqueue(
