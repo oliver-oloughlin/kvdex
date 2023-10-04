@@ -1,6 +1,6 @@
 # kvdex
 
-`kvdex` is a high level abstraction layer for Deno KV with zero third-party
+`kvdex` is a high-level abstraction layer for Deno KV with zero third-party
 dependencies. It's purpose is to enhance the experience of using Deno's KV store
 through additional features such as indexing, strongly typed collections, and
 cron jobs, while maintaining as much of the native functionality as possible,
@@ -669,7 +669,7 @@ db.cron(() => console.log("Hello World!"))
 db.cron(() => Math.random(), {
   startDelay: 10_000,
   interval: 5_000,
-  exit: ({ count, result }) => count >= 10 || result < 0.25,
+  exit: ({ count, result }) => count >= 9 || result < 0.25,
 })
 ```
 

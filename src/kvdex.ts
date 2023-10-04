@@ -301,7 +301,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    * db.cron(() => Math.random(), {
    *   startDelay: 10_000,
    *   interval: 5_000,
-   *   exit: ({ count, result }) => count >= 10 || result < 0.25,
+   *   exit: ({ count, result }) => count >= 9 || result < 0.25,
    * })
    * ```
    *
