@@ -2,9 +2,9 @@
 
 `kvdex` is a high level abstraction layer for Deno KV with zero third-party
 dependencies. It's purpose is to enhance the experience of using Deno's KV store
-through additional features such as indexing, and strongly typed collections,
-and cron jobs, while maintaining as much of the native functionality as
-possible, like atomic operations and queue listeners.
+through additional features such as indexing, strongly typed collections, and
+cron jobs, while maintaining as much of the native functionality as possible,
+like atomic operations and queue listeners.
 
 ## Highlights
 
@@ -12,7 +12,7 @@ possible, like atomic operations and queue listeners.
 - Primary (unique) and secondary (non-unique) indexing.
 - Segmented storage for large objects that exceed the native size limit.
 - Support for pagination and filtering.
-- Repeating cron jobs.
+- Create repeating cron jobs.
 - Message queues at database and collection level with topics.
 - Support for atomic operations.
 
@@ -575,7 +575,7 @@ if you believe your document values will exceed size limit.
 ## Database Methods
 
 These are methods which can be found at the top level of your database object,
-and perform operations across multiple collections.
+and perform operations across multiple collections or unrelated to collections.
 
 ### countAll()
 
@@ -626,7 +626,7 @@ can be used to set the topic.
 // Prints the data to console when recevied
 db.listenQueue((data) => console.log(data))
 
-// Sends post request when data is received
+// Sends post request when data is received in the "posts" topic
 db.listenQueue(async (data) => {
   const dataBody = JSON.stringify(data)
 
@@ -675,7 +675,7 @@ db.cron(() => Math.random(), {
 
 ### atomic()
 
-Initiate an atomic operation. The method takes a selection function as argument
+Initiate an atomic operation. The method takes a selector function as argument
 for selecting the initial collection context.
 
 ```ts
