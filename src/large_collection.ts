@@ -16,6 +16,8 @@ import type {
   LargeDocumentEntry,
   LargeKvValue,
   ListOptions,
+  QueueMessageHandler,
+  QueueValue,
   SetOptions,
 } from "./types.ts"
 import {
@@ -48,9 +50,15 @@ export class LargeCollection<
    * @param key
    * @param options
    */
-  constructor(kv: Deno.Kv, key: KvKey, options?: T2) {
+  constructor(
+    kv: Deno.Kv,
+    key: KvKey,
+    queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+    idempotentListener: () => void,
+    options?: T2,
+  ) {
     // Invoke super constructor
-    super(kv, key, options)
+    super(kv, key, queueHandlers, idempotentListener, options)
 
     // Set large collection keys
     this._keys = {

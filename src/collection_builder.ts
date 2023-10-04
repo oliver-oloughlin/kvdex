@@ -9,6 +9,8 @@ import type {
   LargeCollectionOptions,
   LargeKvValue,
   Model,
+  QueueMessageHandler,
+  QueueValue,
 } from "./types.ts"
 
 /**
@@ -51,10 +53,17 @@ class CollectionBuilder<const T extends KvValue> {
   build(
     options?: CollectionOptions<T>,
   ) {
-    return (kv: Deno.Kv, key: KvKey) =>
+    return (
+      kv: Deno.Kv,
+      key: KvKey,
+      queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+      idempotentListener: () => void,
+    ) =>
       new Collection<T, CollectionOptions<T>>(
         kv,
         key,
+        queueHandlers,
+        idempotentListener,
         options,
       )
   }
@@ -73,10 +82,17 @@ class IndexableCollectionBuilder<const T extends Model> {
   build<const T2 extends IndexableCollectionOptions<T>>(
     options: T2,
   ) {
-    return (kv: Deno.Kv, key: KvKey) =>
+    return (
+      kv: Deno.Kv,
+      key: KvKey,
+      queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+      idempotentListener: () => void,
+    ) =>
       new IndexableCollection<T, T2>(
         kv,
         key,
+        queueHandlers,
+        idempotentListener,
         options,
       )
   }
@@ -93,10 +109,17 @@ class LargeCollectionBuilder<const T extends LargeKvValue> {
    * @returns A LargeCollection instance.
    */
   build(options?: LargeCollectionOptions<T>) {
-    return (kv: Deno.Kv, key: KvKey) =>
+    return (
+      kv: Deno.Kv,
+      key: KvKey,
+      queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+      idempotentListener: () => void,
+    ) =>
       new LargeCollection<T, LargeCollectionOptions<T>>(
         kv,
         key,
+        queueHandlers,
+        idempotentListener,
         options,
       )
   }

@@ -18,6 +18,8 @@ import type {
   ListOptions,
   Model,
   PrimaryIndexKeys,
+  QueueMessageHandler,
+  QueueValue,
   SecondaryIndexKeys,
   SetOptions,
   UpdateData,
@@ -64,9 +66,15 @@ export class IndexableCollection<
    *
    * @param options - Indexable Collection options.
    */
-  constructor(kv: Deno.Kv, key: KvKey, options: T2) {
+  constructor(
+    kv: Deno.Kv,
+    key: KvKey,
+    queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+    idempotentListener: () => void,
+    options: T2,
+  ) {
     // Invoke super constructor
-    super(kv, key, options)
+    super(kv, key, queueHandlers, idempotentListener, options)
 
     // Set indexable collection keys
     this._keys = {

@@ -1,9 +1,9 @@
-import { kvdex, KvValue, largeCollection, QueueMessage } from "../../mod.ts"
+import { kvdex, largeCollection, QueueMessage, QueueValue } from "../../mod.ts"
 import {
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "../../src/constants.ts"
-import { extendKey } from "../../src/utils.ts"
+import { createHandlerId, extendKey } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
 import { User } from "../models.ts"
 import { sleep, useKv } from "../utils.ts"
@@ -24,9 +24,11 @@ Deno.test("large_collection - listenQueue", async (t) => {
         assertion = msgData === data
       })
 
-      const msg: QueueMessage<KvValue> = {
-        collectionKey: db.l_users._keys.baseKey,
-        data,
+      const handlerId = createHandlerId(db.l_users._keys.baseKey, undefined)
+
+      const msg: QueueMessage<QueueValue> = {
+        __handlerId__: handlerId,
+        __data__: data,
       }
 
       await kv.enqueue(msg, {

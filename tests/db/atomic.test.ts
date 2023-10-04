@@ -1,6 +1,8 @@
+import { collection, kvdex, QueueMessage, QueueValue } from "../../mod.ts"
+import { createHandlerId } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
 import { mockUser1, mockUser2 } from "../mocks.ts"
-import { useDb } from "../utils.ts"
+import { sleep, useDb, useKv } from "../utils.ts"
 
 Deno.test("db - atomic", async (t) => {
   await t.step("Should add documents to collection", async () => {
@@ -244,6 +246,38 @@ Deno.test("db - atomic", async (t) => {
       assert(doc4?.value.value === max1.value)
       assert(doc5?.value.value === initial.value)
       assert(doc6 === null)
+    })
+  })
+
+  await t.step("Should enqueue message with string data", async () => {
+    await useKv(async (kv) => {
+      const data = "data"
+      const undeliveredId = "undelivered"
+
+      const db = kvdex(kv, {
+        numbers: collection<number>().build(),
+      })
+
+      const handlerId = createHandlerId(db.numbers._keys.baseKey, undefined)
+
+      let assertion = false
+
+      kv.listenQueue((msg) => {
+        const qMsg = msg as QueueMessage<QueueValue>
+        assertion = qMsg.__handlerId__ === handlerId && qMsg.__data__ === data
+      })
+
+      await db
+        .atomic((schema) => schema.numbers)
+        .enqueue("data", {
+          idsIfUndelivered: [undeliveredId],
+        })
+        .commit()
+
+      await sleep(100)
+
+      const undelivered = await db.numbers.findUndelivered(undeliveredId)
+      assert(assertion || typeof undelivered?.value === typeof data)
     })
   })
 })
