@@ -35,6 +35,7 @@ like atomic operations and queue listeners.
     - [updateMany()](#updatemany)
     - [delete()](#delete)
     - [deleteMany()](#deletemany)
+    - [deleteUndelivered()](#deleteundelivered)
     - [getMany()](#getmany)
     - [forEach()](#foreach)
     - [map()](#map)
@@ -52,10 +53,10 @@ like atomic operations and queue listeners.
   - [Database Methods](#database-methods)
     - [countAll()](#countall)
     - [deleteAll()](#deleteall)
+    - [deleteUndelivered()](#deleteundelivered-1)
+    - [findUndelivered()](#findundelivered-1)
     - [enqueue()](#enqueue-1)
     - [listenQueue()](#listenqueue-1)
-    - [findUndelivered()](#findundelivered-1)
-    - [deleteUndelivered()](#deleteundelivered)
     - [cron()](#cron)
     - [atomic()](#atomic)
   - [Atomic Operations](#atomic-operations)
@@ -334,6 +335,14 @@ await db.users.deleteMany({
 })
 ```
 
+### deleteUndelivered()
+
+Delete an undelivered document entry by id from the collection queue.
+
+```ts
+await db.users.deleteUndelivered("id")
+```
+
 ### getMany()
 
 Retrieve multiple documents from the KV store. It takes an optional options
@@ -598,6 +607,28 @@ argument that can be used to set the consistency mode.
 await db.deleteAll()
 ```
 
+### deleteUndelivered()
+
+Delete an undelivered document entry by id from the database queue.
+
+```ts
+await db.deleteUndelivered("id")
+```
+
+### findUndelivered()
+
+Retrieve a document entry that was not delivered during an enqueue() operation
+in the database queue. This method takes an optional options argument that can
+be used to set the consistency mode.
+
+```ts
+const doc1 = await db.findUndelivered("undelivered_id")
+
+const doc2 = await db.findUndelivered("undelivered_id", {
+  consistency: "eventual", // "strong" by default
+})
+```
+
 ### enqueue()
 
 Add data to the database queue to be delivered to the queue listener via
@@ -638,28 +669,6 @@ db.listenQueue(async (data) => {
 
   console.log("POSTED:", dataBody, res.ok)
 }, { topic: "posts" })
-```
-
-### findUndelivered()
-
-Retrieve a document entry that was not delivered during an enqueue() operation
-in the database queue. This method takes an optional options argument that can
-be used to set the consistency mode.
-
-```ts
-const doc1 = await db.findUndelivered("undelivered_id")
-
-const doc2 = await db.findUndelivered("undelivered_id", {
-  consistency: "eventual", // "strong" by default
-})
-```
-
-### deleteUndelivered()
-
-Delete an undelivered document entry by id.
-
-```ts
-await db.deleteUndelivered("id")
 ```
 
 ### cron()
