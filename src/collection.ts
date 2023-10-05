@@ -17,6 +17,7 @@ import type {
   KvObject,
   KvValue,
   ListOptions,
+  ParserModel,
   QueueListenerOptions,
   QueueMessageHandler,
   QueueValue,
@@ -33,9 +34,31 @@ import {
   getDocumentId,
   isKvObject,
   kvGetMany,
+  parseDocumentValue,
   prepareEnqueue,
 } from "./utils.ts"
 import { Document } from "./document.ts"
+import { Model } from "./model.ts"
+
+export function collection<
+  T1 extends KvValue,
+  T2 extends CollectionOptions<T1>,
+>(model: Model<T1> | ParserModel<T1>, options?: T2) {
+  return (
+    kv: Deno.Kv,
+    key: KvKey,
+    queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+    idempotentListener: () => void,
+  ) =>
+    new Collection<T1, T2>(
+      kv,
+      key,
+      model,
+      queueHandlers,
+      idempotentListener,
+      options,
+    )
+}
 
 /**
  * Represents a collection of documents stored in the KV store.
@@ -50,6 +73,7 @@ export class Collection<
   private idempotentListener: () => void
 
   protected kv: Deno.Kv
+  protected model: Model<T1> | ParserModel<T1>
 
   readonly _idGenerator: IdGenerator<KvValue>
   readonly _keys: CollectionKeys
@@ -68,6 +92,7 @@ export class Collection<
   constructor(
     kv: Deno.Kv,
     key: KvKey,
+    model: Model<T1> | ParserModel<T1>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => void,
     options?: T2,
@@ -76,8 +101,9 @@ export class Collection<
     this.queueHandlers = queueHandlers
     this.idempotentListener = idempotentListener
 
-    // Set the KV instance
+    // Set the KV instance and model
     this.kv = kv
+    this.model = model
 
     // Set id generator function
     this._idGenerator = options?.idGenerator as IdGenerator<KvValue> ??
@@ -125,7 +151,7 @@ export class Collection<
       id,
       versionstamp: result.versionstamp,
       value: result.value,
-    })
+    }, this.model)
   }
 
   /**
@@ -170,7 +196,7 @@ export class Collection<
           id,
           versionstamp,
           value,
-        }),
+        }, this.model),
       )
     }
 
@@ -640,7 +666,7 @@ export class Collection<
       id,
       versionstamp: result.versionstamp,
       value: result.value,
-    })
+    }, this.model)
   }
 
   /**
@@ -689,7 +715,7 @@ export class Collection<
         id,
         versionstamp,
         value: value,
-      })
+      }, this.model)
 
       // Filter document and add to documents list
       if (!options?.filter || options.filter(doc)) {
@@ -710,22 +736,23 @@ export class Collection<
    * Set a document entry in the KV store.
    *
    * @param id - Document id.
-   * @param data - Document value.
+   * @param value - Document value.
    * @param options - Set options or undefined.
    * @param overwrite - Boolean flag determining whether to overwrite existing entry or fail operation.
    * @returns Promise resolving to a CommitResult object.
    */
   protected async setDocument(
     id: KvId,
-    data: T1,
+    value: T1,
     options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
-    // Create document key
+    // Create document key and parse document value
     const key = extendKey(this._keys.idKey, id)
+    const parsed = parseDocumentValue(value, this.model)
 
     // Create atomic operation with set mutation
-    let atomic = this.kv.atomic().set(key, data, options)
+    let atomic = this.kv.atomic().set(key, parsed, options)
 
     // If overwrite is false, check for existing document
     if (!overwrite) {
@@ -743,7 +770,7 @@ export class Collection<
     if (!cr.ok && retry > 0) {
       return await this.setDocument(
         id,
-        data,
+        parsed,
         { ...options, retry: retry - 1 },
         overwrite,
       )

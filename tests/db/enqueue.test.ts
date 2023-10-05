@@ -1,4 +1,10 @@
-import { collection, kvdex, QueueMessage, QueueValue } from "../../mod.ts"
+import {
+  collection,
+  kvdex,
+  Model,
+  QueueMessage,
+  QueueValue,
+} from "../../mod.ts"
 import { KVDEX_KEY_PREFIX } from "../../src/constants.ts"
 import { createHandlerId } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
@@ -11,7 +17,7 @@ Deno.test("db - enqueue", async (t) => {
       const undeliveredId = "undelivered"
 
       const db = kvdex(kv, {
-        numbers: collection<number>().build(),
+        numbers: collection(new Model<number>()),
       })
 
       const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined)
@@ -41,7 +47,7 @@ Deno.test("db - enqueue", async (t) => {
       const topic = "topic"
 
       const db = kvdex(kv, {
-        numbers: collection<number>().build(),
+        numbers: collection(new Model<number>()),
       })
 
       let assertion1 = false

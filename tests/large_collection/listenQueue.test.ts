@@ -1,4 +1,10 @@
-import { kvdex, largeCollection, QueueMessage, QueueValue } from "../../mod.ts"
+import {
+  kvdex,
+  largeCollection,
+  Model,
+  QueueMessage,
+  QueueValue,
+} from "../../mod.ts"
 import {
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
@@ -15,7 +21,7 @@ Deno.test("large_collection - listenQueue", async (t) => {
       const undeliveredId = "id"
 
       const db = kvdex(kv, {
-        l_users: largeCollection<User>().build(),
+        l_users: largeCollection(new Model<User>()),
       })
 
       let assertion = false
@@ -47,7 +53,7 @@ Deno.test("large_collection - listenQueue", async (t) => {
   await t.step("Should not receive db queue message", async () => {
     await useKv(async (kv) => {
       const db = kvdex(kv, {
-        l_users: largeCollection<User>().build(),
+        l_users: largeCollection(new Model<User>()),
       })
 
       let assertion = true

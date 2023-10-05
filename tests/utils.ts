@@ -1,28 +1,30 @@
-import { collection, kvdex } from "../mod.ts"
 import {
+  collection,
   indexableCollection,
+  kvdex,
   largeCollection,
-} from "../src/collection_builder.ts"
+} from "../mod.ts"
+import { Model } from "../src/model.ts"
 import { ulid } from "./deps.ts"
 import { User } from "./models.ts"
 
 // Create test db
 export function createDb(kv: Deno.Kv) {
   return kvdex(kv, {
-    u64s: collection<Deno.KvU64>().build({
+    u64s: collection(new Model<Deno.KvU64>(), {
       idGenerator: () => ulid(),
     }),
-    users: collection<User>().build({
+    users: collection(new Model<User>(), {
       idGenerator: () => ulid(),
     }),
-    i_users: indexableCollection<User>().build({
+    i_users: indexableCollection(new Model<User>(), {
       idGenerator: () => ulid(),
       indices: {
         username: "primary",
         age: "secondary",
       },
     }),
-    l_users: largeCollection<User>().build({
+    l_users: largeCollection(new Model<User>(), {
       idGenerator: () => ulid(),
     }),
   })

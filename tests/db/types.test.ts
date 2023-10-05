@@ -1,4 +1,4 @@
-import { collection, kvdex } from "../../mod.ts"
+import { collection, kvdex, Model } from "../../mod.ts"
 import { assert } from "../deps.ts"
 import { useKv } from "../utils.ts"
 
@@ -8,10 +8,10 @@ Deno.test("db - types", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          strings: collection<string>().build(),
-          numbers: collection<number>().build(),
-          bigints: collection<bigint>().build(),
-          u64s: collection<Deno.KvU64>().build(),
+          strings: collection(new Model<string>()),
+          numbers: collection(new Model<number>()),
+          bigints: collection(new Model<bigint>()),
+          u64s: collection(new Model<Deno.KvU64>()),
         })
 
         await db.strings.add("str1")
@@ -36,12 +36,12 @@ Deno.test("db - types", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          dates: collection<Date>().build(),
-          sets: collection<Set<string>>().build(),
-          maps: collection<Map<string, number>>().build(),
-          regExps: collection<RegExp>().build(),
-          dataVeiws: collection<DataView>().build(),
-          errors: collection<Error>().build(),
+          dates: collection(new Model<Date>()),
+          sets: collection(new Model<Set<string>>()),
+          maps: collection(new Model<Map<string, number>>()),
+          regExps: collection(new Model<RegExp>()),
+          dataVeiws: collection(new Model<DataView>()),
+          errors: collection(new Model<Error>()),
         })
 
         await db.dates.add(new Date())
@@ -83,19 +83,19 @@ Deno.test("db - types", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          arrs: collection<Array<string>>().build(),
-          i8arrs: collection<Int8Array>().build(),
-          i16arrs: collection<Int16Array>().build(),
-          i32arrs: collection<Int32Array>().build(),
-          i64arrs: collection<BigInt64Array>().build(),
-          u8arrs: collection<Uint8Array>().build(),
-          u16arrs: collection<Uint16Array>().build(),
-          u32arrs: collection<Uint32Array>().build(),
-          u64arrs: collection<BigUint64Array>().build(),
-          u8carrs: collection<Uint8ClampedArray>().build(),
-          f32arrs: collection<Float32Array>().build(),
-          f64arrs: collection<Float64Array>().build(),
-          buffers: collection<ArrayBuffer>().build(),
+          arrs: collection(new Model<Array<string>>()),
+          i8arrs: collection(new Model<Int8Array>()),
+          i16arrs: collection(new Model<Int16Array>()),
+          i32arrs: collection(new Model<Int32Array>()),
+          i64arrs: collection(new Model<BigInt64Array>()),
+          u8arrs: collection(new Model<Uint8Array>()),
+          u16arrs: collection(new Model<Uint16Array>()),
+          u32arrs: collection(new Model<Uint32Array>()),
+          u64arrs: collection(new Model<BigUint64Array>()),
+          u8carrs: collection(new Model<Uint8ClampedArray>()),
+          f32arrs: collection(new Model<Float32Array>()),
+          f64arrs: collection(new Model<Float64Array>()),
+          buffers: collection(new Model<ArrayBuffer>()),
         })
 
         await db.arrs.add(["str1", "str2", "str3"])

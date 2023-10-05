@@ -39,7 +39,9 @@ import {
  *
  * @example
  * ```ts
- * interface User extends Model {
+ * import type { KvObject } from "kvdex"
+ *
+ * interface User extends KvObject {
  *   username: string
  *   age: number
  * }
@@ -285,7 +287,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
       id,
       versionstamp: result.versionstamp,
       value: result.value,
-    })
+    }, {})
   }
 
   /**

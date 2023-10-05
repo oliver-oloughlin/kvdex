@@ -1,4 +1,4 @@
-import { Document, indexableCollection, kvdex } from "../../mod.ts"
+import { Document, indexableCollection, kvdex, Model } from "../../mod.ts"
 import {
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
@@ -34,11 +34,11 @@ Deno.test("indexable_collection - properties", async (t) => {
   await t.step("Should generate ids with custom id generator", async () => {
     await useKv((kv) => {
       const db = kvdex(kv, {
-        users1: indexableCollection<User>().build({
+        users1: indexableCollection(new Model<User>(), {
           idGenerator: () => Math.random(),
           indices: {},
         }),
-        users2: indexableCollection<User>().build({
+        users2: indexableCollection(new Model<User>(), {
           idGenerator: (data) => data.username,
           indices: {},
         }),

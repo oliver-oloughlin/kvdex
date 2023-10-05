@@ -1,4 +1,10 @@
-import { collection, kvdex, QueueMessage, QueueValue } from "../../mod.ts"
+import {
+  collection,
+  kvdex,
+  Model,
+  QueueMessage,
+  QueueValue,
+} from "../../mod.ts"
 import { createHandlerId } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
 import { mockUser1, mockUser2 } from "../mocks.ts"
@@ -255,7 +261,7 @@ Deno.test("db - atomic", async (t) => {
       const undeliveredId = "undelivered"
 
       const db = kvdex(kv, {
-        numbers: collection<number>().build(),
+        numbers: collection(new Model<number>()),
       })
 
       const handlerId = createHandlerId(db.numbers._keys.baseKey, undefined)

@@ -16,6 +16,7 @@ import type {
   LargeDocumentEntry,
   LargeKvValue,
   ListOptions,
+  ParserModel,
   QueueMessageHandler,
   QueueValue,
   SetOptions,
@@ -26,10 +27,32 @@ import {
   extendKey,
   getDocumentId,
   kvGetMany,
+  parseDocumentValue,
   useAtomics,
 } from "./utils.ts"
 import { Document } from "./document.ts"
 import { CorruptedDocumentDataError } from "./errors.ts"
+import { Model } from "./model.ts"
+
+export function largeCollection<
+  T1 extends LargeKvValue,
+  T2 extends LargeCollectionOptions<T1>,
+>(model: Model<T1> | ParserModel<T1>, options?: T2) {
+  return (
+    kv: Deno.Kv,
+    key: KvKey,
+    queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+    idempotentListener: () => void,
+  ) =>
+    new LargeCollection<T1, T2>(
+      kv,
+      key,
+      model,
+      queueHandlers,
+      idempotentListener,
+      options,
+    )
+}
 
 export class LargeCollection<
   const T1 extends LargeKvValue,
@@ -53,12 +76,13 @@ export class LargeCollection<
   constructor(
     kv: Deno.Kv,
     key: KvKey,
+    model: Model<T1> | ParserModel<T1>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => void,
     options?: T2,
   ) {
     // Invoke super constructor
-    super(kv, key, queueHandlers, idempotentListener, options)
+    super(kv, key, model, queueHandlers, idempotentListener, options)
 
     // Set large collection keys
     this._keys = {
@@ -207,12 +231,13 @@ export class LargeCollection<
 
   protected async setDocument(
     id: Deno.KvKeyPart,
-    data: T1,
+    value: T1,
     options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
-    // Create document id key
+    // Create document id key and parse document value
     const idKey = extendKey(this._keys.idKey, id)
+    const parsed = parseDocumentValue(value, this.model)
 
     // Check if id already exists
     const check = await this.kv
@@ -237,7 +262,7 @@ export class LargeCollection<
     }
 
     // Stringify data and initialize json parts list
-    const json = JSON.stringify(data)
+    const json = JSON.stringify(parsed)
     const jsonParts: string[] = []
 
     // Divide json string by string limit, add parts to json parts list
@@ -269,7 +294,7 @@ export class LargeCollection<
 
       // Retry operation if there are remaining attempts
       if (retry > 0) {
-        return await this.setDocument(id, data, {
+        return await this.setDocument(id, parsed, {
           ...options,
           retry: retry - 1,
         }, overwrite)
@@ -300,7 +325,7 @@ export class LargeCollection<
 
       // Retry operation if there are remaining attempts
       if (retry > 0) {
-        return await this.setDocument(id, data, {
+        return await this.setDocument(id, parsed, {
           ...options,
           retry: retry - 1,
         }, overwrite)
@@ -352,7 +377,7 @@ export class LargeCollection<
         id,
         value: JSON.parse(json),
         versionstamp,
-      })
+      }, this.model)
     } catch (_e) {
       // Throw if JSON.parse fails
       throw new CorruptedDocumentDataError(

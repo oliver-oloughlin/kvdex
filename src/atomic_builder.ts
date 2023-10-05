@@ -11,8 +11,8 @@ import type {
   EnqueueOptions,
   IndexableCollectionOptions,
   KvId,
+  KvObject,
   KvValue,
-  Model,
   Operations,
   QueueValue,
   Schema,
@@ -159,8 +159,8 @@ export class AtomicBuilder<
     )
 
     if (this.collection instanceof IndexableCollection) {
-      // Set data as Model type
-      const _data = data as Model
+      // Set data as KvObject type
+      const _data = data as KvObject
 
       // Add collection id key for collision detection
       this.operations.indexAddCollectionKeys.push(collectionKey)
@@ -171,8 +171,8 @@ export class AtomicBuilder<
         _data,
         this.operations.atomic,
         this.collection as unknown as IndexableCollection<
-          Model,
-          IndexableCollectionOptions<Model>
+          KvObject,
+          IndexableCollectionOptions<KvObject>
         >,
         options,
       )
@@ -210,7 +210,7 @@ export class AtomicBuilder<
 
       // Add delete preperation function to prepeare delete functions list
       this.operations.prepareDeleteFns.push(async (kv) => {
-        const doc = await kv.get<Model>(idKey)
+        const doc = await kv.get<KvObject>(idKey)
 
         return {
           id,
@@ -405,11 +405,11 @@ export class AtomicBuilder<
           // Add indexing operations to atomic ops list
           setIndices(
             id,
-            mut.value as Model,
+            mut.value as KvObject,
             this.operations.atomic,
             this.collection as unknown as IndexableCollection<
-              Model,
-              IndexableCollectionOptions<Model>
+              KvObject,
+              IndexableCollectionOptions<KvObject>
             >,
             {
               ...mut,
@@ -424,7 +424,7 @@ export class AtomicBuilder<
 
           // Add delete preperation function to delete preperation functions list
           this.operations.prepareDeleteFns.push(async (kv) => {
-            const doc = await kv.get<Model>(mut.key)
+            const doc = await kv.get<KvObject>(mut.key)
             return {
               id,
               data: doc.value ?? {},
@@ -528,8 +528,8 @@ export class AtomicBuilder<
             data,
             atomic,
             this.collection as unknown as IndexableCollection<
-              Model,
-              IndexableCollectionOptions<Model>
+              KvObject,
+              IndexableCollectionOptions<KvObject>
             >,
           )
 

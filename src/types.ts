@@ -97,7 +97,7 @@ export type PrepareDeleteFn = (kv: Deno.Kv) => Promise<PreparedIndexDelete>
 
 export type PreparedIndexDelete = {
   id: KvId
-  data: Model
+  data: KvObject
 }
 
 export type Operations = {
@@ -156,8 +156,12 @@ export type CollectionKeys = {
   idKey: KvKey
 }
 
+export interface ParserModel<T> {
+  parse: (data: unknown) => T
+}
+
 // Indexable Collection Types
-export type IndexableCollectionOptions<T extends Model> =
+export type IndexableCollectionOptions<T extends KvObject> =
   & CollectionOptions<T>
   & {
     indices: IndexRecord<T>
@@ -170,17 +174,19 @@ export type IndexableCollectionKeys = CollectionKeys & {
 
 export type IndexType = "primary" | "secondary"
 
-export type IndexRecord<T extends Model> = {
+export type IndexRecord<T extends KvObject> = {
   [key in KeysOfThatExtend<T, KvId>]?: IndexType
 }
 
-export type PrimaryIndexKeys<T1 extends Model, T2 extends IndexRecord<T1>> =
+export type PrimaryIndexKeys<T1 extends KvObject, T2 extends IndexRecord<T1>> =
   KeysOfThatExtend<T2, "primary">
 
-export type SecondaryIndexKeys<T1 extends Model, T2 extends IndexRecord<T1>> =
-  KeysOfThatExtend<T2, "secondary">
+export type SecondaryIndexKeys<
+  T1 extends KvObject,
+  T2 extends IndexRecord<T1>,
+> = KeysOfThatExtend<T2, "secondary">
 
-export type IndexDataEntry<T extends Model> = Omit<T, "__id__"> & {
+export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
   __id__: KvId
 }
 
@@ -285,7 +291,7 @@ export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T> : T
 export type FlatDocumentData<T extends KvValue> =
   & Omit<DocumentData<T>, "value">
   & (
-    T extends Model ? T : {
+    T extends KvObject ? T : {
       readonly value: T
     }
   )
@@ -306,8 +312,6 @@ export type KvVersionstamp<T extends KvValue> = Deno.KvEntry<T>["versionstamp"]
 export type KvKey = [Deno.KvKeyPart, ...Deno.KvKey]
 
 export type KvId = Deno.KvKeyPart
-
-export type Model = KvObject
 
 export type KvObject = {
   [K: string | number]: KvValue

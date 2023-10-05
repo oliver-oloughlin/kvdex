@@ -4,6 +4,7 @@ import {
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
 import type { IndexableCollection } from "./indexable_collection.ts"
+import { Model } from "./model.ts"
 import type {
   AtomicSetOptions,
   EnqueueOptions,
@@ -12,10 +13,11 @@ import type {
   IndexDataEntry,
   KvId,
   KvKey,
+  KvObject,
   KvValue,
   ListOptions,
-  Model,
   ParsedQueueMessage,
+  ParserModel,
   PreparedEnqueue,
   QueueMessage,
   QueueValue,
@@ -120,7 +122,7 @@ export function isKvObject(value: KvValue) {
  * @returns The atomic operation with added mutations.
  */
 export function setIndices<
-  T1 extends Model,
+  T1 extends KvObject,
   T2 extends IndexableCollectionOptions<T1>,
 >(
   id: KvId,
@@ -184,7 +186,7 @@ export function setIndices<
  * @returns The atomic operation with added checks.
  */
 export function checkIndices<
-  T1 extends Model,
+  T1 extends KvObject,
   T2 extends T1 | UpdateData<T1>,
   T3 extends IndexableCollectionOptions<T1>,
 >(
@@ -228,7 +230,7 @@ export function checkIndices<
  * @returns The atomic operation with added mutations.
  */
 export function deleteIndices<
-  T1 extends Model,
+  T1 extends KvObject,
   T2 extends IndexableCollectionOptions<T1>,
 >(
   id: KvId,
@@ -478,4 +480,15 @@ export function createListSelector<const T extends KvValue>(
     start,
     end,
   }
+}
+
+export function parseDocumentValue<const T extends KvValue>(
+  value: unknown,
+  model: Model<T> | ParserModel<T>,
+) {
+  if (!(model instanceof Model)) {
+    return model.parse(value)
+  }
+
+  return value as T
 }

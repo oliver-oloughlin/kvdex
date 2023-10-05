@@ -1,4 +1,4 @@
-import { collection, kvdex } from "../../mod.ts"
+import { collection, kvdex, Model } from "../../mod.ts"
 import { assert } from "../deps.ts"
 import { mockUser1 } from "../mocks.ts"
 import { useDb, useKv } from "../utils.ts"
@@ -43,9 +43,9 @@ Deno.test("large_collection - update", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          numbers: collection<number>().build(),
-          arrays: collection<string[]>().build(),
-          dates: collection<Date>().build(),
+          numbers: collection(new Model<number>()),
+          arrays: collection(new Model<string[]>()),
+          dates: collection(new Model<Date>()),
         })
 
         const cr1 = await db.numbers.add(10)

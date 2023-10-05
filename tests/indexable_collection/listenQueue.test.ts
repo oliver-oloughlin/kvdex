@@ -1,6 +1,7 @@
 import {
   indexableCollection,
   kvdex,
+  Model,
   QueueMessage,
   QueueValue,
 } from "../../mod.ts"
@@ -20,7 +21,7 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
       const undeliveredId = "id"
 
       const db = kvdex(kv, {
-        i_users: indexableCollection<User>().build({ indices: {} }),
+        i_users: indexableCollection(new Model<User>(), { indices: {} }),
       })
 
       const handlerId = createHandlerId(db.i_users._keys.baseKey, undefined)
@@ -52,7 +53,7 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
   await t.step("Should not receive db queue message", async () => {
     await useKv(async (kv) => {
       const db = kvdex(kv, {
-        i_users: indexableCollection<User>().build({ indices: {} }),
+        i_users: indexableCollection(new Model<User>(), { indices: {} }),
       })
 
       let assertion = true
