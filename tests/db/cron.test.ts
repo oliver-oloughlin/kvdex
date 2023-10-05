@@ -9,17 +9,28 @@ Deno.test("db - cron", async (t) => {
 
     let count1 = 0
     let count2 = 0
+    let count3 = 0
 
-    db.cron(() => count1++, { exitOn: ({ count }) => count === 2 })
+    db.cron(() => count1++, {
+      interval: 10,
+      exitOn: ({ count }) => count === 2,
+    })
 
-    db.cron(() => count2++, { exitOn: ({ count }) => count === 5 })
+    db.cron(() => count2++, {
+      interval: 10,
+      exitOn: ({ isFirstJob }) => isFirstJob,
+    })
+
+    db.cron(() => count3++, {
+      interval: 10,
+      exitOn: ({ previousInterval }) => previousInterval > 0,
+    })
 
     await sleep(1_000)
 
-    console.log(count1, count2)
-
-    assert(count1 === 3)
-    assert(count2 === 6)
+    assert(count1 === 2)
+    assert(count2 === 0)
+    assert(count3 === 1)
 
     kv.close()
   })

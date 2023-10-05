@@ -643,6 +643,21 @@ export class Collection<
     })
   }
 
+  /**
+   * Delete an undelivered document entry by id from the collection queue.
+   *
+   * @example
+   * ```ts
+   * db.users.deleteUndelivered("id")
+   * ```
+   *
+   * @param id - Id of undelivered document.
+   */
+  async deleteUndelivered(id: KvId) {
+    const key = extendKey(this._keys.baseKey, UNDELIVERED_KEY_PREFIX, id)
+    await this.kv.delete(key)
+  }
+
   /** PROTECTED METHODS */
 
   /**

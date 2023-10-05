@@ -26,7 +26,11 @@ import {
   prepareEnqueue,
 } from "./utils.ts"
 import { AtomicBuilder } from "./atomic_builder.ts"
-import { KVDEX_KEY_PREFIX, UNDELIVERED_KEY_PREFIX } from "./constants.ts"
+import {
+  DEFAULT_CRON_INTERVAL,
+  KVDEX_KEY_PREFIX,
+  UNDELIVERED_KEY_PREFIX,
+} from "./constants.ts"
 
 /**
  * Create a new database instance.
@@ -285,11 +289,26 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
   }
 
   /**
+   * Delete an undelivered document entry by id from the database queue.
+   *
+   * @example
+   * ```ts
+   * db.deleteUndelivered("id")
+   * ```
+   *
+   * @param id - Id of undelivered document.
+   */
+  async deleteUndelivered(id: KvId) {
+    const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id)
+    await this.kv.delete(key)
+  }
+
+  /**
    * Create a cron job that will repeat at a given interval.
    *
-   * If no interval is set the next job will start immediately after the previous has finished.
+   * Interval defaults to 1 second if not set.
    *
-   * Will repeat indefinitely if no exit predicate is set.
+   * Will repeat indefinitely if no exit condition is set.
    *
    * @example
    * ```ts
@@ -297,32 +316,39 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    * db.cron(() => console.log("Hello World!"))
    *
    * // First job starts with a 10 second delay, after that there is a 5 second delay between jobs
-   * // Will terminate after the 10th run (count starts at 0), or if the job returns n < 0.25
-   * db.cron(() => Math.random(), {
+   * db.cron(() => console.log("I terminate after the 10th run"), {
+   *   // Delay before the first job is invoked
    *   startDelay: 10_000,
+   *
+   *   // Fixed interval
    *   interval: 5_000,
-   *   exit: ({ count, result }) => count >= 9 || result < 0.25,
+   *
+   *   // If this is set it will override the fixed interval
+   *   setInterval: ({ count }) => count * 500
+   *
+   *   // Count starts at 0 and is given before the current job is run
+   *   exit: ({ count }) => count === 10,
    * })
    * ```
    *
    * @param job - Work that will be run for each job interval.
    * @param options - Cron options.
    */
-  async cron<T1>(
-    job: () => T1,
-    options?: CronOptions<Awaited<T1>>,
+  async cron(
+    job: (msg: CronMessage) => unknown,
+    options?: CronOptions,
   ) {
     // Create cron handler id
     const id = crypto.randomUUID()
 
     // Create cron job enqueuer
     const enqueue = async (
-      cronMsg: CronMessage,
+      msg: CronMessage,
       delay: number | undefined,
     ) => {
       // Enqueue cron job until delivered
-      for (let i = 0; i < (options?.retries ?? 10); i++) {
-        await this.enqueue(cronMsg, {
+      for (let i = 0; i <= (options?.retries ?? 10); i++) {
+        await this.enqueue(msg, {
           idsIfUndelivered: [id],
           delay,
           topic: id,
@@ -334,18 +360,16 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
         if (doc === null) {
           break
         }
+
+        // Delete undelivered entry before retrying
+        await this.deleteUndelivered(id)
       }
     }
 
     // Add cron job listener
     this.listenQueue<CronMessage>(async (msg) => {
-      // Run cron job
-      const result = await job()
-
       // Check if exit criteria is met, end repeating cron job if true
-      const exit = await options?.exitOn?.(
-        { count: msg.count, result },
-      ) ?? false
+      const exit = await options?.exitOn?.(msg) ?? false
 
       if (exit) {
         return
@@ -353,21 +377,38 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
 
       // Set the next interval
       const interval = options?.setInterval
-        ? await options?.setInterval!({ count: msg.count, result })
-        : options?.interval
+        ? await options?.setInterval!(msg)
+        : options?.interval ?? DEFAULT_CRON_INTERVAL
 
-      // Enqueue next cron job
-      await enqueue({
-        count: msg.count + 1,
-      }, interval)
+      await allFulfilled([
+        // Enqueue next job
+        enqueue({
+          count: msg.count + 1,
+          previousInterval: interval,
+          isFirstJob: false,
+          enqueueTimestamp: new Date(),
+        }, interval),
+
+        // Run cron job
+        job(msg),
+      ])
     }, { topic: id })
 
     // Enqueue first cron job
     await enqueue({
       count: 0,
+      previousInterval: options?.startDelay ?? 0,
+      isFirstJob: true,
+      enqueueTimestamp: new Date(),
     }, options?.startDelay)
   }
 }
+
+/*************************/
+/*                       */
+/*   UTILITY FUNCTIONS   */
+/*                       */
+/**************************/
 
 /**
  * Create a database schema from schema definition.

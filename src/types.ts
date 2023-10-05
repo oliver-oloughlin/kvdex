@@ -29,23 +29,19 @@ export type CommitResult<T1 extends KvValue> = {
 export type IdGenerator<T extends KvValue> = (data: T) => KvId
 
 // Cron types
-export type CronOptions<T> = {
+export type CronOptions = {
   /**
    * Interval in milliseconds for cron job.
    *
-   * If not set, job will repeat without delay.
+   * @default 1000 // Defaults to 1 second
    */
   interval?: number
 
   /** Conditionally set the next interval in milliseconds. */
-  setInterval?: (
-    { count, result }: { count: number; result: T },
-  ) => number | Promise<number>
+  setInterval?: (msg: CronMessage) => number | Promise<number>
 
   /** Exit predicate used to end cron job. */
-  exitOn?: (
-    { count, result }: { count: number; result: T },
-  ) => boolean | Promise<boolean>
+  exitOn?: (msg: CronMessage) => boolean | Promise<boolean>
 
   /**
    * Delay before running the first job.
@@ -65,14 +61,21 @@ export type CronOptions<T> = {
 }
 
 export type CronMessage = {
+  /** Job number, starts at 0. */
   count: number
-}
 
-export type ParsedCronMessage = {
-  ok: true
-  msg: CronMessage
-} | {
-  ok: false
+  /** Previously set interval. */
+  previousInterval: number
+
+  /** Indicates whether the current job is the first to be run. */
+  isFirstJob: boolean
+
+  /**
+   * Timestamp of enqueue.
+   *
+   * Equal to the start time of the previous job.
+   */
+  enqueueTimestamp: Date
 }
 
 // Atomic Builder Types

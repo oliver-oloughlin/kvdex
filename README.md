@@ -55,6 +55,7 @@ like atomic operations and queue listeners.
     - [enqueue()](#enqueue-1)
     - [listenQueue()](#listenqueue-1)
     - [findUndelivered()](#findundelivered-1)
+    - [deleteUndelivered()](#deleteundelivered)
     - [cron()](#cron)
     - [atomic()](#atomic)
   - [Atomic Operations](#atomic-operations)
@@ -653,23 +654,37 @@ const doc2 = await db.findUndelivered("undelivered_id", {
 })
 ```
 
+### deleteUndelivered()
+
+Delete an undelivered document entry by id.
+
+```ts
+await db.deleteUndelivered("id")
+```
+
 ### cron()
 
 Create a cron job that will run on interval, either indefinitely or until an
-exit condition is met. If no interval is set, the next job will run immediately
-after the previous has finished. Like with queue listeners, there can be
-multiple cron jobs defined.
+exit condition is met. Interval defaults to 1 second if not set. Like with queue
+listeners, there can be multiple cron jobs defined.
 
 ```ts
-// Will repeat indeefinitely without delay
+// Will repeat indefinitely with 1 second interval
 db.cron(() => console.log("Hello World!"))
 
 // First job starts with a 10 second delay, after that there is a 5 second delay between jobs
-// Will terminate after the 10th run (count starts at 0), or if the job returns n < 0.25
-db.cron(() => Math.random(), {
+db.cron(() => console.log("I terminate after running 10 times"), {
+  // Delay before the first job is invoked
   startDelay: 10_000,
+
+  // Fixed interval
   interval: 5_000,
-  exit: ({ count, result }) => count >= 9 || result < 0.25,
+
+  // If this is set it will override the fixed interval
+  setInterval: ({ count }) => count * 500
+
+  // Count starts at 0 and is given before the current job is run
+  exit: ({ count }) => count === 10,
 })
 ```
 
