@@ -6,7 +6,7 @@ import {
 } from "../mod.ts"
 import { Model } from "../src/model.ts"
 import { ulid } from "./deps.ts"
-import { User } from "./models.ts"
+import { User, UserSchema } from "./models.ts"
 
 // Create test db
 export function createDb(kv: Deno.Kv) {
@@ -25,6 +25,19 @@ export function createDb(kv: Deno.Kv) {
       },
     }),
     l_users: largeCollection(new Model<User>(), {
+      idGenerator: () => ulid(),
+    }),
+    z_users: collection(UserSchema, {
+      idGenerator: () => ulid(),
+    }),
+    zi_users: indexableCollection(UserSchema, {
+      idGenerator: () => ulid(),
+      indices: {
+        username: "primary",
+        age: "secondary",
+      },
+    }),
+    zl_users: collection(UserSchema, {
       idGenerator: () => ulid(),
     }),
   })
