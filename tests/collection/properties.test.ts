@@ -1,4 +1,4 @@
-import { collection, Document, kvdex } from "../../mod.ts"
+import { collection, Document, kvdex, Model } from "../../mod.ts"
 import { ID_KEY_PREFIX, KVDEX_KEY_PREFIX } from "../../src/constants.ts"
 import { extendKey, keyEq } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
@@ -21,10 +21,10 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should generate ids with custom id generator", async () => {
     await useKv((kv) => {
       const db = kvdex(kv, {
-        users1: collection<User>().build({
+        users1: collection(new Model<User>(), {
           idGenerator: () => Math.random(),
         }),
-        users2: collection<User>().build({
+        users2: collection(new Model<User>(), {
           idGenerator: (data) => data.username,
         }),
       })

@@ -40,17 +40,17 @@ import {
 import { Document } from "./document.ts"
 import { Model } from "./model.ts"
 
-export function collection<
-  T1 extends KvValue,
-  T2 extends CollectionOptions<T1>,
->(model: Model<T1> | ParserModel<T1>, options?: T2) {
+export function collection<const T1 extends KvValue>(
+  model: Model<T1> | ParserModel<T1>,
+  options?: CollectionOptions<T1>,
+) {
   return (
     kv: Deno.Kv,
     key: KvKey,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => void,
   ) =>
-    new Collection<T1, T2>(
+    new Collection<T1, CollectionOptions<T1>>(
       kv,
       key,
       model,

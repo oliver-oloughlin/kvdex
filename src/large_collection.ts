@@ -34,17 +34,17 @@ import { Document } from "./document.ts"
 import { CorruptedDocumentDataError } from "./errors.ts"
 import { Model } from "./model.ts"
 
-export function largeCollection<
-  T1 extends LargeKvValue,
-  T2 extends LargeCollectionOptions<T1>,
->(model: Model<T1> | ParserModel<T1>, options?: T2) {
+export function largeCollection<T1 extends LargeKvValue>(
+  model: Model<T1> | ParserModel<T1>,
+  options?: LargeCollectionOptions<T1>,
+) {
   return (
     kv: Deno.Kv,
     key: KvKey,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => void,
   ) =>
-    new LargeCollection<T1, T2>(
+    new LargeCollection<T1, LargeCollectionOptions<T1>>(
       kv,
       key,
       model,
