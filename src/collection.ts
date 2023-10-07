@@ -39,6 +39,20 @@ import {
 import { Document } from "./document.ts"
 import { model } from "./model.ts"
 
+/**
+ * Create a collection builder function.
+ *
+ * @example
+ * ```ts
+ * collection(model<number>(), {
+ *   idGenerator: () => ulid()
+ * })
+ * ```
+ *
+ * @param model - Model.
+ * @param options - Collection options.
+ * @returns A collection builder function.
+ */
 export function collection<const T1 extends KvValue>(
   model: Model<T1>,
   options?: CollectionOptions<T1>,
@@ -347,30 +361,12 @@ export class Collection<
     value: UpdateData<T1>,
     options?: UpdateManyOptions<T1>,
   ) {
-    // Initiate result and error list
-    const result: (CommitResult<T1> | Deno.KvCommitError)[] = []
-    const errors: unknown[] = []
-
     // Update each document, add commit result to result list
-    const { cursor } = await this.handleMany(async (doc) => {
-      try {
-        const cr = await this.updateDocument(doc, value, options)
-        result.push(cr)
-      } catch (e) {
-        errors.push(e)
-      }
-    }, options)
-
-    // Throw errors if caught
-    if (errors.length > 0) {
-      throw errors
-    }
-
-    // Return result list and current iterator cursor
-    return {
-      result,
-      cursor,
-    }
+    return await this.handleMany(
+      this._keys.idKey,
+      (doc) => this.updateDocument(doc, value, options),
+      options,
+    )
   }
 
   /**
@@ -445,7 +441,13 @@ export class Collection<
    */
   async deleteMany(options?: ListOptions<T1>) {
     // Execute delete operation for each document entry
-    return await this.handleMany((doc) => this.delete(doc.id), options)
+    const { cursor } = await this.handleMany(
+      this._keys.idKey,
+      (doc) => this.delete(doc.id),
+      options,
+    )
+
+    return { cursor }
   }
 
   /**
@@ -468,20 +470,12 @@ export class Collection<
    * @returns A promise that resovles to an object containing a list of the retrieved documents and the iterator cursor
    */
   async getMany(options?: ListOptions<T1>) {
-    // Initiate result list
-    const result: Document<T1>[] = []
-
-    // Add each document entry to result list
-    const { cursor } = await this.handleMany(
-      (doc) => result.push(doc),
+    // Get each document, return result list and current iterator cursor
+    return await this.handleMany(
+      this._keys.idKey,
+      (doc) => doc,
       options,
     )
-
-    // Return result list and current iterator cursor
-    return {
-      result,
-      cursor,
-    }
   }
 
   /**
@@ -505,8 +499,14 @@ export class Collection<
    * @returns A promise that resovles to an object containing the iterator cursor
    */
   async forEach(fn: (doc: Document<T1>) => void, options?: ListOptions<T1>) {
-    // Execute callback function for each document entry
-    return await this.handleMany((doc) => fn(doc), options)
+    // Execute callback function for each document entry and return cursor
+    const { cursor } = await this.handleMany(
+      this._keys.idKey,
+      (doc) => fn(doc),
+      options,
+    )
+
+    return { cursor }
   }
 
   /**
@@ -531,24 +531,16 @@ export class Collection<
    * @param options - List options, optional.
    * @returns A promise that resovles to an object containing a list of the callback results and the iterator cursor
    */
-  async map<const TMapped>(
-    fn: (doc: Document<T1>) => TMapped,
+  async map<const T>(
+    fn: (doc: Document<T1>) => T,
     options?: ListOptions<T1>,
   ) {
-    // Initiate result list
-    const result: TMapped[] = []
-
-    // Execute callback function for each document entry, add to result list
-    const { cursor } = await this.handleMany(
-      (doc) => result.push(fn(doc)),
+    // Execute callback function for each document entry, return result and cursor
+    return await this.handleMany(
+      this._keys.idKey,
+      (doc) => fn(doc),
       options,
     )
-
-    // Return result list and current iterator cursor
-    return {
-      result,
-      cursor,
-    }
   }
 
   /**
@@ -571,7 +563,7 @@ export class Collection<
   async count(options?: CountOptions<T1>) {
     // Initiate count variable, increment for each document entry, return result
     let result = 0
-    await this.handleMany(() => result++, options)
+    await this.handleMany(this._keys.idKey, () => result++, options)
     return result
   }
 
@@ -709,18 +701,24 @@ export class Collection<
   /**
    * Perform operations on lists of documents in the collection.
    *
+   * @param prefixKey - Prefix key for list selector.
    * @param fn - Callback function.
    * @param options - List options, optional.
    * @returns Promise that resolves to object with iterator cursor.
    */
-  protected async handleMany(
-    fn: (doc: Document<T1>) => unknown,
-    options?: ListOptions<T1>,
+  protected async handleMany<const T>(
+    prefixKey: KvKey,
+    fn: (doc: Document<T1>) => T,
+    options: ListOptions<T1> | undefined,
   ) {
-    // Create list iterator with given options, initiate documents list
-    const selector = createListSelector(this._keys.idKey, options)
+    // Create list iterator with given options
+    const selector = createListSelector(prefixKey, options)
     const iter = this.kv.list<T1>(selector, options)
+
+    // Initiate lists
     const docs: Document<T1>[] = []
+    const result: Awaited<T>[] = []
+    const errors: unknown[] = []
 
     // Loop over each document entry
     for await (const { key, value, versionstamp } of iter) {
@@ -744,10 +742,23 @@ export class Collection<
     }
 
     // Execute callback function for each document
-    await allFulfilled(docs.map((doc) => fn(doc)))
+    await allFulfilled(docs.map(async (doc) => {
+      try {
+        const res = await fn(doc)
+        result.push(res)
+      } catch (e) {
+        errors.push(e)
+      }
+    }))
 
-    // Return current iterator cursor
+    // Throw any caught errors
+    if (errors.length > 0) {
+      throw errors
+    }
+
+    // Return result and current iterator cursor
     return {
+      result,
       cursor: iter.cursor || undefined,
     }
   }

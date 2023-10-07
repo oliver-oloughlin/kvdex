@@ -29,17 +29,33 @@ import type {
 import {
   allFulfilled,
   checkIndices,
-  createListSelector,
   deleteIndices,
   extendKey,
-  getDocumentId,
   setIndices,
 } from "./utils.ts"
 import { Document } from "./document.ts"
 
+/**
+ * Create an indexable collection builder function.
+ *
+ * @example
+ * ```ts
+ * collection(model<User>(), {
+ *   idGenerator: () => ulid(),
+ *   indices: {
+ *     username: "primary" // unique
+ *     age: "secondary" //non-unique
+ *   }
+ * })
+ * ```
+ *
+ * @param model - Model.
+ * @param options - Indexable collection options.
+ * @returns An indexable collection builder function.
+ */
 export function indexableCollection<
-  T1 extends KvObject,
-  T2 extends IndexableCollectionOptions<T1>,
+  const T1 extends KvObject,
+  const T2 extends IndexableCollectionOptions<T1>,
 >(model: Model<T1>, options: T2) {
   return (
     kv: Deno.Kv,
@@ -196,22 +212,19 @@ export class IndexableCollection<
   async findBySecondaryIndex<
     const K extends SecondaryIndexKeys<T1, T2["indices"]>,
   >(index: K, value: CheckKeyOf<K, T1>, options?: ListOptions<T1>) {
-    // Initiate result list
-    const result: Document<T1>[] = []
-
-    // Add documents to result list by secondary index
-    const { cursor } = await this.handleBySecondaryIndex(
-      index,
-      value,
-      (doc) => result.push(doc),
-      options,
+    // Create prefix key
+    const prefixKey = extendKey(
+      this._keys.secondaryIndexKey,
+      index as KvId,
+      value as KvId,
     )
 
-    // Return result and current iterator cursor
-    return {
-      result,
-      cursor,
-    }
+    // Add documents to result list by secondary index
+    return await this.handleMany(
+      prefixKey,
+      (doc) => doc,
+      options,
+    )
   }
 
   async delete(...ids: KvId[]) {
@@ -300,13 +313,21 @@ export class IndexableCollection<
   async deleteBySecondaryIndex<
     const K extends SecondaryIndexKeys<T1, T2["indices"]>,
   >(index: K, value: CheckKeyOf<K, T1>, options?: ListOptions<T1>) {
+    // Create prefix key
+    const prefixKey = extendKey(
+      this._keys.secondaryIndexKey,
+      index as KvId,
+      value as KvId,
+    )
+
     // Delete documents by secondary index, return iterator cursor
-    return await this.handleBySecondaryIndex(
-      index,
-      value,
+    const { cursor } = await this.handleMany(
+      prefixKey,
       (doc) => this.delete(doc.id),
       options,
     )
+
+    return { cursor }
   }
 
   /**
@@ -379,35 +400,19 @@ export class IndexableCollection<
     data: UpdateData<T1>,
     options?: UpdateManyOptions<T1>,
   ) {
-    // Initiate result and error list
-    const result: (CommitResult<T1> | Deno.KvCommitError)[] = []
-    const errors: unknown[] = []
-
-    // Update each document by secondary index, add commit result to result list
-    const { cursor } = await this.handleBySecondaryIndex(
-      index,
-      value,
-      async (doc) => {
-        try {
-          const cr = await this.updateDocument(doc, data, options)
-          result.push(cr)
-        } catch (e) {
-          errors.push(e)
-        }
-      },
-      options,
+    // Create prefix key
+    const prefixKey = extendKey(
+      this._keys.secondaryIndexKey,
+      index as KvId,
+      value as KvId,
     )
 
-    // Throw any caught errors
-    if (errors.length > 0) {
-      throw errors
-    }
-
-    // Return result list and current iterator cursor
-    return {
-      result,
-      cursor,
-    }
+    // Update each document by secondary index, add commit result to result list
+    return await this.handleMany(
+      prefixKey,
+      (doc) => this.updateDocument(doc, data, options),
+      options,
+    )
   }
 
   /** PROTECTED METHODS */
@@ -518,67 +523,5 @@ export class IndexableCollection<
       : {
         ok: false,
       }
-  }
-
-  /**
-   * Perform operations on lists of documents in the collection by secondary index.
-   *
-   * @param index - Index.
-   * @param value - Index value.
-   * @param fn - Callback function.
-   * @param options - List options or undefined.
-   * @returns - Promise that resolves to object containing iterator cursor.
-   */
-  protected async handleBySecondaryIndex<
-    const K extends SecondaryIndexKeys<T1, T2["indices"]>,
-  >(
-    index: K,
-    value: CheckKeyOf<K, T1>,
-    fn: (doc: Document<T1>) => unknown,
-    options: ListOptions<T1> | undefined,
-  ) {
-    // Set prefix and create list selector
-    const prefix = extendKey(
-      this._keys.secondaryIndexKey,
-      index as KvId,
-      value as KvId,
-    )
-
-    const selector = createListSelector(prefix, options)
-
-    // Create list iterator and initiate documents list
-    const iter = this.kv.list<T1>(selector, options)
-    const docs: Document<T1>[] = []
-
-    // Loop over document entries
-    for await (const { key, value, versionstamp } of iter) {
-      // Get document id
-      const id = getDocumentId(key)
-
-      // If id is undefined, continue to next entry
-      if (typeof id === "undefined") {
-        continue
-      }
-
-      // Create document
-      const doc = new Document<T1>(this._model, {
-        id,
-        versionstamp,
-        value,
-      })
-
-      // Filter document and add to documetns list
-      if (!options?.filter || options.filter(doc)) {
-        docs.push(doc)
-      }
-    }
-
-    // Execute callback function for each document
-    await allFulfilled(docs.map((doc) => fn(doc)))
-
-    // Return current iterator cursor
-    return {
-      cursor: iter.cursor || undefined,
-    }
   }
 }
