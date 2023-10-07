@@ -16,6 +16,7 @@ import type {
   LargeDocumentEntry,
   LargeKvValue,
   ListOptions,
+  Model,
   QueueMessageHandler,
   QueueValue,
   SetOptions,
@@ -31,34 +32,42 @@ import {
 import { Document } from "./document.ts"
 import { CorruptedDocumentDataError } from "./errors.ts"
 
+export function largeCollection<T1 extends LargeKvValue>(
+  model: Model<T1>,
+  options?: LargeCollectionOptions<T1>,
+) {
+  return (
+    kv: Deno.Kv,
+    key: KvKey,
+    queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+    idempotentListener: () => void,
+  ) =>
+    new LargeCollection<T1, LargeCollectionOptions<T1>>(
+      kv,
+      key,
+      model,
+      queueHandlers,
+      idempotentListener,
+      options,
+    )
+}
+
 export class LargeCollection<
   const T1 extends LargeKvValue,
   T2 extends LargeCollectionOptions<T1>,
 > extends Collection<T1, T2> {
   readonly _keys: LargeCollectionKeys
 
-  /**
-   * Create a new LargeCollection for handling large documents in the KV store.
-   *
-   * @example
-   * ```ts
-   * const kv = await Deno.openKv()
-   * const largeStrings = new LargeCollection<string>(kv, ["largeStrings"])
-   * ```
-   *
-   * @param kv
-   * @param key
-   * @param options
-   */
   constructor(
     kv: Deno.Kv,
     key: KvKey,
+    model: Model<T1>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => void,
     options?: T2,
   ) {
     // Invoke super constructor
-    super(kv, key, queueHandlers, idempotentListener, options)
+    super(kv, key, model, queueHandlers, idempotentListener, options)
 
     // Set large collection keys
     this._keys = {
@@ -206,13 +215,15 @@ export class LargeCollection<
   }
 
   protected async setDocument(
-    id: Deno.KvKeyPart,
-    data: T1,
+    id: KvId | null,
+    value: T1,
     options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
-    // Create document id key
-    const idKey = extendKey(this._keys.idKey, id)
+    // Create document id key and parse document value
+    const parsed = this._model.parse(value)
+    const docId = id ?? this._idGenerator(parsed)
+    const idKey = extendKey(this._keys.idKey, docId)
 
     // Check if id already exists
     const check = await this.kv
@@ -233,11 +244,11 @@ export class LargeCollection<
       }
 
       // If overwrite is true, delete existing document entry
-      await this.delete(id)
+      await this.delete(docId)
     }
 
     // Stringify data and initialize json parts list
-    const json = JSON.stringify(data)
+    const json = JSON.stringify(parsed)
     const jsonParts: string[] = []
 
     // Divide json string by string limit, add parts to json parts list
@@ -251,7 +262,7 @@ export class LargeCollection<
 
     // Execute set operations for json parts, capture keys and commit results
     const crs = await useAtomics(this.kv, jsonParts, (str, atomic) => {
-      const key = extendKey(this._keys.segmentKey, id, index)
+      const key = extendKey(this._keys.segmentKey, docId, index)
       keys.push(key)
       index++
 
@@ -269,7 +280,7 @@ export class LargeCollection<
 
       // Retry operation if there are remaining attempts
       if (retry > 0) {
-        return await this.setDocument(id, data, {
+        return await this.setDocument(docId, parsed, {
           ...options,
           retry: retry - 1,
         }, overwrite)
@@ -300,7 +311,7 @@ export class LargeCollection<
 
       // Retry operation if there are remaining attempts
       if (retry > 0) {
-        return await this.setDocument(id, data, {
+        return await this.setDocument(docId, parsed, {
           ...options,
           retry: retry - 1,
         }, overwrite)
@@ -315,7 +326,7 @@ export class LargeCollection<
     // Return commit result
     return {
       ok: true,
-      id,
+      id: docId,
       versionstamp: cr.versionstamp,
     }
   }
@@ -348,7 +359,7 @@ export class LargeCollection<
 
     try {
       // Create and return document
-      return new Document<T1>({
+      return new Document<T1>(this._model, {
         id,
         value: JSON.parse(json),
         versionstamp,

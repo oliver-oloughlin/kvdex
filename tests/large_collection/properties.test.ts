@@ -1,4 +1,4 @@
-import { Document, kvdex, largeCollection } from "../../mod.ts"
+import { Document, kvdex, largeCollection, model } from "../../mod.ts"
 import {
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
@@ -27,10 +27,10 @@ Deno.test("large_collection - properties", async (t) => {
   await t.step("Should generate ids with custom id generator", async () => {
     await useKv((kv) => {
       const db = kvdex(kv, {
-        users1: largeCollection<User>().build({
+        users1: largeCollection(model<User>(), {
           idGenerator: () => Math.random(),
         }),
-        users2: largeCollection<User>().build({
+        users2: largeCollection(model<User>(), {
           idGenerator: (data) => data.username,
         }),
       })

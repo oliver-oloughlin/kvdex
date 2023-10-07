@@ -12,9 +12,9 @@ import type {
   IndexDataEntry,
   KvId,
   KvKey,
+  KvObject,
   KvValue,
   ListOptions,
-  Model,
   ParsedQueueMessage,
   PreparedEnqueue,
   QueueMessage,
@@ -120,7 +120,7 @@ export function isKvObject(value: KvValue) {
  * @returns The atomic operation with added mutations.
  */
 export function setIndices<
-  T1 extends Model,
+  T1 extends KvObject,
   T2 extends IndexableCollectionOptions<T1>,
 >(
   id: KvId,
@@ -184,7 +184,7 @@ export function setIndices<
  * @returns The atomic operation with added checks.
  */
 export function checkIndices<
-  T1 extends Model,
+  T1 extends KvObject,
   T2 extends T1 | UpdateData<T1>,
   T3 extends IndexableCollectionOptions<T1>,
 >(
@@ -228,7 +228,7 @@ export function checkIndices<
  * @returns The atomic operation with added mutations.
  */
 export function deleteIndices<
-  T1 extends Model,
+  T1 extends KvObject,
   T2 extends IndexableCollectionOptions<T1>,
 >(
   id: KvId,

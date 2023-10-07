@@ -21,3 +21,12 @@ export const mockUser2: User = {
     houseNr: 420,
   },
 }
+
+export const mockUserInvalid = {
+  username: 100,
+  age: 69,
+  address: {
+    street: "Karl Johans gate",
+    houseNr: "420",
+  },
+} as unknown as User

@@ -1,5 +1,5 @@
 import { assert } from "../deps.ts"
-import { mockUser1, mockUser2 } from "../mocks.ts"
+import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts"
 import { useDb } from "../utils.ts"
 
 Deno.test("large_collection - write", async (t) => {
@@ -27,6 +27,32 @@ Deno.test("large_collection - write", async (t) => {
         const doc = await db.l_users.find("id")
         assert(doc !== null)
         assert(doc.value.username === mockUser2.username)
+      })
+    },
+  )
+
+  await t.step(
+    "Should parse and write new document to collection",
+    async () => {
+      await useDb(async (db) => {
+        let assertion = true
+        await db.zl_users.write("id", mockUser1).catch(() => assertion = false)
+        assert(assertion)
+      })
+    },
+  )
+
+  await t.step(
+    "Should fail to parse and write new document to collection",
+    async () => {
+      await useDb(async (db) => {
+        let assertion = false
+
+        await db.zl_users.write("id", mockUserInvalid).catch(() =>
+          assertion = true
+        )
+
+        assert(assertion)
       })
     },
   )

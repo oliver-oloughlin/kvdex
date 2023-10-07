@@ -31,6 +31,7 @@ import {
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
+import { model } from "./model.ts"
 
 /**
  * Create a new database instance.
@@ -39,7 +40,15 @@ import {
  *
  * @example
  * ```ts
- * interface User extends Model {
+ * import {
+ *   kvdex,
+ *   model,
+ *   collection,
+ *   indexableCollection,
+ *   largeCollection
+ * } from "https://deno.land/x/kvdex/mod.ts"
+ *
+ * type User = {
  *   username: string
  *   age: number
  * }
@@ -47,10 +56,10 @@ import {
  * const kv = await Deno.openKv()
  *
  * const db = kvdex(kv, {
- *   numbers: collection<number>().build(),
- *   u64s: collection<Deno.KvU64>().build(),
- *   largeStrings: largeCollection<string>().build(),
- *   users: indexableCollection<User>().build({
+ *   numbers: collection(model<number>()),
+ *   u64s: collection(model<Deno.KvU64>()),
+ *   largeStrings: largeCollection(model<string>()),
+ *   users: indexableCollection(model<User>(), {
  *     indices: {
  *       username: "primary",
  *       age: "secondary"
@@ -61,7 +70,7 @@ import {
  *
  * @param kv - The Deno KV instance to be used for storing and retrieving data.
  * @param schemaDefinition - The schema definition used to build collections and create the database schema.
- * @returns
+ * @returns A KvDex instance with attached schema.
  */
 export function kvdex<const T extends SchemaDefinition>(
   kv: Deno.Kv,
@@ -281,7 +290,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     }
 
     // Return document
-    return new Document<T>({
+    return new Document<T>(model(), {
       id,
       versionstamp: result.versionstamp,
       value: result.value,

@@ -5,6 +5,7 @@ import type {
   KvObject,
   KvValue,
   KvVersionstamp,
+  Model,
 } from "./types.ts"
 import { isKvObject } from "./utils.ts"
 
@@ -13,14 +14,13 @@ export class Document<T extends KvValue> {
   readonly versionstamp: KvVersionstamp<T>
   readonly value: T
 
-  constructor({
-    id,
-    versionstamp,
-    value,
-  }: DocumentData<T>) {
+  constructor(
+    model: Model<T>,
+    { id, versionstamp, value }: DocumentData<T>,
+  ) {
     this.id = id
     this.versionstamp = versionstamp
-    this.value = value
+    this.value = model.parse(value)
   }
 
   /**

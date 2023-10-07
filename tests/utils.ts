@@ -1,28 +1,43 @@
-import { collection, kvdex } from "../mod.ts"
 import {
+  collection,
   indexableCollection,
+  kvdex,
   largeCollection,
-} from "../src/collection_builder.ts"
+} from "../mod.ts"
+import { model } from "../src/model.ts"
 import { ulid } from "./deps.ts"
-import { User } from "./models.ts"
+import { User, UserSchema } from "./models.ts"
 
 // Create test db
 export function createDb(kv: Deno.Kv) {
   return kvdex(kv, {
-    u64s: collection<Deno.KvU64>().build({
+    u64s: collection(model<Deno.KvU64>(), {
       idGenerator: () => ulid(),
     }),
-    users: collection<User>().build({
+    users: collection(model<User>(), {
       idGenerator: () => ulid(),
     }),
-    i_users: indexableCollection<User>().build({
+    i_users: indexableCollection(model<User>(), {
       idGenerator: () => ulid(),
       indices: {
         username: "primary",
         age: "secondary",
       },
     }),
-    l_users: largeCollection<User>().build({
+    l_users: largeCollection(model<User>(), {
+      idGenerator: () => ulid(),
+    }),
+    z_users: collection(UserSchema, {
+      idGenerator: () => ulid(),
+    }),
+    zi_users: indexableCollection(UserSchema, {
+      idGenerator: () => ulid(),
+      indices: {
+        username: "primary",
+        age: "secondary",
+      },
+    }),
+    zl_users: collection(UserSchema, {
       idGenerator: () => ulid(),
     }),
   })
@@ -83,6 +98,27 @@ export function generateLargeUsers(n: number) {
         houseNr: Math.round(Math.random() * 100),
       },
     })
+  }
+
+  return users
+}
+
+export function generateInvalidUsers(n: number) {
+  const users: User[] = []
+
+  let country = ""
+  for (let i = 0; i < 50_000; i++) {
+    country += "A"
+  }
+
+  for (let i = 0; i < n; i++) {
+    users.push({
+      username: 100,
+      age: Math.floor(15 + i / 5),
+      address: {
+        street: 100n,
+      },
+    } as unknown as User)
   }
 
   return users

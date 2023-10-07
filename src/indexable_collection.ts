@@ -15,6 +15,7 @@ import type {
   IndexType,
   KvId,
   KvKey,
+  KvObject,
   ListOptions,
   Model,
   PrimaryIndexKeys,
@@ -36,6 +37,26 @@ import {
 } from "./utils.ts"
 import { Document } from "./document.ts"
 
+export function indexableCollection<
+  T1 extends KvObject,
+  T2 extends IndexableCollectionOptions<T1>,
+>(model: Model<T1>, options: T2) {
+  return (
+    kv: Deno.Kv,
+    key: KvKey,
+    queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+    idempotentListener: () => void,
+  ) =>
+    new IndexableCollection<T1, T2>(
+      kv,
+      key,
+      model,
+      queueHandlers,
+      idempotentListener,
+      options,
+    )
+}
+
 /**
  * Represents a collection of object documents stored in the KV store.
  *
@@ -43,38 +64,23 @@ import { Document } from "./document.ts"
  * including methods exclusive to indexable collections.
  */
 export class IndexableCollection<
-  const T1 extends Model,
+  const T1 extends KvObject,
   const T2 extends IndexableCollectionOptions<T1>,
 > extends Collection<T1, T2> {
   readonly primaryIndexList: string[]
   readonly secondaryIndexList: string[]
   readonly _keys: IndexableCollectionKeys
 
-  /**
-   * Create a new IndexableCollection for handling object documents in the KV store.
-   *
-   * @example
-   * ```ts
-   * const kv = await Deno.openKv()
-   * const users = new IndexableCollection<User>(kv, ["users"], {
-   *   indices: {
-   *     username: "primary",
-   *     age: "secondary"
-   *   }
-   * })
-   * ```
-   *
-   * @param options - Indexable Collection options.
-   */
   constructor(
     kv: Deno.Kv,
     key: KvKey,
+    model: Model<T1>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => void,
     options: T2,
   ) {
     // Invoke super constructor
-    super(kv, key, queueHandlers, idempotentListener, options)
+    super(kv, key, model, queueHandlers, idempotentListener, options)
 
     // Set indexable collection keys
     this._keys = {
@@ -159,7 +165,7 @@ export class IndexableCollection<
     const { __id__, ...data } = result.value
 
     // Return document
-    return new Document<T1>({
+    return new Document<T1>(this._model, {
       id: __id__,
       versionstamp: result.versionstamp,
       value: data as T1,
@@ -373,19 +379,29 @@ export class IndexableCollection<
     data: UpdateData<T1>,
     options?: UpdateManyOptions<T1>,
   ) {
-    // Initiate reuslt list
+    // Initiate result and error list
     const result: (CommitResult<T1> | Deno.KvCommitError)[] = []
+    const errors: unknown[] = []
 
     // Update each document by secondary index, add commit result to result list
     const { cursor } = await this.handleBySecondaryIndex(
       index,
       value,
       async (doc) => {
-        const cr = await this.updateDocument(doc, data, options)
-        result.push(cr)
+        try {
+          const cr = await this.updateDocument(doc, data, options)
+          result.push(cr)
+        } catch (e) {
+          errors.push(e)
+        }
       },
       options,
     )
+
+    // Throw any caught errors
+    if (errors.length > 0) {
+      throw errors
+    }
 
     // Return result list and current iterator cursor
     return {
@@ -431,16 +447,18 @@ export class IndexableCollection<
   }
 
   protected async setDocument(
-    id: KvId,
-    data: T1,
+    id: KvId | null,
+    value: T1,
     options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
-    // Create the document id key
-    const idKey = extendKey(this._keys.idKey, id)
+    // Create the document id key and parse document value
+    const parsed = this._model.parse(value)
+    const docId = id ?? this._idGenerator(parsed)
+    const idKey = extendKey(this._keys.idKey, docId)
 
     // Check for index collision
-    const indicesCheck = await checkIndices(data, this.kv.atomic(), this)
+    const indicesCheck = await checkIndices(parsed, this.kv.atomic(), this)
       .commit()
 
     // If index collision is detected, return commit error
@@ -465,16 +483,16 @@ export class IndexableCollection<
       }
 
       // Delete existing document before setting new entry
-      await this.delete(id)
+      await this.delete(docId)
     }
 
     // Create atomic operation with set mutation and versionstamp check
     const atomic = this.kv
       .atomic()
-      .set(idKey, data, options)
+      .set(idKey, parsed, options)
 
     // Set document indices using atomic operation
-    setIndices(id, data, atomic, this, options)
+    setIndices(docId, parsed, atomic, this, options)
 
     // Execute the atomic operation
     const cr = await atomic.commit()
@@ -483,8 +501,8 @@ export class IndexableCollection<
     const retry = options?.retry ?? 0
     if (!cr.ok && retry > 0) {
       return await this.setDocument(
-        id,
-        data,
+        docId,
+        parsed,
         { ...options, retry: retry - 1 },
         overwrite,
       )
@@ -495,7 +513,7 @@ export class IndexableCollection<
       ? {
         ok: true,
         versionstamp: cr.versionstamp,
-        id,
+        id: docId,
       }
       : {
         ok: false,
@@ -543,7 +561,7 @@ export class IndexableCollection<
       }
 
       // Create document
-      const doc = new Document<T1>({
+      const doc = new Document<T1>(this._model, {
         id,
         versionstamp,
         value,

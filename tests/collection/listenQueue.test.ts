@@ -1,4 +1,10 @@
-import { collection, kvdex, QueueMessage, QueueValue } from "../../mod.ts"
+import {
+  collection,
+  kvdex,
+  model,
+  QueueMessage,
+  QueueValue,
+} from "../../mod.ts"
 import {
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
@@ -14,7 +20,7 @@ Deno.test("collection - listenQueue", async (t) => {
       const undeliveredId = "id"
 
       const db = kvdex(kv, {
-        numbers: collection<number>().build(),
+        numbers: collection(model<number>()),
       })
 
       const handlerId = createHandlerId(db.numbers._keys.baseKey, undefined)
@@ -46,7 +52,7 @@ Deno.test("collection - listenQueue", async (t) => {
   await t.step("Should not receive db queue message", async () => {
     await useKv(async (kv) => {
       const db = kvdex(kv, {
-        numbers: collection<number>().build(),
+        numbers: collection(model<number>()),
       })
 
       let assertion = true

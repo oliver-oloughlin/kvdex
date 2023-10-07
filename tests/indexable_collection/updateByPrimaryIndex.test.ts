@@ -1,6 +1,6 @@
 import { Document } from "../../mod.ts"
 import { assert } from "../deps.ts"
-import { mockUser1 } from "../mocks.ts"
+import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts"
 import { User } from "../models.ts"
 import { useDb } from "../utils.ts"
 
@@ -62,4 +62,38 @@ Deno.test("indexable_collection - updateByPrimaryIndex", async (t) => {
       })
     },
   )
+
+  await t.step("Should successfully parse and update document", async () => {
+    await useDb(async (db) => {
+      let assertion = true
+
+      const cr = await db.zi_users.add(mockUser1)
+      assert(cr.ok)
+
+      await db.zi_users.updateByPrimaryIndex(
+        "username",
+        mockUser1.username,
+        mockUser2,
+      ).catch(() => assertion = false)
+
+      assert(assertion)
+    })
+  })
+
+  await t.step("Should fail to parse and update document", async () => {
+    await useDb(async (db) => {
+      let assertion = false
+
+      const cr = await db.zi_users.add(mockUser1)
+      assert(cr.ok)
+
+      await db.zi_users.updateByPrimaryIndex(
+        "username",
+        mockUser1.username,
+        mockUserInvalid,
+      ).catch(() => assertion = true)
+
+      assert(assertion)
+    })
+  })
 })

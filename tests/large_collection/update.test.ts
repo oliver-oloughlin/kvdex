@@ -1,6 +1,6 @@
-import { collection, kvdex } from "../../mod.ts"
+import { collection, kvdex, model } from "../../mod.ts"
 import { assert } from "../deps.ts"
-import { mockUser1 } from "../mocks.ts"
+import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts"
 import { useDb, useKv } from "../utils.ts"
 
 Deno.test("large_collection - update", async (t) => {
@@ -43,9 +43,9 @@ Deno.test("large_collection - update", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          numbers: collection<number>().build(),
-          arrays: collection<string[]>().build(),
-          dates: collection<Date>().build(),
+          numbers: collection(model<number>()),
+          arrays: collection(model<string[]>()),
+          dates: collection(model<Date>()),
         })
 
         const cr1 = await db.numbers.add(10)
@@ -79,4 +79,32 @@ Deno.test("large_collection - update", async (t) => {
       })
     },
   )
+
+  await t.step("Should successfully parse and update document", async () => {
+    await useDb(async (db) => {
+      let assertion = true
+
+      const cr = await db.zl_users.add(mockUser1)
+      assert(cr.ok)
+
+      await db.zl_users.update(cr.id, mockUser2).catch(() => assertion = false)
+
+      assert(assertion)
+    })
+  })
+
+  await t.step("Should fail to parse and update document", async () => {
+    await useDb(async (db) => {
+      let assertion = false
+
+      const cr = await db.zl_users.add(mockUser1)
+      assert(cr.ok)
+
+      await db.zl_users.update(cr.id, mockUserInvalid).catch(() =>
+        assertion = true
+      )
+
+      assert(assertion)
+    })
+  })
 })

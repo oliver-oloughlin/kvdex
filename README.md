@@ -69,17 +69,22 @@ like atomic operations and queue listeners.
 
 ## Models
 
-For collections of objects, models can be defined by extending the Model type.
-Optional and nullable properties are allowed. If you wish to use Zod, you can
-create your Zod object schema and use its inferred type as your model.
+Collections are typed using models. Standard models can be defined using the
+`model()` function. Alternatively, any object that implements the Model
+interface can be used as a model. Zod is therefore fully compatible, without
+being a dependency. The standard model uses TypeScript inference only and does
+not validate any data when parsing. It is up to the devloper to choose the
+strategy that fits their use case the best.
 
-**_NOTE_:** When using interfaces instead of types, sub-interfaces must also
-extend the Model type.
+**_NOTE_:** When using interfaces instead of types, they must extend the KvValue
+type.
+
+Using the standard model strategy:
 
 ```ts
-import type { Model } from "https://deno.land/x/kvdex/mod.ts"
+import { model } from "https://deno.land/x/kvdex/mod.ts"
 
-interface User extends Model {
+type User = {
   username: string
   age: number
   activities: string[]
@@ -90,6 +95,28 @@ interface User extends Model {
     houseNumber: number | null
   }
 }
+
+const UserModel = model<User>()
+```
+
+Using Zod instead:
+
+```ts
+import { z } from "https://deno.land/x/zod/mod.ts"
+
+type User = z.infer<typeof UserModel>
+
+const UserModel = z.object({
+  username: z.string(),
+  age: z.number(),
+  activities: z.array(z.string()),
+  address: z.object({
+    country: z.string(),
+    city: z.string(),
+    street: z.string(),
+    houseNumber: z.number().nullable(),
+  }).optional(),
+})
 ```
 
 ## Database
@@ -99,7 +126,8 @@ instance and a schema definition as arguments.
 
 ```ts
 import { 
-  kvdex, 
+  kvdex,
+  model,
   collection, 
   indexableCollection, 
   largeCollection,
@@ -108,9 +136,9 @@ import {
 const kv = await Deno.openKv()
 
 const db = kvdex(kv, {
-  numbers: collection<number>().build(),
-  largeStrings: largeCollection<string>().build(),
-  users: indexableCollection<User>().build({
+  numbers: collection(model<number>()),
+  largeStrings: largeCollection(model<string>()),
+  users: indexableCollection(UserModel, {
     indices: {
       username: "primary" // unique
       age: "secondary" // non-unique
@@ -118,7 +146,7 @@ const db = kvdex(kv, {
   }),
   // Nested collections
   nested: {
-    strings: collection<string>().build(),
+    strings: collection(model<string>()),
   }
 })
 ```
@@ -126,11 +154,12 @@ const db = kvdex(kv, {
 The schema definition contains collection builders, or nested schema
 definitions. Standard collections can hold any type adhering to KvValue (string,
 number, array, object...), large collections can hold strings, arrays and
-objects, while indexable collections can only hold types adhering to Model
-(objects). For indexable collections, primary (unique) and secondary
-(non-unique) indexing is supported. Upon building a collection, a custom id
-generator function can be set which will be used to auto-generate ids when
-adding documents to the collection.
+objects, while indexable collections can only hold types adhering to KvObject.
+
+All collections take a second options argument. A custom id generator function
+can be set which will be used to auto-generate ids when adding documents to the
+collection. For indexable collections, primary (unique) and secondary
+(non-unique) indexing is supported.
 
 ## Collection Methods
 
