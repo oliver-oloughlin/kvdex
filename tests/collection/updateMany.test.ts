@@ -1,5 +1,6 @@
 import { collection, CommitResult, kvdex, Model } from "../../mod.ts"
 import { assert } from "../deps.ts"
+import { mockUser1, mockUserInvalid } from "../mocks.ts"
 import { User } from "../models.ts"
 import { generateNumbers, generateUsers, useDb, useKv } from "../utils.ts"
 
@@ -111,4 +112,32 @@ Deno.test("collection - updateMany", async (t) => {
       })
     },
   )
+
+  await t.step("Should successfully parse and update", async () => {
+    await useDb(async (db) => {
+      const users = generateUsers(10)
+      let assertion = true
+
+      const crs = await db.z_users.addMany(users)
+      assert(crs.every((cr) => cr.ok))
+
+      await db.z_users.updateMany(mockUser1).catch(() => assertion = false)
+
+      assert(assertion)
+    })
+  })
+
+  await t.step("Should fail to parse and update document", async () => {
+    await useDb(async (db) => {
+      const users = generateUsers(10)
+      let assertion = false
+
+      const crs = await db.z_users.addMany(users)
+      assert(crs.every((cr) => cr.ok))
+
+      await db.z_users.updateMany(mockUserInvalid).catch(() => assertion = true)
+
+      assert(assertion)
+    })
+  })
 })

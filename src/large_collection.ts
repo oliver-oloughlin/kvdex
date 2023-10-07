@@ -230,14 +230,15 @@ export class LargeCollection<
   }
 
   protected async setDocument(
-    id: Deno.KvKeyPart,
+    id: KvId | null,
     value: T1,
     options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Create document id key and parse document value
-    const idKey = extendKey(this._keys.idKey, id)
-    const parsed = parseDocumentValue(value, this.model)
+    const parsed = parseDocumentValue(value, this._model)
+    const docId = id ?? this._idGenerator(parsed)
+    const idKey = extendKey(this._keys.idKey, docId)
 
     // Check if id already exists
     const check = await this.kv
@@ -258,7 +259,7 @@ export class LargeCollection<
       }
 
       // If overwrite is true, delete existing document entry
-      await this.delete(id)
+      await this.delete(docId)
     }
 
     // Stringify data and initialize json parts list
@@ -276,7 +277,7 @@ export class LargeCollection<
 
     // Execute set operations for json parts, capture keys and commit results
     const crs = await useAtomics(this.kv, jsonParts, (str, atomic) => {
-      const key = extendKey(this._keys.segmentKey, id, index)
+      const key = extendKey(this._keys.segmentKey, docId, index)
       keys.push(key)
       index++
 
@@ -294,7 +295,7 @@ export class LargeCollection<
 
       // Retry operation if there are remaining attempts
       if (retry > 0) {
-        return await this.setDocument(id, parsed, {
+        return await this.setDocument(docId, parsed, {
           ...options,
           retry: retry - 1,
         }, overwrite)
@@ -325,7 +326,7 @@ export class LargeCollection<
 
       // Retry operation if there are remaining attempts
       if (retry > 0) {
-        return await this.setDocument(id, parsed, {
+        return await this.setDocument(docId, parsed, {
           ...options,
           retry: retry - 1,
         }, overwrite)
@@ -340,7 +341,7 @@ export class LargeCollection<
     // Return commit result
     return {
       ok: true,
-      id,
+      id: docId,
       versionstamp: cr.versionstamp,
     }
   }
@@ -373,11 +374,11 @@ export class LargeCollection<
 
     try {
       // Create and return document
-      return new Document<T1>({
+      return new Document<T1>(this._model, {
         id,
         value: JSON.parse(json),
         versionstamp,
-      }, this.model)
+      })
     } catch (_e) {
       // Throw if JSON.parse fails
       throw new CorruptedDocumentDataError(

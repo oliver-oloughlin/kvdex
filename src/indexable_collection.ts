@@ -183,11 +183,11 @@ export class IndexableCollection<
     const { __id__, ...data } = result.value
 
     // Return document
-    return new Document<T1>({
+    return new Document<T1>(this._model, {
       id: __id__,
       versionstamp: result.versionstamp,
       value: data as T1,
-    }, this.model)
+    })
   }
 
   /**
@@ -455,14 +455,15 @@ export class IndexableCollection<
   }
 
   protected async setDocument(
-    id: KvId,
+    id: KvId | null,
     value: T1,
     options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Create the document id key and parse document value
-    const idKey = extendKey(this._keys.idKey, id)
-    const parsed = parseDocumentValue(value, this.model)
+    const parsed = parseDocumentValue(value, this._model)
+    const docId = id ?? this._idGenerator(parsed)
+    const idKey = extendKey(this._keys.idKey, docId)
 
     // Check for index collision
     const indicesCheck = await checkIndices(parsed, this.kv.atomic(), this)
@@ -490,7 +491,7 @@ export class IndexableCollection<
       }
 
       // Delete existing document before setting new entry
-      await this.delete(id)
+      await this.delete(docId)
     }
 
     // Create atomic operation with set mutation and versionstamp check
@@ -499,7 +500,7 @@ export class IndexableCollection<
       .set(idKey, parsed, options)
 
     // Set document indices using atomic operation
-    setIndices(id, parsed, atomic, this, options)
+    setIndices(docId, parsed, atomic, this, options)
 
     // Execute the atomic operation
     const cr = await atomic.commit()
@@ -508,7 +509,7 @@ export class IndexableCollection<
     const retry = options?.retry ?? 0
     if (!cr.ok && retry > 0) {
       return await this.setDocument(
-        id,
+        docId,
         parsed,
         { ...options, retry: retry - 1 },
         overwrite,
@@ -520,7 +521,7 @@ export class IndexableCollection<
       ? {
         ok: true,
         versionstamp: cr.versionstamp,
-        id,
+        id: docId,
       }
       : {
         ok: false,
@@ -568,11 +569,11 @@ export class IndexableCollection<
       }
 
       // Create document
-      const doc = new Document<T1>({
+      const doc = new Document<T1>(this._model, {
         id,
         versionstamp,
         value,
-      }, this.model)
+      })
 
       // Filter document and add to documetns list
       if (!options?.filter || options.filter(doc)) {

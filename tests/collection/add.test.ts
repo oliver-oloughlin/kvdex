@@ -14,11 +14,28 @@ Deno.test("collection - add", async (t) => {
     })
   })
 
-  await t.step("Should not add new document entry to collection", async () => {
-    await useDb(async (db) => {
-      let assertion = false
-      await db.z_users.add(mockUserInvalid).catch(() => assertion = true)
-      assert(assertion)
-    })
-  })
+  await t.step(
+    "Should successfully parse and add new document entry to collection",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.z_users.add(mockUser1)
+        assert(cr.ok)
+
+        const doc = await db.z_users.find(cr.id)
+        assert(doc !== null)
+        assert(doc.value.username === mockUser1.username)
+      })
+    },
+  )
+
+  await t.step(
+    "Should fail parse and add new document entry to collection",
+    async () => {
+      await useDb(async (db) => {
+        let assertion = false
+        await db.z_users.add(mockUserInvalid).catch(() => assertion = true)
+        assert(assertion)
+      })
+    },
+  )
 })

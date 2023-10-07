@@ -1,11 +1,11 @@
 import { collection, kvdex, Model } from "../../mod.ts"
 import { assert } from "../deps.ts"
-import { mockUser1 } from "../mocks.ts"
+import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts"
 import { useDb, useKv } from "../utils.ts"
 
 Deno.test("collection - update", async (t) => {
   await t.step(
-    "Should partially update document of model type using shallow merge",
+    "Should partially update document of KvObject type using shallow merge",
     async () => {
       await useDb(async (db) => {
         const cr = await db.users.add(mockUser1)
@@ -79,4 +79,32 @@ Deno.test("collection - update", async (t) => {
       })
     },
   )
+
+  await t.step("Should successfully parse and update document", async () => {
+    await useDb(async (db) => {
+      let assertion = true
+
+      const cr = await db.z_users.add(mockUser1)
+      assert(cr.ok)
+
+      await db.z_users.update(cr.id, mockUser2).catch(() => assertion = false)
+
+      assert(assertion)
+    })
+  })
+
+  await t.step("Should fail to parse and update document", async () => {
+    await useDb(async (db) => {
+      let assertion = false
+
+      const cr = await db.z_users.add(mockUser1)
+      assert(cr.ok)
+
+      await db.z_users.update(cr.id, mockUserInvalid).catch(() =>
+        assertion = true
+      )
+
+      assert(assertion)
+    })
+  })
 })

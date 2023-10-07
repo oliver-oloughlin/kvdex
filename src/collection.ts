@@ -73,10 +73,10 @@ export class Collection<
   private idempotentListener: () => void
 
   protected kv: Deno.Kv
-  protected model: Model<T1> | ParserModel<T1>
 
   readonly _idGenerator: IdGenerator<KvValue>
   readonly _keys: CollectionKeys
+  readonly _model: Model<T1> | ParserModel<T1>
 
   /**
    * Create a new collection for handling documents in the KV store.
@@ -101,13 +101,15 @@ export class Collection<
     this.queueHandlers = queueHandlers
     this.idempotentListener = idempotentListener
 
-    // Set the KV instance and model
+    // Set the KV instance
     this.kv = kv
-    this.model = model
 
     // Set id generator function
     this._idGenerator = options?.idGenerator as IdGenerator<KvValue> ??
       generateId
+
+    // Set model
+    this._model = model
 
     // Set the collection keys
     this._keys = {
@@ -147,11 +149,11 @@ export class Collection<
     }
 
     // Return document
-    return new Document<T1>({
+    return new Document<T1>(this._model, {
       id,
       versionstamp: result.versionstamp,
       value: result.value,
-    }, this.model)
+    })
   }
 
   /**
@@ -192,11 +194,11 @@ export class Collection<
 
       // Add document to result list
       result.push(
-        new Document<T1>({
+        new Document<T1>(this._model, {
           id,
           versionstamp,
           value,
-        }, this.model),
+        }),
       )
     }
 
@@ -219,10 +221,9 @@ export class Collection<
    * @param options - Set options, optional.
    * @returns Promise resolving to a CommitResult object.
    */
-  async add(data: T1, options?: SetOptions) {
-    // Generate id and set the document entry
-    const id = this._idGenerator(data)
-    return await this.setDocument(id, data, options, false)
+  async add(value: T1, options?: SetOptions) {
+    // Set document value with generated id
+    return await this.setDocument(null, value, options, false)
   }
 
   /**
@@ -350,22 +351,32 @@ export class Collection<
    * console.log(success) // false
    * ```
    *
-   * @param data - Updated data to be inserted into documents.
+   * @param value - Updated value to be inserted into documents.
    * @param options - Update many options, optional.
    * @returns Promise resolving to an object containing iterator cursor and result list.
    */
   async updateMany(
-    data: UpdateData<T1>,
+    value: UpdateData<T1>,
     options?: UpdateManyOptions<T1>,
   ) {
-    // Initiate result list
+    // Initiate result and error list
     const result: (CommitResult<T1> | Deno.KvCommitError)[] = []
+    const errors: unknown[] = []
 
     // Update each document, add commit result to result list
     const { cursor } = await this.handleMany(async (doc) => {
-      const cr = await this.updateDocument(doc, data, options)
-      result.push(cr)
+      try {
+        const cr = await this.updateDocument(doc, value, options)
+        result.push(cr)
+      } catch (e) {
+        errors.push(e)
+      }
     }, options)
+
+    // Throw errors if caught
+    if (errors.length > 0) {
+      throw errors
+    }
 
     // Return result list and current iterator cursor
     return {
@@ -395,13 +406,34 @@ export class Collection<
    * ])
    * ```
    *
-   * @param entries - Data entries to be added.
+   * @param values - Document values to be added.
    * @param options - Set options, optional.
    * @returns A promise that resolves to a list of Deno.KvCommitResult or Deno.KvCommitError objects
    */
-  async addMany(entries: T1[], options?: SetOptions) {
-    // Add each entry, return commit result list
-    return await allFulfilled(entries.map((data) => this.add(data, options)))
+  async addMany(values: T1[], options?: SetOptions) {
+    // Initiate result and error lists
+    const results: (CommitResult<T1> | Deno.KvCommitError)[] = []
+    const errors: unknown[] = []
+
+    // Add each value
+    await allFulfilled(
+      values.map(async (value) => {
+        try {
+          const result = await this.add(value, options)
+          results.push(result)
+        } catch (e) {
+          errors.push(e)
+        }
+      }),
+    )
+
+    // Throw any caught errors
+    if (errors.length > 0) {
+      throw errors
+    }
+
+    // Return commit results
+    return results
   }
 
   /**
@@ -662,11 +694,11 @@ export class Collection<
     }
 
     // Return document
-    return new Document<T>({
+    return new Document<T>(this._model, {
       id,
       versionstamp: result.versionstamp,
       value: result.value,
-    }, this.model)
+    })
   }
 
   /**
@@ -711,11 +743,11 @@ export class Collection<
       }
 
       // Create document
-      const doc = new Document<T1>({
+      const doc = new Document<T1>(this._model, {
         id,
         versionstamp,
         value: value,
-      }, this.model)
+      })
 
       // Filter document and add to documents list
       if (!options?.filter || options.filter(doc)) {
@@ -742,14 +774,15 @@ export class Collection<
    * @returns Promise resolving to a CommitResult object.
    */
   protected async setDocument(
-    id: KvId,
+    id: KvId | null,
     value: T1,
     options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
-    // Create document key and parse document value
-    const key = extendKey(this._keys.idKey, id)
-    const parsed = parseDocumentValue(value, this.model)
+    // Create id, document key and parse document value
+    const parsed = parseDocumentValue(value, this._model)
+    const docId = id ?? this._idGenerator(parsed)
+    const key = extendKey(this._keys.idKey, docId)
 
     // Create atomic operation with set mutation
     let atomic = this.kv.atomic().set(key, parsed, options)
@@ -769,7 +802,7 @@ export class Collection<
     const retry = options?.retry ?? 0
     if (!cr.ok && retry > 0) {
       return await this.setDocument(
-        id,
+        docId,
         parsed,
         { ...options, retry: retry - 1 },
         overwrite,
@@ -781,7 +814,7 @@ export class Collection<
       ? {
         ok: true,
         versionstamp: cr.versionstamp,
-        id,
+        id: docId,
       }
       : {
         ok: false,
@@ -804,7 +837,7 @@ export class Collection<
     // Get document value, delete document entry
     const { value, id } = doc
 
-    // If value is KvObject, perform partial merge and set new documetn value
+    // If value is KvObject, perform partial merge and set new document value
     if (isKvObject(value)) {
       return await this.setDocument(
         id,

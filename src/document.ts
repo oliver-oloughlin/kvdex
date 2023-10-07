@@ -15,11 +15,10 @@ export class Document<T extends KvValue> {
   readonly versionstamp: KvVersionstamp<T>
   readonly value: T
 
-  constructor({
-    id,
-    versionstamp,
-    value,
-  }: DocumentData<T>, model: Model<T> | ParserModel<T>) {
+  constructor(
+    model: Model<T> | ParserModel<T>,
+    { id, versionstamp, value }: DocumentData<T>,
+  ) {
     this.id = id
     this.versionstamp = versionstamp
     this.value = parseDocumentValue(value, model)

@@ -103,6 +103,27 @@ export function generateLargeUsers(n: number) {
   return users
 }
 
+export function generateInvalidUsers(n: number) {
+  const users: User[] = []
+
+  let country = ""
+  for (let i = 0; i < 50_000; i++) {
+    country += "A"
+  }
+
+  for (let i = 0; i < n; i++) {
+    users.push({
+      username: 100,
+      age: Math.floor(15 + i / 5),
+      address: {
+        street: 100n,
+      },
+    } as unknown as User)
+  }
+
+  return users
+}
+
 export function generateNumbers(n: number) {
   const numbers: number[] = []
 

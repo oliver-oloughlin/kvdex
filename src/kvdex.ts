@@ -283,11 +283,11 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     }
 
     // Return document
-    return new Document<T>({
+    return new Document<T>({}, {
       id,
       versionstamp: result.versionstamp,
       value: result.value,
-    }, {})
+    })
   }
 
   /**
