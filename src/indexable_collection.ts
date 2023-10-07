@@ -71,22 +71,6 @@ export class IndexableCollection<
   readonly secondaryIndexList: string[]
   readonly _keys: IndexableCollectionKeys
 
-  /**
-   * Create a new IndexableCollection for handling object documents in the KV store.
-   *
-   * @example
-   * ```ts
-   * const kv = await Deno.openKv()
-   * const users = new IndexableCollection<User>(kv, ["users"], {
-   *   indices: {
-   *     username: "primary",
-   *     age: "secondary"
-   *   }
-   * })
-   * ```
-   *
-   * @param options - Indexable Collection options.
-   */
   constructor(
     kv: Deno.Kv,
     key: KvKey,

@@ -77,17 +77,6 @@ export class Collection<
   readonly _keys: CollectionKeys
   readonly _model: Model<T1>
 
-  /**
-   * Create a new collection for handling documents in the KV store.
-   *
-   * @example
-   * ```ts
-   * const kv = await Deno.openKv()
-   * const numbers = new Collection<number>(kv, ["numbers"])
-   * ```
-   *
-   * @param options - Collection options.
-   */
   constructor(
     kv: Deno.Kv,
     key: KvKey,

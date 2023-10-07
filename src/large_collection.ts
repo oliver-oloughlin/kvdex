@@ -58,19 +58,6 @@ export class LargeCollection<
 > extends Collection<T1, T2> {
   readonly _keys: LargeCollectionKeys
 
-  /**
-   * Create a new LargeCollection for handling large documents in the KV store.
-   *
-   * @example
-   * ```ts
-   * const kv = await Deno.openKv()
-   * const largeStrings = new LargeCollection<string>(kv, ["largeStrings"])
-   * ```
-   *
-   * @param kv
-   * @param key
-   * @param options
-   */
   constructor(
     kv: Deno.Kv,
     key: KvKey,
