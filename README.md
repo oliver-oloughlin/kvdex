@@ -10,6 +10,7 @@ like atomic operations and queue listeners.
 
 - CRUD operations for selected and ranged documents with strong typing.
 - Primary (unique) and secondary (non-unique) indexing.
+- Extensible model strategy (Zod supported)
 - Segmented storage for large objects that exceed the native size limit.
 - Support for pagination and filtering.
 - Create repeating cron jobs.
@@ -70,8 +71,8 @@ like atomic operations and queue listeners.
 ## Models
 
 Collections are typed using models. Standard models can be defined using the
-`model()` function. Alternatively, any object that implements the Model
-interface can be used as a model. Zod is therefore fully compatible, without
+`model()` function. Alternatively, any object that extends or implements the
+Model type can be used as a model. Zod is therefore fully compatible, without
 being a dependency. The standard model uses TypeScript inference only and does
 not validate any data when parsing. It is up to the devloper to choose the
 strategy that fits their use case the best.
