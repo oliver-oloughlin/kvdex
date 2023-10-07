@@ -32,7 +32,21 @@ import {
 import { Document } from "./document.ts"
 import { CorruptedDocumentDataError } from "./errors.ts"
 
-export function largeCollection<T1 extends LargeKvValue>(
+/**
+ * Create a large collection builder function.
+ *
+ * @example
+ * ```ts
+ * collection(model<string>(), {
+ *   idGenerator: () => ulid()
+ * })
+ * ```
+ *
+ * @param model - Model.
+ * @param options - Large collection options.
+ * @returns A large collection builder function.
+ */
+export function largeCollection<const T1 extends LargeKvValue>(
   model: Model<T1>,
   options?: LargeCollectionOptions<T1>,
 ) {
@@ -172,16 +186,19 @@ export class LargeCollection<
 
   /* PROTECTED METHODS */
 
-  protected async handleMany(
-    fn: (doc: Document<T1>) => unknown,
-    options?: ListOptions<T1>,
-  ): Promise<{ cursor: string | undefined }> {
+  protected async handleMany<const T>(
+    prefixKey: KvKey,
+    fn: (doc: Document<T1>) => T,
+    options: ListOptions<T1> | undefined,
+  ) {
     // Create list iterator with given options
-    const selector = createListSelector(this._keys.idKey, options)
+    const selector = createListSelector(prefixKey, options)
     const iter = this.kv.list<LargeDocumentEntry[]>(selector, options)
 
-    // Initiate documents list
+    // Initiate lists
     const docs: Document<T1>[] = []
+    const result: Awaited<T>[] = []
+    const errors: unknown[] = []
 
     // Loop over each document entry
     for await (const { key } of iter) {
@@ -206,10 +223,23 @@ export class LargeCollection<
     }
 
     // Execute callback function for each document
-    await allFulfilled(docs.map((doc) => fn(doc)))
+    await allFulfilled(docs.map(async (doc) => {
+      try {
+        const res = await fn(doc)
+        result.push(res)
+      } catch (e) {
+        errors.push(e)
+      }
+    }))
 
-    // Return current iterator cursor
+    // Throw any caught errors
+    if (errors.length > 0) {
+      throw errors
+    }
+
+    // Return result and current iterator cursor
     return {
+      result,
       cursor: iter.cursor || undefined,
     }
   }
