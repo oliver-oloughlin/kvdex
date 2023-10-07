@@ -1,7 +1,7 @@
 import {
   collection,
   kvdex,
-  Model,
+  model,
   QueueMessage,
   QueueValue,
 } from "../../mod.ts"
@@ -20,7 +20,7 @@ Deno.test("collection - listenQueue", async (t) => {
       const undeliveredId = "id"
 
       const db = kvdex(kv, {
-        numbers: collection(new Model<number>()),
+        numbers: collection(model<number>()),
       })
 
       const handlerId = createHandlerId(db.numbers._keys.baseKey, undefined)
@@ -52,7 +52,7 @@ Deno.test("collection - listenQueue", async (t) => {
   await t.step("Should not receive db queue message", async () => {
     await useKv(async (kv) => {
       const db = kvdex(kv, {
-        numbers: collection(new Model<number>()),
+        numbers: collection(model<number>()),
       })
 
       let assertion = true

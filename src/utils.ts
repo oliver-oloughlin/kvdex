@@ -4,7 +4,6 @@ import {
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
 import type { IndexableCollection } from "./indexable_collection.ts"
-import { Model } from "./model.ts"
 import type {
   AtomicSetOptions,
   EnqueueOptions,
@@ -17,7 +16,6 @@ import type {
   KvValue,
   ListOptions,
   ParsedQueueMessage,
-  ParserModel,
   PreparedEnqueue,
   QueueMessage,
   QueueValue,
@@ -480,15 +478,4 @@ export function createListSelector<const T extends KvValue>(
     start,
     end,
   }
-}
-
-export function parseDocumentValue<const T extends KvValue>(
-  value: unknown,
-  model: Model<T> | ParserModel<T>,
-) {
-  if (!(model instanceof Model)) {
-    return model.parse(value)
-  }
-
-  return value as T
 }

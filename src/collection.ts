@@ -17,7 +17,7 @@ import type {
   KvObject,
   KvValue,
   ListOptions,
-  ParserModel,
+  Model,
   QueueListenerOptions,
   QueueMessageHandler,
   QueueValue,
@@ -34,14 +34,13 @@ import {
   getDocumentId,
   isKvObject,
   kvGetMany,
-  parseDocumentValue,
   prepareEnqueue,
 } from "./utils.ts"
 import { Document } from "./document.ts"
-import { Model } from "./model.ts"
+import { model } from "./model.ts"
 
 export function collection<const T1 extends KvValue>(
-  model: Model<T1> | ParserModel<T1>,
+  model: Model<T1>,
   options?: CollectionOptions<T1>,
 ) {
   return (
@@ -76,7 +75,7 @@ export class Collection<
 
   readonly _idGenerator: IdGenerator<KvValue>
   readonly _keys: CollectionKeys
-  readonly _model: Model<T1> | ParserModel<T1>
+  readonly _model: Model<T1>
 
   /**
    * Create a new collection for handling documents in the KV store.
@@ -92,7 +91,7 @@ export class Collection<
   constructor(
     kv: Deno.Kv,
     key: KvKey,
-    model: Model<T1> | ParserModel<T1>,
+    model: Model<T1>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => void,
     options?: T2,
@@ -694,7 +693,7 @@ export class Collection<
     }
 
     // Return document
-    return new Document<T>(this._model, {
+    return new Document<T>(model(), {
       id,
       versionstamp: result.versionstamp,
       value: result.value,
@@ -780,7 +779,7 @@ export class Collection<
     overwrite = false,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Create id, document key and parse document value
-    const parsed = parseDocumentValue(value, this._model)
+    const parsed = this._model.parse(value)
     const docId = id ?? this._idGenerator(parsed)
     const key = extendKey(this._keys.idKey, docId)
 

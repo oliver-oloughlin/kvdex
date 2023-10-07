@@ -16,7 +16,7 @@ import type {
   LargeDocumentEntry,
   LargeKvValue,
   ListOptions,
-  ParserModel,
+  Model,
   QueueMessageHandler,
   QueueValue,
   SetOptions,
@@ -27,15 +27,13 @@ import {
   extendKey,
   getDocumentId,
   kvGetMany,
-  parseDocumentValue,
   useAtomics,
 } from "./utils.ts"
 import { Document } from "./document.ts"
 import { CorruptedDocumentDataError } from "./errors.ts"
-import { Model } from "./model.ts"
 
 export function largeCollection<T1 extends LargeKvValue>(
-  model: Model<T1> | ParserModel<T1>,
+  model: Model<T1>,
   options?: LargeCollectionOptions<T1>,
 ) {
   return (
@@ -76,7 +74,7 @@ export class LargeCollection<
   constructor(
     kv: Deno.Kv,
     key: KvKey,
-    model: Model<T1> | ParserModel<T1>,
+    model: Model<T1>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => void,
     options?: T2,
@@ -236,7 +234,7 @@ export class LargeCollection<
     overwrite = false,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Create document id key and parse document value
-    const parsed = parseDocumentValue(value, this._model)
+    const parsed = this._model.parse(value)
     const docId = id ?? this._idGenerator(parsed)
     const idKey = extendKey(this._keys.idKey, docId)
 

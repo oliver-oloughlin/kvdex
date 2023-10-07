@@ -1,4 +1,3 @@
-import { Model } from "./model.ts"
 import type {
   DocumentData,
   FlatDocumentData,
@@ -6,9 +5,9 @@ import type {
   KvObject,
   KvValue,
   KvVersionstamp,
-  ParserModel,
+  Model,
 } from "./types.ts"
-import { isKvObject, parseDocumentValue } from "./utils.ts"
+import { isKvObject } from "./utils.ts"
 
 export class Document<T extends KvValue> {
   readonly id: KvId
@@ -16,12 +15,12 @@ export class Document<T extends KvValue> {
   readonly value: T
 
   constructor(
-    model: Model<T> | ParserModel<T>,
+    model: Model<T>,
     { id, versionstamp, value }: DocumentData<T>,
   ) {
     this.id = id
     this.versionstamp = versionstamp
-    this.value = parseDocumentValue(value, model)
+    this.value = model.parse(value)
   }
 
   /**

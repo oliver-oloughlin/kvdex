@@ -31,6 +31,7 @@ import {
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
+import { model } from "./model.ts"
 
 /**
  * Create a new database instance.
@@ -283,7 +284,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     }
 
     // Return document
-    return new Document<T>({}, {
+    return new Document<T>(model(), {
       id,
       versionstamp: result.versionstamp,
       value: result.value,

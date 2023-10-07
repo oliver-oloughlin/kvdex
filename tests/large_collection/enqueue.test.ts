@@ -1,7 +1,7 @@
 import {
   kvdex,
   largeCollection,
-  Model,
+  model,
   QueueMessage,
   QueueValue,
 } from "../../mod.ts"
@@ -17,7 +17,7 @@ Deno.test("large_collection - enqueue", async (t) => {
       const undeliveredId = "undelivered"
 
       const db = kvdex(kv, {
-        l_users: largeCollection(new Model<User>()),
+        l_users: largeCollection(model<User>()),
       })
 
       const handlerId = createHandlerId(db.l_users._keys.baseKey, undefined)

@@ -1,7 +1,7 @@
 import {
   indexableCollection,
   kvdex,
-  Model,
+  model,
   QueueMessage,
   QueueValue,
 } from "../../mod.ts"
@@ -17,7 +17,7 @@ Deno.test("indexable_collection - enqueue", async (t) => {
       const undeliveredId = "undelivered"
 
       const db = kvdex(kv, {
-        i_users: indexableCollection(new Model<User>(), { indices: {} }),
+        i_users: indexableCollection(model<User>(), { indices: {} }),
       })
 
       const handlerId = createHandlerId(db.i_users._keys.baseKey, undefined)

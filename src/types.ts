@@ -156,7 +156,7 @@ export type CollectionKeys = {
   idKey: KvKey
 }
 
-export interface ParserModel<T> {
+export interface Model<T> {
   parse: (data: unknown) => T
 }
 

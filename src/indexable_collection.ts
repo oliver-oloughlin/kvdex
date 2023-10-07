@@ -17,7 +17,7 @@ import type {
   KvKey,
   KvObject,
   ListOptions,
-  ParserModel,
+  Model,
   PrimaryIndexKeys,
   QueueMessageHandler,
   QueueValue,
@@ -33,16 +33,14 @@ import {
   deleteIndices,
   extendKey,
   getDocumentId,
-  parseDocumentValue,
   setIndices,
 } from "./utils.ts"
 import { Document } from "./document.ts"
-import { Model } from "./model.ts"
 
 export function indexableCollection<
   T1 extends KvObject,
   T2 extends IndexableCollectionOptions<T1>,
->(model: Model<T1> | ParserModel<T1>, options: T2) {
+>(model: Model<T1>, options: T2) {
   return (
     kv: Deno.Kv,
     key: KvKey,
@@ -92,7 +90,7 @@ export class IndexableCollection<
   constructor(
     kv: Deno.Kv,
     key: KvKey,
-    model: Model<T1> | ParserModel<T1>,
+    model: Model<T1>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => void,
     options: T2,
@@ -471,7 +469,7 @@ export class IndexableCollection<
     overwrite = false,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Create the document id key and parse document value
-    const parsed = parseDocumentValue(value, this._model)
+    const parsed = this._model.parse(value)
     const docId = id ?? this._idGenerator(parsed)
     const idKey = extendKey(this._keys.idKey, docId)
 

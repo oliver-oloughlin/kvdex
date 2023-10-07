@@ -1,7 +1,7 @@
 import {
   collection,
   kvdex,
-  Model,
+  model,
   QueueMessage,
   QueueValue,
 } from "../../mod.ts"
@@ -261,7 +261,7 @@ Deno.test("db - atomic", async (t) => {
       const undeliveredId = "undelivered"
 
       const db = kvdex(kv, {
-        numbers: collection(new Model<number>()),
+        numbers: collection(model<number>()),
       })
 
       const handlerId = createHandlerId(db.numbers._keys.baseKey, undefined)

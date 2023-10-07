@@ -24,7 +24,6 @@ import {
   extendKey,
   getDocumentId,
   keyEq,
-  parseDocumentValue,
   prepareEnqueue,
   setIndices,
 } from "./utils.ts"
@@ -149,7 +148,7 @@ export class AtomicBuilder<
   set(id: KvId | null, value: T2, options?: AtomicSetOptions) {
     // Create id key from collection id key and id
     const collection = this.collection
-    const parsed = parseDocumentValue(value, collection._model)
+    const parsed = collection._model.parse(value)
     const docId = id ?? collection._idGenerator(parsed)
     const idKey = extendKey(collection._keys.idKey, docId)
 
@@ -379,7 +378,7 @@ export class AtomicBuilder<
       }
 
       const { value: _, ...rest2 } = rest
-      const parsed = parseDocumentValue(rest.value, collection._model)
+      const parsed = collection._model.parse(rest.value)
 
       return {
         key: idKey,

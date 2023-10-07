@@ -1,7 +1,8 @@
 // Expose kvdex
 export { kvdex } from "./src/kvdex.ts"
 
-// Expose classes and builders
+// Expose classes, model and builders
+export { model } from "./src/model.ts"
 export { KvDex } from "./src/kvdex.ts"
 export { Collection, collection } from "./src/collection.ts"
 export {
@@ -11,7 +12,6 @@ export {
 export { LargeCollection, largeCollection } from "./src/large_collection.ts"
 export { AtomicBuilder } from "./src/atomic_builder.ts"
 export { Document } from "./src/document.ts"
-export { Model, model } from "./src/model.ts"
 
 // Expose errors
 export * from "./src/errors.ts"

@@ -1,4 +1,4 @@
-import { collection, kvdex, Model } from "../../mod.ts"
+import { collection, kvdex, model } from "../../mod.ts"
 import { KVDEX_KEY_PREFIX } from "../../src/constants.ts"
 import { assert } from "../deps.ts"
 import { useKv } from "../utils.ts"
@@ -9,9 +9,9 @@ Deno.test("db - kvdex", async (t) => {
     async () => {
       await useKv((kv) => {
         const db = kvdex(kv, {
-          numbers: collection(new Model<number>()),
+          numbers: collection(model<number>()),
           nested: {
-            numbers: collection(new Model<number>()),
+            numbers: collection(model<number>()),
           },
         })
 

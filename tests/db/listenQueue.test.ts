@@ -1,7 +1,7 @@
 import {
   collection,
   kvdex,
-  Model,
+  model,
   QueueMessage,
   QueueValue,
 } from "../../mod.ts"
@@ -39,7 +39,7 @@ Deno.test("db - listenQueue", async (t) => {
       const data = "data"
 
       const db = kvdex(kv, {
-        numbers: collection(new Model<number>()),
+        numbers: collection(model<number>()),
       })
 
       let assertion = true
