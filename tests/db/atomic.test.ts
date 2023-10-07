@@ -7,7 +7,7 @@ import {
 } from "../../mod.ts"
 import { createHandlerId } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
-import { mockUser1, mockUser2 } from "../mocks.ts"
+import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts"
 import { sleep, useDb, useKv } from "../utils.ts"
 
 Deno.test("db - atomic", async (t) => {
@@ -284,6 +284,73 @@ Deno.test("db - atomic", async (t) => {
 
       const undelivered = await db.numbers.findUndelivered(undeliveredId)
       assert(assertion || typeof undelivered?.value === typeof data)
+    })
+  })
+
+  await t.step("Should successfully parse and add documents", async () => {
+    await useDb(async (db) => {
+      const cr1 = await db
+        .atomic((schema) => schema.z_users)
+        .add(mockUser1)
+        .commit()
+
+      const cr2 = await db
+        .atomic((schema) => schema.users)
+        .set("id2", mockUser1)
+        .commit()
+
+      const cr3 = await db
+        .atomic((schema) => schema.users)
+        .mutate({
+          type: "set",
+          id: "id3",
+          value: mockUser1,
+        })
+        .commit()
+
+      assert(cr1.ok)
+      assert(cr2.ok)
+      assert(cr3.ok)
+    })
+  })
+
+  await t.step("Should fail to parse and adding documents", async () => {
+    await useDb((db) => {
+      let assertion1 = false
+      let assertion2 = false
+      let assertion3 = false
+
+      try {
+        db
+          .atomic((schema) => schema.z_users)
+          .add(mockUserInvalid)
+      } catch (_) {
+        assertion1 = true
+      }
+
+      try {
+        db
+          .atomic((schema) => schema.z_users)
+          .set("id2", mockUserInvalid)
+      } catch (_) {
+        assertion2 = true
+      }
+
+      try {
+        db
+          .atomic((schema) => schema.z_users)
+          .mutate({
+            type: "set",
+            id: "id3",
+            value: mockUserInvalid,
+          })
+      } catch (_) {
+        assertion3 = true
+      }
+
+      assert(assertion1)
+      assert(assertion2)
+      assert(assertion3)
     })
   })
 })

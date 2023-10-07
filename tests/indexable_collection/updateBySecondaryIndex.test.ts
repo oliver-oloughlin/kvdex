@@ -1,5 +1,5 @@
 import { assert } from "../deps.ts"
-import { mockUser1, mockUser2 } from "../mocks.ts"
+import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts"
 import { useDb } from "../utils.ts"
 
 Deno.test("indexable_collection - updateBySecondaryIndex", async (t) => {
@@ -44,4 +44,35 @@ Deno.test("indexable_collection - updateBySecondaryIndex", async (t) => {
       })
     },
   )
+
+  await t.step("Should successfully parse and update", async () => {
+    await useDb(async (db) => {
+      let assertion = true
+
+      const crs = await db.zi_users.addMany([mockUser1, mockUser2])
+      assert(crs.every((cr) => cr.ok))
+
+      await db.zi_users.updateBySecondaryIndex("age", mockUser1.age, mockUser1)
+        .catch(() => assertion = false)
+
+      assert(assertion)
+    })
+  })
+
+  await t.step("Should fail to parse and update document", async () => {
+    await useDb(async (db) => {
+      let assertion = false
+
+      const crs = await db.zi_users.addMany([mockUser1, mockUser2])
+      assert(crs.every((cr) => cr.ok))
+
+      await db.zi_users.updateBySecondaryIndex(
+        "age",
+        mockUser1.age,
+        mockUserInvalid,
+      ).catch(() => assertion = true)
+
+      assert(assertion)
+    })
+  })
 })

@@ -397,19 +397,29 @@ export class IndexableCollection<
     data: UpdateData<T1>,
     options?: UpdateManyOptions<T1>,
   ) {
-    // Initiate reuslt list
+    // Initiate result and error list
     const result: (CommitResult<T1> | Deno.KvCommitError)[] = []
+    const errors: unknown[] = []
 
     // Update each document by secondary index, add commit result to result list
     const { cursor } = await this.handleBySecondaryIndex(
       index,
       value,
       async (doc) => {
-        const cr = await this.updateDocument(doc, data, options)
-        result.push(cr)
+        try {
+          const cr = await this.updateDocument(doc, data, options)
+          result.push(cr)
+        } catch (e) {
+          errors.push(e)
+        }
       },
       options,
     )
+
+    // Throw any caught errors
+    if (errors.length > 0) {
+      throw errors
+    }
 
     // Return result list and current iterator cursor
     return {

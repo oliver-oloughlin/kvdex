@@ -66,7 +66,7 @@ Deno.test("indexable_collection - update", async (t) => {
       const cr = await db.zi_users.add(mockUser1)
       assert(cr.ok)
 
-      await db.z_users.update(cr.id, mockUser2).catch(() => assertion = false)
+      await db.zi_users.update(cr.id, mockUser2).catch(() => assertion = false)
 
       assert(assertion)
     })
