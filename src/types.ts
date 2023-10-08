@@ -33,7 +33,7 @@ export type CronOptions = {
   /**
    * Interval in milliseconds for cron job.
    *
-   * @default 1000 // Defaults to 1 second
+   * @default 3_600_000 // Defaults to 1 hour
    */
   interval?: number
 
@@ -42,6 +42,9 @@ export type CronOptions = {
 
   /** Exit predicate used to end cron job. */
   exitOn?: (msg: CronMessage) => boolean | Promise<boolean>
+
+  /** Task to be run when terminating a cron job (after ```exitOn()``` returns true) */
+  onExit?: (msg: CronMessage) => unknown
 
   /**
    * Delay before running the first job.
@@ -57,7 +60,7 @@ export type CronOptions = {
    *
    * @default 10
    */
-  retries?: number
+  retry?: number
 }
 
 export type CronMessage = {

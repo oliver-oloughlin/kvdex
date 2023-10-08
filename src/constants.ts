@@ -18,5 +18,7 @@ export const GET_MANY_KEY_LIMIT = 10
 
 export const LARGE_COLLECTION_STRING_LIMIT = 25_000
 
-// Time constants
-export const DEFAULT_CRON_INTERVAL = 1_000
+// Cron constants
+export const DEFAULT_CRON_INTERVAL = 60 * 60 * 1_000 // 1 hour
+
+export const DEFAULT_CRON_RETRY = 10
