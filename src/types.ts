@@ -33,7 +33,7 @@ export type CronOptions = {
   /**
    * Interval in milliseconds for cron job.
    *
-   * @default 1000 // Defaults to 1 second
+   * @default 3_600_000 // Defaults to 1 hour
    */
   interval?: number
 
