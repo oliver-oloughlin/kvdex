@@ -43,6 +43,9 @@ export type CronOptions = {
   /** Exit predicate used to end cron job. */
   exitOn?: (msg: CronMessage) => boolean | Promise<boolean>
 
+  /** Task to be run when terminating a cron job (after ```exitOn()``` returns true) */
+  onExit?: (msg: CronMessage) => unknown
+
   /**
    * Delay before running the first job.
    *
@@ -57,7 +60,7 @@ export type CronOptions = {
    *
    * @default 10
    */
-  retries?: number
+  retry?: number
 }
 
 export type CronMessage = {

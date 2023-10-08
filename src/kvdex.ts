@@ -28,6 +28,7 @@ import {
 import { AtomicBuilder } from "./atomic_builder.ts"
 import {
   DEFAULT_CRON_INTERVAL,
+  DEFAULT_CRON_RETRY,
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
@@ -356,7 +357,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
       delay: number | undefined,
     ) => {
       // Enqueue cron job until delivered
-      for (let i = 0; i <= (options?.retries ?? 10); i++) {
+      for (let i = 0; i <= (options?.retry ?? DEFAULT_CRON_RETRY); i++) {
         await this.enqueue(msg, {
           idsIfUndelivered: [id],
           delay,
@@ -379,8 +380,8 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     this.listenQueue<CronMessage>(async (msg) => {
       // Check if exit criteria is met, end repeating cron job if true
       const exit = await options?.exitOn?.(msg) ?? false
-
       if (exit) {
+        await options?.onExit?.(msg)
         return
       }
 
