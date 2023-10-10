@@ -93,14 +93,17 @@ export function kvdex<const T extends SchemaDefinition>(
 
     // Add queue listener
     kv.listenQueue(async (msg) => {
+      // Parse queue message
       const parsed = parseQueueMessage(msg)
       if (!parsed.ok) {
         return
       }
 
+      // Find correct queue handlers
       const { __data__, __handlerId__ } = parsed.msg
       const handlers = queueHandlers.get(__handlerId__)
 
+      // Run queue handlers
       await allFulfilled(handlers?.map((handler) => handler(__data__)) ?? [])
     })
   }
@@ -343,6 +346,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    *
    * @param job - Work that will be run for each job interval.
    * @param options - Cron options.
+   * @returns Cron job ID.
    */
   async cron(
     job: (msg: CronMessage) => unknown,
@@ -379,16 +383,33 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     // Add cron job listener
     this.listenQueue<CronMessage>(async (msg) => {
       // Check if exit criteria is met, end repeating cron job if true
-      const exit = await options?.exitOn?.(msg) ?? false
+      let exit = false
+      try {
+        exit = await options?.exitOn?.(msg) ?? false
+      } catch (e) {
+        console.error(
+          `An error was caught while running exitOn callback for cron job {ID = ${id}}`,
+          e,
+        )
+      }
+
       if (exit) {
         await options?.onExit?.(msg)
         return
       }
 
       // Set the next interval
-      const interval = options?.setInterval
-        ? await options?.setInterval!(msg)
-        : options?.interval ?? DEFAULT_CRON_INTERVAL
+      let interval = DEFAULT_CRON_INTERVAL
+      try {
+        interval = options?.setInterval
+          ? await options?.setInterval!(msg)
+          : options?.interval ?? DEFAULT_CRON_INTERVAL
+      } catch (e) {
+        console.error(
+          `An error was caught while running setInterval callback for cron job {ID = ${id}}`,
+          e,
+        )
+      }
 
       await allFulfilled([
         // Enqueue next job
@@ -411,6 +432,9 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
       isFirstJob: true,
       enqueueTimestamp: new Date(),
     }, options?.startDelay)
+
+    // Return the cron job id
+    return id
   }
 }
 

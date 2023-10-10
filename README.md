@@ -704,11 +704,11 @@ db.listenQueue(async (data) => {
 ### cron()
 
 Create a cron job that will run on interval, either indefinitely or until an
-exit condition is met. Interval defaults to 1 second if not set. Like with queue
-listeners, there can be multiple cron jobs defined.
+exit condition is met. Interval defaults to 1 hour if not set. Like with queue
+listeners, multiple cron jobs can be created.
 
 ```ts
-// Will repeat indefinitely with 1 second interval
+// Will repeat indefinitely with 1 hour interval
 db.cron(() => console.log("Hello World!"))
 
 // First job starts with a 10 second delay, after that there is a 5 second delay between jobs
@@ -722,8 +722,8 @@ db.cron(() => console.log("I terminate after running 10 times"), {
   // If this is set it will override the fixed interval
   setInterval: ({ count }) => count * 500
 
-  // Count starts at 0 and is given before the current job is run
-  exit: ({ count }) => count === 10,
+  // Count starts at 0, exitOn is run before the current job
+  exitOn: ({ count }) => count === 10,
 })
 ```
 
