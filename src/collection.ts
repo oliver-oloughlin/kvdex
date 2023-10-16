@@ -589,7 +589,7 @@ export class Collection<
    * @param options - Enqueue options, optional.
    * @returns - Promise resolving to Deno.KvCommitResult.
    */
-  async enqueue(data: QueueValue, options?: EnqueueOptions) {
+  async enqueue<T extends QueueValue>(data: T, options?: EnqueueOptions) {
     // Prepare message and options for enqueue
     const prep = prepareEnqueue(
       this._keys.baseKey,

@@ -213,7 +213,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    * @param data - Data to be added to the database queue.
    * @param options - Enqueue options, optional.
    */
-  async enqueue(data: QueueValue, options?: EnqueueOptions) {
+  async enqueue<T extends QueueValue>(data: T, options?: EnqueueOptions) {
     // Prepare and perform enqueue operation
     const prep = prepareEnqueue(
       [KVDEX_KEY_PREFIX],
