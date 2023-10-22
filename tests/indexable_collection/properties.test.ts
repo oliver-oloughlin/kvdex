@@ -199,4 +199,88 @@ Deno.test("indexable_collection - properties", async (t) => {
       )
     })
   })
+
+  await t.step("Should allow optional indices", async () => {
+    await useKv(async (kv) => {
+      const db = kvdex(kv, {
+        i: indexableCollection(
+          model<{
+            oblPrimary: string
+            oblSecondary: number
+            optPrimary?: string
+            optSecondary?: number
+            check?: Date
+          }>(),
+          {
+            indices: {
+              oblPrimary: "primary",
+              oblSecondary: "secondary",
+              optPrimary: "primary",
+              optSecondary: "secondary",
+            },
+          },
+        ),
+      })
+
+      const cr1 = await db.i.add({
+        oblPrimary: "oblPrimary1",
+        oblSecondary: 10,
+      })
+
+      const cr2 = await db.i.add({
+        oblPrimary: "oblPrimary2",
+        oblSecondary: 10,
+        optPrimary: "optPrimary2",
+        optSecondary: 20,
+      })
+
+      assert(cr1.ok)
+      assert(cr2.ok)
+
+      const byOptPrimary2 = await db.i.findByPrimaryIndex(
+        "optPrimary",
+        "optPrimary2",
+      )
+      const byOptSecondary2 = await db.i.findBySecondaryIndex(
+        "optSecondary",
+        20,
+      )
+
+      assert(byOptPrimary2?.id === cr2.id)
+      assert(byOptSecondary2.result.length === 1)
+      assert(byOptSecondary2.result.some((i) => i.id === cr2.id))
+
+      const cr3 = await db.i.add({
+        oblPrimary: "oblPrimary3",
+        oblSecondary: 10,
+        optPrimary: "optPrimary2",
+        optSecondary: 20,
+      })
+
+      assert(!cr3.ok)
+
+      const cr4 = await db.i.add({
+        oblPrimary: "oblPrimary4",
+        oblSecondary: 10,
+        optPrimary: "optPrimary4",
+        optSecondary: 20,
+      })
+
+      assert(cr4.ok)
+
+      const byOptPrimary4 = await db.i.findByPrimaryIndex(
+        "optPrimary",
+        "optPrimary4",
+      )
+      const byOptSecondary4 = await db.i.findBySecondaryIndex(
+        "optSecondary",
+        20,
+      )
+
+      assert(byOptPrimary4?.id === cr4.id)
+      assert(byOptSecondary4.result.length === 2)
+      assert(byOptSecondary4.result.some((i) => i.id === cr2.id))
+      assert(byOptSecondary4.result.some((i) => i.id === cr4.id))
+    })
+  })
 })

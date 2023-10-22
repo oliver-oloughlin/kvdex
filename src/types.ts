@@ -178,7 +178,7 @@ export type IndexableCollectionKeys = CollectionKeys & {
 export type IndexType = "primary" | "secondary"
 
 export type IndexRecord<T extends KvObject> = {
-  [key in KeysOfThatExtend<T, KvId>]?: IndexType
+  [key in KeysOfThatExtend<T, KvId | undefined>]?: IndexType
 }
 
 export type PrimaryIndexKeys<T1 extends KvObject, T2 extends IndexRecord<T1>> =
