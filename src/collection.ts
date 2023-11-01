@@ -27,6 +27,7 @@ import type {
 } from "./types.ts"
 import {
   allFulfilled,
+  atomicDelete,
   createHandlerId,
   createListSelector,
   extendKey,
@@ -440,6 +441,28 @@ export class Collection<
    * @returns A promise that resovles to an object containing the iterator cursor
    */
   async deleteMany(options?: ListOptions<T1>) {
+    // Perform quick delete if all documents are to be deleted
+    if (
+      !options?.consistency &&
+      !options?.cursor &&
+      !options?.endId &&
+      !options?.startId &&
+      !options?.filter &&
+      !options?.limit
+    ) {
+      // Create list iterator and empty keys list
+      const iter = this.kv.list({ prefix: this._keys.baseKey }, options)
+      const keys: Deno.KvKey[] = []
+
+      // Collect all collection entry keys
+      for await (const { key } of iter) {
+        keys.push(key)
+      }
+
+      // Delete all keys and return
+      return await atomicDelete(this.kv, keys, options?.batchSize)
+    }
+
     // Execute delete operation for each document entry
     const { cursor } = await this.handleMany(
       this._keys.idKey,

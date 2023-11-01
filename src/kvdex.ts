@@ -20,6 +20,7 @@ import { Collection } from "./collection.ts"
 import { Document } from "./document.ts"
 import {
   allFulfilled,
+  atomicDelete,
   createHandlerId,
   extendKey,
   parseQueueMessage,
@@ -189,7 +190,17 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    * @returns Promise resolving to void.
    */
   async deleteAll(options?: DeleteAllOptions) {
-    return await _deleteAll(this.kv, this.schema, options)
+    // Create iterator
+    const iter = this.kv.list({ prefix: [KVDEX_KEY_PREFIX] })
+
+    // Collect all kvdex keys
+    const keys: Deno.KvKey[] = []
+    for await (const { key } of iter) {
+      keys.push(key)
+    }
+
+    // Delete all entries
+    await atomicDelete(this.kv, keys, options?.atomicBatchSize)
   }
 
   /**
@@ -513,33 +524,4 @@ async function _countAll(
 
   // Return the sum of collection counts
   return counts.reduce((sum, c) => sum + c, 0)
-}
-
-/**
- * Delete all documents in the KV store.
- *
- * @param kv - Deno KV instance.
- * @param schemaOrCollection - Schema or Collection object.
- * @param options - DeleteAll options.
- * @returns Promise resolving to void.
- */
-async function _deleteAll(
-  kv: Deno.Kv,
-  schemaOrCollection:
-    | Schema<SchemaDefinition>
-    | Collection<KvValue, CollectionOptions<KvValue>>,
-  options?: DeleteAllOptions,
-) {
-  // If input is a collection, delete all documents in the collection
-  if (schemaOrCollection instanceof Collection) {
-    await schemaOrCollection.deleteMany(options)
-    return
-  }
-
-  // Recursively delete all documents from schema collections
-  await allFulfilled(
-    Object.values(schemaOrCollection).map((val) =>
-      _deleteAll(kv, val, options)
-    ),
-  )
 }

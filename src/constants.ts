@@ -12,7 +12,9 @@ export const SEGMENT_KEY_PREFIX = "__segment__"
 export const UNDELIVERED_KEY_PREFIX = "__undelivered__"
 
 // Fixed limits
-export const ATOMIC_OPERATION_MUTATION_LIMIT = 20
+export const ATOMIC_OPERATION_MUTATION_LIMIT = 1_000
+
+export const ATOMIC_OPERATION_SAFE_MUTATION_LIMIT = 20
 
 export const GET_MANY_KEY_LIMIT = 10
 
