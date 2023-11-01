@@ -208,6 +208,7 @@ export type LargeDocumentEntry = {
 
 // Method Option types
 export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
+  /** Number of retry attempts before returning failed operation */
   retry?: number
 }
 
@@ -215,14 +216,19 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   /**
    * Filter documents based on predicate.
    *
-   * @param doc - Document
-   * @returns true or false
+   * @param doc - Document.
+   * @returns true or false.
    */
   filter?: (doc: Document<T>) => boolean
 
+  /** Id of document to start from. */
   startId?: KvId
 
+  /** Id of document to end at. */
   endId?: KvId
+
+  /** Batch size of atomic operations where applicable */
+  atomicBatchSize?: number
 }
 
 export type CountOptions<T extends KvValue> =
@@ -237,7 +243,7 @@ export type UpdateManyOptions<T extends KvValue> = ListOptions<T> & SetOptions
 
 export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
 
-export type DeleteAllOptions = Pick<Deno.KvListOptions, "consistency">
+export type DeleteAllOptions = Pick<ListOptions<KvValue>, "atomicBatchSize">
 
 export type EnqueueOptions =
   & Omit<

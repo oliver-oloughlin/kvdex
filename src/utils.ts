@@ -1,5 +1,6 @@
 import {
   ATOMIC_OPERATION_MUTATION_LIMIT,
+  ATOMIC_OPERATION_SAFE_MUTATION_LIMIT,
   GET_MANY_KEY_LIMIT,
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
@@ -321,8 +322,14 @@ export async function useAtomics<const T>(
   const slicedElements: T[][] = []
 
   // Slice elements based on atomic mutations limit
-  for (let i = 0; i < elements.length; i += ATOMIC_OPERATION_MUTATION_LIMIT) {
-    slicedElements.push(elements.slice(i, i + ATOMIC_OPERATION_MUTATION_LIMIT))
+  for (
+    let i = 0;
+    i < elements.length;
+    i += ATOMIC_OPERATION_SAFE_MUTATION_LIMIT
+  ) {
+    slicedElements.push(
+      elements.slice(i, i + ATOMIC_OPERATION_SAFE_MUTATION_LIMIT),
+    )
   }
 
   // Invoke callback function for each element and execute atomic operation
@@ -478,4 +485,41 @@ export function createListSelector<const T extends KvValue>(
     start,
     end,
   }
+}
+
+/**
+ * Perform multiple delete operations with optimal efficiency using atomic operations.
+ *
+ * @param kv - Deno KV instance.
+ * @param keys - Keys of documents to be deleted.
+ * @param batchSize - Batch size of deletes in a single atomic operation.
+ */
+export async function atomicDelete(
+  kv: Deno.Kv,
+  keys: Deno.KvKey[],
+  batchSize = ATOMIC_OPERATION_MUTATION_LIMIT / 2,
+) {
+  // Initiate atomic operation and check
+  let atomic = kv.atomic()
+  let check = 0
+
+  // Loop over and add delete operation for each key
+  for (const key of keys) {
+    atomic.delete(key)
+
+    // If check is at limit, commit atomic operation
+    if (check >= batchSize - 1) {
+      await atomic.commit()
+
+      // Reset atomic operation and check
+      atomic = kv.atomic()
+      check = 0
+    }
+
+    // Increment check
+    check++
+  }
+
+  // Commit final atomic operation
+  await atomic.commit()
 }
