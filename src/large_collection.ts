@@ -54,7 +54,7 @@ export function largeCollection<const T1 extends LargeKvValue>(
     kv: Deno.Kv,
     key: KvKey,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-    idempotentListener: () => void,
+    idempotentListener: () => Promise<void>,
   ) =>
     new LargeCollection<T1, LargeCollectionOptions<T1>>(
       kv,
@@ -77,7 +77,7 @@ export class LargeCollection<
     key: KvKey,
     model: Model<T1>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-    idempotentListener: () => void,
+    idempotentListener: () => Promise<void>,
     options?: T2,
   ) {
     // Invoke super constructor
@@ -217,7 +217,8 @@ export class LargeCollection<
       }
 
       // Filter document and add to documents list
-      if (!options?.filter || options.filter(doc)) {
+      const filter = options?.filter
+      if (!filter || filter(doc)) {
         docs.push(doc)
       }
     }

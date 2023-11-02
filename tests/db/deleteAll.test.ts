@@ -8,12 +8,13 @@ Deno.test("db - deleteAll", async (t) => {
       await useDb(async (db) => {
         const users = generateUsers(100)
         const u64s = [
-          new Deno.KvU64(0n),
-          new Deno.KvU64(0n),
+          new Deno.KvU64(10n),
+          new Deno.KvU64(20n),
         ]
 
         const crs1 = await db.i_users.addMany(users)
         const crs2 = await db.l_users.addMany(users)
+
         const crs3 = await db.u64s.addMany(u64s)
 
         assert(crs1.every((cr) => cr.ok))

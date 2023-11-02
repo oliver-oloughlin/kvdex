@@ -27,7 +27,6 @@ import type {
 } from "./types.ts"
 import {
   allFulfilled,
-  atomicDelete,
   createHandlerId,
   createListSelector,
   extendKey,
@@ -36,9 +35,11 @@ import {
   isKvObject,
   kvGetMany,
   prepareEnqueue,
+  selectsAll,
 } from "./utils.ts"
 import { Document } from "./document.ts"
 import { model } from "./model.ts"
+import { AtomicWrapper } from "./atomic_wrapper.ts"
 
 /**
  * Create a collection builder function.
@@ -62,7 +63,7 @@ export function collection<const T1 extends KvValue>(
     kv: Deno.Kv,
     key: KvKey,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-    idempotentListener: () => void,
+    idempotentListener: () => Promise<void>,
   ) =>
     new Collection<T1, CollectionOptions<T1>>(
       kv,
@@ -84,7 +85,7 @@ export class Collection<
   const T2 extends CollectionOptions<T1>,
 > {
   private queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>
-  private idempotentListener: () => void
+  private idempotentListener: () => Promise<void>
 
   protected kv: Deno.Kv
 
@@ -97,7 +98,7 @@ export class Collection<
     key: KvKey,
     model: Model<T1>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-    idempotentListener: () => void,
+    idempotentListener: () => Promise<void>,
     options?: T2,
   ) {
     // Set reference to queue handlers and idempotent listener
@@ -442,14 +443,7 @@ export class Collection<
    */
   async deleteMany(options?: ListOptions<T1>) {
     // Perform quick delete if all documents are to be deleted
-    if (
-      !options?.consistency &&
-      !options?.cursor &&
-      !options?.endId &&
-      !options?.startId &&
-      !options?.filter &&
-      !options?.limit
-    ) {
+    if (selectsAll(options)) {
       // Create list iterator and empty keys list
       const iter = this.kv.list({ prefix: this._keys.baseKey }, options)
       const keys: Deno.KvKey[] = []
@@ -460,7 +454,9 @@ export class Collection<
       }
 
       // Delete all keys and return
-      return await atomicDelete(this.kv, keys, options?.batchSize)
+      const atomic = new AtomicWrapper(this.kv, options?.batchSize)
+      keys.forEach((key) => atomic.delete(key))
+      await atomic.commit()
     }
 
     // Execute delete operation for each document entry
@@ -651,7 +647,7 @@ export class Collection<
    * @param options - Queue listener options.
    * @returns void.
    */
-  listenQueue<T extends QueueValue = QueueValue>(
+  async listenQueue<T extends QueueValue = QueueValue>(
     handler: QueueMessageHandler<T>,
     options?: QueueListenerOptions,
   ) {
@@ -664,7 +660,7 @@ export class Collection<
     this.queueHandlers.set(handlerId, handlers)
 
     // Activate idempotent listener
-    this.idempotentListener()
+    return await this.idempotentListener()
   }
 
   /**
@@ -759,7 +755,8 @@ export class Collection<
       })
 
       // Filter document and add to documents list
-      if (!options?.filter || options.filter(doc)) {
+      const filter = options?.filter
+      if (!filter || filter(doc)) {
         docs.push(doc)
       }
     }

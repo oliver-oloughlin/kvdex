@@ -61,7 +61,7 @@ export function indexableCollection<
     kv: Deno.Kv,
     key: KvKey,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-    idempotentListener: () => void,
+    idempotentListener: () => Promise<void>,
   ) =>
     new IndexableCollection<T1, T2>(
       kv,
@@ -92,7 +92,7 @@ export class IndexableCollection<
     key: KvKey,
     model: Model<T1>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-    idempotentListener: () => void,
+    idempotentListener: () => Promise<void>,
     options: T2,
   ) {
     // Invoke super constructor
