@@ -588,8 +588,19 @@ export class Collection<
    * @returns A promise that resolves to a number representing the performed count.
    */
   async count(options?: CountOptions<T1>) {
-    // Initiate count variable, increment for each document entry, return result
+    // Initiate count result
     let result = 0
+
+    // Perform efficient count if counting all document entries
+    if (selectsAll(options)) {
+      const iter = this.kv.list({ prefix: this._keys.idKey }, options)
+      for await (const _ of iter) {
+        result++
+      }
+      return result
+    }
+
+    // Perform count using many documents handler
     await this.handleMany(this._keys.idKey, () => result++, options)
     return result
   }
