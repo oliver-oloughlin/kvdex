@@ -1,5 +1,6 @@
 import { ATOMIC_OPERATION_MUTATION_LIMIT } from "./constants.ts"
-import { SetOptions } from "./types.ts"
+import type { SetOptions } from "./types.ts"
+import { clamp } from "./utils.ts"
 
 export class AtomicWrapper implements Deno.AtomicOperation {
   private kv: Deno.Kv
@@ -16,7 +17,11 @@ export class AtomicWrapper implements Deno.AtomicOperation {
     this.current = kv.atomic()
     this.atomics = []
     this.count = 0
-    this.atomicBatchSize = atomicBatchSize
+    this.atomicBatchSize = clamp(
+      1,
+      atomicBatchSize,
+      ATOMIC_OPERATION_MUTATION_LIMIT,
+    )
   }
 
   set(key: Deno.KvKey, value: unknown, options?: SetOptions) {

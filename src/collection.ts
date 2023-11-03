@@ -1,5 +1,4 @@
 import {
-  //ATOMIC_OPERATION_CONSERVATIVE_MUTATION_LIMIT,
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
@@ -824,11 +823,11 @@ export class Collection<
     const key = extendKey(this._keys.idKey, docId)
 
     // Create atomic operation with set mutation
-    let atomic = this.kv.atomic().set(key, parsed, options)
+    const atomic = this.kv.atomic().set(key, parsed, options)
 
     // If overwrite is false, check for existing document
     if (!overwrite) {
-      atomic = atomic.check({
+      atomic.check({
         key,
         versionstamp: null,
       })

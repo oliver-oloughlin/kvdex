@@ -1,6 +1,5 @@
 import { Collection } from "./collection.ts"
 import {
-  ATOMIC_OPERATION_CONSERVATIVE_MUTATION_LIMIT,
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   LARGE_COLLECTION_STRING_LIMIT,
@@ -296,10 +295,7 @@ export class LargeCollection<
     const keys: KvKey[] = []
 
     // Execute set operations for json parts, capture keys and commit results
-    const atomic = new AtomicWrapper(
-      this.kv,
-      ATOMIC_OPERATION_CONSERVATIVE_MUTATION_LIMIT,
-    )
+    const atomic = new AtomicWrapper(this.kv)
 
     jsonParts.forEach((str, index) => {
       const key = extendKey(this._keys.segmentKey, docId, index)
