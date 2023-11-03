@@ -237,10 +237,10 @@ Upon completion, a list of CommitResult objects will be returned.
 
 ```ts
 // Adds 5 new document entries to the KV store.
-await results = await db.numbers.addMany([1, 2, 3, 4, 5])
+await commitResult = await db.numbers.addMany([1, 2, 3, 4, 5])
 
 // Only adds the first entry, as "username" is defined as a primary index and cannot have duplicates
-await results = await db.users.addMany([
+await commitResult = await db.users.addMany([
   {
     username: "oli",
     age: 24
