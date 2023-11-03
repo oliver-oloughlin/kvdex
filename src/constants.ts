@@ -14,11 +14,9 @@ export const UNDELIVERED_KEY_PREFIX = "__undelivered__"
 // Fixed limits
 export const ATOMIC_OPERATION_MUTATION_LIMIT = 1_000
 
-export const ATOMIC_OPERATION_CONSERVATIVE_MUTATION_LIMIT = 20
-
 export const GET_MANY_KEY_LIMIT = 10
 
-export const LARGE_COLLECTION_STRING_LIMIT = 25_000
+export const LARGE_COLLECTION_STRING_LIMIT = 30_000
 
 // Cron constants
 export const DEFAULT_CRON_INTERVAL = 60 * 60 * 1_000 // 1 hour

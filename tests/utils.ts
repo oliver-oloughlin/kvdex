@@ -37,7 +37,7 @@ export function createDb(kv: Deno.Kv) {
         age: "secondary",
       },
     }),
-    zl_users: collection(UserSchema, {
+    zl_users: largeCollection(UserSchema, {
       idGenerator: () => ulid(),
     }),
   })
@@ -70,7 +70,7 @@ export function generateLargeUsers(n: number) {
   const users: User[] = []
 
   let country = ""
-  for (let i = 0; i < 50_000; i++) {
+  for (let i = 0; i < 700_000; i++) {
     country += "A"
   }
 
