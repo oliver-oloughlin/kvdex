@@ -29,13 +29,15 @@ Deno.test("large_collection - delete", async (t) => {
     async () => {
       await useDb(async (db) => {
         const users = generateLargeUsers(1_000)
-        const crs = await db.l_users.addMany(users)
+        const cr = await db.l_users.addMany(users)
         const count1 = await db.l_users.count()
 
-        assert(crs.every((cr) => cr.ok))
+        assert(cr.ok)
         assert(count1 === users.length)
 
-        await db.l_users.delete(...crs.map((cr) => cr.ok ? cr.id : ""))
+        const { result: ids } = await db.l_users.map((doc) => doc.id)
+
+        await db.l_users.delete(...ids)
 
         const count2 = await db.l_users.count()
         assert(count2 === 0)

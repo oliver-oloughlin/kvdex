@@ -1,5 +1,6 @@
 import { Collection } from "./collection.ts"
 import {
+  ATOMIC_OPERATION_CONSERVATIVE_MUTATION_LIMIT,
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   LARGE_COLLECTION_STRING_LIMIT,
@@ -27,10 +28,10 @@ import {
   extendKey,
   getDocumentId,
   kvGetMany,
-  useAtomics,
 } from "./utils.ts"
 import { Document } from "./document.ts"
 import { CorruptedDocumentDataError } from "./errors.ts"
+import { AtomicWrapper } from "./atomic_wrapper.ts"
 
 /**
  * Create a large collection builder function.
@@ -54,7 +55,7 @@ export function largeCollection<const T1 extends LargeKvValue>(
     kv: Deno.Kv,
     key: KvKey,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-    idempotentListener: () => void,
+    idempotentListener: () => Promise<void>,
   ) =>
     new LargeCollection<T1, LargeCollectionOptions<T1>>(
       kv,
@@ -77,7 +78,7 @@ export class LargeCollection<
     key: KvKey,
     model: Model<T1>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-    idempotentListener: () => void,
+    idempotentListener: () => Promise<void>,
     options?: T2,
   ) {
     // Invoke super constructor
@@ -173,14 +174,18 @@ export class LargeCollection<
         return
       }
 
-      // Delete document entry
-      await this.kv.delete(idKey)
+      // Create atomic operation and delete all documetn entries
+      const atomic = new AtomicWrapper(this.kv)
+      atomic.delete(idKey)
 
-      // Delete document parts
-      await useAtomics(this.kv, value.ids, (segId, atomic) => {
-        const key = extendKey(this._keys.segmentKey, id, segId)
-        return atomic.delete(key)
-      })
+      const keys = value.ids.map((segId) =>
+        extendKey(this._keys.segmentKey, id, segId)
+      )
+
+      keys.forEach((key) => atomic.delete(key))
+
+      // Commit the operation
+      await atomic.commit()
     }))
   }
 
@@ -217,7 +222,8 @@ export class LargeCollection<
       }
 
       // Filter document and add to documents list
-      if (!options?.filter || options.filter(doc)) {
+      const filter = options?.filter
+      if (!filter || filter(doc)) {
         docs.push(doc)
       }
     }
@@ -287,26 +293,30 @@ export class LargeCollection<
     }
 
     // Set start index, initiate commit result and keys lists
-    let index = 0
     const keys: KvKey[] = []
 
     // Execute set operations for json parts, capture keys and commit results
-    const crs = await useAtomics(this.kv, jsonParts, (str, atomic) => {
+    const atomic = new AtomicWrapper(
+      this.kv,
+      ATOMIC_OPERATION_CONSERVATIVE_MUTATION_LIMIT,
+    )
+
+    jsonParts.forEach((str, index) => {
       const key = extendKey(this._keys.segmentKey, docId, index)
       keys.push(key)
-      index++
-
-      return atomic
-        .set(key, str, options)
+      atomic.set(key, str, options)
     })
 
+    const segmentsCr = await atomic.commit()
+
     // Determine whether setting json parts was successful
-    const success = crs.length > 0 && crs.every((cr) => cr.ok)
     const retry = options?.retry ?? 0
 
     // If not successful, delete all json part entries
-    if (!success) {
-      await allFulfilled(keys.map((key) => this.kv.delete(key)))
+    if (!segmentsCr.ok) {
+      const op = new AtomicWrapper(this.kv)
+      keys.forEach((key) => op.delete(key))
+      await op.commit()
 
       // Retry operation if there are remaining attempts
       if (retry > 0) {

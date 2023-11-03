@@ -30,7 +30,10 @@ jobs:
         with:
           deno-version: v1.x
 
-      - name: Verify formatting
+      - name: Check Types
+        run: deno check --unstable mod.ts
+
+      - name: Check formatting
         run: deno fmt --check
 
       - name: Run linter

@@ -5,8 +5,8 @@ Deno.test("large_collection - deleteMany", async (t) => {
   await t.step("Should delete all documents from the collection", async () => {
     await useDb(async (db) => {
       const users = generateLargeUsers(1_000)
-      const crs = await db.l_users.addMany(users)
-      assert(crs.every((cr) => cr.ok))
+      const cr = await db.l_users.addMany(users)
+      assert(cr.ok)
 
       const count1 = await db.l_users.count()
       assert(count1 === users.length)

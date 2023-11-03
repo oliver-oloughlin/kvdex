@@ -9,7 +9,7 @@ Deno.test("indexable_collection - deleteMany", async (t) => {
         const users = generateUsers(1_000)
         const user1 = users[0]
 
-        const crs = await db.i_users.addMany(users)
+        const cr = await db.i_users.addMany(users)
         const count1 = await db.i_users.count()
         const byPrimary1 = await db.i_users.findByPrimaryIndex(
           "username",
@@ -20,7 +20,7 @@ Deno.test("indexable_collection - deleteMany", async (t) => {
           user1.age,
         )
 
-        assert(crs.every((cr) => cr.ok))
+        assert(cr.ok)
         assert(count1 === users.length)
         assert(byPrimary1?.value.username === user1.username)
         assert(bySecondary1.result.length > 0)

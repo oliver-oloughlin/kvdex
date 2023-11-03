@@ -27,7 +27,7 @@ Deno.test("collection - listenQueue", async (t) => {
 
       let assertion = false
 
-      db.numbers.listenQueue((msgData) => {
+      const listener = db.numbers.listenQueue((msgData) => {
         assertion = msgData === data
       })
 
@@ -38,7 +38,11 @@ Deno.test("collection - listenQueue", async (t) => {
 
       await kv.enqueue(msg, {
         keysIfUndelivered: [
-          extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, undeliveredId),
+          extendKey(
+            [KVDEX_KEY_PREFIX],
+            UNDELIVERED_KEY_PREFIX,
+            undeliveredId,
+          ),
         ],
       })
 
@@ -46,6 +50,8 @@ Deno.test("collection - listenQueue", async (t) => {
 
       const undelivered = await db.numbers.findUndelivered(undeliveredId)
       assert(assertion || typeof undelivered?.value === typeof data)
+
+      return async () => await listener
     })
   })
 
@@ -57,7 +63,7 @@ Deno.test("collection - listenQueue", async (t) => {
 
       let assertion = true
 
-      db.numbers.listenQueue(() => {
+      const listener = db.numbers.listenQueue(() => {
         assertion = false
       })
 
@@ -66,6 +72,8 @@ Deno.test("collection - listenQueue", async (t) => {
       await sleep(100)
 
       assert(assertion)
+
+      return async () => await listener
     })
   })
 })

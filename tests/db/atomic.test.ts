@@ -268,7 +268,7 @@ Deno.test("db - atomic", async (t) => {
 
       let assertion = false
 
-      kv.listenQueue((msg) => {
+      const listener = kv.listenQueue((msg) => {
         const qMsg = msg as QueueMessage<QueueValue>
         assertion = qMsg.__handlerId__ === handlerId && qMsg.__data__ === data
       })
@@ -284,6 +284,8 @@ Deno.test("db - atomic", async (t) => {
 
       const undelivered = await db.numbers.findUndelivered(undeliveredId)
       assert(assertion || typeof undelivered?.value === typeof data)
+
+      return async () => await listener
     })
   })
 

@@ -5,12 +5,11 @@ Deno.test("large_collection - findMany", async (t) => {
   await t.step("Should find all documents", async () => {
     await useDb(async (db) => {
       const users = generateLargeUsers(1_000)
-      const crs = await db.l_users.addMany(users)
-      assert(crs.every((cr) => cr.ok))
+      const cr = await db.l_users.addMany(users)
+      assert(cr.ok)
 
-      const docs = await db.l_users.findMany(
-        crs.map((cr) => cr.ok ? cr.id : ""),
-      )
+      const { result: docs } = await db.l_users.getMany()
+
       assert(docs.length === users.length)
       assert(
         users.every((user) =>
@@ -23,8 +22,8 @@ Deno.test("large_collection - findMany", async (t) => {
   await t.step("Should not find any documents", async () => {
     await useDb(async (db) => {
       const users = generateLargeUsers(10)
-      const crs = await db.l_users.addMany(users)
-      assert(crs.every((cr) => cr.ok))
+      const cr = await db.l_users.addMany(users)
+      assert(cr.ok)
 
       const docs = await db.l_users.findMany(["", "", ""])
       assert(docs.length === 0)

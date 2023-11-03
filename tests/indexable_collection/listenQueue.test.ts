@@ -28,7 +28,7 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
 
       let assertion = false
 
-      db.i_users.listenQueue((msgData) => {
+      const listener = db.i_users.listenQueue((msgData) => {
         assertion = msgData === data
       })
 
@@ -39,7 +39,11 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
 
       await kv.enqueue(msg, {
         keysIfUndelivered: [
-          extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, undeliveredId),
+          extendKey(
+            [KVDEX_KEY_PREFIX],
+            UNDELIVERED_KEY_PREFIX,
+            undeliveredId,
+          ),
         ],
       })
 
@@ -47,6 +51,8 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
 
       const undelivered = await db.i_users.findUndelivered(undeliveredId)
       assert(assertion || typeof undelivered?.value === typeof data)
+
+      return async () => await listener
     })
   })
 
@@ -58,7 +64,7 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
 
       let assertion = true
 
-      db.i_users.listenQueue(() => {
+      const listener = db.i_users.listenQueue(() => {
         assertion = false
       })
 
@@ -67,6 +73,8 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
       await sleep(100)
 
       assert(assertion)
+
+      return async () => await listener
     })
   })
 })

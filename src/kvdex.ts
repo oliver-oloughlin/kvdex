@@ -7,6 +7,7 @@ import type {
   DeleteAllOptions,
   EnqueueOptions,
   FindOptions,
+  IntervalMessage,
   KvId,
   KvKey,
   KvValue,
@@ -15,12 +16,12 @@ import type {
   QueueValue,
   Schema,
   SchemaDefinition,
+  SetIntervalOptions,
 } from "./types.ts"
 import { Collection } from "./collection.ts"
 import { Document } from "./document.ts"
 import {
   allFulfilled,
-  atomicDelete,
   createHandlerId,
   extendKey,
   parseQueueMessage,
@@ -30,10 +31,12 @@ import { AtomicBuilder } from "./atomic_builder.ts"
 import {
   DEFAULT_CRON_INTERVAL,
   DEFAULT_CRON_RETRY,
+  DEFAULT_INTERVAL_RETRY,
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
 import { model } from "./model.ts"
+import { AtomicWrapper } from "./atomic_wrapper.ts"
 
 /**
  * Create a new database instance.
@@ -79,34 +82,32 @@ export function kvdex<const T extends SchemaDefinition>(
   schemaDefinition: T,
 ) {
   // Set listener activated flag and queue handlers map
-  let listenerIsActivated = false
+  let listener: Promise<void>
   const queueHandlers = new Map<string, QueueMessageHandler<QueueValue>[]>()
 
   // Create idempotent listener activator
   const idempotentListener = () => {
-    // If listener is already activated, cancel
-    if (listenerIsActivated) {
-      return
+    // Create new queue listener if not already created
+    if (!listener) {
+      // Add queue listener
+      listener = kv.listenQueue(async (msg) => {
+        // Parse queue message
+        const parsed = parseQueueMessage(msg)
+        if (!parsed.ok) {
+          return
+        }
+
+        // Find correct queue handlers
+        const { __data__, __handlerId__ } = parsed.msg
+        const handlers = queueHandlers.get(__handlerId__)
+
+        // Run queue handlers
+        await allFulfilled(handlers?.map((handler) => handler(__data__)) ?? [])
+      })
     }
 
-    // Set listener activated flag
-    listenerIsActivated = true
-
-    // Add queue listener
-    kv.listenQueue(async (msg) => {
-      // Parse queue message
-      const parsed = parseQueueMessage(msg)
-      if (!parsed.ok) {
-        return
-      }
-
-      // Find correct queue handlers
-      const { __data__, __handlerId__ } = parsed.msg
-      const handlers = queueHandlers.get(__handlerId__)
-
-      // Run queue handlers
-      await allFulfilled(handlers?.map((handler) => handler(__data__)) ?? [])
-    })
+    // Return queue listener
+    return listener
   }
 
   // Create schema
@@ -128,13 +129,13 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
   private kv: Deno.Kv
   private schema: T
   private queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>
-  private idempotentListener: () => void
+  private idempotentListener: () => Promise<void>
 
   constructor(
     kv: Deno.Kv,
     schema: T,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-    idempotentListener: () => void,
+    idempotentListener: () => Promise<void>,
   ) {
     this.kv = kv
     this.schema = schema
@@ -200,7 +201,9 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     }
 
     // Delete all entries
-    await atomicDelete(this.kv, keys, options?.atomicBatchSize)
+    const atomic = new AtomicWrapper(this.kv, options?.atomicBatchSize)
+    keys.forEach((key) => atomic.delete(key))
+    await atomic.commit()
   }
 
   /**
@@ -272,7 +275,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     this.queueHandlers.set(handlerId, handlers)
 
     // Activate idempotent listener
-    this.idempotentListener()
+    return this.idempotentListener()
   }
 
   /**
@@ -357,7 +360,9 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    *
    * @param job - Work that will be run for each job interval.
    * @param options - Cron options.
-   * @returns Cron job ID.
+   * @returns Listener promise.
+   *
+   * @deprecated This method will be removed in a future release. Use kvdex.setInterval() instead, or the Deno.cron() API for cron jobs.
    */
   async cron(
     job: (msg: CronMessage) => unknown,
@@ -392,7 +397,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     }
 
     // Add cron job listener
-    this.listenQueue<CronMessage>(async (msg) => {
+    const listener = this.listenQueue<CronMessage>(async (msg) => {
       // Check if exit criteria is met, end repeating cron job if true
       let exit = false
       try {
@@ -444,8 +449,129 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
       enqueueTimestamp: new Date(),
     }, options?.startDelay)
 
-    // Return the cron job id
-    return id
+    // Return listener
+    return listener
+  }
+
+  /**
+   * Set an interval for a callback function to be invoked.
+   *
+   * Interval defaults to 1 hour if not set.
+   *
+   * Will repeat indefinitely if no exit condition is set.
+   *
+   * @example
+   * ```ts
+   * // Will repeat indeefinitely without delay
+   * db.setInterval(() => console.log("Hello World!"))
+   *
+   * // First callback starts after a 10 second delay, after that there is a 5 second delay between callbacks
+   * db.setInterval(() => console.log("I terminate after the 10th run"), {
+   *   // 10 second delay before the first job callback invoked
+   *   startDelay: 10_000,
+   *
+   *   // Fixed interval of 5 seconds
+   *   interval: 5_000,
+   *
+   *   // ...or set a dynamic interval
+   *   interval: ({ count }) => count * 500
+   *
+   *   // Count starts at 0 and is given before the current callback is run
+   *   exit: ({ count }) => count === 10,
+   * })
+   * ```
+   *
+   * @param fn - Callback function.
+   * @param options - Set interval options.
+   * @returns Listener promise.
+   */
+  async setInterval(
+    fn: (msg: IntervalMessage) => unknown,
+    options?: SetIntervalOptions,
+  ) {
+    // Create interval handler id
+    const id = crypto.randomUUID()
+
+    // Create interval enqueuer
+    const enqueue = async (
+      msg: IntervalMessage,
+      delay: number | undefined,
+    ) => {
+      // Try enqueuing until delivered on number of retries is exhausted
+      for (let i = 0; i <= (options?.retry ?? DEFAULT_INTERVAL_RETRY); i++) {
+        await this.enqueue(msg, {
+          idsIfUndelivered: [id],
+          delay,
+          topic: id,
+        })
+
+        // Check if message was delivered, break loop if successful
+        const doc = await this.findUndelivered(id)
+
+        if (doc === null) {
+          break
+        }
+
+        // Delete undelivered entry before retrying
+        await this.deleteUndelivered(id)
+      }
+    }
+
+    // Add interval listener
+    const listener = this.listenQueue<IntervalMessage>(async (msg) => {
+      // Check if exit criteria is met, terminate interval if true
+      let exit = false
+      try {
+        exit = await options?.exitOn?.(msg) ?? false
+      } catch (e) {
+        console.error(
+          `An error was caught while running exitOn task for interval {ID = ${id}}`,
+          e,
+        )
+      }
+
+      if (exit) {
+        await options?.onExit?.(msg)
+        return
+      }
+
+      // Set the next interval
+      let interval = DEFAULT_CRON_INTERVAL
+      try {
+        if (typeof options?.interval === "function") {
+          interval = await options.interval(msg)
+        } else {
+          interval = options?.interval ?? DEFAULT_CRON_INTERVAL
+        }
+      } catch (e) {
+        console.error(
+          `An error was caught while setting the next callback delay for interval {ID = ${id}}`,
+          e,
+        )
+      }
+
+      await allFulfilled([
+        // Enqueue next callback
+        enqueue({
+          count: msg.count + 1,
+          previousInterval: interval,
+          previousTimestamp: new Date(),
+        }, interval),
+
+        // Invoke callback function
+        fn(msg),
+      ])
+    }, { topic: id })
+
+    // Enqueue first cron job
+    await enqueue({
+      count: 0,
+      previousInterval: options?.startDelay ?? 0,
+      previousTimestamp: null,
+    }, options?.startDelay)
+
+    // Return listener
+    return listener
   }
 }
 
@@ -467,7 +593,7 @@ function _createSchema<const T extends SchemaDefinition>(
   def: T,
   kv: Deno.Kv,
   queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-  idempotentListener: () => void,
+  idempotentListener: () => Promise<void>,
   treeKey?: KvKey,
 ): Schema<T> {
   // Get all the definition entries

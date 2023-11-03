@@ -20,7 +20,7 @@ Deno.test("db - listenQueue", async (t) => {
 
       let assertion = false
 
-      db.listenQueue((msgData) => {
+      const listener = db.listenQueue((msgData) => {
         assertion = msgData === data
       })
 
@@ -31,6 +31,8 @@ Deno.test("db - listenQueue", async (t) => {
 
       await sleep(100)
       assert(assertion)
+
+      return async () => await listener
     })
   })
 
@@ -44,7 +46,7 @@ Deno.test("db - listenQueue", async (t) => {
 
       let assertion = true
 
-      db.listenQueue(() => {
+      const listener = db.listenQueue(() => {
         assertion = false
       })
 
@@ -53,6 +55,8 @@ Deno.test("db - listenQueue", async (t) => {
       await sleep(100)
 
       assert(assertion)
+
+      return async () => await listener
     })
   })
 })

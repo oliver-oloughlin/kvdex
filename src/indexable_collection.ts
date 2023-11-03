@@ -34,6 +34,7 @@ import {
   setIndices,
 } from "./utils.ts"
 import { Document } from "./document.ts"
+import { AtomicWrapper } from "./atomic_wrapper.ts"
 
 /**
  * Create an indexable collection builder function.
@@ -61,7 +62,7 @@ export function indexableCollection<
     kv: Deno.Kv,
     key: KvKey,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-    idempotentListener: () => void,
+    idempotentListener: () => Promise<void>,
   ) =>
     new IndexableCollection<T1, T2>(
       kv,
@@ -92,7 +93,7 @@ export class IndexableCollection<
     key: KvKey,
     model: Model<T1>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-    idempotentListener: () => void,
+    idempotentListener: () => Promise<void>,
     options: T2,
   ) {
     // Invoke super constructor
@@ -240,7 +241,8 @@ export class IndexableCollection<
       }
 
       // Perform delete using atomic operation
-      const atomic = this.kv.atomic().delete(idKey)
+      const atomic = new AtomicWrapper(this.kv)
+      atomic.delete(idKey)
       deleteIndices(id, value, atomic, this)
       await atomic.commit()
     }))

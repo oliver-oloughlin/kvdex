@@ -8,16 +8,15 @@ Deno.test("indexable_collection - addMany", async (t) => {
     async () => {
       await useDb(async (db) => {
         const users = generateUsers(1_000)
-        const crs = await db.i_users.addMany(users)
-        assert(crs.every((cr) => cr.ok))
+        const cr = await db.i_users.addMany(users)
+        assert(cr.ok)
 
-        const docs = await db.i_users.findMany(
-          crs.map((cr) => cr.ok ? cr.id : ""),
-        )
-        assert(docs.length === users.length)
+        const { result } = await db.i_users.getMany()
+
+        assert(result.length === users.length)
         assert(
           users.every((user) =>
-            docs.some((doc) => doc.value.username === user.username)
+            result.some((doc) => doc.value.username === user.username)
           ),
         )
       })
@@ -28,12 +27,10 @@ Deno.test("indexable_collection - addMany", async (t) => {
     "Should not add documents with colliding primary indices",
     async () => {
       await useDb(async (db) => {
-        const crs = await db.i_users.addMany([mockUser1, mockUser1])
+        const cr = await db.i_users.addMany([mockUser1, mockUser1])
         const count = await db.i_users.count()
 
-        assert(crs.length === 2)
-        assert(crs.some((cr) => cr.ok))
-        assert(crs.some((cr) => !cr.ok))
+        assert(!cr.ok)
         assert(count === 1)
       })
     },
@@ -44,16 +41,15 @@ Deno.test("indexable_collection - addMany", async (t) => {
     async () => {
       await useDb(async (db) => {
         const users = generateUsers(1_000)
-        const crs = await db.zi_users.addMany(users)
-        assert(crs.every((cr) => cr.ok))
+        const cr = await db.zi_users.addMany(users)
+        assert(cr.ok)
 
-        const docs = await db.zi_users.findMany(
-          crs.map((cr) => cr.ok ? cr.id : ""),
-        )
-        assert(docs.length === users.length)
+        const { result } = await db.zi_users.getMany()
+
+        assert(result.length === users.length)
         assert(
           users.every((user) =>
-            docs.some((doc) => doc.value.username === user.username)
+            result.some((doc) => doc.value.username === user.username)
           ),
         )
       })

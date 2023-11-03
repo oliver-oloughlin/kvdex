@@ -49,13 +49,15 @@ Deno.test("indexable_collection - delete", async (t) => {
     async () => {
       await useDb(async (db) => {
         const users = generateUsers(1_000)
-        const crs = await db.i_users.addMany(users)
+        const cr = await db.i_users.addMany(users)
         const count1 = await db.i_users.count()
 
-        assert(crs.every((cr) => cr.ok))
+        assert(cr.ok)
         assert(count1 === users.length)
 
-        await db.i_users.delete(...crs.map((cr) => cr.ok ? cr.id : ""))
+        const { result: ids } = await db.i_users.map((doc) => doc.id)
+
+        await db.i_users.delete(...ids)
 
         const count2 = await db.i_users.count()
         assert(count2 === 0)

@@ -10,8 +10,8 @@ Deno.test("large_collection - forEach", async (t) => {
     async () => {
       await useDb(async (db) => {
         const users = generateLargeUsers(1_000)
-        const crs = await db.l_users.addMany(users)
-        assert(crs.every((cr) => cr.ok))
+        const cr = await db.l_users.addMany(users)
+        assert(cr.ok)
 
         const docs: Document<User>[] = []
         await db.l_users.forEach((doc) => docs.push(doc))

@@ -10,8 +10,8 @@ Deno.test("indexable_collection - forEach", async (t) => {
     async () => {
       await useDb(async (db) => {
         const users = generateUsers(1_000)
-        const crs = await db.i_users.addMany(users)
-        assert(crs.every((cr) => cr.ok))
+        const cr = await db.i_users.addMany(users)
+        assert(cr.ok)
 
         const docs: Document<User>[] = []
         await db.i_users.forEach((doc) => docs.push(doc))

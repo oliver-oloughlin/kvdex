@@ -24,7 +24,7 @@ Deno.test("indexable_collection - enqueue", async (t) => {
 
       let assertion = false
 
-      kv.listenQueue((msg) => {
+      const listener = kv.listenQueue((msg) => {
         const qMsg = msg as QueueMessage<QueueValue>
         assertion = qMsg.__handlerId__ === handlerId && qMsg.__data__ === data
       })
@@ -37,6 +37,8 @@ Deno.test("indexable_collection - enqueue", async (t) => {
 
       const undelivered = await db.i_users.findUndelivered(undeliveredId)
       assert(assertion || typeof undelivered?.value === typeof data)
+
+      return async () => await listener
     })
   })
 
@@ -49,9 +51,9 @@ Deno.test("indexable_collection - enqueue", async (t) => {
       let assertion1 = false
       let assertion2 = true
 
-      db.i_users.listenQueue(() => assertion1 = true, { topic })
+      const l1 = db.i_users.listenQueue(() => assertion1 = true, { topic })
 
-      db.i_users.listenQueue(() => assertion2 = false)
+      const l2 = db.i_users.listenQueue(() => assertion2 = false)
 
       await db.i_users.enqueue("data", {
         idsIfUndelivered: [undeliveredId],
@@ -63,6 +65,8 @@ Deno.test("indexable_collection - enqueue", async (t) => {
       const undelivered = await db.i_users.findUndelivered(undeliveredId)
       assert(assertion1 || typeof undelivered?.value === typeof data)
       assert(assertion2)
+
+      return async () => await Promise.all([l1, l2])
     })
   })
 })

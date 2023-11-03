@@ -7,7 +7,7 @@ export type CollectionBuilderFn = (
   kv: Deno.Kv,
   key: KvKey,
   queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-  idempotentListener: () => void,
+  idempotentListener: () => Promise<void>,
 ) => Collection<KvValue, CollectionOptions<KvValue>>
 
 export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
@@ -79,6 +79,49 @@ export type CronMessage = {
    * Equal to the start time of the previous job.
    */
   enqueueTimestamp: Date
+}
+
+// Interval types
+export type SetIntervalOptions = {
+  /**
+   * Static or dynamic interval in milliseconds.
+   *
+   * @default 3_600_000 // Defaults to 1 hour
+   */
+  interval?: number | ((msg: IntervalMessage) => number | Promise<number>)
+
+  /** Exit condition used to terminate interval. */
+  exitOn?: (msg: IntervalMessage) => boolean | Promise<boolean>
+
+  /** Task to be run when terminating an interval, executed after ```exitOn()``` returns true. */
+  onExit?: (msg: IntervalMessage) => unknown
+
+  /**
+   * Delay before running the first job.
+   *
+   * If not set, will run first job immediately.
+   */
+  startDelay?: number
+
+  /**
+   * Number of retry attempts upon failed job deliver.
+   *
+   * When all retry attempts are spent the cron job will exit.
+   *
+   * @default 10
+   */
+  retry?: number
+}
+
+export type IntervalMessage = {
+  /** Job number, starts at 0. */
+  count: number
+
+  /** Previously set interval. */
+  previousInterval: number
+
+  /** Timestamp of previous executed callback, is null for first callback. */
+  previousTimestamp: Date | null
 }
 
 // Atomic Builder Types
@@ -226,7 +269,9 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
 
   /** Id of document to end at. */
   endId?: KvId
+}
 
+export type AtomicListOptions<T extends KvValue> = ListOptions<T> & {
   /** Batch size of atomic operations where applicable */
   atomicBatchSize?: number
 }
@@ -241,9 +286,12 @@ export type FindManyOptions = NonNullable<Parameters<Deno.Kv["getMany"]>[1]>
 
 export type UpdateManyOptions<T extends KvValue> = ListOptions<T> & SetOptions
 
-export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
+export type CountAllOptions = Pick<ListOptions<KvValue>, "consistency">
 
-export type DeleteAllOptions = Pick<ListOptions<KvValue>, "atomicBatchSize">
+export type DeleteAllOptions = Pick<
+  AtomicListOptions<KvValue>,
+  "atomicBatchSize"
+>
 
 export type EnqueueOptions =
   & Omit<

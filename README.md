@@ -3,8 +3,8 @@
 `kvdex` is a high-level abstraction layer for Deno KV with zero third-party
 dependencies. It's purpose is to enhance the experience of using Deno's KV store
 through additional features such as indexing, strongly typed collections, and
-cron jobs, while maintaining as much of the native functionality as possible,
-like atomic operations and queue listeners.
+queue-based intervals, while maintaining as much of the native functionality as
+possible, like atomic operations and queue listeners.
 
 ## Highlights
 
@@ -13,7 +13,7 @@ like atomic operations and queue listeners.
 - Extensible model strategy (Zod supported)
 - Segmented storage for large objects that exceed the native size limit.
 - Support for pagination and filtering.
-- Create repeating cron jobs.
+- Set intervals built on queues.
 - Message queues at database and collection level with topics.
 - Support for atomic operations.
 
@@ -58,7 +58,7 @@ like atomic operations and queue listeners.
     - [findUndelivered()](#findundelivered-1)
     - [enqueue()](#enqueue-1)
     - [listenQueue()](#listenqueue-1)
-    - [cron()](#cron)
+    - [setInterval()](#setinterval)
     - [atomic()](#atomic)
   - [Atomic Operations](#atomic-operations)
     - [Without checking](#without-checking)
@@ -73,9 +73,9 @@ like atomic operations and queue listeners.
 Collections are typed using models. Standard models can be defined using the
 `model()` function. Alternatively, any object that extends or implements the
 Model type can be used as a model. Zod is therefore fully compatible, without
-being a dependency. The standard model uses TypeScript inference only and does
-not validate any data when parsing. It is up to the devloper to choose the
-strategy that fits their use case the best.
+being a dependency. The standard model uses type casting only, and does not
+validate any data when parsing. It is up to the developer to choose the strategy
+that fits their use case the best.
 
 **_NOTE_:** When using interfaces instead of types, they must extend the KvValue
 type.
@@ -701,28 +701,28 @@ db.listenQueue(async (data) => {
 }, { topic: "posts" })
 ```
 
-### cron()
+### setInterval()
 
-Create a cron job that will run on interval, either indefinitely or until an
-exit condition is met. Interval defaults to 1 hour if not set. Like with queue
-listeners, multiple cron jobs can be created.
+Create an interval with a callback function that can run indefinitely or until
+an exit condition is met. Interval defaults to 1 hour if not set. Like with
+queue listeners, multiple intervals can be created.
 
 ```ts
 // Will repeat indefinitely with 1 hour interval
-db.cron(() => console.log("Hello World!"))
+db.setInterval(() => console.log("Hello World!"))
 
-// First job starts with a 10 second delay, after that there is a 5 second delay between jobs
-db.cron(() => console.log("I terminate after running 10 times"), {
-  // Delay before the first job is invoked
+// First callback is invoked after a 10 second delay, after that there is a 5 second delay between callbacks
+db.setInterval(() => console.log("I terminate after running 10 times"), {
+  // Delay before the first callback is invoked
   startDelay: 10_000,
 
-  // Fixed interval
+  // Fixed interval of 5 seconds
   interval: 5_000,
 
-  // If this is set it will override the fixed interval
-  setInterval: ({ count }) => count * 500
+  // ...or set a dynamic interval
+  interval: ({ count }) => count * 500
 
-  // Count starts at 0, exitOn is run before the current job
+  // Count starts at 0, exitOn is run before the current callback
   exitOn: ({ count }) => count === 10,
 })
 ```

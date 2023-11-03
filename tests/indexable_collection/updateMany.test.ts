@@ -1,7 +1,5 @@
-import { CommitResult } from "../../mod.ts"
 import { assert } from "../deps.ts"
 import { mockUser1, mockUserInvalid } from "../mocks.ts"
-import { User } from "../models.ts"
 import { generateUsers, useDb } from "../utils.ts"
 
 Deno.test("indexable_collection - updateMany", async (t) => {
@@ -10,12 +8,12 @@ Deno.test("indexable_collection - updateMany", async (t) => {
     async () => {
       await useDb(async (db) => {
         const users = generateUsers(1_000)
-        const crs = await db.i_users.addMany(users)
-        assert(crs.every((cr) => cr.ok))
+        const cr = await db.i_users.addMany(users)
+        assert(cr.ok)
 
-        const okCrs = crs.filter((cr) => cr.ok) as CommitResult<User>[]
-        const ids = okCrs.map((cr) => cr.id)
-        const versionstamps = okCrs.map((cr) => cr.versionstamp)
+        const { result: docs } = await db.i_users.getMany()
+        const ids = docs.map((doc) => doc.id)
+        const versionstamps = docs.map((doc) => doc.versionstamp)
 
         const updateData = {
           address: {
@@ -48,8 +46,8 @@ Deno.test("indexable_collection - updateMany", async (t) => {
       const users = generateUsers(10)
       let assertion = true
 
-      const crs = await db.zi_users.addMany(users)
-      assert(crs.every((cr) => cr.ok))
+      const cr = await db.zi_users.addMany(users)
+      assert(cr.ok)
 
       await db.zi_users.updateMany(mockUser1).catch(() => assertion = false)
 
@@ -62,8 +60,8 @@ Deno.test("indexable_collection - updateMany", async (t) => {
       const users = generateUsers(10)
       let assertion = false
 
-      const crs = await db.zi_users.addMany(users)
-      assert(crs.every((cr) => cr.ok))
+      const cr = await db.zi_users.addMany(users)
+      assert(cr.ok)
 
       await db.zi_users.updateMany(mockUserInvalid).catch(() =>
         assertion = true
