@@ -1,5 +1,5 @@
 import { ATOMIC_OPERATION_MUTATION_LIMIT } from "./constants.ts"
-import { SetOptions } from "./types.ts"
+import type { SetOptions } from "./types.ts"
 import { clamp } from "./utils.ts"
 
 export class AtomicWrapper implements Deno.AtomicOperation {
