@@ -5,6 +5,7 @@ import {
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
 import type {
+  AtomicListOptions,
   CollectionKeys,
   CollectionOptions,
   CommitResult,
@@ -288,7 +289,7 @@ export class Collection<
    */
   async delete(...ids: KvId[]) {
     // Perform delete operation for each id
-    const atomic = new AtomicWrapper(this.kv)
+    const atomic = new AtomicWrapper(this.kv, 40)
     ids.forEach((id) => atomic.delete(extendKey(this._keys.idKey, id)))
     await atomic.commit()
   }
@@ -449,7 +450,7 @@ export class Collection<
    * @param options - List options, optional.
    * @returns A promise that resovles to an object containing the iterator cursor
    */
-  async deleteMany(options?: ListOptions<T1>) {
+  async deleteMany(options?: AtomicListOptions<T1>) {
     // Perform quick delete if all documents are to be deleted
     if (selectsAll(options)) {
       // Create list iterator and empty keys list
@@ -462,7 +463,7 @@ export class Collection<
       }
 
       // Delete all keys and return
-      const atomic = new AtomicWrapper(this.kv, options?.batchSize)
+      const atomic = new AtomicWrapper(this.kv, options?.atomicBatchSize)
       keys.forEach((key) => atomic.delete(key))
       await atomic.commit()
     }
