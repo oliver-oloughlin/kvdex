@@ -11,8 +11,8 @@ Deno.test("large_collection - count", async (t) => {
         assert(count1 === 0)
 
         const users = generateLargeUsers(1_000)
-        const crs = await db.l_users.addMany(users)
-        assert(crs.every((cr) => cr.ok))
+        const cr = await db.l_users.addMany(users)
+        assert(cr.ok)
 
         const count2 = await db.l_users.count()
         assert(count2 === users.length)

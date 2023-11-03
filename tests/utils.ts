@@ -44,21 +44,29 @@ export function createDb(kv: Deno.Kv) {
 }
 
 // Temporary use functions
-export async function useKv(fn: (kv: Deno.Kv) => unknown) {
+export async function useKv(
+  fn: (kv: Deno.Kv) => unknown,
+) {
   const kv = await Deno.openKv(":memory:")
-  await fn(kv)
+  const result = await fn(kv)
   kv.close()
+
+  if (typeof result === "function") {
+    await result()
+  }
 }
 
-export async function useDb(fn: (db: ReturnType<typeof createDb>) => unknown) {
+export async function useDb(
+  fn: (db: ReturnType<typeof createDb>) => unknown,
+) {
   await useKv(async (kv) => {
     const db = createDb(kv)
-    await fn(db)
+    return await fn(db)
   })
 }
 
 // Generator functions
-export function generateUsers(n: number) {
+export function generateLargeUsers(n: number) {
   const users: User[] = []
 
   let country = ""
@@ -83,7 +91,7 @@ export function generateUsers(n: number) {
   return users
 }
 
-export function generateLargeUsers(n: number) {
+export function generateUsers(n: number) {
   const users: User[] = []
 
   for (let i = 0; i < n; i++) {
@@ -105,11 +113,6 @@ export function generateLargeUsers(n: number) {
 
 export function generateInvalidUsers(n: number) {
   const users: User[] = []
-
-  let country = ""
-  for (let i = 0; i < 50_000; i++) {
-    country += "A"
-  }
 
   for (let i = 0; i < n; i++) {
     users.push({

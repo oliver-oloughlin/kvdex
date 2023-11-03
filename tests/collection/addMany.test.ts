@@ -7,16 +7,15 @@ Deno.test("collection - addMany", async (t) => {
     async () => {
       await useDb(async (db) => {
         const users = generateUsers(1_000)
-        const crs = await db.users.addMany(users)
-        assert(crs.every((cr) => cr.ok))
+        const cr = await db.users.addMany(users)
+        assert(cr.ok)
 
-        const docs = await db.users.findMany(
-          crs.map((cr) => cr.ok ? cr.id : ""),
-        )
-        assert(docs.length === users.length)
+        const { result } = await db.users.getMany()
+
+        assert(result.length === users.length)
         assert(
           users.every((user) =>
-            docs.some((doc) => doc.value.username === user.username)
+            result.some((doc) => doc.value.username === user.username)
           ),
         )
       })
@@ -28,16 +27,14 @@ Deno.test("collection - addMany", async (t) => {
     async () => {
       await useDb(async (db) => {
         const users = generateUsers(1_000)
-        const crs = await db.z_users.addMany(users)
-        assert(crs.every((cr) => cr.ok))
+        const cr = await db.z_users.addMany(users)
+        assert(cr.ok)
 
-        const docs = await db.z_users.findMany(
-          crs.map((cr) => cr.ok ? cr.id : ""),
-        )
-        assert(docs.length === users.length)
+        const { result } = await db.z_users.getMany()
+        assert(result.length === users.length)
         assert(
           users.every((user) =>
-            docs.some((doc) => doc.value.username === user.username)
+            result.some((doc) => doc.value.username === user.username)
           ),
         )
       })

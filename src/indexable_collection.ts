@@ -34,6 +34,7 @@ import {
   setIndices,
 } from "./utils.ts"
 import { Document } from "./document.ts"
+import { AtomicWrapper } from "./atomic_wrapper.ts"
 
 /**
  * Create an indexable collection builder function.
@@ -240,7 +241,8 @@ export class IndexableCollection<
       }
 
       // Perform delete using atomic operation
-      const atomic = this.kv.atomic().delete(idKey)
+      const atomic = new AtomicWrapper(this.kv)
+      atomic.delete(idKey)
       deleteIndices(id, value, atomic, this)
       await atomic.commit()
     }))

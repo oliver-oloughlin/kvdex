@@ -1,8 +1,4 @@
-import {
-  ATOMIC_OPERATION_CONSERVATIVE_MUTATION_LIMIT,
-  GET_MANY_KEY_LIMIT,
-  UNDELIVERED_KEY_PREFIX,
-} from "./constants.ts"
+import { GET_MANY_KEY_LIMIT, UNDELIVERED_KEY_PREFIX } from "./constants.ts"
 import type { IndexableCollection } from "./indexable_collection.ts"
 import type {
   AtomicSetOptions,
@@ -302,50 +298,6 @@ export async function kvGetMany<const T>(
 
   // Return accumulated result
   return slicedEntries.flat()
-}
-
-/**
- * Use optimized atomic operations without hitting mutation limit.
- *
- * @param kv - Deno KV instance.
- * @param elements - Pool of elements.
- * @param fn - Callback function to be called for each element.
- * @returns Promise that resolves to list of atomic commit results.
- */
-export async function useAtomics<const T>(
-  kv: Deno.Kv,
-  elements: T[],
-  fn: (value: T, op: Deno.AtomicOperation) => Deno.AtomicOperation,
-) {
-  // Initiialize sliced elements list
-  const slicedElements: T[][] = []
-
-  // Slice elements based on atomic mutations limit
-  for (
-    let i = 0;
-    i < elements.length;
-    i += ATOMIC_OPERATION_CONSERVATIVE_MUTATION_LIMIT
-  ) {
-    slicedElements.push(
-      elements.slice(i, i + ATOMIC_OPERATION_CONSERVATIVE_MUTATION_LIMIT),
-    )
-  }
-
-  // Invoke callback function for each element and execute atomic operation
-  return await allFulfilled(slicedElements.map(async (elements) => {
-    try {
-      let atomic = kv.atomic()
-
-      elements.forEach((value) => {
-        atomic = fn(value, atomic)
-      })
-
-      return await atomic.commit()
-    } catch (e) {
-      console.error(e)
-      return { ok: false } as Deno.KvCommitError
-    }
-  }))
 }
 
 /**

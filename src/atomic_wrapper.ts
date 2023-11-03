@@ -10,7 +10,7 @@ export class AtomicWrapper implements Deno.AtomicOperation {
 
   constructor(
     kv: Deno.Kv,
-    atomicBatchSize = ATOMIC_OPERATION_MUTATION_LIMIT / 2,
+    atomicBatchSize = ATOMIC_OPERATION_MUTATION_LIMIT / 4,
   ) {
     this.kv = kv
     this.current = kv.atomic()
@@ -106,10 +106,9 @@ export class AtomicWrapper implements Deno.AtomicOperation {
     this.count++
 
     // Add current operation to atomics list if batch size is reached, reset current and count
-    if (this.count >= this.atomicBatchSize - 1) {
+    if (this.count % this.atomicBatchSize === this.atomicBatchSize - 1) {
       this.atomics.push(this.current)
       this.current = this.kv.atomic()
-      this.count = 0
     }
   }
 }

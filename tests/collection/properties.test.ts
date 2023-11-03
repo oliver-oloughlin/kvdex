@@ -40,8 +40,8 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select using pagination", async () => {
     await useDb(async (db) => {
       const users = generateUsers(1_000)
-      const crs = await db.users.addMany(users)
-      assert(crs.every((cr) => cr.ok))
+      const cr = await db.users.addMany(users)
+      assert(cr.ok)
 
       const selected: Document<User>[] = []
       let cursor: string | undefined = undefined
@@ -66,9 +66,9 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select filtered", async () => {
     await useDb(async (db) => {
       const users = generateUsers(10)
-      const crs = await db.users.addMany(users)
+      const cr = await db.users.addMany(users)
       const count1 = await db.users.count()
-      assert(crs.every((cr) => cr.ok))
+      assert(cr.ok)
       assert(count1 === users.length)
 
       const sliced = users.slice(5, 7)
@@ -92,9 +92,9 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select in reverse", async () => {
     await useDb(async (db) => {
       const users = generateUsers(10)
-      const crs = await db.users.addMany(users)
+      const cr = await db.users.addMany(users)
       const count1 = await db.users.count()
-      assert(crs.every((cr) => cr.ok))
+      assert(cr.ok)
       assert(count1 === users.length)
 
       const query1 = await db.users.getMany()
@@ -110,9 +110,9 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select from start id", async () => {
     await useDb(async (db) => {
       const users = generateUsers(10)
-      const crs = await db.users.addMany(users)
+      const cr = await db.users.addMany(users)
       const count1 = await db.users.count()
-      assert(crs.every((cr) => cr.ok))
+      assert(cr.ok)
       assert(count1 === users.length)
 
       const index = 5
@@ -134,9 +134,9 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select until end id", async () => {
     await useDb(async (db) => {
       const users = generateUsers(10)
-      const crs = await db.users.addMany(users)
+      const cr = await db.users.addMany(users)
       const count1 = await db.users.count()
-      assert(crs.every((cr) => cr.ok))
+      assert(cr.ok)
       assert(count1 === users.length)
 
       const index = 5
@@ -158,9 +158,9 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select from start id to end id", async () => {
     await useDb(async (db) => {
       const users = generateUsers(10)
-      const crs = await db.users.addMany(users)
+      const cr = await db.users.addMany(users)
       const count1 = await db.users.count()
-      assert(crs.every((cr) => cr.ok))
+      assert(cr.ok)
       assert(count1 === users.length)
 
       const index1 = 5

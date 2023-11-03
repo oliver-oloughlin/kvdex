@@ -197,7 +197,6 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     // Collect all kvdex keys
     const keys: Deno.KvKey[] = []
     for await (const { key } of iter) {
-      console.log(key)
       keys.push(key)
     }
 
@@ -276,7 +275,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     this.queueHandlers.set(handlerId, handlers)
 
     // Activate idempotent listener
-    this.idempotentListener()
+    return this.idempotentListener()
   }
 
   /**
@@ -361,7 +360,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    *
    * @param job - Work that will be run for each job interval.
    * @param options - Cron options.
-   * @returns Cron job ID.
+   * @returns Listener promise.
    *
    * @deprecated This method will be removed in a future release. Use kvdex.setInterval() instead, or the Deno.cron() API for cron jobs.
    */
@@ -398,7 +397,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     }
 
     // Add cron job listener
-    this.listenQueue<CronMessage>(async (msg) => {
+    const listener = this.listenQueue<CronMessage>(async (msg) => {
       // Check if exit criteria is met, end repeating cron job if true
       let exit = false
       try {
@@ -450,8 +449,8 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
       enqueueTimestamp: new Date(),
     }, options?.startDelay)
 
-    // Return the cron job id
-    return id
+    // Return listener
+    return listener
   }
 
   /**
@@ -484,7 +483,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    *
    * @param fn - Callback function.
    * @param options - Set interval options.
-   * @returns The interval id.
+   * @returns Listener promise.
    */
   async setInterval(
     fn: (msg: IntervalMessage) => unknown,
@@ -519,7 +518,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     }
 
     // Add interval listener
-    this.listenQueue<IntervalMessage>(async (msg) => {
+    const listener = this.listenQueue<IntervalMessage>(async (msg) => {
       // Check if exit criteria is met, terminate interval if true
       let exit = false
       try {
@@ -571,7 +570,8 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
       previousTimestamp: null,
     }, options?.startDelay)
 
-    return id
+    // Return listener
+    return listener
   }
 }
 

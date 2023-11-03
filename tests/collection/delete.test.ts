@@ -31,11 +31,13 @@ Deno.test("collection - delete", async (t) => {
         const users = generateUsers(1_000)
         const crs = await db.users.addMany(users)
         const count1 = await db.users.count()
+        const { result: ids } = await db.users.map((doc) => doc.id)
 
-        assert(crs.every((cr) => cr.ok))
+        assert(crs.ok)
         assert(count1 === users.length)
+        assert(ids.length === users.length)
 
-        await db.users.delete(...crs.map((cr) => cr.ok ? cr.id : ""))
+        await db.users.delete(...ids)
 
         const count2 = await db.users.count()
         assert(count2 === 0)

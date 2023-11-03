@@ -1,4 +1,5 @@
 import {
+  //ATOMIC_OPERATION_CONSERVATIVE_MUTATION_LIMIT,
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
@@ -287,10 +288,9 @@ export class Collection<
    */
   async delete(...ids: KvId[]) {
     // Perform delete operation for each id
-    await allFulfilled(ids.map(async (id) => {
-      const key = extendKey(this._keys.idKey, id)
-      await this.kv.delete(key)
-    }))
+    const atomic = new AtomicWrapper(this.kv)
+    ids.forEach((id) => atomic.delete(extendKey(this._keys.idKey, id)))
+    await atomic.commit()
   }
 
   /**
@@ -418,8 +418,16 @@ export class Collection<
       throw errors
     }
 
-    // Return commit results
-    return results
+    // If a commit has failed, return commit error
+    if (!results.every((cr) => cr.ok)) {
+      return { ok: false }
+    }
+
+    // Return commit result
+    return {
+      ok: true,
+      versionstamp: "0",
+    }
   }
 
   /**

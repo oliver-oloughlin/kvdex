@@ -269,7 +269,9 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
 
   /** Id of document to end at. */
   endId?: KvId
+}
 
+export type AtomicListOptions<T extends KvValue> = ListOptions<T> & {
   /** Batch size of atomic operations where applicable */
   atomicBatchSize?: number
 }
@@ -284,9 +286,12 @@ export type FindManyOptions = NonNullable<Parameters<Deno.Kv["getMany"]>[1]>
 
 export type UpdateManyOptions<T extends KvValue> = ListOptions<T> & SetOptions
 
-export type CountAllOptions = Pick<Deno.KvListOptions, "consistency">
+export type CountAllOptions = Pick<ListOptions<KvValue>, "consistency">
 
-export type DeleteAllOptions = Pick<ListOptions<KvValue>, "atomicBatchSize">
+export type DeleteAllOptions = Pick<
+  AtomicListOptions<KvValue>,
+  "atomicBatchSize"
+>
 
 export type EnqueueOptions =
   & Omit<

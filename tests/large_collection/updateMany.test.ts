@@ -1,7 +1,6 @@
-import { collection, CommitResult, kvdex, model } from "../../mod.ts"
+import { collection, kvdex, model } from "../../mod.ts"
 import { assert } from "../deps.ts"
 import { mockUser1, mockUserInvalid } from "../mocks.ts"
-import { User } from "../models.ts"
 import { generateLargeUsers, generateNumbers, useDb, useKv } from "../utils.ts"
 
 Deno.test("large_collection - updateMany", async (t) => {
@@ -10,12 +9,12 @@ Deno.test("large_collection - updateMany", async (t) => {
     async () => {
       await useDb(async (db) => {
         const users = generateLargeUsers(1_000)
-        const crs = await db.l_users.addMany(users)
-        assert(crs.every((cr) => cr.ok))
+        const cr = await db.l_users.addMany(users)
+        assert(cr.ok)
 
-        const okCrs = crs.filter((cr) => cr.ok) as CommitResult<User>[]
-        const ids = okCrs.map((cr) => cr.id)
-        const versionstamps = okCrs.map((cr) => cr.versionstamp)
+        const { result: docs } = await db.l_users.getMany()
+        const ids = docs.map((doc) => doc.id)
+        const versionstamps = docs.map((doc) => doc.versionstamp)
 
         const updateData = {
           address: {
@@ -65,20 +64,25 @@ Deno.test("large_collection - updateMany", async (t) => {
           dates.push(new Date("2000-01-01"))
         }
 
-        const crs1 = await db.numbers.addMany(numbers) as CommitResult<number>[]
-        const crs2 = await db.arrays.addMany(arrays) as CommitResult<string[]>[]
-        const crs3 = await db.dates.addMany(dates) as CommitResult<Date>[]
+        const cr1 = await db.numbers.addMany(numbers)
+        const cr2 = await db.arrays.addMany(arrays)
+        const cr3 = await db.dates.addMany(dates)
 
-        assert(crs1.every((cr) => cr.ok))
-        assert(crs2.every((cr) => cr.ok))
-        assert(crs3.every((cr) => cr.ok))
+        assert(cr1.ok)
+        assert(cr2.ok)
+        assert(cr3.ok)
 
-        const ids1 = crs1.map((cr) => cr.id)
-        const versionstamps1 = crs1.map((cr) => cr.versionstamp)
-        const ids2 = crs2.map((cr) => cr.id)
-        const versionstamps2 = crs2.map((cr) => cr.versionstamp)
-        const ids3 = crs3.map((cr) => cr.id)
-        const versionstamps3 = crs3.map((cr) => cr.versionstamp)
+        const { result: docs1 } = await db.numbers.getMany()
+        const { result: docs2 } = await db.arrays.getMany()
+        const { result: docs3 } = await db.dates.getMany()
+
+        const ids1 = docs1.map((doc) => doc.id)
+        const ids2 = docs2.map((doc) => doc.id)
+        const ids3 = docs3.map((doc) => doc.id)
+
+        const versionstamps1 = docs1.map((doc) => doc.versionstamp)
+        const versionstamps2 = docs2.map((doc) => doc.versionstamp)
+        const versionstamps3 = docs3.map((doc) => doc.versionstamp)
 
         const val1 = 20
         const val2 = ["4"]
@@ -118,8 +122,8 @@ Deno.test("large_collection - updateMany", async (t) => {
       const users = generateLargeUsers(10)
       let assertion = true
 
-      const crs = await db.zl_users.addMany(users)
-      assert(crs.every((cr) => cr.ok))
+      const cr = await db.zl_users.addMany(users)
+      assert(cr.ok)
 
       await db.zl_users.updateMany(mockUser1).catch(() => assertion = false)
 
@@ -132,8 +136,8 @@ Deno.test("large_collection - updateMany", async (t) => {
       const users = generateLargeUsers(10)
       let assertion = false
 
-      const crs = await db.zl_users.addMany(users)
-      assert(crs.every((cr) => cr.ok))
+      const cr = await db.zl_users.addMany(users)
+      assert(cr.ok)
 
       await db.zl_users.updateMany(mockUserInvalid).catch(() =>
         assertion = true

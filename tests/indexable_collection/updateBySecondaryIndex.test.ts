@@ -49,8 +49,8 @@ Deno.test("indexable_collection - updateBySecondaryIndex", async (t) => {
     await useDb(async (db) => {
       let assertion = true
 
-      const crs = await db.zi_users.addMany([mockUser1, mockUser2])
-      assert(crs.every((cr) => cr.ok))
+      const cr = await db.zi_users.addMany([mockUser1, mockUser2])
+      assert(cr.ok)
 
       await db.zi_users.updateBySecondaryIndex("age", mockUser1.age, mockUser1)
         .catch(() => assertion = false)
@@ -63,8 +63,8 @@ Deno.test("indexable_collection - updateBySecondaryIndex", async (t) => {
     await useDb(async (db) => {
       let assertion = false
 
-      const crs = await db.zi_users.addMany([mockUser1, mockUser2])
-      assert(crs.every((cr) => cr.ok))
+      const cr = await db.zi_users.addMany([mockUser1, mockUser2])
+      assert(cr.ok)
 
       await db.zi_users.updateBySecondaryIndex(
         "age",
