@@ -285,6 +285,11 @@ export type FindOptions = NonNullable<Parameters<Deno.Kv["get"]>[1]>
 export type FindManyOptions = NonNullable<Parameters<Deno.Kv["getMany"]>[1]>
 
 export type UpdateOptions = SetOptions & {
+  /**
+   * Strategy when merging objects.
+   *
+   * @default "shallow"
+   */
   mergeType?: MergeType
 }
 
