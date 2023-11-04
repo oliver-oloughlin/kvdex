@@ -303,14 +303,19 @@ export class Collection<
    * this method overrides the old value with the new one.
    *
    * For custom object types, this method merges the
-   * new data with the exisiting data.
+   * new data with the exisiting data using shallow merge
+   * by default, or optionally using deep merge.
    *
    * @example
    * ```ts
+   * // Updates by overriding the existing value
    * const result1 = await db.numbers.update("num1", 10)
    *
+   * // Partial update using deep merge, only updates the age field
    * const result2 = await db.users.update("oliver", {
-   *   age: 30 // Partial update, only updates the age field
+   *   age: 30
+   * }, {
+   *   mergeType: "deep"
    * })
    * ```
    *
@@ -346,16 +351,14 @@ export class Collection<
    * // Updates all user documents and sets name = 67
    * await db.users.updateMany({ age: 67 })
    *
-   * // Updates all user documents where the user's age is above 20
+   * // Updates all user documents using deep merge where the user's age is above 20
    * await db.users.updateMany({ age: 67 }, {
    *   filter: (doc) => doc.value.age > 20,
+   *   mergeType: "deep"
    * })
    *
    * // Only updates first user document, as username is a primary index
-   * const { result } = await db.users.updateMany({ username: "XuserX" })
-   *
-   * const success = result.every(commitResult => commitResult.ok)
-   * console.log(success) // false
+   * await db.users.updateMany({ username: "XuserX" })
    * ```
    *
    * @param value - Updated value to be inserted into documents.

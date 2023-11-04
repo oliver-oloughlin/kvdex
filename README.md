@@ -575,7 +575,7 @@ options are given, all documents by the given index value will we updated.
 // Updates all user documents with age = 24 and sets age = 67
 const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
 
-// Updates all user documents using deep merge where the user's age is 24 and username starts with "o"
+// Updates all user documents where the user's age is 24 and username starts with "o" using deep merge
 const { result } = await db.users.updateBySecondaryIndex(
   "age",
   24,

@@ -342,6 +342,13 @@ export class IndexableCollection<
    * ```ts
    * // Updates a user with username = "oliver" to have age = 56
    * const result = await db.users.updateByPrimaryIndex("username", "oliver", { age: 56 })
+   *
+   * // Updates a user document using deep merge
+   * const result = await db.users.updateByPrimaryIndex("username", "anders", {
+   *   age: 89,
+   * }, {
+   *   mergeType: "deep",
+   * })
    * ```
    *
    * @param index - Index to update by.
@@ -380,13 +387,14 @@ export class IndexableCollection<
    * // Updates all user documents with age = 24 and sets age = 67
    * const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
    *
-   * // Updates all user documents where the user's age is 24 and username starts with "o"
+   * // Updates all user documents where the user's age is 24 and username starts with "o" using deep merge
    * const { result } = await db.users.updateBySecondaryIndex(
    *   "age",
    *   24,
    *   { age: 67 },
    *   {
    *     filter: (doc) => doc.value.username.startsWith("o"),
+   *     mergeType: "deep",
    *   }
    * )
    * ```
