@@ -1,3 +1,5 @@
+import type { MergeType } from "./types.ts"
+
 // Key prefixes
 export const KVDEX_KEY_PREFIX = "__kvdex__"
 
@@ -18,12 +20,13 @@ export const GET_MANY_KEY_LIMIT = 10
 
 export const LARGE_COLLECTION_STRING_LIMIT = 30_000
 
-// Cron constants
+// Defaults
 export const DEFAULT_CRON_INTERVAL = 60 * 60 * 1_000 // 1 hour
 
 export const DEFAULT_CRON_RETRY = 10
 
-// Interval constants
 export const DEFAULT_INTERVAL = 60 * 60 * 1_000 // 1 hour
 
 export const DEFAULT_INTERVAL_RETRY = 10
+
+export const DEFAULT_MERGE_TYPE: MergeType = "shallow"

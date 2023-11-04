@@ -1,5 +1,6 @@
 import { Collection } from "./collection.ts"
 import {
+  DEFAULT_MERGE_TYPE,
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   PRIMARY_INDEX_KEY_PREFIX,
@@ -25,10 +26,12 @@ import type {
   SetOptions,
   UpdateData,
   UpdateManyOptions,
+  UpdateOptions,
 } from "./types.ts"
 import {
   allFulfilled,
   checkIndices,
+  deepMerge,
   deleteIndices,
   extendKey,
   setIndices,
@@ -339,6 +342,13 @@ export class IndexableCollection<
    * ```ts
    * // Updates a user with username = "oliver" to have age = 56
    * const result = await db.users.updateByPrimaryIndex("username", "oliver", { age: 56 })
+   *
+   * // Updates a user document using deep merge
+   * const result = await db.users.updateByPrimaryIndex("username", "anders", {
+   *   age: 89,
+   * }, {
+   *   mergeType: "deep",
+   * })
    * ```
    *
    * @param index - Index to update by.
@@ -353,7 +363,7 @@ export class IndexableCollection<
     index: K,
     value: CheckKeyOf<K, T1>,
     data: UpdateData<T1>,
-    options?: SetOptions,
+    options?: UpdateOptions,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Find document by primary index
     const doc = await this.findByPrimaryIndex(index, value)
@@ -377,13 +387,14 @@ export class IndexableCollection<
    * // Updates all user documents with age = 24 and sets age = 67
    * const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
    *
-   * // Updates all user documents where the user's age is 24 and username starts with "o"
+   * // Updates all user documents where the user's age is 24 and username starts with "o" using deep merge
    * const { result } = await db.users.updateBySecondaryIndex(
    *   "age",
    *   24,
    *   { age: 67 },
    *   {
    *     filter: (doc) => doc.value.username.startsWith("o"),
+   *     mergeType: "deep",
    *   }
    * )
    * ```
@@ -422,7 +433,7 @@ export class IndexableCollection<
   protected async updateDocument(
     doc: Document<T1>,
     data: UpdateData<T1>,
-    options: SetOptions | undefined,
+    options: UpdateOptions | undefined,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Get document value, delete document entry
     const { value, id } = doc
@@ -441,16 +452,18 @@ export class IndexableCollection<
     // Delete document entry
     await this.delete(id)
 
+    // Merge value and data according to given merge type
+    const mergeType = options?.mergeType ?? DEFAULT_MERGE_TYPE
+
+    const merged = mergeType === "shallow"
+      ? {
+        ...value as KvObject,
+        ...data as KvObject,
+      } as T1
+      : deepMerge(value, data)
+
     // Set new document value from merged data
-    return await this.setDocument(
-      id,
-      {
-        ...value,
-        ...data,
-      },
-      options,
-      true,
-    )
+    return await this.setDocument(id, merged, options, true)
   }
 
   protected async setDocument(

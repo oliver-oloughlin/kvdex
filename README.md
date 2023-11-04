@@ -289,18 +289,21 @@ console.log(doc.value) // 2048
 Update the value of an exisiting document in the KV store. For primitive values,
 arrays and built-in objects (Date, RegExp, etc.), this method overwrites the
 exisiting data with the new value. For custom objects (Models), this method
-performs a partial update, merging the new value with the existing data (shallow
-merge, not deep). Upon completion, a CommitResult object will be returned with
-the document id, versionstamp and ok flag. If no document with a matching id
-exists in the collection, the operation will fail.
+performs a partial update, merging the new value with the existing data using
+shallow merge by default, or optionally using deep merge. Upon completion, a
+CommitResult object will be returned with the document id, versionstamp and ok
+flag. If no document with a matching id exists in the collection, the operation
+will fail.
 
 ```ts
 // Updates the document with a new value
 const result1 = await db.numbers.update("num1", 42)
 
-// Partial update, only updates the age field
+// Partial update using deep merge, only updates the age field
 const result2 = await db.users.update("user1", {
   age: 67,
+}, {
+  mergeType: "deep",
 })
 ```
 
@@ -315,16 +318,14 @@ documents in the collection.
 // Updates all user documents and sets age = 67
 const { result } = await db.users.updateMany({ age: 67 })
 
-// Updates all user documents where the user's age is above 20
+// Updates all user documents using deep merge where the user's age is above 20
 const { result } = await db.users.updateMany({ age: 67 }, {
   filter: (doc) => doc.value.age > 20,
+  mergeType: "deep",
 })
 
 // Only updates first user document, as username is a primary index
 const { result } = await db.users.updateMany({ username: "XuserX" })
-
-const success = result.every((commitResult) => commitResult.ok)
-console.log(success) // false
 ```
 
 ### delete()
@@ -555,6 +556,13 @@ Update a document by a primary index.
 const result = await db.users.updateByPrimaryIndex("username", "oliver", {
   age: 56,
 })
+
+// Updates a user document using deep merge
+const result = await db.users.updateByPrimaryIndex("username", "anders", {
+  age: 89,
+}, {
+  mergeType: "deep",
+})
 ```
 
 ### updateBySecondaryIndex()
@@ -567,13 +575,14 @@ options are given, all documents by the given index value will we updated.
 // Updates all user documents with age = 24 and sets age = 67
 const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
 
-// Updates all user documents where the user's age is 24 and username starts with "o"
+// Updates all user documents where the user's age is 24 and username starts with "o" using deep merge
 const { result } = await db.users.updateBySecondaryIndex(
   "age",
   24,
   { age: 67 },
   {
     filter: (doc) => doc.value.username.startsWith("o"),
+    mergeType: "deep",
   },
 )
 ```
@@ -877,8 +886,8 @@ tests to ensure those features remain stable.
 
 The goal of kvdex is to provide a type safe, higher level API to Deno KV, while
 trying to retain as much of the native functionality as possible. Additionally,
-this module should be light-weight and should not rely on any third-party
-dependencies. Please kleep this in mind when making any contributions.
+this module should not rely on any third-party dependencies. Please kleep this
+in mind when making any contributions.
 
 ## License
 

@@ -19,7 +19,9 @@ Deno.test("collection - update", async (t) => {
           },
         }
 
-        const updateCr = await db.users.update(cr.id, updateData)
+        const updateCr = await db.users.update(cr.id, updateData, {
+          mergeType: "shallow",
+        })
 
         assert(updateCr.ok)
         assert(updateCr.id === cr.id)
@@ -34,6 +36,42 @@ Deno.test("collection - update", async (t) => {
         assert(doc.value.address.city === updateData.address.city)
         assert(doc.value.address.houseNr === updateData.address.houseNr)
         assert(typeof doc.value.address.street === "undefined")
+      })
+    },
+  )
+
+  await t.step(
+    "Should partially update document of KvObject type using deep merge",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.users.add(mockUser1)
+        assert(cr.ok)
+
+        const updateData = {
+          address: {
+            country: "Ireland",
+            city: "Dublin",
+            houseNr: null,
+          },
+        }
+
+        const updateCr = await db.users.update(cr.id, updateData, {
+          mergeType: "deep",
+        })
+
+        assert(updateCr.ok)
+        assert(updateCr.id === cr.id)
+        assert(updateCr.versionstamp !== cr.versionstamp)
+
+        const doc = await db.users.find(cr.id)
+
+        assert(doc !== null)
+        assert(doc.value.username === mockUser1.username)
+        assert(doc.value.age === mockUser1.age)
+        assert(doc.value.address.country === updateData.address.country)
+        assert(doc.value.address.city === updateData.address.city)
+        assert(doc.value.address.houseNr === updateData.address.houseNr)
+        assert(doc.value.address.street === mockUser1.address.street)
       })
     },
   )
