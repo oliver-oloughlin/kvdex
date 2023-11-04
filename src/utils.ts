@@ -102,6 +102,7 @@ export function isKvObject(value: KvValue) {
     return false
   }
 
+  // Return true after performing all checks
   return true
 }
 

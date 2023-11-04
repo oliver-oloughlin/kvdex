@@ -877,8 +877,8 @@ tests to ensure those features remain stable.
 
 The goal of kvdex is to provide a type safe, higher level API to Deno KV, while
 trying to retain as much of the native functionality as possible. Additionally,
-this module should be light-weight and should not rely on any third-party
-dependencies. Please kleep this in mind when making any contributions.
+this module should not rely on any third-party dependencies. Please kleep this
+in mind when making any contributions.
 
 ## License
 

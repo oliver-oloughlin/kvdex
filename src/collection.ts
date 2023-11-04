@@ -1,4 +1,5 @@
 import {
+  DEFAULT_MERGE_TYPE,
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
@@ -25,11 +26,13 @@ import type {
   SetOptions,
   UpdateData,
   UpdateManyOptions,
+  UpdateOptions,
 } from "./types.ts"
 import {
   allFulfilled,
   createHandlerId,
   createListSelector,
+  deepMerge,
   extendKey,
   generateId,
   getDocumentId,
@@ -319,7 +322,7 @@ export class Collection<
   async update(
     id: KvId,
     data: UpdateData<T1>,
-    options?: SetOptions,
+    options?: UpdateOptions,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Get document
     const doc = await this.find(id)
@@ -870,22 +873,25 @@ export class Collection<
   protected async updateDocument(
     doc: Document<T1>,
     data: UpdateData<T1>,
-    options: SetOptions | undefined,
+    options: UpdateOptions | undefined,
   ) {
     // Get document value, delete document entry
     const { value, id } = doc
 
     // If value is KvObject, perform partial merge and set new document value
     if (isKvObject(value)) {
-      return await this.setDocument(
-        id,
-        {
+      // Merge value and data according to given merge type
+      const mergeType = options?.mergeType ?? DEFAULT_MERGE_TYPE
+
+      const merged = mergeType === "shallow"
+        ? {
           ...value as KvObject,
           ...data as KvObject,
-        } as T1,
-        options,
-        true,
-      )
+        } as T1
+        : deepMerge(value, data)
+
+      // Set new document value
+      return await this.setDocument(id, merged, options, true)
     }
 
     // Set new document value
