@@ -19,6 +19,7 @@ import type {
   KvObject,
   KvValue,
   ListOptions,
+  ManyCommitResult,
   Model,
   QueueListenerOptions,
   QueueMessageHandler,
@@ -402,7 +403,10 @@ export class Collection<
    * @param options - Set options, optional.
    * @returns A promise that resolves to a list of Deno.KvCommitResult or Deno.KvCommitError objects
    */
-  async addMany(values: T1[], options?: SetOptions) {
+  async addMany(
+    values: T1[],
+    options?: SetOptions,
+  ): Promise<ManyCommitResult | Deno.KvCommitError> {
     // Initiate result and error lists
     const results: (CommitResult<T1> | Deno.KvCommitError)[] = []
     const errors: unknown[] = []
@@ -432,7 +436,6 @@ export class Collection<
     // Return commit result
     return {
       ok: true,
-      versionstamp: "0",
     }
   }
 

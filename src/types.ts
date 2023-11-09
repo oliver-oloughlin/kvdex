@@ -26,6 +26,10 @@ export type CommitResult<T1 extends KvValue> = {
   id: KvId
 }
 
+export type ManyCommitResult = {
+  ok: true
+}
+
 export type IdGenerator<T extends KvValue> = (data: T) => KvId
 
 // Cron types
