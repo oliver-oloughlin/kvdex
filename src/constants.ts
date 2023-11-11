@@ -1,4 +1,4 @@
-import type { MergeType } from "./types.ts"
+import type { MergeType } from "#/types.ts"
 
 // Key prefixes
 export const KVDEX_KEY_PREFIX = "__kvdex__"

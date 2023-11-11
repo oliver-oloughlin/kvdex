@@ -17,26 +17,26 @@ import type {
   Schema,
   SchemaDefinition,
   SetIntervalOptions,
-} from "./types.ts"
-import { Collection } from "./collection.ts"
-import { Document } from "./document.ts"
+} from "#/types.ts"
+import { Collection } from "#/collection.ts"
+import { Document } from "#/document.ts"
 import {
   allFulfilled,
   createHandlerId,
   extendKey,
   parseQueueMessage,
   prepareEnqueue,
-} from "./utils.ts"
-import { AtomicBuilder } from "./atomic_builder.ts"
+} from "#/utils.ts"
+import { AtomicBuilder } from "#/atomic_builder.ts"
 import {
   DEFAULT_CRON_INTERVAL,
   DEFAULT_CRON_RETRY,
   DEFAULT_INTERVAL_RETRY,
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
-} from "./constants.ts"
-import { model } from "./model.ts"
-import { AtomicWrapper } from "./atomic_wrapper.ts"
+} from "#/constants.ts"
+import { model } from "#/model.ts"
+import { AtomicWrapper } from "#/atomic_wrapper.ts"
 
 /**
  * Create a new database instance.
@@ -308,7 +308,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     }
 
     // Return document
-    return new Document<T>(model(), {
+    return new Document(model<T>(), {
       id,
       versionstamp: result.versionstamp,
       value: result.value,
@@ -635,7 +635,7 @@ async function _countAll(
   kv: Deno.Kv,
   schemaOrCollection:
     | Schema<SchemaDefinition>
-    | Collection<KvValue, CollectionOptions<KvValue>>,
+    | Collection<KvValue, KvValue, CollectionOptions<KvValue>>,
   options?: CountAllOptions,
 ): Promise<number> {
   // If input is a collection, return the collection count

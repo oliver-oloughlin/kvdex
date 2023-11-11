@@ -65,6 +65,9 @@ possible, like atomic operations and queue listeners.
     - [With checking](#with-checking)
   - [Document Methods](#document-methods)
     - [flat()](#flat)
+  - [Extensions](#extensions)
+    - [Zod](#zod)
+      - [zodModel()](#zodmodel)
   - [Development](#development)
   - [License](#license)
 
@@ -107,7 +110,7 @@ import { z } from "https://deno.land/x/zod/mod.ts"
 
 type User = z.infer<typeof UserModel>
 
-const UserModel = z.object({
+const UserSchema = z.object({
   username: z.string(),
   age: z.number(),
   activities: z.array(z.string()),
@@ -139,7 +142,7 @@ const kv = await Deno.openKv()
 const db = kvdex(kv, {
   numbers: collection(model<number>()),
   largeStrings: largeCollection(model<string>()),
-  users: indexableCollection(UserModel, {
+  users: indexableCollection(UserSchema, {
     indices: {
       username: "primary" // unique
       age: "secondary" // non-unique
@@ -227,7 +230,9 @@ const result = await db.users.add({
   },
 })
 
-console.log(result.id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
+if (result.ok) {
+  console.log(result.id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
+}
 ```
 
 ### addMany()
@@ -237,10 +242,10 @@ Upon completion, a list of CommitResult objects will be returned.
 
 ```ts
 // Adds 5 new document entries to the KV store.
-await commitResult = await db.numbers.addMany([1, 2, 3, 4, 5])
+await result = await db.numbers.addMany([1, 2, 3, 4, 5])
 
 // Only adds the first entry, as "username" is defined as a primary index and cannot have duplicates
-await commitResult = await db.users.addMany([
+await result = await db.users.addMany([
   {
     username: "oli",
     age: 24
@@ -262,7 +267,9 @@ collection, the operation will fail.
 ```ts
 const result = await db.numbers.set("id_1", 2048)
 
-console.log(result.id) // id_1
+if (result.ok) {
+  console.log(result.id) // id_1
+}
 ```
 
 ### write()
@@ -279,9 +286,7 @@ const result1 = await db.numbers.write("id_1", 1024)
 const result2 = await db.numbers.write("id_1", 2048)
 const doc = await db.numbers.find("id_1")
 
-console.log(result1.ok, result1.id) // true id_1
-console.log(result2.ok, result2.id) // true id_1
-console.log(doc.value) // 2048
+console.log(doc?.value) // 2048
 ```
 
 ### update()
@@ -297,10 +302,10 @@ will fail.
 
 ```ts
 // Updates the document with a new value
-const result1 = await db.numbers.update("num1", 42)
+const result = await db.numbers.update("num1", 42)
 
 // Partial update using deep merge, only updates the age field
-const result2 = await db.users.update("user1", {
+const result = await db.users.update("user1", {
   age: 67,
 }, {
   mergeType: "deep",
@@ -867,6 +872,49 @@ const flattened = doc.flat()
 //   versionstamp,
 //   ...value
 // }
+```
+
+## Extensions
+
+Additional features outside of the basic functionality provided by `kvdex` .
+While the basic functions are dependency-free, extended features may rely on
+some specific dependenices to enhance integration. All extensions are found in
+the kvdex/ext sub-path.
+
+### Zod
+
+#### zodModel()
+
+Adds additional compatibility when using zod schemas as models. While zod
+schemas can be used as models directly, `zodModel()` properly parses a model
+from a zod schema, recognizing default fields as optional.
+
+```ts
+import { z } from "https://deno.land/x/zod/mod.ts"
+import { zodModel } from "https://deno.land/x/kvdex/ext/zod.ts"
+import { collection, kvdex } from "https://deno.land/x/kvdex/mod.ts"
+
+const UserSchema = z.object({
+  username: z.string(),
+  gender: z.string().default("not given"),
+})
+
+const kv = await Deno.openKv()
+
+const db = kvdex(kv, {
+  users_basic: collection(UserSchema),
+  users_zod: collection(zodModel(UserSchema)),
+})
+
+// Produces a type error for missing "gender" field.
+const result = await db.users_basic.add({
+  username: "oliver",
+})
+
+// No type error for missing "gender" field.
+const result = await db.users_zod.add({
+  username: "oliver",
+})
 ```
 
 ## Development

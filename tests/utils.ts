@@ -4,7 +4,7 @@ import {
   kvdex,
   largeCollection,
 } from "../mod.ts"
-import { model } from "../src/model.ts"
+import { model } from "#/model.ts"
 import { ulid } from "./deps.ts"
 import { User, UserSchema } from "./models.ts"
 

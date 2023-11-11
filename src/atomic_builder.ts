@@ -1,7 +1,7 @@
-import type { Collection } from "./collection.ts"
-import { InvalidAtomicBuilderCollectionError } from "./errors.ts"
-import { IndexableCollection } from "./indexable_collection.ts"
-import { LargeCollection } from "./large_collection.ts"
+import type { Collection } from "#/collection.ts"
+import { InvalidAtomicBuilderCollectionError } from "#/errors.ts"
+import { IndexableCollection } from "#/indexable_collection.ts"
+import { LargeCollection } from "#/large_collection.ts"
 import type {
   AtomicCheck,
   AtomicMutation,
@@ -17,7 +17,7 @@ import type {
   QueueValue,
   Schema,
   SchemaDefinition,
-} from "./types.ts"
+} from "#/types.ts"
 import {
   allFulfilled,
   deleteIndices,
@@ -26,7 +26,7 @@ import {
   keyEq,
   prepareEnqueue,
   setIndices,
-} from "./utils.ts"
+} from "#/utils.ts"
 
 /**
  * Builder object for creating and executing atomic operations in the KV store.
@@ -37,11 +37,12 @@ import {
 export class AtomicBuilder<
   const T1 extends Schema<SchemaDefinition>,
   const T2 extends KvValue,
+  const T3 extends T2,
 > {
   private kv: Deno.Kv
   private schema: T1
   private operations: Operations
-  private collection: Collection<T2, CollectionOptions<T2>>
+  private collection: Collection<T2, T3, CollectionOptions<T2>>
 
   /**
    * Create a new AtomicBuilder for building and executing atomic operations in the KV store.
@@ -54,7 +55,7 @@ export class AtomicBuilder<
   constructor(
     kv: Deno.Kv,
     schema: T1,
-    collection: Collection<T2, CollectionOptions<T2>>,
+    collection: Collection<T2, T3, CollectionOptions<T2>>,
     operations?: Operations,
   ) {
     // Check for large collection
@@ -122,7 +123,7 @@ export class AtomicBuilder<
    * @param options - Set options, optional.
    * @returns Current AtomicBuilder instance.
    */
-  add(value: T2, options?: AtomicSetOptions) {
+  add(value: T3, options?: AtomicSetOptions) {
     // Perform set operation with generated id.
     return this.set(null, value, options)
   }
@@ -145,7 +146,7 @@ export class AtomicBuilder<
    * @param options - Set options, optional.
    * @returns Current AtomicBuilder instance.
    */
-  set(id: KvId | null, value: T2, options?: AtomicSetOptions) {
+  set(id: KvId | null, value: T3, options?: AtomicSetOptions) {
     // Create id key from collection id key and id
     const collection = this.collection
     const parsed = collection._model.parse(value)
@@ -172,6 +173,7 @@ export class AtomicBuilder<
         _data,
         this.operations.atomic,
         this.collection as unknown as IndexableCollection<
+          KvObject,
           KvObject,
           IndexableCollectionOptions<KvObject>
         >,
@@ -422,6 +424,7 @@ export class AtomicBuilder<
             this.operations.atomic,
             this.collection as unknown as IndexableCollection<
               KvObject,
+              KvObject,
               IndexableCollectionOptions<KvObject>
             >,
             {
@@ -543,6 +546,7 @@ export class AtomicBuilder<
             data,
             atomic,
             this.collection as unknown as IndexableCollection<
+              KvObject,
               KvObject,
               IndexableCollectionOptions<KvObject>
             >,

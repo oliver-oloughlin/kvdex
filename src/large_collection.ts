@@ -1,10 +1,10 @@
-import { Collection } from "./collection.ts"
+import { Collection } from "#/collection.ts"
 import {
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   LARGE_COLLECTION_STRING_LIMIT,
   SEGMENT_KEY_PREFIX,
-} from "./constants.ts"
+} from "#/constants.ts"
 import type {
   CommitResult,
   FindManyOptions,
@@ -20,17 +20,17 @@ import type {
   QueueMessageHandler,
   QueueValue,
   SetOptions,
-} from "./types.ts"
+} from "#/types.ts"
 import {
   allFulfilled,
   createListSelector,
   extendKey,
   getDocumentId,
   kvGetMany,
-} from "./utils.ts"
-import { Document } from "./document.ts"
-import { CorruptedDocumentDataError } from "./errors.ts"
-import { AtomicWrapper } from "./atomic_wrapper.ts"
+} from "#/utils.ts"
+import { Document } from "#/document.ts"
+import { CorruptedDocumentDataError } from "#/errors.ts"
+import { AtomicWrapper } from "#/atomic_wrapper.ts"
 
 /**
  * Create a large collection builder function.
@@ -46,8 +46,11 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
  * @param options - Large collection options.
  * @returns A large collection builder function.
  */
-export function largeCollection<const T1 extends LargeKvValue>(
-  model: Model<T1>,
+export function largeCollection<
+  const T1 extends LargeKvValue,
+  const T2 extends T1,
+>(
+  model: Model<T1, T2>,
   options?: LargeCollectionOptions<T1>,
 ) {
   return (
@@ -56,7 +59,11 @@ export function largeCollection<const T1 extends LargeKvValue>(
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => Promise<void>,
   ) =>
-    new LargeCollection<T1, LargeCollectionOptions<T1>>(
+    new LargeCollection<
+      T1,
+      T2,
+      LargeCollectionOptions<T1>
+    >(
       kv,
       key,
       model,
@@ -68,17 +75,18 @@ export function largeCollection<const T1 extends LargeKvValue>(
 
 export class LargeCollection<
   const T1 extends LargeKvValue,
-  T2 extends LargeCollectionOptions<T1>,
-> extends Collection<T1, T2> {
+  const T2 extends T1,
+  const T3 extends LargeCollectionOptions<T1>,
+> extends Collection<T1, T2, T3> {
   readonly _keys: LargeCollectionKeys
 
   constructor(
     kv: Deno.Kv,
     key: KvKey,
-    model: Model<T1>,
+    model: Model<T1, T2>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => Promise<void>,
-    options?: T2,
+    options?: T3,
   ) {
     // Invoke super constructor
     super(kv, key, model, queueHandlers, idempotentListener, options)
@@ -102,7 +110,7 @@ export class LargeCollection<
   async find(
     id: Deno.KvKeyPart,
     options?: FindOptions,
-  ): Promise<Document<T1> | null> {
+  ): Promise<Document<T1, T2> | null> {
     // Create documetn id key
     const idKey = extendKey(this._keys.idKey, id)
 
@@ -124,7 +132,7 @@ export class LargeCollection<
   async findMany(
     ids: Deno.KvKeyPart[],
     options?: FindManyOptions,
-  ): Promise<Document<T1>[]> {
+  ): Promise<Document<T1, T2>[]> {
     // Map ids to document id keys
     const idKeys = ids.map((id) => extendKey(this._keys.idKey, id))
 
@@ -136,7 +144,7 @@ export class LargeCollection<
     )
 
     // Initiate result list
-    const result: Document<T1>[] = []
+    const result: Document<T1, T2>[] = []
 
     // Get documents from large document entries
     await allFulfilled(
@@ -192,7 +200,7 @@ export class LargeCollection<
 
   protected async handleMany<const T>(
     prefixKey: KvKey,
-    fn: (doc: Document<T1>) => T,
+    fn: (doc: Document<T1, T2>) => T,
     options: ListOptions<T1> | undefined,
   ) {
     // Create list iterator with given options
@@ -200,7 +208,7 @@ export class LargeCollection<
     const iter = this.kv.list<LargeDocumentEntry[]>(selector, options)
 
     // Initiate lists
-    const docs: Document<T1>[] = []
+    const docs: Document<T1, T2>[] = []
     const result: Awaited<T>[] = []
     const errors: unknown[] = []
 
@@ -251,7 +259,7 @@ export class LargeCollection<
 
   protected async setDocument(
     id: KvId | null,
-    value: T1,
+    value: T2,
     options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
@@ -316,7 +324,7 @@ export class LargeCollection<
 
       // Retry operation if there are remaining attempts
       if (retry > 0) {
-        return await this.setDocument(docId, parsed, {
+        return await this.setDocument(docId, value, {
           ...options,
           retry: retry - 1,
         }, overwrite)
@@ -347,7 +355,7 @@ export class LargeCollection<
 
       // Retry operation if there are remaining attempts
       if (retry > 0) {
-        return await this.setDocument(docId, parsed, {
+        return await this.setDocument(docId, value, {
           ...options,
           retry: retry - 1,
         }, overwrite)
@@ -370,8 +378,8 @@ export class LargeCollection<
   private async constructLargeDocument(
     id: KvId,
     value: LargeDocumentEntry,
-    versionstamp: Document<T1>["versionstamp"],
-  ): Promise<Document<T1>> {
+    versionstamp: Document<T1, T2>["versionstamp"],
+  ): Promise<Document<T1, T2>> {
     // Get document segment entries
     const { ids } = value
     const keys = ids.map((segId) => extendKey(this._keys.segmentKey, id, segId))
@@ -395,7 +403,7 @@ export class LargeCollection<
 
     try {
       // Create and return document
-      return new Document<T1>(this._model, {
+      return new Document<T1, T2>(this._model, {
         id,
         value: JSON.parse(json),
         versionstamp,
