@@ -65,6 +65,9 @@ possible, like atomic operations and queue listeners.
     - [With checking](#with-checking)
   - [Document Methods](#document-methods)
     - [flat()](#flat)
+  - [Extensions](#extensions)
+    - [Zod](#zod)
+      - [zodModel()](#zodmodel)
   - [Development](#development)
   - [License](#license)
 
@@ -107,7 +110,7 @@ import { z } from "https://deno.land/x/zod/mod.ts"
 
 type User = z.infer<typeof UserModel>
 
-const UserModel = z.object({
+const UserSchema = z.object({
   username: z.string(),
   age: z.number(),
   activities: z.array(z.string()),
@@ -139,7 +142,7 @@ const kv = await Deno.openKv()
 const db = kvdex(kv, {
   numbers: collection(model<number>()),
   largeStrings: largeCollection(model<string>()),
-  users: indexableCollection(UserModel, {
+  users: indexableCollection(UserSchema, {
     indices: {
       username: "primary" // unique
       age: "secondary" // non-unique
@@ -869,6 +872,49 @@ const flattened = doc.flat()
 //   versionstamp,
 //   ...value
 // }
+```
+
+## Extensions
+
+Additional features outside of the basic functionality provided by `kvdex` .
+While the basic functions are dependency-free, extended features may rely on
+some specific dependenices to enhance integration. All extensions are found in
+the kvdex/ext sub-path.
+
+### Zod
+
+#### zodModel()
+
+Adds additional compatibility when using zod schemas as models. While zod
+schemas can be used as models directly, `zodModel()` properly parses a model
+from a zod schema, recognizing default fields as optional.
+
+```ts
+import { z } from "https://deno.land/x/zod/mod.ts"
+import { zodModel } from "https://deno.land/x/kvdex/ext/zod.ts"
+import { collection, kvdex } from "https://deno.land/x/kvdex/mod.ts"
+
+const UserSchema = z.object({
+  username: z.string(),
+  gender: z.string().default("not given"),
+})
+
+const kv = await Deno.openKv()
+
+const db = kvdex(kv, {
+  users_basic: collection(UserSchema),
+  users_zod: collection(zodModel(UserSchema)),
+})
+
+// Produces a type error for missing "gender" field.
+const result = await db.users_basic.add({
+  username: "oliver",
+})
+
+// No type error for missing "gender" field.
+const result = await db.users_zod.add({
+  username: "oliver",
+})
 ```
 
 ## Development

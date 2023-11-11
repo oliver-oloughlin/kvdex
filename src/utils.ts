@@ -1,5 +1,5 @@
-import { GET_MANY_KEY_LIMIT, UNDELIVERED_KEY_PREFIX } from "./constants.ts"
-import type { IndexableCollection } from "./indexable_collection.ts"
+import { GET_MANY_KEY_LIMIT, UNDELIVERED_KEY_PREFIX } from "#/constants.ts"
+import type { IndexableCollection } from "#/indexable_collection.ts"
 import type {
   AtomicSetOptions,
   EnqueueOptions,
@@ -17,7 +17,7 @@ import type {
   QueueMessage,
   QueueValue,
   UpdateData,
-} from "./types.ts"
+} from "#/types.ts"
 
 /**
  * Generate a random document id.

@@ -1,6 +1,6 @@
-import { ATOMIC_OPERATION_MUTATION_LIMIT } from "./constants.ts"
-import type { SetOptions } from "./types.ts"
-import { clamp } from "./utils.ts"
+import { ATOMIC_OPERATION_MUTATION_LIMIT } from "#/constants.ts"
+import type { SetOptions } from "#/types.ts"
+import { clamp } from "#/utils.ts"
 
 export class AtomicWrapper implements Deno.AtomicOperation {
   private kv: Deno.Kv

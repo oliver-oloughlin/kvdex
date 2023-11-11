@@ -3,7 +3,7 @@ import {
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
-} from "./constants.ts"
+} from "#/constants.ts"
 import type {
   AtomicListOptions,
   CollectionKeys,
@@ -29,7 +29,7 @@ import type {
   UpdateData,
   UpdateManyOptions,
   UpdateOptions,
-} from "./types.ts"
+} from "#/types.ts"
 import {
   allFulfilled,
   createHandlerId,
@@ -42,10 +42,10 @@ import {
   kvGetMany,
   prepareEnqueue,
   selectsAll,
-} from "./utils.ts"
-import { Document } from "./document.ts"
-import { model } from "./model.ts"
-import { AtomicWrapper } from "./atomic_wrapper.ts"
+} from "#/utils.ts"
+import { Document } from "#/document.ts"
+import { model } from "#/model.ts"
+import { AtomicWrapper } from "#/atomic_wrapper.ts"
 
 /**
  * Create a collection builder function.

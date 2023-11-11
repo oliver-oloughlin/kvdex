@@ -1,8 +1,13 @@
-import type { Collection } from "./collection.ts"
-import type { LargeCollection } from "./large_collection.ts"
-import type { Document } from "./document.ts"
+import type { Collection } from "#/collection.ts"
+import type { LargeCollection } from "#/large_collection.ts"
+import type { Document } from "#/document.ts"
 
-// Utility Types
+/*********************/
+/*                   */
+/*   UTILITY TYPES   */
+/*                   */
+/*********************/
+
 export type CollectionBuilderFn = (
   kv: Deno.Kv,
   key: KvKey,
@@ -32,7 +37,12 @@ export type ManyCommitResult = {
 
 export type IdGenerator<T extends KvValue> = (data: T) => KvId
 
-// Cron types
+/******************/
+/*                */
+/*   CRON TYPES   */
+/*                */
+/******************/
+
 export type CronOptions = {
   /**
    * Interval in milliseconds for cron job.
@@ -85,7 +95,12 @@ export type CronMessage = {
   enqueueTimestamp: Date
 }
 
-// Interval types
+/**********************/
+/*                    */
+/*   INTERVAL TYPES   */
+/*                    */
+/**********************/
+
 export type SetIntervalOptions = {
   /**
    * Static or dynamic interval in milliseconds.
@@ -128,7 +143,12 @@ export type IntervalMessage = {
   previousTimestamp: Date | null
 }
 
-// Atomic Builder Types
+/****************************/
+/*                          */
+/*   ATOMIC BUILDER TYPES   */
+/*                          */
+/****************************/
+
 export type CollectionSelector<
   T1 extends Schema<SchemaDefinition>,
   T2 extends KvValue,
@@ -199,7 +219,12 @@ export type AtomicSetOptions = NonNullable<
   Parameters<ReturnType<Deno.Kv["atomic"]>["set"]>["2"]
 >
 
-// Collection Types
+/************************/
+/*                      */
+/*   COLLECTION TYPES   */
+/*                      */
+/************************/
+
 export type CollectionOptions<T extends KvValue> = {
   /**
    * Set a custom function for automatic id generation.
@@ -216,9 +241,14 @@ export type Model<T1 extends KvValue, _T2 extends InsertModel<T1>> = {
   parse: (data: unknown) => T1
 }
 
-export type InsertModel<T extends KvValue> = Partial<T>
+export type InsertModel<T extends KvValue> = T
 
-// Indexable Collection Types
+/**********************************/
+/*                                */
+/*   INDEXABLE COLLECTION TYPES   */
+/*                                */
+/**********************************/
+
 export type IndexableCollectionOptions<T extends KvObject> =
   & CollectionOptions<T>
   & {
@@ -248,7 +278,12 @@ export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
   __id__: KvId
 }
 
-// Large Collection Types
+/******************************/
+/*                            */
+/*   LARGE COLLECTION TYPES   */
+/*                            */
+/******************************/
+
 export type LargeCollectionOptions<T extends LargeKvValue> = CollectionOptions<
   T
 >
@@ -261,7 +296,12 @@ export type LargeDocumentEntry = {
   ids: KvId[]
 }
 
-// Method Option types
+/***************************/
+/*                         */
+/*   METHOD OPTION TYPES   */
+/*                         */
+/***************************/
+
 export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
   /** Number of retry attempts before returning failed operation */
   retry?: number
@@ -332,7 +372,12 @@ export type QueueListenerOptions = {
   topic?: string
 }
 
-// Schema Types
+/********************/
+/*                  */
+/*   SCHEMA TYPES   */
+/*                  */
+/********************/
+
 export type SchemaDefinition = {
   [key: string]: SchemaDefinition | CollectionBuilderFn
 }
@@ -343,7 +388,12 @@ export type Schema<T extends SchemaDefinition> = {
     : never
 }
 
-// Queue Types
+/*******************/
+/*                 */
+/*   QUEUE TYPES   */
+/*                 */
+/*******************/
+
 export type QueueValue = Exclude<KvValue, undefined>
 
 export type QueueMessage<T extends QueueValue> = {
@@ -367,7 +417,12 @@ export type PreparedEnqueue<T extends QueueValue> = {
   options: KvEnqueueOptions
 }
 
-// Data Types
+/******************/
+/*                */
+/*   DATA TYPES   */
+/*                */
+/******************/
+
 export type UpdateData<T extends InsertModel<KvValue>> = T extends KvObject
   ? Partial<T>
   : T
@@ -386,7 +441,12 @@ export type DocumentData<T extends KvValue> = {
   readonly value: T
 }
 
-// KV Types
+/****************/
+/*              */
+/*   KV TYPES   */
+/*              */
+/****************/
+
 export type KvEnqueueOptions = NonNullable<
   Parameters<Deno.Kv["enqueue"]>[1]
 >

@@ -7,8 +7,8 @@ import type {
   KvValue,
   KvVersionstamp,
   Model,
-} from "./types.ts"
-import { isKvObject } from "./utils.ts"
+} from "#/types.ts"
+import { isKvObject } from "#/utils.ts"
 
 export class Document<
   const T1 extends KvValue,

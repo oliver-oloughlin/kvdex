@@ -1,4 +1,4 @@
-import type { KvValue, Model } from "./types.ts"
+import type { KvValue, Model } from "#/types.ts"
 
 /**
  * Create a standard model without data validation.
