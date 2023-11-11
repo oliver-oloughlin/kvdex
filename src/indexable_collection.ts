@@ -14,7 +14,6 @@ import type {
   IndexableCollectionOptions,
   IndexDataEntry,
   IndexType,
-  InsertModel,
   KvId,
   KvKey,
   KvObject,
@@ -60,7 +59,7 @@ import { AtomicWrapper } from "#/atomic_wrapper.ts"
  */
 export function indexableCollection<
   const T1 extends KvObject,
-  const T2 extends InsertModel<T1>,
+  const T2 extends T1,
   const T3 extends IndexableCollectionOptions<T1>,
 >(model: Model<T1, T2>, options: T3) {
   return (
@@ -87,7 +86,7 @@ export function indexableCollection<
  */
 export class IndexableCollection<
   const T1 extends KvObject,
-  const T2 extends InsertModel<T1>,
+  const T2 extends T1,
   const T3 extends IndexableCollectionOptions<T1>,
 > extends Collection<T1, T2, T3> {
   readonly primaryIndexList: string[]

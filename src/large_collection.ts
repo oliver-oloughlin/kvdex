@@ -9,7 +9,6 @@ import type {
   CommitResult,
   FindManyOptions,
   FindOptions,
-  InsertModel,
   KvId,
   KvKey,
   LargeCollectionKeys,
@@ -49,7 +48,7 @@ import { AtomicWrapper } from "#/atomic_wrapper.ts"
  */
 export function largeCollection<
   const T1 extends LargeKvValue,
-  const T2 extends InsertModel<T1>,
+  const T2 extends T1,
 >(
   model: Model<T1, T2>,
   options?: LargeCollectionOptions<T1>,
@@ -76,7 +75,7 @@ export function largeCollection<
 
 export class LargeCollection<
   const T1 extends LargeKvValue,
-  const T2 extends InsertModel<T1>,
+  const T2 extends T1,
   const T3 extends LargeCollectionOptions<T1>,
 > extends Collection<T1, T2, T3> {
   readonly _keys: LargeCollectionKeys

@@ -13,7 +13,7 @@ export type CollectionBuilderFn = (
   key: KvKey,
   queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
   idempotentListener: () => Promise<void>,
-) => Collection<KvValue, InsertModel<KvValue>, CollectionOptions<KvValue>>
+) => Collection<KvValue, KvValue, CollectionOptions<KvValue>>
 
 export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
 
@@ -27,7 +27,7 @@ export type KeysOfThatDontExtend<T1, T2> = keyof {
 
 export type CommitResult<T1 extends KvValue> = {
   ok: true
-  versionstamp: Document<T1, InsertModel<T1>>["versionstamp"]
+  versionstamp: Document<T1, T1>["versionstamp"]
   id: KvId
 }
 
@@ -154,7 +154,7 @@ export type CollectionSelector<
   T2 extends KvValue,
 > = (
   schema: AtomicSchema<T1>,
-) => Collection<T2, InsertModel<T2>, CollectionOptions<T2>>
+) => Collection<T2, T2, CollectionOptions<T2>>
 
 export type AtomicSchema<T extends Schema<SchemaDefinition>> = {
   [
@@ -162,7 +162,7 @@ export type AtomicSchema<T extends Schema<SchemaDefinition>> = {
       T,
       LargeCollection<
         LargeKvValue,
-        InsertModel<LargeKvValue>,
+        LargeKvValue,
         LargeCollectionOptions<LargeKvValue>
       >
     >
@@ -184,8 +184,8 @@ export type Operations = {
 }
 
 export type AtomicCheck<T extends KvValue> = {
-  id: Document<T, InsertModel<T>>["id"]
-  versionstamp: Document<T, InsertModel<T>>["versionstamp"]
+  id: Document<T, T>["id"]
+  versionstamp: Document<T, T>["versionstamp"]
 }
 
 export type AtomicMutation<T extends KvValue> =
@@ -237,11 +237,9 @@ export type CollectionKeys = {
   idKey: KvKey
 }
 
-export type Model<T1 extends KvValue, _T2 extends InsertModel<T1>> = {
+export type Model<T1 extends KvValue, _T2 extends T1> = {
   parse: (data: unknown) => T1
 }
-
-export type InsertModel<T extends KvValue> = T
 
 /**********************************/
 /*                                */
@@ -314,7 +312,7 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
    * @param doc - Document.
    * @returns true or false.
    */
-  filter?: (doc: Document<T, InsertModel<T>>) => boolean
+  filter?: (doc: Document<T, T>) => boolean
 
   /** Id of document to start from. */
   startId?: KvId
@@ -423,8 +421,7 @@ export type PreparedEnqueue<T extends QueueValue> = {
 /*                */
 /******************/
 
-export type UpdateData<T extends InsertModel<KvValue>> = T extends KvObject
-  ? Partial<T>
+export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T>
   : T
 
 export type FlatDocumentData<T extends KvValue> =

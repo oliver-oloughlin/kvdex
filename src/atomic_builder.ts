@@ -10,7 +10,6 @@ import type {
   CollectionSelector,
   EnqueueOptions,
   IndexableCollectionOptions,
-  InsertModel,
   KvId,
   KvObject,
   KvValue,
@@ -38,7 +37,7 @@ import {
 export class AtomicBuilder<
   const T1 extends Schema<SchemaDefinition>,
   const T2 extends KvValue,
-  const T3 extends InsertModel<T2>,
+  const T3 extends T2,
 > {
   private kv: Deno.Kv
   private schema: T1
@@ -175,7 +174,7 @@ export class AtomicBuilder<
         this.operations.atomic,
         this.collection as unknown as IndexableCollection<
           KvObject,
-          InsertModel<KvObject>,
+          KvObject,
           IndexableCollectionOptions<KvObject>
         >,
         options,
@@ -425,7 +424,7 @@ export class AtomicBuilder<
             this.operations.atomic,
             this.collection as unknown as IndexableCollection<
               KvObject,
-              InsertModel<KvObject>,
+              KvObject,
               IndexableCollectionOptions<KvObject>
             >,
             {
@@ -548,7 +547,7 @@ export class AtomicBuilder<
             atomic,
             this.collection as unknown as IndexableCollection<
               KvObject,
-              InsertModel<KvObject>,
+              KvObject,
               IndexableCollectionOptions<KvObject>
             >,
           )

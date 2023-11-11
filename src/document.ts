@@ -1,7 +1,6 @@
 import type {
   DocumentData,
   FlatDocumentData,
-  InsertModel,
   KvId,
   KvObject,
   KvValue,
@@ -12,7 +11,7 @@ import { isKvObject } from "#/utils.ts"
 
 export class Document<
   const T1 extends KvValue,
-  const T2 extends InsertModel<T1>,
+  const T2 extends T1,
 > {
   readonly id: KvId
   readonly versionstamp: KvVersionstamp<T1>

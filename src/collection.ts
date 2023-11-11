@@ -14,7 +14,6 @@ import type {
   FindManyOptions,
   FindOptions,
   IdGenerator,
-  InsertModel,
   KvId,
   KvKey,
   KvObject,
@@ -63,7 +62,7 @@ import { AtomicWrapper } from "#/atomic_wrapper.ts"
  */
 export function collection<
   const T1 extends KvValue,
-  const T2 extends InsertModel<T1>,
+  const T2 extends T1,
 >(
   model: Model<T1, T2>,
   options?: CollectionOptions<T1>,
@@ -91,7 +90,7 @@ export function collection<
  */
 export class Collection<
   const T1 extends KvValue,
-  const T2 extends InsertModel<T1>,
+  const T2 extends T1,
   const T3 extends CollectionOptions<T1>,
 > {
   private queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>

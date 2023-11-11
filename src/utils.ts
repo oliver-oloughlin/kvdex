@@ -6,7 +6,6 @@ import type {
   FindManyOptions,
   IndexableCollectionOptions,
   IndexDataEntry,
-  InsertModel,
   KvId,
   KvKey,
   KvObject,
@@ -119,7 +118,7 @@ export function isKvObject(value: unknown) {
  */
 export function setIndices<
   T1 extends KvObject,
-  T2 extends InsertModel<T1>,
+  T2 extends T1,
   T3 extends IndexableCollectionOptions<T1>,
 >(
   id: KvId,
@@ -184,7 +183,7 @@ export function setIndices<
  */
 export function checkIndices<
   T1 extends KvObject,
-  T2 extends InsertModel<T1>,
+  T2 extends T1,
   T3 extends T1 | T2 | UpdateData<T2>,
   T4 extends IndexableCollectionOptions<T1>,
 >(
@@ -229,7 +228,7 @@ export function checkIndices<
  */
 export function deleteIndices<
   T1 extends KvObject,
-  T2 extends InsertModel<T1>,
+  T2 extends T1,
   T3 extends IndexableCollectionOptions<T1>,
 >(
   id: KvId,

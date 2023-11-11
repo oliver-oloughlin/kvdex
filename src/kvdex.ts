@@ -7,7 +7,6 @@ import type {
   DeleteAllOptions,
   EnqueueOptions,
   FindOptions,
-  InsertModel,
   IntervalMessage,
   KvId,
   KvKey,
@@ -636,7 +635,7 @@ async function _countAll(
   kv: Deno.Kv,
   schemaOrCollection:
     | Schema<SchemaDefinition>
-    | Collection<KvValue, InsertModel<KvValue>, CollectionOptions<KvValue>>,
+    | Collection<KvValue, KvValue, CollectionOptions<KvValue>>,
   options?: CountAllOptions,
 ): Promise<number> {
   // If input is a collection, return the collection count
