@@ -14,6 +14,7 @@ import type {
   IndexableCollectionOptions,
   IndexDataEntry,
   IndexType,
+  InsertModel,
   KvId,
   KvKey,
   KvObject,
@@ -59,15 +60,16 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
  */
 export function indexableCollection<
   const T1 extends KvObject,
-  const T2 extends IndexableCollectionOptions<T1>,
->(model: Model<T1>, options: T2) {
+  const T2 extends InsertModel<T1>,
+  const T3 extends IndexableCollectionOptions<T1>,
+>(model: Model<T1, T2>, options: T3) {
   return (
     kv: Deno.Kv,
     key: KvKey,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => Promise<void>,
   ) =>
-    new IndexableCollection<T1, T2>(
+    new IndexableCollection<T1, T2, T3>(
       kv,
       key,
       model,
@@ -85,8 +87,9 @@ export function indexableCollection<
  */
 export class IndexableCollection<
   const T1 extends KvObject,
-  const T2 extends IndexableCollectionOptions<T1>,
-> extends Collection<T1, T2> {
+  const T2 extends InsertModel<T1>,
+  const T3 extends IndexableCollectionOptions<T1>,
+> extends Collection<T1, T2, T3> {
   readonly primaryIndexList: string[]
   readonly secondaryIndexList: string[]
   readonly _keys: IndexableCollectionKeys
@@ -94,10 +97,10 @@ export class IndexableCollection<
   constructor(
     kv: Deno.Kv,
     key: KvKey,
-    model: Model<T1>,
+    model: Model<T1, T2>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => Promise<void>,
-    options: T2,
+    options: T3,
   ) {
     // Invoke super constructor
     super(kv, key, model, queueHandlers, idempotentListener, options)
@@ -159,7 +162,7 @@ export class IndexableCollection<
    * @param options - Find options, optional.
    * @returns A promise resolving to the document found by selected index, or null if not found.
    */
-  async findByPrimaryIndex<const K extends PrimaryIndexKeys<T1, T2["indices"]>>(
+  async findByPrimaryIndex<const K extends PrimaryIndexKeys<T1, T3["indices"]>>(
     index: K,
     value: CheckKeyOf<K, T1>,
     options?: FindOptions,
@@ -185,7 +188,7 @@ export class IndexableCollection<
     const { __id__, ...data } = result.value
 
     // Return document
-    return new Document<T1>(this._model, {
+    return new Document<T1, T2>(this._model, {
       id: __id__,
       versionstamp: result.versionstamp,
       value: data as T1,
@@ -214,7 +217,7 @@ export class IndexableCollection<
    * @returns A promise resolving to an object containing the result list and iterator cursor.
    */
   async findBySecondaryIndex<
-    const K extends SecondaryIndexKeys<T1, T2["indices"]>,
+    const K extends SecondaryIndexKeys<T1, T3["indices"]>,
   >(index: K, value: CheckKeyOf<K, T1>, options?: ListOptions<T1>) {
     // Create prefix key
     const prefixKey = extendKey(
@@ -266,7 +269,7 @@ export class IndexableCollection<
    * @returns A promise that resolves to void.
    */
   async deleteByPrimaryIndex<
-    const K extends PrimaryIndexKeys<T1, T2["indices"]>,
+    const K extends PrimaryIndexKeys<T1, T3["indices"]>,
   >(
     index: K,
     value: CheckKeyOf<K, T1>,
@@ -316,7 +319,7 @@ export class IndexableCollection<
    * @returns A promise that resolves to void.
    */
   async deleteBySecondaryIndex<
-    const K extends SecondaryIndexKeys<T1, T2["indices"]>,
+    const K extends SecondaryIndexKeys<T1, T3["indices"]>,
   >(index: K, value: CheckKeyOf<K, T1>, options?: ListOptions<T1>) {
     // Create prefix key
     const prefixKey = extendKey(
@@ -358,11 +361,11 @@ export class IndexableCollection<
    * @returns Promise that resolves to a commit result.
    */
   async updateByPrimaryIndex<
-    const K extends PrimaryIndexKeys<T1, T2["indices"]>,
+    const K extends PrimaryIndexKeys<T1, T3["indices"]>,
   >(
     index: K,
     value: CheckKeyOf<K, T1>,
-    data: UpdateData<T1>,
+    data: UpdateData<T2>,
     options?: UpdateOptions,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Find document by primary index
@@ -406,11 +409,11 @@ export class IndexableCollection<
    * @returns Promise that resolves to an object containing result list and iterator cursor.
    */
   async updateBySecondaryIndex<
-    const K extends SecondaryIndexKeys<T1, T2["indices"]>,
+    const K extends SecondaryIndexKeys<T1, T3["indices"]>,
   >(
     index: K,
     value: CheckKeyOf<K, T1>,
-    data: UpdateData<T1>,
+    data: UpdateData<T2>,
     options?: UpdateManyOptions<T1>,
   ) {
     // Create prefix key
@@ -431,8 +434,8 @@ export class IndexableCollection<
   /** PROTECTED METHODS */
 
   protected async updateDocument(
-    doc: Document<T1>,
-    data: UpdateData<T1>,
+    doc: Document<T1, T2>,
+    data: UpdateData<T2>,
     options: UpdateOptions | undefined,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
     // Get document value, delete document entry
@@ -459,16 +462,16 @@ export class IndexableCollection<
       ? {
         ...value as KvObject,
         ...data as KvObject,
-      } as T1
+      }
       : deepMerge(value, data)
 
     // Set new document value from merged data
-    return await this.setDocument(id, merged, options, true)
+    return await this.setDocument(id, merged as T2, options, true)
   }
 
   protected async setDocument(
     id: KvId | null,
-    value: T1,
+    value: T2,
     options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<T1> | Deno.KvCommitError> {
@@ -522,7 +525,7 @@ export class IndexableCollection<
     if (!cr.ok && retry > 0) {
       return await this.setDocument(
         docId,
-        parsed,
+        value,
         { ...options, retry: retry - 1 },
         overwrite,
       )

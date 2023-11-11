@@ -49,7 +49,7 @@ Deno.test("large_collection - properties", async (t) => {
       const cr = await db.l_users.addMany(users)
       assert(cr.ok)
 
-      const selected: Document<User>[] = []
+      const selected: Document<User, User>[] = []
       let cursor: string | undefined = undefined
       do {
         const query = await db.l_users.getMany({

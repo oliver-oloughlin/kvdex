@@ -15,7 +15,7 @@ import type { KvValue, Model } from "./types.ts"
  *
  * @returns A standard model.
  */
-export function model<T extends KvValue>(): Model<T> {
+export function model<T extends KvValue>(): Model<T, T> {
   return {
     parse: (value) => value as T,
   }

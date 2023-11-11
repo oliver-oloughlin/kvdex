@@ -44,7 +44,7 @@ Deno.test("indexable_collection - update", async (t) => {
         assert(updateCr.versionstamp === byPrimary.versionstamp)
         assert(updateCr.versionstamp === bySecondary.result.at(0)?.versionstamp)
 
-        const asserts = (doc: Document<User> | null) => {
+        const asserts = (doc: Document<User, User> | null) => {
           assert(doc !== null)
           assert(doc.value.username === mockUser1.username)
           assert(doc.value.age === mockUser1.age)
@@ -100,7 +100,7 @@ Deno.test("indexable_collection - update", async (t) => {
         assert(updateCr.versionstamp === byPrimary.versionstamp)
         assert(updateCr.versionstamp === bySecondary.result.at(0)?.versionstamp)
 
-        const asserts = (doc: Document<User> | null) => {
+        const asserts = (doc: Document<User, User> | null) => {
           assert(doc !== null)
           assert(doc.value.username === mockUser1.username)
           assert(doc.value.age === mockUser1.age)

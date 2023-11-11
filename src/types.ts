@@ -8,7 +8,7 @@ export type CollectionBuilderFn = (
   key: KvKey,
   queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
   idempotentListener: () => Promise<void>,
-) => Collection<KvValue, CollectionOptions<KvValue>>
+) => Collection<KvValue, InsertModel<KvValue>, CollectionOptions<KvValue>>
 
 export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
 
@@ -22,7 +22,7 @@ export type KeysOfThatDontExtend<T1, T2> = keyof {
 
 export type CommitResult<T1 extends KvValue> = {
   ok: true
-  versionstamp: Document<T1>["versionstamp"]
+  versionstamp: Document<T1, InsertModel<T1>>["versionstamp"]
   id: KvId
 }
 
@@ -132,13 +132,19 @@ export type IntervalMessage = {
 export type CollectionSelector<
   T1 extends Schema<SchemaDefinition>,
   T2 extends KvValue,
-> = (schema: AtomicSchema<T1>) => Collection<T2, CollectionOptions<T2>>
+> = (
+  schema: AtomicSchema<T1>,
+) => Collection<T2, InsertModel<T2>, CollectionOptions<T2>>
 
 export type AtomicSchema<T extends Schema<SchemaDefinition>> = {
   [
     K in KeysOfThatDontExtend<
       T,
-      LargeCollection<LargeKvValue, LargeCollectionOptions<LargeKvValue>>
+      LargeCollection<
+        LargeKvValue,
+        InsertModel<LargeKvValue>,
+        LargeCollectionOptions<LargeKvValue>
+      >
     >
   ]: T[K] extends Schema<SchemaDefinition> ? AtomicSchema<T[K]> : T[K]
 }
@@ -158,8 +164,8 @@ export type Operations = {
 }
 
 export type AtomicCheck<T extends KvValue> = {
-  id: Document<T>["id"]
-  versionstamp: Document<T>["versionstamp"]
+  id: Document<T, InsertModel<T>>["id"]
+  versionstamp: Document<T, InsertModel<T>>["versionstamp"]
 }
 
 export type AtomicMutation<T extends KvValue> =
@@ -206,9 +212,11 @@ export type CollectionKeys = {
   idKey: KvKey
 }
 
-export type Model<T> = {
-  parse: (data: unknown) => T
+export type Model<T1 extends KvValue, _T2 extends InsertModel<T1>> = {
+  parse: (data: unknown) => T1
 }
+
+export type InsertModel<T extends KvValue> = Partial<T>
 
 // Indexable Collection Types
 export type IndexableCollectionOptions<T extends KvObject> =
@@ -266,7 +274,7 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
    * @param doc - Document.
    * @returns true or false.
    */
-  filter?: (doc: Document<T>) => boolean
+  filter?: (doc: Document<T, InsertModel<T>>) => boolean
 
   /** Id of document to start from. */
   startId?: KvId
@@ -360,7 +368,9 @@ export type PreparedEnqueue<T extends QueueValue> = {
 }
 
 // Data Types
-export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T> : T
+export type UpdateData<T extends InsertModel<KvValue>> = T extends KvObject
+  ? Partial<T>
+  : T
 
 export type FlatDocumentData<T extends KvValue> =
   & Omit<DocumentData<T>, "value">

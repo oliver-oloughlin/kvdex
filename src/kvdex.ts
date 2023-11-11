@@ -7,6 +7,7 @@ import type {
   DeleteAllOptions,
   EnqueueOptions,
   FindOptions,
+  InsertModel,
   IntervalMessage,
   KvId,
   KvKey,
@@ -308,7 +309,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     }
 
     // Return document
-    return new Document<T>(model(), {
+    return new Document(model<T>(), {
       id,
       versionstamp: result.versionstamp,
       value: result.value,
@@ -635,7 +636,7 @@ async function _countAll(
   kv: Deno.Kv,
   schemaOrCollection:
     | Schema<SchemaDefinition>
-    | Collection<KvValue, CollectionOptions<KvValue>>,
+    | Collection<KvValue, InsertModel<KvValue>, CollectionOptions<KvValue>>,
   options?: CountAllOptions,
 ): Promise<number> {
   // If input is a collection, return the collection count

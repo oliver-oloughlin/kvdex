@@ -6,6 +6,7 @@ import type {
   FindManyOptions,
   IndexableCollectionOptions,
   IndexDataEntry,
+  InsertModel,
   KvId,
   KvKey,
   KvObject,
@@ -65,7 +66,7 @@ export function keyEq(k1: KvKey, k2: KvKey) {
  * @param value - A value of type KvValue.
  * @returns true if the value is an instance of KvObject, false if not.
  */
-export function isKvObject(value: KvValue) {
+export function isKvObject(value: unknown) {
   // If value is null or undefined, return false
   if (value === null || value === undefined) {
     return false
@@ -118,12 +119,13 @@ export function isKvObject(value: KvValue) {
  */
 export function setIndices<
   T1 extends KvObject,
-  T2 extends IndexableCollectionOptions<T1>,
+  T2 extends InsertModel<T1>,
+  T3 extends IndexableCollectionOptions<T1>,
 >(
   id: KvId,
   data: T1,
   atomic: Deno.AtomicOperation,
-  collection: IndexableCollection<T1, T2>,
+  collection: IndexableCollection<T1, T2, T3>,
   options: AtomicSetOptions | undefined,
 ) {
   // Set primary indices using primary index list
@@ -182,12 +184,13 @@ export function setIndices<
  */
 export function checkIndices<
   T1 extends KvObject,
-  T2 extends T1 | UpdateData<T1>,
-  T3 extends IndexableCollectionOptions<T1>,
+  T2 extends InsertModel<T1>,
+  T3 extends T1 | T2 | UpdateData<T2>,
+  T4 extends IndexableCollectionOptions<T1>,
 >(
-  data: T2,
+  data: T3,
   atomic: Deno.AtomicOperation,
-  collection: IndexableCollection<T1, T3>,
+  collection: IndexableCollection<T1, T2, T4>,
 ) {
   // Check primary indices using primary index list
   collection.primaryIndexList.forEach((index) => {
@@ -226,12 +229,13 @@ export function checkIndices<
  */
 export function deleteIndices<
   T1 extends KvObject,
-  T2 extends IndexableCollectionOptions<T1>,
+  T2 extends InsertModel<T1>,
+  T3 extends IndexableCollectionOptions<T1>,
 >(
   id: KvId,
   data: T1,
   atomic: Deno.AtomicOperation,
-  collection: IndexableCollection<T1, T2>,
+  collection: IndexableCollection<T1, T2, T3>,
 ) {
   // Delete primary indices using primary index list
   collection.primaryIndexList.forEach((index) => {
@@ -475,7 +479,7 @@ export function clamp(min: number, n: number, max: number) {
  * @param target - Target object, of which keys will take lowest priority.
  * @param sources - Source objects in ascending priority.
  */
-export function deepMerge<T1 extends KvValue, T2 extends KvValue[]>(
+export function deepMerge<T1, T2 extends unknown[]>(
   target: T1,
   ...sources: T2
 ): T1 & T2[number] {

@@ -1,6 +1,7 @@
 import type {
   DocumentData,
   FlatDocumentData,
+  InsertModel,
   KvId,
   KvObject,
   KvValue,
@@ -9,14 +10,17 @@ import type {
 } from "./types.ts"
 import { isKvObject } from "./utils.ts"
 
-export class Document<T extends KvValue> {
+export class Document<
+  const T1 extends KvValue,
+  const T2 extends InsertModel<T1>,
+> {
   readonly id: KvId
-  readonly versionstamp: KvVersionstamp<T>
-  readonly value: T
+  readonly versionstamp: KvVersionstamp<T1>
+  readonly value: T1
 
   constructor(
-    model: Model<T>,
-    { id, versionstamp, value }: DocumentData<T>,
+    model: Model<T1, T2>,
+    { id, versionstamp, value }: DocumentData<T1>,
   ) {
     this.id = id
     this.versionstamp = versionstamp
@@ -52,19 +56,19 @@ export class Document<T extends KvValue> {
    * @returns Object containing the id, versionstamp and value entries
    * for documents of type Model, else simply returns the document data.
    */
-  flat(): FlatDocumentData<T> {
+  flat(): FlatDocumentData<T1> {
     if (isKvObject(this.value)) {
       return {
         id: this.id,
         versionstamp: this.versionstamp,
         ...this.value as KvObject,
-      } as unknown as FlatDocumentData<T>
+      } as unknown as FlatDocumentData<T1>
     }
 
     return {
       id: this.id,
       versionstamp: this.versionstamp,
       value: this.value,
-    } as unknown as FlatDocumentData<T>
+    } as unknown as FlatDocumentData<T1>
   }
 }
