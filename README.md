@@ -876,10 +876,10 @@ const flattened = doc.flat()
 
 ## Extensions
 
-Additional features outside of the basic functionality provided by `kvdex` .
+Additional features outside of the basic functionality provided by `kvdex`.
 While the basic functions are dependency-free, extended features may rely on
-some specific dependenices to enhance integration. All extensions are found in
-the kvdex/ext sub-path.
+some dependenices to enhance integration. All extensions are found in the
+`kvdex/ext/` sub-path.
 
 ### Zod
 

@@ -25,7 +25,12 @@ Deno.test("ext - zod", async (t) => {
     await useKv(async (kv) => {
       const db = kvdex(kv, {
         users: collection(zodModel(UserSchema)),
-        i_users: indexableCollection(zodModel(UserSchema), { indices: {} }),
+        i_users: indexableCollection(zodModel(UserSchema), {
+          indices: {
+            username: "primary",
+            age: "secondary",
+          },
+        }),
         l_users: largeCollection(zodModel(UserSchema)),
       })
 
