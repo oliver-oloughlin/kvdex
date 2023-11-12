@@ -8,8 +8,5 @@
   },
   "test": {
     "include": ["./tests"]
-  },
-  "imports": {
-    "#/": "./src/"
   }
 }

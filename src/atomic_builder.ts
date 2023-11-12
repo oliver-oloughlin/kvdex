@@ -1,7 +1,7 @@
-import type { Collection } from "#/collection.ts"
-import { InvalidAtomicBuilderCollectionError } from "#/errors.ts"
-import { IndexableCollection } from "#/indexable_collection.ts"
-import { LargeCollection } from "#/large_collection.ts"
+import type { Collection } from "./collection.ts"
+import { InvalidAtomicBuilderCollectionError } from "./errors.ts"
+import { IndexableCollection } from "./indexable_collection.ts"
+import { LargeCollection } from "./large_collection.ts"
 import type {
   AtomicCheck,
   AtomicMutation,
@@ -17,7 +17,7 @@ import type {
   QueueValue,
   Schema,
   SchemaDefinition,
-} from "#/types.ts"
+} from "./types.ts"
 import {
   allFulfilled,
   deleteIndices,
@@ -26,7 +26,7 @@ import {
   keyEq,
   prepareEnqueue,
   setIndices,
-} from "#/utils.ts"
+} from "./utils.ts"
 
 /**
  * Builder object for creating and executing atomic operations in the KV store.

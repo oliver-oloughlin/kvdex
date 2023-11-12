@@ -1,11 +1,11 @@
-import { Collection } from "#/collection.ts"
+import { Collection } from "./collection.ts"
 import {
   DEFAULT_MERGE_TYPE,
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   PRIMARY_INDEX_KEY_PREFIX,
   SECONDARY_INDEX_KEY_PREFIX,
-} from "#/constants.ts"
+} from "./constants.ts"
 import type {
   CheckKeyOf,
   CommitResult,
@@ -27,7 +27,7 @@ import type {
   UpdateData,
   UpdateManyOptions,
   UpdateOptions,
-} from "#/types.ts"
+} from "./types.ts"
 import {
   allFulfilled,
   checkIndices,
@@ -35,9 +35,9 @@ import {
   deleteIndices,
   extendKey,
   setIndices,
-} from "#/utils.ts"
-import { Document } from "#/document.ts"
-import { AtomicWrapper } from "#/atomic_wrapper.ts"
+} from "./utils.ts"
+import { Document } from "./document.ts"
+import { AtomicWrapper } from "./atomic_wrapper.ts"
 
 /**
  * Create an indexable collection builder function.

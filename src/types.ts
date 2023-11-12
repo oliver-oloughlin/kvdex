@@ -1,6 +1,6 @@
-import type { Collection } from "#/collection.ts"
-import type { LargeCollection } from "#/large_collection.ts"
-import type { Document } from "#/document.ts"
+import type { Collection } from "./collection.ts"
+import type { LargeCollection } from "./large_collection.ts"
+import type { Document } from "./document.ts"
 
 /*********************/
 /*                   */

@@ -10,7 +10,7 @@ import type {
   KeysOfThatExtend,
   KvValue,
   Model,
-} from "#/types.ts"
+} from "../../src/types.ts"
 
 /*****************/
 /*               */

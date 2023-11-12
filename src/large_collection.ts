@@ -1,10 +1,10 @@
-import { Collection } from "#/collection.ts"
+import { Collection } from "./collection.ts"
 import {
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   LARGE_COLLECTION_STRING_LIMIT,
   SEGMENT_KEY_PREFIX,
-} from "#/constants.ts"
+} from "./constants.ts"
 import type {
   CommitResult,
   FindManyOptions,
@@ -20,17 +20,17 @@ import type {
   QueueMessageHandler,
   QueueValue,
   SetOptions,
-} from "#/types.ts"
+} from "./types.ts"
 import {
   allFulfilled,
   createListSelector,
   extendKey,
   getDocumentId,
   kvGetMany,
-} from "#/utils.ts"
-import { Document } from "#/document.ts"
-import { CorruptedDocumentDataError } from "#/errors.ts"
-import { AtomicWrapper } from "#/atomic_wrapper.ts"
+} from "./utils.ts"
+import { Document } from "./document.ts"
+import { CorruptedDocumentDataError } from "./errors.ts"
+import { AtomicWrapper } from "./atomic_wrapper.ts"
 
 /**
  * Create a large collection builder function.
