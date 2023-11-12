@@ -38,64 +38,6 @@ export type ManyCommitResult = {
 
 export type IdGenerator<T extends KvValue> = (data: T) => KvId
 
-/******************/
-/*                */
-/*   CRON TYPES   */
-/*                */
-/******************/
-
-export type CronOptions = {
-  /**
-   * Interval in milliseconds for cron job.
-   *
-   * @default 3_600_000 // Defaults to 1 hour
-   */
-  interval?: number
-
-  /** Conditionally set the next interval in milliseconds. */
-  setInterval?: (msg: CronMessage) => number | Promise<number>
-
-  /** Exit predicate used to end cron job. */
-  exitOn?: (msg: CronMessage) => boolean | Promise<boolean>
-
-  /** Task to be run when terminating a cron job (after ```exitOn()``` returns true) */
-  onExit?: (msg: CronMessage) => unknown
-
-  /**
-   * Delay before running the first job.
-   *
-   * If not set, will run first job immediately.
-   */
-  startDelay?: number
-
-  /**
-   * Number of retry attempts upon failed job deliver.
-   *
-   * When all retry attempts are spent the cron job will exit.
-   *
-   * @default 10
-   */
-  retry?: number
-}
-
-export type CronMessage = {
-  /** Job number, starts at 0. */
-  count: number
-
-  /** Previously set interval. */
-  previousInterval: number
-
-  /** Indicates whether the current job is the first to be run. */
-  isFirstJob: boolean
-
-  /**
-   * Timestamp of enqueue.
-   *
-   * Equal to the start time of the previous job.
-   */
-  enqueueTimestamp: Date
-}
-
 /**********************/
 /*                    */
 /*   INTERVAL TYPES   */
@@ -126,7 +68,7 @@ export type SetIntervalOptions = {
   /**
    * Number of retry attempts upon failed job deliver.
    *
-   * When all retry attempts are spent the cron job will exit.
+   * When all retry attempts are spent the interval will terminate.
    *
    * @default 10
    */
