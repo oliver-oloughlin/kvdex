@@ -52,12 +52,9 @@ export type ZodObjectInsertModel<T extends ZodRawShape> =
  * @param schema - Zod schema.
  * @returns A model with base type and insert model.
  */
-export function zodModel<
-  const T1 extends KvValue,
-  const T2 extends ZodType<T1>,
->(
-  schema: T2,
-): Model<T1, ZodInsertModel<T2>> {
+export function zodModel<const T extends KvValue>(
+  schema: ZodType<T>,
+): Model<T, ZodInsertModel<ZodType<T>>> {
   return {
     parse: (data) => schema.parse(data),
   }
