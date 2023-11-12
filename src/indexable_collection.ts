@@ -9,6 +9,7 @@ import {
 import type {
   CheckKeyOf,
   CommitResult,
+  CountOptions,
   FindOptions,
   IndexableCollectionKeys,
   IndexableCollectionOptions,
@@ -429,6 +430,84 @@ export class IndexableCollection<
     return await this.handleMany(
       prefixKey,
       (doc) => this.updateDocument(doc, data, options),
+      options,
+    )
+  }
+
+  async countBySecondaryIndex<
+    const K extends SecondaryIndexKeys<TBase, TOptions["indices"]>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, TBase>,
+    options?: CountOptions<TBase>,
+  ) {
+    // Create prefix key
+    const prefixKey = extendKey(
+      this._keys.secondaryIndexKey,
+      index as KvId,
+      value as KvId,
+    )
+
+    // Initialize count result
+    let result = 0
+
+    // Update each document by secondary index, add commit result to result list
+    await this.handleMany(
+      prefixKey,
+      () => result++,
+      options,
+    )
+
+    // Return count result
+    return result
+  }
+
+  async forEachBySecondaryIndex<
+    const K extends SecondaryIndexKeys<TBase, TOptions["indices"]>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, TBase>,
+    fn: (doc: Document<TBase>) => unknown,
+    options?: UpdateManyOptions<TBase>,
+  ) {
+    // Create prefix key
+    const prefixKey = extendKey(
+      this._keys.secondaryIndexKey,
+      index as KvId,
+      value as KvId,
+    )
+
+    // Execute callback function for each document entry
+    const { cursor } = await this.handleMany(
+      prefixKey,
+      (doc) => fn(doc),
+      options,
+    )
+
+    // Return iterator cursor
+    return { cursor }
+  }
+
+  async mapBySecondaryIndex<
+    const T,
+    const K extends SecondaryIndexKeys<TBase, TOptions["indices"]>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, TBase>,
+    fn: (doc: Document<TBase>) => T,
+    options?: UpdateManyOptions<TBase>,
+  ) {
+    // Create prefix key
+    const prefixKey = extendKey(
+      this._keys.secondaryIndexKey,
+      index as KvId,
+      value as KvId,
+    )
+
+    // Execute callback function for each document entry, return result and cursor
+    return await this.handleMany(
+      prefixKey,
+      (doc) => fn(doc),
       options,
     )
   }

@@ -552,16 +552,17 @@ export class Collection<
    * @returns A promise that resovles to an object containing the iterator cursor
    */
   async forEach(
-    fn: (doc: Document<TBase>) => void,
+    fn: (doc: Document<TBase>) => unknown,
     options?: ListOptions<TBase>,
   ) {
-    // Execute callback function for each document entry and return cursor
+    // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
       this._keys.idKey,
-      (doc) => fn(doc),
+      async (doc) => await fn(doc),
       options,
     )
 
+    // Return iterator cursor
     return { cursor }
   }
 
