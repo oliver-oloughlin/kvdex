@@ -13,7 +13,8 @@ export type CollectionBuilderFn = (
   key: KvKey,
   queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
   idempotentListener: () => Promise<void>,
-) => Collection<KvValue, KvValue, CollectionOptions<KvValue>>
+  // deno-lint-ignore no-explicit-any
+) => Collection<KvValue, any, CollectionOptions<KvValue>>
 
 export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
 
@@ -27,7 +28,7 @@ export type KeysOfThatDontExtend<T1, T2> = keyof {
 
 export type CommitResult<T1 extends KvValue> = {
   ok: true
-  versionstamp: Document<T1, T1>["versionstamp"]
+  versionstamp: Document<T1>["versionstamp"]
   id: KvId
 }
 
@@ -184,8 +185,8 @@ export type Operations = {
 }
 
 export type AtomicCheck<T extends KvValue> = {
-  id: Document<T, T>["id"]
-  versionstamp: Document<T, T>["versionstamp"]
+  id: Document<T>["id"]
+  versionstamp: Document<T>["versionstamp"]
 }
 
 export type AtomicMutation<T extends KvValue> =
@@ -237,9 +238,12 @@ export type CollectionKeys = {
   idKey: KvKey
 }
 
-export type Model<T1 extends KvValue, _T2 extends T1> = {
-  parse: (data: unknown) => T1
+export type Model<T1 extends KvValue, T2> = {
+  parse: (data: T2) => T1
 }
+
+export type ParseInsertType<TBase, TInsert> = TInsert extends KvValue ? TInsert
+  : TBase
 
 /**********************************/
 /*                                */
@@ -312,7 +316,7 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
    * @param doc - Document.
    * @returns true or false.
    */
-  filter?: (doc: Document<T, T>) => boolean
+  filter?: (doc: Document<T>) => boolean
 
   /** Id of document to start from. */
   startId?: KvId
@@ -432,9 +436,9 @@ export type FlatDocumentData<T extends KvValue> =
     }
   )
 
-export type DocumentData<T extends KvValue> = {
+export type DocumentData<T> = {
   readonly id: KvId
-  readonly versionstamp: KvVersionstamp<T>
+  readonly versionstamp: KvVersionstamp<KvValue>
   readonly value: T
 }
 

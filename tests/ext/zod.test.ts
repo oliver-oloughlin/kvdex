@@ -63,4 +63,38 @@ Deno.test("ext - zod", async (t) => {
       assert(count === 3)
     })
   })
+
+  await t.step(
+    "Should use base model when typing selected documents",
+    async () => {
+      await useKv(async (kv) => {
+        const db = kvdex(kv, {
+          users: collection(zodModel(UserSchema)),
+          i_users: indexableCollection(zodModel(UserSchema), {
+            indices: {
+              username: "primary",
+              age: "secondary",
+            },
+          }),
+          l_users: largeCollection(zodModel(UserSchema)),
+        })
+
+        // Default values should not be inferred as optional when selecting
+        const doc1 = await db.users.find("")
+        if (doc1) {
+          doc1.value.age.valueOf()
+        }
+
+        const doc2 = await db.users.find("")
+        if (doc2) {
+          doc2.value.age.valueOf()
+        }
+
+        const doc3 = await db.users.find("")
+        if (doc3) {
+          doc3.value.age.valueOf()
+        }
+      })
+    },
+  )
 })

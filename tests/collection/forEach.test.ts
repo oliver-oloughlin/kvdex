@@ -13,7 +13,7 @@ Deno.test("collection - forEach", async (t) => {
         const cr = await db.users.addMany(users)
         assert(cr.ok)
 
-        const docs: Document<User, User>[] = []
+        const docs: Document<User>[] = []
         await db.users.forEach((doc) => docs.push(doc))
 
         assert(docs.length === users.length)

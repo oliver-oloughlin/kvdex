@@ -17,6 +17,7 @@ import type {
   LargeKvValue,
   ListOptions,
   Model,
+  ParseInsertType,
   QueueMessageHandler,
   QueueValue,
   SetOptions,
@@ -47,11 +48,11 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
  * @returns A large collection builder function.
  */
 export function largeCollection<
-  const T1 extends LargeKvValue,
-  const T2 extends T1,
+  const TBase extends LargeKvValue,
+  const TInsert,
 >(
-  model: Model<T1, T2>,
-  options?: LargeCollectionOptions<T1>,
+  model: Model<TBase, TInsert>,
+  options?: LargeCollectionOptions<TBase>,
 ) {
   return (
     kv: Deno.Kv,
@@ -60,9 +61,9 @@ export function largeCollection<
     idempotentListener: () => Promise<void>,
   ) =>
     new LargeCollection<
-      T1,
-      T2,
-      LargeCollectionOptions<T1>
+      TBase,
+      TInsert,
+      LargeCollectionOptions<TBase>
     >(
       kv,
       key,
@@ -74,19 +75,19 @@ export function largeCollection<
 }
 
 export class LargeCollection<
-  const T1 extends LargeKvValue,
-  const T2 extends T1,
-  const T3 extends LargeCollectionOptions<T1>,
-> extends Collection<T1, T2, T3> {
+  const TBase extends LargeKvValue,
+  const TInsert,
+  const TOptions extends LargeCollectionOptions<TBase>,
+> extends Collection<TBase, TInsert, TOptions> {
   readonly _keys: LargeCollectionKeys
 
   constructor(
     kv: Deno.Kv,
     key: KvKey,
-    model: Model<T1, T2>,
+    model: Model<TBase, TInsert>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => Promise<void>,
-    options?: T3,
+    options?: TOptions,
   ) {
     // Invoke super constructor
     super(kv, key, model, queueHandlers, idempotentListener, options)
@@ -110,7 +111,7 @@ export class LargeCollection<
   async find(
     id: Deno.KvKeyPart,
     options?: FindOptions,
-  ): Promise<Document<T1, T2> | null> {
+  ): Promise<Document<TBase> | null> {
     // Create documetn id key
     const idKey = extendKey(this._keys.idKey, id)
 
@@ -132,7 +133,7 @@ export class LargeCollection<
   async findMany(
     ids: Deno.KvKeyPart[],
     options?: FindManyOptions,
-  ): Promise<Document<T1, T2>[]> {
+  ): Promise<Document<TBase>[]> {
     // Map ids to document id keys
     const idKeys = ids.map((id) => extendKey(this._keys.idKey, id))
 
@@ -144,7 +145,7 @@ export class LargeCollection<
     )
 
     // Initiate result list
-    const result: Document<T1, T2>[] = []
+    const result: Document<TBase>[] = []
 
     // Get documents from large document entries
     await allFulfilled(
@@ -200,15 +201,15 @@ export class LargeCollection<
 
   protected async handleMany<const T>(
     prefixKey: KvKey,
-    fn: (doc: Document<T1, T2>) => T,
-    options: ListOptions<T1> | undefined,
+    fn: (doc: Document<TBase>) => T,
+    options: ListOptions<TBase> | undefined,
   ) {
     // Create list iterator with given options
     const selector = createListSelector(prefixKey, options)
     const iter = this.kv.list<LargeDocumentEntry[]>(selector, options)
 
     // Initiate lists
-    const docs: Document<T1, T2>[] = []
+    const docs: Document<TBase>[] = []
     const result: Awaited<T>[] = []
     const errors: unknown[] = []
 
@@ -259,12 +260,12 @@ export class LargeCollection<
 
   protected async setDocument(
     id: KvId | null,
-    value: T2,
+    value: ParseInsertType<TBase, TInsert>,
     options: SetOptions | undefined,
     overwrite = false,
-  ): Promise<CommitResult<T1> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TBase> | Deno.KvCommitError> {
     // Create document id key and parse document value
-    const parsed = this._model.parse(value)
+    const parsed = this._model.parse(value as TInsert)
     const docId = id ?? this._idGenerator(parsed)
     const idKey = extendKey(this._keys.idKey, docId)
 
@@ -378,8 +379,8 @@ export class LargeCollection<
   private async constructLargeDocument(
     id: KvId,
     value: LargeDocumentEntry,
-    versionstamp: Document<T1, T2>["versionstamp"],
-  ): Promise<Document<T1, T2>> {
+    versionstamp: Document<TBase>["versionstamp"],
+  ): Promise<Document<TBase>> {
     // Get document segment entries
     const { ids } = value
     const keys = ids.map((segId) => extendKey(this._keys.segmentKey, id, segId))
@@ -403,7 +404,7 @@ export class LargeCollection<
 
     try {
       // Create and return document
-      return new Document<T1, T2>(this._model, {
+      return new Document<TBase>(this._model, {
         id,
         value: JSON.parse(json),
         versionstamp,
