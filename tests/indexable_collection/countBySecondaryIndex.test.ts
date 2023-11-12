@@ -1,5 +1,5 @@
 import { assert } from "../deps.ts"
-import { mockUser1, mockUser2 } from "../mocks.ts"
+import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts"
 import { useDb } from "../utils.ts"
 
 Deno.test("indexable_collection - countBySecondaryIndex", async (t) => {
@@ -13,7 +13,7 @@ Deno.test("indexable_collection - countBySecondaryIndex", async (t) => {
         )
         assert(count1 === 0)
 
-        const cr = await db.i_users.addMany([mockUser1, mockUser2])
+        const cr = await db.i_users.addMany([mockUser1, mockUser2, mockUser3])
         assert(cr.ok)
 
         const count2 = await db.i_users.countBySecondaryIndex(

@@ -50,6 +50,9 @@ possible, like atomic operations and queue listeners.
     - [updateBySecondaryIndex()](#updatebysecondaryindex)
     - [deleteByPrimaryIndex()](#deletebyprimaryindex)
     - [deleteBySecondaryIndex()](#deletebysecondaryindex)
+    - [countBySecondaryIndex()](#countbysecondaryindex)
+    - [forEachBySecondaryIndex()](#foreachbysecondaryindex)
+    - [mapBySecondaryIndex()](#mapbysecondaryindex)
   - [Large Collections](#large-collections)
   - [Database Methods](#database-methods)
     - [countAll()](#countall)
@@ -409,7 +412,7 @@ const { result } = await db.users.getMany({
 
 ### forEach()
 
-Execute a callback function for multiple documents in the KV store. It takes an
+Execute a callback function for multiple documents in the KV store. Takes an
 optional options argument that can be used for filtering of documents and
 pagination. If no options are given, the callback function will be executed for
 all documents in the collection.
@@ -465,7 +468,7 @@ const { result } = await db.users.forEach((doc) => doc.value.username, {
 
 ### count()
 
-Count the number of documents in a collection. It takes an optional options
+Count the number of documents in a collection. Takes an optional options
 argument that can be used for filtering of documents. If no options are given,
 it will count all documents in the collection.
 
@@ -614,6 +617,49 @@ await db.users.deleteBySecondaryIndex("age", 24)
 await db.users.deleteBySecondaryIndex("age", 24, {
   filter: (doc) => doc.value.username.startsWith("o"),
 })
+```
+
+### countBySecondaryIndex()
+
+Counts the number of documents in the collection by a secondary index. Takes an
+optional options argument that can be used for filtering of documents. If no
+options are given, it will count all documents matching the index.
+
+```ts
+// Counts all users where age = 20
+const count = await db.users.countBySecondaryIndex("age", 20)
+```
+
+### forEachBySecondaryIndex()
+
+Execute a callback function for documents by a secondary index. Takes an
+optional options argument that can be used for filtering of documents and
+pagination. If no options are given, the callback function will be executed for
+all documents in the collection matching the index.
+
+```ts
+// Prints the username of all users where age = 20
+await db.users.forEachBySecondaryIndex(
+  "age",
+  20,
+  (doc) => console.log(doc.value.username),
+)
+```
+
+### mapBySecondaryIndex()
+
+Executes a callback function for documents by a secondary index and retrieves
+the results. It takes an optional options argument that can be used for
+filtering of documents and pagination. If no options are given, the callback
+function will be executed for all documents matching the index.
+
+```ts
+// Returns a list of usernames of all users where age = 20
+const { result } = await db.users.mapBySecondaryIndex(
+  "age",
+  20,
+  (doc) => doc.value.username,
+)
 ```
 
 ## Large Collections

@@ -158,7 +158,7 @@ export class IndexableCollection<
    * const userDoc = await db.users.findByPrimaryIndex("username", "oli")
    * ```
    *
-   * @param index - Index to find by.
+   * @param index - Selected index.
    * @param value - Index value.
    * @param options - Find options, optional.
    * @returns A promise resolving to the document found by selected index, or null if not found.
@@ -214,7 +214,7 @@ export class IndexableCollection<
    * })
    * ```
    *
-   * @param index - Index to find by.
+   * @param index - Selected index.
    * @param value - Index value.
    * @param options - List options, optional.
    * @returns A promise resolving to an object containing the result list and iterator cursor.
@@ -266,7 +266,7 @@ export class IndexableCollection<
    * await db.users.deleteByPrimaryIndex("username", "oliver")
    * ```
    *
-   * @param index - Index to delete by.
+   * @param index - Selected index.
    * @param value - Index value.
    * @param options - Find options, optional.
    * @returns A promise that resolves to void.
@@ -316,7 +316,7 @@ export class IndexableCollection<
    * })
    * ```
    *
-   * @param index - Index to delete by.
+   * @param index - Selected index.
    * @param value - Index value.
    * @param options - List options, optional.
    * @returns A promise that resolves to void.
@@ -357,7 +357,7 @@ export class IndexableCollection<
    * })
    * ```
    *
-   * @param index - Index to update by.
+   * @param index - Selected index.
    * @param value - Index value.
    * @param data - Update data to be inserted into document.
    * @param options - Set options, optional.
@@ -405,7 +405,7 @@ export class IndexableCollection<
    * )
    * ```
    *
-   * @param index - Index to update by.
+   * @param index - Selected index.
    * @param value - Index value.
    * @param data - Update data to be inserted into document.
    * @param options - Update many options, optional.
@@ -434,6 +434,21 @@ export class IndexableCollection<
     )
   }
 
+  /**
+   * Counts the number of documents in the collection by a secondary index.
+   *
+   * @example
+   *
+   * ```ts
+   * // Counts all users where age = 20
+   * const count = await db.users.countBySecondaryIndex("age", 20)
+   * ```
+   *
+   * @param index - Selected index.
+   * @param value - Index value.
+   * @param options - Count options.
+   * @returns A promise that resolves to a number representing the count.
+   */
   async countBySecondaryIndex<
     const K extends SecondaryIndexKeys<TBase, TOptions["indices"]>,
   >(
@@ -462,6 +477,27 @@ export class IndexableCollection<
     return result
   }
 
+  /**
+   * Executes a callback function for every document by a secondary index and according to the given options.
+   *
+   * If no options are given, the callback function is executed for all documents matching the index.
+   *
+   * @example
+   * ```ts
+   * // Prints the username of all users where age = 20
+   * await db.users.forEachBySecondaryIndex(
+   *   "age",
+   *   20,
+   *   (doc) => console.log(doc.value.username),
+   * )
+   * ```
+   *
+   * @param index - Selected index.
+   * @param value - Index value.
+   * @param fn - Callback function.
+   * @param options - List options, optional.
+   * @returns A promise that resovles to an object containing the iterator cursor.
+   */
   async forEachBySecondaryIndex<
     const K extends SecondaryIndexKeys<TBase, TOptions["indices"]>,
   >(
@@ -488,6 +524,29 @@ export class IndexableCollection<
     return { cursor }
   }
 
+  /**
+   * Executes a callback function for every document by a secondary index and according to the given options.
+   *
+   * If no options are given, the callback function is executed for all documents matching the index.
+   *
+   * The results from the callback function are returned as a list.
+   *
+   * @example
+   * ```ts
+   * // Returns a list of usernames of all users where age = 20
+   * const { result } = await db.users.mapBySecondaryIndex(
+   *   "age",
+   *   20,
+   *   (doc) => doc.value.username,
+   * )
+   * ```
+   *
+   * @param index - Selected index.
+   * @param value - Index value.
+   * @param fn - Callback function.
+   * @param options - List options, optional.
+   * @returns A promise that resovles to an object containing a list of the callback results and the iterator cursor.
+   */
   async mapBySecondaryIndex<
     const T,
     const K extends SecondaryIndexKeys<TBase, TOptions["indices"]>,

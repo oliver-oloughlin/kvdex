@@ -615,7 +615,7 @@ export class Collection<
    * ```
    *
    * @param options - Count options, optional.
-   * @returns A promise that resolves to a number representing the performed count.
+   * @returns A promise that resolves to a number representing the count.
    */
   async count(options?: CountOptions<TBase>) {
     // Initiate count result

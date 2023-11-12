@@ -22,6 +22,16 @@ export const mockUser2: User = {
   },
 }
 
+export const mockUser3: User = {
+  username: "anders",
+  age: 80,
+  address: {
+    country: "Ireland",
+    city: "Dublin",
+    houseNr: 10,
+  },
+}
+
 export const mockUserInvalid = {
   username: 100,
   age: 69,
