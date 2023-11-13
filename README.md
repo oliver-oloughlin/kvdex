@@ -71,6 +71,7 @@ possible, like atomic operations and queue listeners.
   - [Extensions](#extensions)
     - [Zod](#zod)
       - [zodModel()](#zodmodel)
+      - [Kv-Schemas](#kv-schemas)
   - [Development](#development)
   - [License](#license)
 
@@ -931,7 +932,7 @@ some dependenices to enhance integration. All extensions are found in the
 
 #### zodModel()
 
-Adds additional compatibility when using zod schemas as models. While zod
+Provides additional compatibility when using zod schemas as models. While zod
 schemas can be used as models directly, `zodModel()` properly parses a model
 from a zod schema, recognizing default fields as optional.
 
@@ -963,6 +964,27 @@ const result = await db.users_zod.add({
 })
 ```
 
+#### Kv-Schemas
+
+The zod extension provides schemas for some of the Kv-types, such as KvId,
+KvValue, KvObject and Kvarray. This makes it easier to properly build your
+schemas.
+
+```ts
+import { z } from "https://deno.land/x/zod/mod.ts"
+import { KvIdSchema } from "https://deno.land/x/kvdex/ext/zod.ts"
+
+const UserSchema = z.object({
+  username: z.string(),
+  postIds: z.array(KvIdSchema),
+})
+
+const PostSchema = z.object({
+  text: z.string(),
+  userId: KvIdSchema,
+})
+```
+
 ## Development
 
 Any contributions are welcomed and appreciated. How to contribute:
@@ -978,10 +1000,10 @@ quality and to avoid breaking features when refactoring. Therefore it is
 encouraged that any feature contributions are also accompanied by relevant unit
 tests to ensure those features remain stable.
 
-The goal of kvdex is to provide a type safe, higher level API to Deno KV, while
-trying to retain as much of the native functionality as possible. Additionally,
-this module should not rely on any third-party dependencies. Please kleep this
-in mind when making any contributions.
+The goal of kvdex is to provide a type safe, higher-level API to Deno KV, while
+retaining as much of the native functionality as possible. Additionally, the
+core functionality (excluding extensions) should not rely on any third-party
+dependencies. Please kleep this in mind when making any contributions.
 
 ## License
 
