@@ -78,11 +78,13 @@ possible, like atomic operations and queue listeners.
 ## Models
 
 Collections are typed using models. Standard models can be defined using the
-`model()` function. Alternatively, any object that extends or implements the
-Model type can be used as a model. Zod is therefore fully compatible, without
-being a dependency. The standard model uses type casting only, and does not
-validate any data when parsing. It is up to the developer to choose the strategy
-that fits their use case the best.
+`model()` or `asyncModel()` functions. Alternatively, any object that implements
+the Model type can be used as a model. Zod is therefore compatible, without
+being a dependency (see [zodModel()](#zodmodel) for additional support). The
+standard models uses type casting only, and do not validate any data when
+parsing. Async models can be useful for storing derived values or filling
+default values. It is up to the developer to choose the strategy that fits their
+use case the best.
 
 **_NOTE_:** When using interfaces instead of types, they must extend the KvValue
 type.
@@ -90,7 +92,7 @@ type.
 Using the standard model strategy:
 
 ```ts
-import { model } from "https://deno.land/x/kvdex/mod.ts"
+import { asyncModel, model } from "https://deno.land/x/kvdex/mod.ts"
 
 type User = {
   username: string
@@ -104,7 +106,15 @@ type User = {
   }
 }
 
+// Normal model (equal input and output)
 const UserModel = model<User>()
+
+// Async model (mapped output)
+const AsyncUserModel = asyncModel((user: User) => ({
+  upperCaseUsername: user.username.toUpperCase(),
+  ageInDecades: user.age / 10,
+  createdAt: new Date(),
+}))
 ```
 
 Using Zod instead:
