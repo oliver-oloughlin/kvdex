@@ -180,8 +180,9 @@ export type CollectionKeys = {
   idKey: KvKey
 }
 
-export type Model<T1 extends KvValue, T2> = {
-  parse: (data: T2) => T1
+export type Model<TBase extends KvValue, TInsert> = {
+  parse: (data: TInsert) => TBase
+  __validate?: (data: unknown) => TBase
 }
 
 export type ParseInsertType<TBase, TInsert> = TInsert extends KvValue ? TInsert

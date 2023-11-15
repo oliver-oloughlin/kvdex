@@ -2,7 +2,7 @@
 export { kvdex } from "./src/kvdex.ts"
 
 // Expose classes, model and builders
-export { model } from "./src/model.ts"
+export { asyncModel, model } from "./src/model.ts"
 export { KvDex } from "./src/kvdex.ts"
 export { Collection, collection } from "./src/collection.ts"
 export {
