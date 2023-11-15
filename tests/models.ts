@@ -1,3 +1,4 @@
+import { asyncModel } from "../mod.ts"
 import { z } from "./deps.ts"
 
 export type Address = z.infer<typeof AddressSchema>
@@ -16,3 +17,9 @@ export const UserSchema = z.object({
   age: z.number(),
   address: AddressSchema,
 })
+
+export const AsyncUserModel = asyncModel((user: User) => ({
+  name: user.username,
+  decadeAge: user.age / 10,
+  addressStr: `${user.address.city}, ${user.address.country}`,
+}))

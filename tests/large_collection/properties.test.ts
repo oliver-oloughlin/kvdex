@@ -190,4 +190,29 @@ Deno.test("large_collection - properties", async (t) => {
       )
     })
   })
+
+  await t.step("Should correctly infer type of document", async () => {
+    await useDb(async (db) => {
+      const doc = await db.l_users.find("")
+      if (doc) {
+        doc.value.age.valueOf()
+      }
+    })
+  })
+
+  await t.step(
+    "Should correctly infer insert and output of async model",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.al_users.add(mockUser1)
+        assert(cr.ok)
+
+        const doc = await db.al_users.find(cr.id)
+        assert(doc !== null)
+        assert(typeof doc.value.addressStr === "string")
+        assert(typeof doc.value.decadeAge === "number")
+        assert(typeof doc.value.name === "string")
+      })
+    },
+  )
 })

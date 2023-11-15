@@ -20,3 +20,12 @@ export function model<const T extends KvValue>(): Model<T, T> {
     parse: (value) => value as T,
   }
 }
+
+export function asyncModel<const TBase extends KvValue, const TInsert>(
+  transform: (input: TInsert) => TBase,
+): Model<TBase, TInsert> {
+  return {
+    parse: (data) => transform(data),
+    __validate: (data) => data as TBase,
+  }
+}

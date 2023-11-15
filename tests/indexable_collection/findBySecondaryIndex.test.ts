@@ -1,5 +1,6 @@
 import { assert } from "../deps.ts"
 import { mockUser1, mockUser2 } from "../mocks.ts"
+import { AsyncUserModel } from "../models.ts"
 import { useDb } from "../utils.ts"
 
 Deno.test("indexable_collection - findBySecondaryIndex", async (t) => {
@@ -34,6 +35,26 @@ Deno.test("indexable_collection - findBySecondaryIndex", async (t) => {
         )
 
         assert(bySecondary.result.length === 0)
+      })
+    },
+  )
+
+  await t.step(
+    "Should find documents by async model secondary index",
+    async () => {
+      await useDb(async (db) => {
+        const t1 = AsyncUserModel.parse(mockUser1)
+        const t2 = AsyncUserModel.parse(mockUser2)
+
+        const cr = await db.ai_users.addMany([mockUser1, mockUser2])
+        assert(cr.ok)
+
+        const { result } = await db.ai_users.findBySecondaryIndex(
+          "decadeAge",
+          t1.decadeAge,
+        )
+        result.some((doc) => doc.value.name === t1.name)
+        result.some((doc) => doc.value.name === t2.name)
       })
     },
   )
