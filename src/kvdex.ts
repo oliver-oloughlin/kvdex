@@ -122,15 +122,15 @@ export function kvdex<const T extends SchemaDefinition>(
   return Object.assign(db, schema)
 }
 
-export class KvDex<const T extends Schema<SchemaDefinition>> {
+export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
   private kv: Deno.Kv
-  private schema: T
+  private schema: TSchema
   private queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>
   private idempotentListener: () => Promise<void>
 
   constructor(
     kv: Deno.Kv,
-    schema: T,
+    schema: TSchema,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => Promise<void>,
   ) {
@@ -152,7 +152,9 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
    * @param selector - Collection selector function.
    * @returns A new AtomicBuilder instance.
    */
-  atomic<const T1 extends KvValue>(selector: CollectionSelector<T, T1>) {
+  atomic<const TInput, const TOutput extends KvValue>(
+    selector: CollectionSelector<TSchema, TInput, TOutput>,
+  ) {
     return new AtomicBuilder(this.kv, this.schema, selector(this.schema))
   }
 
@@ -305,7 +307,7 @@ export class KvDex<const T extends Schema<SchemaDefinition>> {
     }
 
     // Return document
-    return new Document(model<T>(), {
+    return new Document(model<T, T>(), {
       id,
       versionstamp: result.versionstamp,
       value: result.value,

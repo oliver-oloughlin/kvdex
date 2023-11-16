@@ -14,7 +14,7 @@ export type CollectionBuilderFn = (
   queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
   idempotentListener: () => Promise<void>,
   // deno-lint-ignore no-explicit-any
-) => Collection<KvValue, any, CollectionOptions<KvValue>>
+) => Collection<any, KvValue, CollectionOptions<KvValue>>
 
 export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
 
@@ -93,18 +93,20 @@ export type IntervalMessage = {
 /****************************/
 
 export type CollectionSelector<
-  T1 extends Schema<SchemaDefinition>,
-  T2 extends KvValue,
+  TSchema extends Schema<SchemaDefinition>,
+  TInput,
+  TOutput extends KvValue,
 > = (
-  schema: AtomicSchema<T1>,
-) => Collection<T2, T2, CollectionOptions<T2>>
+  schema: AtomicSchema<TSchema>,
+) => Collection<TInput, TOutput, CollectionOptions<TOutput>>
 
 export type AtomicSchema<T extends Schema<SchemaDefinition>> = {
   [
     K in KeysOfThatDontExtend<
       T,
       LargeCollection<
-        LargeKvValue,
+        // deno-lint-ignore no-explicit-any
+        any,
         LargeKvValue,
         LargeCollectionOptions<LargeKvValue>
       >
@@ -180,13 +182,13 @@ export type CollectionKeys = {
   idKey: KvKey
 }
 
-export type Model<TBase extends KvValue, TInsert> = {
-  parse: (data: TInsert) => TBase
-  __validate?: (data: unknown) => TBase
+export type Model<TInput, TOutput extends KvValue> = {
+  parse: (data: TInput) => TOutput
+  __validate?: (data: unknown) => TOutput
 }
 
-export type ParseInsertType<TBase, TInsert> = TInsert extends KvValue ? TInsert
-  : TBase
+export type ParseInputType<TInput, TOutput extends KvValue> = TInput extends
+  KvValue ? TInput : TOutput
 
 /**********************************/
 /*                                */

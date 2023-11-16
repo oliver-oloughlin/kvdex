@@ -201,7 +201,7 @@ Deno.test("large_collection - properties", async (t) => {
   })
 
   await t.step(
-    "Should correctly infer insert and output of async model",
+    "Should correctly infer insert and output of asymmetric model",
     async () => {
       await useDb(async (db) => {
         const cr = await db.al_users.add(mockUser1)

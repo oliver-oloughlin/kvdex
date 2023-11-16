@@ -3,28 +3,7 @@ import type { KvValue, Model } from "./types.ts"
 /**
  * Create a standard model without data validation.
  *
- * @example
- * ```ts
- * type User = {
- *   username: string
- *   age: number
- * }
- *
- * const UserModel = model<User>()
- * ```
- *
- * @returns A standard model.
- */
-export function model<const TInput extends KvValue>(): Model<TInput, TInput> {
-  return {
-    parse: (value) => value as TInput,
-  }
-}
-
-/**
- * Create a standard async model with parse transformation without data validation.
- *
- * Transforms data upon parsing, while simply type casting the output value when validating.
+ * Optionally provide a transform function.
  *
  * @example
  * ```ts
@@ -34,23 +13,33 @@ export function model<const TInput extends KvValue>(): Model<TInput, TInput> {
  *   createdAt: Date
  * }
  *
- * type UserInput = Omit<User, "createdAt">
+ * // Normal model
+ * const UserModel = model<User>()
  *
- * // Adds the "createdAt" field when parsing user input data
- * const UserModel = asyncModel((input: UserInput) => ({
- *   createdAt: new Date(),
- *   ...input,
- * }) as User)
+ * // Transform model
+ * const UserModel = model<Omit<User, "createdAt">, User>((user) => ({
+ *   ...user,
+ *   createdAt: new Date()
+ * }))
  * ```
  *
- * @param transform - Transform function from input data to output data.
- * @returns - An async model that transforms input values upon parsing.
+ * @param transform - Transform function mapping from input data to output data.
+ * @returns A standard model.
  */
-export function asyncModel<const TOutput extends KvValue, const TInput>(
-  transform: (input: TInput) => TOutput,
-): Model<TOutput, TInput> {
+export function model<
+  const TInput = unknown,
+  const TOutput extends KvValue = TInput extends KvValue ? TInput : KvValue,
+>(
+  transform?: (data: TInput) => TOutput,
+): Model<TInput, TOutput> {
+  if (transform) {
+    return {
+      parse: (data) => transform(data),
+      __validate: (data) => data as TOutput,
+    }
+  }
+
   return {
-    parse: (data) => transform(data),
-    __validate: (data) => data as TOutput,
+    parse: (value) => value as unknown as TOutput,
   }
 }

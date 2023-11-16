@@ -117,14 +117,14 @@ export function isKvObject(value: unknown) {
  * @returns The atomic operation with added mutations.
  */
 export function setIndices<
-  TBase extends KvObject,
-  TInsert,
-  TOptions extends IndexableCollectionOptions<TBase>,
+  TInput,
+  TOutput extends KvObject,
+  TOptions extends IndexableCollectionOptions<TOutput>,
 >(
   id: KvId,
-  data: TBase,
+  data: TOutput,
   atomic: Deno.AtomicOperation,
-  collection: IndexableCollection<TBase, TInsert, TOptions>,
+  collection: IndexableCollection<TInput, TOutput, TOptions>,
   options: AtomicSetOptions | undefined,
 ) {
   // Set primary indices using primary index list
@@ -141,7 +141,7 @@ export function setIndices<
     )
 
     // Create the index document value
-    const indexEntry: IndexDataEntry<TBase> = { ...data, __id__: id }
+    const indexEntry: IndexDataEntry<TOutput> = { ...data, __id__: id }
 
     // Add index insertion to atomic operation, check for exisitng indices
     atomic.set(indexKey, indexEntry, options).check({
@@ -182,16 +182,16 @@ export function setIndices<
  * @returns The atomic operation with added checks.
  */
 export function checkIndices<
-  TBase extends KvObject,
-  TInsert,
+  TInput,
+  TOutput extends KvObject,
   TData extends
-    | TBase
-    | UpdateData<TBase>,
-  TOptions extends IndexableCollectionOptions<TBase>,
+    | TOutput
+    | UpdateData<TOutput>,
+  TOptions extends IndexableCollectionOptions<TOutput>,
 >(
   data: TData,
   atomic: Deno.AtomicOperation,
-  collection: IndexableCollection<TBase, TInsert, TOptions>,
+  collection: IndexableCollection<TInput, TOutput, TOptions>,
 ) {
   // Check primary indices using primary index list
   collection.primaryIndexList.forEach((index) => {
@@ -229,14 +229,14 @@ export function checkIndices<
  * @returns The atomic operation with added mutations.
  */
 export function deleteIndices<
-  TBase extends KvObject,
-  TInsert,
-  TOptions extends IndexableCollectionOptions<TBase>,
+  TInput,
+  TOutput extends KvObject,
+  TOptions extends IndexableCollectionOptions<TOutput>,
 >(
   id: KvId,
-  data: TBase,
+  data: TOutput,
   atomic: Deno.AtomicOperation,
-  collection: IndexableCollection<TBase, TInsert, TOptions>,
+  collection: IndexableCollection<TInput, TOutput, TOptions>,
 ) {
   // Delete primary indices using primary index list
   collection.primaryIndexList.forEach((index) => {

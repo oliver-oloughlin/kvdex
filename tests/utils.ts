@@ -6,7 +6,7 @@ import {
 } from "../mod.ts"
 import { model } from "../src/model.ts"
 import { ulid } from "./deps.ts"
-import { AsyncUserModel, User, UserSchema } from "./models.ts"
+import { TransformUserModel, User, UserSchema } from "./models.ts"
 
 // Create test db
 export function createDb(kv: Deno.Kv) {
@@ -40,17 +40,17 @@ export function createDb(kv: Deno.Kv) {
     zl_users: largeCollection(UserSchema, {
       idGenerator: () => ulid(),
     }),
-    a_users: collection(AsyncUserModel, {
+    a_users: collection(TransformUserModel, {
       idGenerator: () => ulid(),
     }),
-    ai_users: indexableCollection(AsyncUserModel, {
+    ai_users: indexableCollection(TransformUserModel, {
       idGenerator: () => ulid(),
       indices: {
         name: "primary",
         decadeAge: "secondary",
       },
     }),
-    al_users: largeCollection(AsyncUserModel, {
+    al_users: largeCollection(TransformUserModel, {
       idGenerator: () => ulid(),
     }),
   })
