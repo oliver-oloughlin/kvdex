@@ -20,7 +20,7 @@ import type {
   KvObject,
   ListOptions,
   Model,
-  ParseInsertType,
+  ParseInputType,
   PrimaryIndexKeys,
   QueueMessageHandler,
   QueueValue,
@@ -60,17 +60,17 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
  * @returns An indexable collection builder function.
  */
 export function indexableCollection<
-  const TBase extends KvObject,
-  const TInsert,
-  const TOptions extends IndexableCollectionOptions<TBase>,
->(model: Model<TBase, TInsert>, options: TOptions) {
+  const TInput,
+  const TOutput extends KvObject,
+  const TOptions extends IndexableCollectionOptions<TOutput>,
+>(model: Model<TInput, TOutput>, options: TOptions) {
   return (
     kv: Deno.Kv,
     key: KvKey,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => Promise<void>,
   ) =>
-    new IndexableCollection<TBase, TInsert, TOptions>(
+    new IndexableCollection<TInput, TOutput, TOptions>(
       kv,
       key,
       model,
@@ -87,10 +87,10 @@ export function indexableCollection<
  * including methods exclusive to indexable collections.
  */
 export class IndexableCollection<
-  const TBase extends KvObject,
-  const TInsert,
-  const TOptions extends IndexableCollectionOptions<TBase>,
-> extends Collection<TBase, TInsert, TOptions> {
+  const TInput,
+  const TOutput extends KvObject,
+  const TOptions extends IndexableCollectionOptions<TOutput>,
+> extends Collection<TInput, TOutput, TOptions> {
   readonly primaryIndexList: string[]
   readonly secondaryIndexList: string[]
   readonly _keys: IndexableCollectionKeys
@@ -98,7 +98,7 @@ export class IndexableCollection<
   constructor(
     kv: Deno.Kv,
     key: KvKey,
-    model: Model<TBase, TInsert>,
+    model: Model<TInput, TOutput>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => Promise<void>,
     options: TOptions,
@@ -164,10 +164,10 @@ export class IndexableCollection<
    * @returns A promise resolving to the document found by selected index, or null if not found.
    */
   async findByPrimaryIndex<
-    const K extends PrimaryIndexKeys<TBase, TOptions["indices"]>,
+    const K extends PrimaryIndexKeys<TOutput, TOptions["indices"]>,
   >(
     index: K,
-    value: CheckKeyOf<K, TBase>,
+    value: CheckKeyOf<K, TOutput>,
     options?: FindOptions,
   ) {
     // Create the index key
@@ -179,7 +179,7 @@ export class IndexableCollection<
 
     // Get index entry
     const result = await this.kv.get<
-      unknown & Pick<IndexDataEntry<TBase>, "__id__">
+      unknown & Pick<IndexDataEntry<TOutput>, "__id__">
     >(key, options)
 
     // If no entry is found, return null
@@ -191,10 +191,10 @@ export class IndexableCollection<
     const { __id__, ...data } = result.value
 
     // Return document
-    return new Document<TBase>(this._model, {
+    return new Document<TOutput>(this._model, {
       id: __id__,
       versionstamp: result.versionstamp,
-      value: data as TBase,
+      value: data as TOutput,
     })
   }
 
@@ -220,8 +220,8 @@ export class IndexableCollection<
    * @returns A promise resolving to an object containing the result list and iterator cursor.
    */
   async findBySecondaryIndex<
-    const K extends SecondaryIndexKeys<TBase, TOptions["indices"]>,
-  >(index: K, value: CheckKeyOf<K, TBase>, options?: ListOptions<TBase>) {
+    const K extends SecondaryIndexKeys<TOutput, TOptions["indices"]>,
+  >(index: K, value: CheckKeyOf<K, TOutput>, options?: ListOptions<TOutput>) {
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndexKey,
@@ -242,7 +242,7 @@ export class IndexableCollection<
     await allFulfilled(ids.map(async (id) => {
       // Create idKey, get document value
       const idKey = extendKey(this._keys.idKey, id)
-      const { value } = await this.kv.get<TBase>(idKey)
+      const { value } = await this.kv.get<TOutput>(idKey)
 
       // If no value, abort delete
       if (!value) {
@@ -272,10 +272,10 @@ export class IndexableCollection<
    * @returns A promise that resolves to void.
    */
   async deleteByPrimaryIndex<
-    const K extends PrimaryIndexKeys<TBase, TOptions["indices"]>,
+    const K extends PrimaryIndexKeys<TOutput, TOptions["indices"]>,
   >(
     index: K,
-    value: CheckKeyOf<K, TBase>,
+    value: CheckKeyOf<K, TOutput>,
     options?: FindOptions,
   ) {
     // Create index key
@@ -287,7 +287,7 @@ export class IndexableCollection<
 
     // Get index entry
     const result = await this.kv.get<
-      unknown & Pick<IndexDataEntry<TBase>, "__id__">
+      unknown & Pick<IndexDataEntry<TOutput>, "__id__">
     >(key, options)
 
     // If no value, abort delete
@@ -322,8 +322,8 @@ export class IndexableCollection<
    * @returns A promise that resolves to void.
    */
   async deleteBySecondaryIndex<
-    const K extends SecondaryIndexKeys<TBase, TOptions["indices"]>,
-  >(index: K, value: CheckKeyOf<K, TBase>, options?: ListOptions<TBase>) {
+    const K extends SecondaryIndexKeys<TOutput, TOptions["indices"]>,
+  >(index: K, value: CheckKeyOf<K, TOutput>, options?: ListOptions<TOutput>) {
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndexKey,
@@ -364,13 +364,13 @@ export class IndexableCollection<
    * @returns Promise that resolves to a commit result.
    */
   async updateByPrimaryIndex<
-    const K extends PrimaryIndexKeys<TBase, TOptions["indices"]>,
+    const K extends PrimaryIndexKeys<TOutput, TOptions["indices"]>,
   >(
     index: K,
-    value: CheckKeyOf<K, TBase>,
-    data: UpdateData<ParseInsertType<TBase, TInsert>>,
+    value: CheckKeyOf<K, TOutput>,
+    data: UpdateData<ParseInputType<TInput, TOutput>>,
     options?: UpdateOptions,
-  ): Promise<CommitResult<TBase> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Find document by primary index
     const doc = await this.findByPrimaryIndex(index, value)
 
@@ -412,12 +412,12 @@ export class IndexableCollection<
    * @returns Promise that resolves to an object containing result list and iterator cursor.
    */
   async updateBySecondaryIndex<
-    const K extends SecondaryIndexKeys<TBase, TOptions["indices"]>,
+    const K extends SecondaryIndexKeys<TOutput, TOptions["indices"]>,
   >(
     index: K,
-    value: CheckKeyOf<K, TBase>,
-    data: UpdateData<ParseInsertType<TBase, TInsert>>,
-    options?: UpdateManyOptions<TBase>,
+    value: CheckKeyOf<K, TOutput>,
+    data: UpdateData<ParseInputType<TInput, TOutput>>,
+    options?: UpdateManyOptions<TOutput>,
   ) {
     // Create prefix key
     const prefixKey = extendKey(
@@ -450,11 +450,11 @@ export class IndexableCollection<
    * @returns A promise that resolves to a number representing the count.
    */
   async countBySecondaryIndex<
-    const K extends SecondaryIndexKeys<TBase, TOptions["indices"]>,
+    const K extends SecondaryIndexKeys<TOutput, TOptions["indices"]>,
   >(
     index: K,
-    value: CheckKeyOf<K, TBase>,
-    options?: CountOptions<TBase>,
+    value: CheckKeyOf<K, TOutput>,
+    options?: CountOptions<TOutput>,
   ) {
     // Create prefix key
     const prefixKey = extendKey(
@@ -499,12 +499,12 @@ export class IndexableCollection<
    * @returns A promise that resovles to an object containing the iterator cursor.
    */
   async forEachBySecondaryIndex<
-    const K extends SecondaryIndexKeys<TBase, TOptions["indices"]>,
+    const K extends SecondaryIndexKeys<TOutput, TOptions["indices"]>,
   >(
     index: K,
-    value: CheckKeyOf<K, TBase>,
-    fn: (doc: Document<TBase>) => unknown,
-    options?: UpdateManyOptions<TBase>,
+    value: CheckKeyOf<K, TOutput>,
+    fn: (doc: Document<TOutput>) => unknown,
+    options?: UpdateManyOptions<TOutput>,
   ) {
     // Create prefix key
     const prefixKey = extendKey(
@@ -549,12 +549,12 @@ export class IndexableCollection<
    */
   async mapBySecondaryIndex<
     const T,
-    const K extends SecondaryIndexKeys<TBase, TOptions["indices"]>,
+    const K extends SecondaryIndexKeys<TOutput, TOptions["indices"]>,
   >(
     index: K,
-    value: CheckKeyOf<K, TBase>,
-    fn: (doc: Document<TBase>) => T,
-    options?: UpdateManyOptions<TBase>,
+    value: CheckKeyOf<K, TOutput>,
+    fn: (doc: Document<TOutput>) => T,
+    options?: UpdateManyOptions<TOutput>,
   ) {
     // Create prefix key
     const prefixKey = extendKey(
@@ -574,15 +574,15 @@ export class IndexableCollection<
   /** PROTECTED METHODS */
 
   protected async updateDocument(
-    doc: Document<TBase>,
-    data: UpdateData<ParseInsertType<TBase, TInsert>>,
+    doc: Document<TOutput>,
+    data: UpdateData<ParseInputType<TInput, TOutput>>,
     options: UpdateOptions | undefined,
-  ): Promise<CommitResult<TBase> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Get document value, delete document entry
     const { value, id } = doc
 
     // Check for index collisions
-    const atomic = checkIndices(data as TBase, this.kv.atomic(), this)
+    const atomic = checkIndices(data as TOutput, this.kv.atomic(), this)
     const cr = await atomic.commit()
 
     // If check fails, return commit error
@@ -608,7 +608,7 @@ export class IndexableCollection<
     // Set new document value from merged data
     return await this.setDocument(
       id,
-      merged as ParseInsertType<TBase, TInsert>,
+      merged as ParseInputType<TInput, TOutput>,
       options,
       true,
     )
@@ -616,12 +616,12 @@ export class IndexableCollection<
 
   protected async setDocument(
     id: KvId | null,
-    value: ParseInsertType<TBase, TInsert>,
+    value: ParseInputType<TInput, TOutput>,
     options: SetOptions | undefined,
     overwrite = false,
-  ): Promise<CommitResult<TBase> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Create the document id key and parse document value
-    const parsed = this._model.parse(value as TInsert)
+    const parsed = this._model.parse(value as TInput)
     const docId = id ?? this._idGenerator(parsed)
     const idKey = extendKey(this._keys.idKey, docId)
 

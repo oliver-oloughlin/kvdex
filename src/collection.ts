@@ -21,7 +21,7 @@ import type {
   ListOptions,
   ManyCommitResult,
   Model,
-  ParseInsertType,
+  ParseInputType,
   QueueListenerOptions,
   QueueMessageHandler,
   QueueValue,
@@ -62,11 +62,11 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
  * @returns A collection builder function.
  */
 export function collection<
-  const TBase extends KvValue,
-  const TInsert,
+  const TInput,
+  const TOutput extends KvValue,
 >(
-  model: Model<TBase, TInsert>,
-  options?: CollectionOptions<TBase>,
+  model: Model<TInput, TOutput>,
+  options?: CollectionOptions<TOutput>,
 ) {
   return (
     kv: Deno.Kv,
@@ -75,9 +75,9 @@ export function collection<
     idempotentListener: () => Promise<void>,
   ) =>
     new Collection<
-      TBase,
-      TInsert,
-      CollectionOptions<TBase>
+      TInput,
+      TOutput,
+      CollectionOptions<TOutput>
     >(
       kv,
       key,
@@ -94,9 +94,11 @@ export function collection<
  * Contains methods for working on documents in the collection.
  */
 export class Collection<
-  const TBase extends KvValue,
-  const TInsert,
-  const TOptions extends CollectionOptions<TBase> = CollectionOptions<TBase>,
+  const TInput,
+  const TOutput extends KvValue,
+  const TOptions extends CollectionOptions<TOutput> = CollectionOptions<
+    TOutput
+  >,
 > {
   private queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>
   private idempotentListener: () => Promise<void>
@@ -105,12 +107,12 @@ export class Collection<
 
   readonly _idGenerator: IdGenerator<KvValue>
   readonly _keys: CollectionKeys
-  readonly _model: Model<TBase, TInsert>
+  readonly _model: Model<TInput, TOutput>
 
   constructor(
     kv: Deno.Kv,
     key: KvKey,
-    model: Model<TBase, TInsert>,
+    model: Model<TInput, TOutput>,
     queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
     idempotentListener: () => Promise<void>,
     options?: TOptions,
@@ -159,7 +161,7 @@ export class Collection<
   async find(id: KvId, options?: FindOptions) {
     // Create document key, get document entry
     const key = extendKey(this._keys.idKey, id)
-    const result = await this.kv.get<TBase>(key, options)
+    const result = await this.kv.get<TOutput>(key, options)
 
     // If no entry exists, return null
     if (result.value === null || result.versionstamp === null) {
@@ -193,10 +195,10 @@ export class Collection<
   async findMany(ids: KvId[], options?: FindManyOptions) {
     // Create document keys, get document entries
     const keys = ids.map((id) => extendKey(this._keys.idKey, id))
-    const entries = await kvGetMany<TBase>(keys, this.kv, options)
+    const entries = await kvGetMany<TOutput>(keys, this.kv, options)
 
     // Create empty result list
-    const result: Document<TBase>[] = []
+    const result: Document<TOutput>[] = []
 
     // Loop over entries, add to result list
     for (const { key, versionstamp, value } of entries) {
@@ -239,7 +241,7 @@ export class Collection<
    * @param options - Set options, optional.
    * @returns Promise resolving to a CommitResult object.
    */
-  async add(value: ParseInsertType<TBase, TInsert>, options?: SetOptions) {
+  async add(value: ParseInputType<TInput, TOutput>, options?: SetOptions) {
     // Set document value with generated id
     return await this.setDocument(null, value, options, false)
   }
@@ -262,7 +264,7 @@ export class Collection<
    */
   async set(
     id: KvId,
-    data: ParseInsertType<TBase, TInsert>,
+    data: ParseInputType<TInput, TOutput>,
     options?: SetOptions,
   ) {
     return await this.setDocument(id, data, options, false)
@@ -289,7 +291,7 @@ export class Collection<
    */
   async write(
     id: KvId,
-    value: ParseInsertType<TBase, TInsert>,
+    value: ParseInputType<TInput, TOutput>,
     options?: SetOptions,
   ) {
     return await this.setDocument(id, value, options, true)
@@ -327,10 +329,10 @@ export class Collection<
    * @example
    * ```ts
    * // Updates by overriding the existing value
-   * const resulTBase = await db.numbers.update("num1", 10)
+   * const resulTOutput = await db.numbers.update("num1", 10)
    *
    * // Partial update using deep merge, only updates the age field
-   * const resulTInsert = await db.users.update("oliver", {
+   * const resulTInput = await db.users.update("oliver", {
    *   age: 30
    * }, {
    *   mergeType: "deep"
@@ -344,9 +346,9 @@ export class Collection<
    */
   async update(
     id: KvId,
-    data: UpdateData<ParseInsertType<TBase, TInsert>>,
+    data: UpdateData<ParseInputType<TInput, TOutput>>,
     options?: UpdateOptions,
-  ): Promise<CommitResult<TBase> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Get document
     const doc = await this.find(id)
 
@@ -384,8 +386,8 @@ export class Collection<
    * @returns Promise resolving to an object containing iterator cursor and result list.
    */
   async updateMany(
-    value: UpdateData<ParseInsertType<TBase, TInsert>>,
-    options?: UpdateManyOptions<TBase>,
+    value: UpdateData<ParseInputType<TInput, TOutput>>,
+    options?: UpdateManyOptions<TOutput>,
   ) {
     // Update each document, add commit result to result list
     return await this.handleMany(
@@ -421,11 +423,11 @@ export class Collection<
    * @returns A promise that resolves to a list of Deno.KvCommitResult or Deno.KvCommitError objects
    */
   async addMany(
-    values: ParseInsertType<TBase, TInsert>[],
+    values: ParseInputType<TInput, TOutput>[],
     options?: SetOptions,
   ): Promise<ManyCommitResult | Deno.KvCommitError> {
     // Initiate result and error lists
-    const results: (CommitResult<TBase> | Deno.KvCommitError)[] = []
+    const results: (CommitResult<TOutput> | Deno.KvCommitError)[] = []
     const errors: unknown[] = []
 
     // Add each value
@@ -475,7 +477,7 @@ export class Collection<
    * @param options - List options, optional.
    * @returns A promise that resovles to an object containing the iterator cursor
    */
-  async deleteMany(options?: AtomicListOptions<TBase>) {
+  async deleteMany(options?: AtomicListOptions<TOutput>) {
     // Perform quick delete if all documents are to be deleted
     if (selectsAll(options)) {
       // Create list iterator and empty keys list
@@ -522,7 +524,7 @@ export class Collection<
    * @param options - List options, optional.
    * @returns A promise that resovles to an object containing a list of the retrieved documents and the iterator cursor
    */
-  async getMany(options?: ListOptions<TBase>) {
+  async getMany(options?: ListOptions<TOutput>) {
     // Get each document, return result list and current iterator cursor
     return await this.handleMany(
       this._keys.idKey,
@@ -552,8 +554,8 @@ export class Collection<
    * @returns A promise that resovles to an object containing the iterator cursor
    */
   async forEach(
-    fn: (doc: Document<TBase>) => unknown,
-    options?: ListOptions<TBase>,
+    fn: (doc: Document<TOutput>) => unknown,
+    options?: ListOptions<TOutput>,
   ) {
     // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
@@ -589,8 +591,8 @@ export class Collection<
    * @returns A promise that resovles to an object containing a list of the callback results and the iterator cursor
    */
   async map<const T>(
-    fn: (doc: Document<TBase>) => T,
-    options?: ListOptions<TBase>,
+    fn: (doc: Document<TOutput>) => T,
+    options?: ListOptions<TOutput>,
   ) {
     // Execute callback function for each document entry, return result and cursor
     return await this.handleMany(
@@ -617,7 +619,7 @@ export class Collection<
    * @param options - Count options, optional.
    * @returns A promise that resolves to a number representing the count.
    */
-  async count(options?: CountOptions<TBase>) {
+  async count(options?: CountOptions<TOutput>) {
     // Initiate count result
     let result = 0
 
@@ -742,7 +744,7 @@ export class Collection<
     }
 
     // Return document
-    return new Document(model<T>(), {
+    return new Document(model<T, T>(), {
       id,
       versionstamp: result.versionstamp,
       value: result.value,
@@ -776,15 +778,15 @@ export class Collection<
    */
   protected async handleMany<const T>(
     prefixKey: KvKey,
-    fn: (doc: Document<TBase>) => T,
-    options: ListOptions<TBase> | undefined,
+    fn: (doc: Document<TOutput>) => T,
+    options: ListOptions<TOutput> | undefined,
   ) {
     // Create list iterator with given options
     const selector = createListSelector(prefixKey, options)
-    const iter = this.kv.list<TBase>(selector, options)
+    const iter = this.kv.list<TOutput>(selector, options)
 
     // Initiate lists
-    const docs: Document<TBase>[] = []
+    const docs: Document<TOutput>[] = []
     const result: Awaited<T>[] = []
     const errors: unknown[] = []
 
@@ -843,12 +845,12 @@ export class Collection<
    */
   protected async setDocument(
     id: KvId | null,
-    value: ParseInsertType<TBase, TInsert>,
+    value: ParseInputType<TInput, TOutput>,
     options: SetOptions | undefined,
     overwrite = false,
-  ): Promise<CommitResult<TBase> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Create id, document key and parse document value
-    const parsed = this._model.parse(value as TInsert)
+    const parsed = this._model.parse(value as TInput)
     const docId = id ?? this._idGenerator(parsed)
     const key = extendKey(this._keys.idKey, docId)
 
@@ -898,8 +900,8 @@ export class Collection<
    * @returns Promise that resolves to a commit result.
    */
   protected async updateDocument(
-    doc: Document<TBase>,
-    data: UpdateData<ParseInsertType<TBase, TInsert>>,
+    doc: Document<TOutput>,
+    data: UpdateData<ParseInputType<TInput, TOutput>>,
     options: UpdateOptions | undefined,
   ) {
     // Get document value, delete document entry
@@ -920,7 +922,7 @@ export class Collection<
       // Set new document value
       return await this.setDocument(
         id,
-        merged as ParseInsertType<TBase, TInsert>,
+        merged as ParseInputType<TInput, TOutput>,
         options,
         true,
       )
@@ -929,7 +931,7 @@ export class Collection<
     // Set new document value
     return await this.setDocument(
       id,
-      data as ParseInsertType<TBase, TInsert>,
+      data as ParseInputType<TInput, TOutput>,
       options,
       true,
     )

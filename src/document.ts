@@ -9,15 +9,15 @@ import type {
 } from "./types.ts"
 import { isKvObject } from "./utils.ts"
 
-export class Document<const T extends KvValue> {
+export class Document<const TOutput extends KvValue> {
   readonly id: KvId
-  readonly versionstamp: KvVersionstamp<T>
-  readonly value: T
+  readonly versionstamp: KvVersionstamp<TOutput>
+  readonly value: TOutput
 
   constructor(
     // deno-lint-ignore no-explicit-any
-    model: Model<T, any>,
-    { id, versionstamp, value }: DocumentData<T>,
+    model: Model<any, TOutput>,
+    { id, versionstamp, value }: DocumentData<TOutput>,
   ) {
     this.id = id
     this.versionstamp = versionstamp
@@ -53,19 +53,19 @@ export class Document<const T extends KvValue> {
    * @returns Object containing the id, versionstamp and value entries
    * for documents of type Model, else simply returns the document data.
    */
-  flat(): FlatDocumentData<T> {
+  flat(): FlatDocumentData<TOutput> {
     if (isKvObject(this.value)) {
       return {
         id: this.id,
         versionstamp: this.versionstamp,
         ...this.value as KvObject,
-      } as unknown as FlatDocumentData<T>
+      } as unknown as FlatDocumentData<TOutput>
     }
 
     return {
       id: this.id,
       versionstamp: this.versionstamp,
       value: this.value,
-    } as unknown as FlatDocumentData<T>
+    } as unknown as FlatDocumentData<TOutput>
   }
 }

@@ -14,7 +14,7 @@ import type {
   KvObject,
   KvValue,
   Operations,
-  ParseInsertType,
+  ParseInputType,
   QueueValue,
   Schema,
   SchemaDefinition,
@@ -37,13 +37,13 @@ import {
  */
 export class AtomicBuilder<
   const TSchema extends Schema<SchemaDefinition>,
-  const TBase extends KvValue,
-  const TInsert,
+  const TInput,
+  const TOutput extends KvValue,
 > {
   private kv: Deno.Kv
   private schema: TSchema
   private operations: Operations
-  private collection: Collection<TBase, TInsert, CollectionOptions<TBase>>
+  private collection: Collection<TInput, TOutput, CollectionOptions<TOutput>>
 
   /**
    * Create a new AtomicBuilder for building and executing atomic operations in the KV store.
@@ -56,7 +56,7 @@ export class AtomicBuilder<
   constructor(
     kv: Deno.Kv,
     schema: TSchema,
-    collection: Collection<TBase, TInsert, CollectionOptions<TBase>>,
+    collection: Collection<TInput, TOutput, CollectionOptions<TOutput>>,
     operations?: Operations,
   ) {
     // Check for large collection
@@ -96,8 +96,8 @@ export class AtomicBuilder<
    * @param selector - Selector function for selecting a new collection from the database schema.
    * @returns A new AtomicBuilder instance.
    */
-  select<const TValue extends KvValue>(
-    selector: CollectionSelector<TSchema, TValue>,
+  select<const Input, const Output extends KvValue>(
+    selector: CollectionSelector<TSchema, Input, Output>,
   ) {
     return new AtomicBuilder(
       this.kv,
@@ -124,7 +124,7 @@ export class AtomicBuilder<
    * @param options - Set options, optional.
    * @returns Current AtomicBuilder instance.
    */
-  add(value: ParseInsertType<TBase, TInsert>, options?: AtomicSetOptions) {
+  add(value: ParseInputType<TInput, TOutput>, options?: AtomicSetOptions) {
     // Perform set operation with generated id.
     return this.set(null, value, options)
   }
@@ -149,12 +149,12 @@ export class AtomicBuilder<
    */
   set(
     id: KvId | null,
-    value: ParseInsertType<TBase, TInsert>,
+    value: ParseInputType<TInput, TOutput>,
     options?: AtomicSetOptions,
   ) {
     // Create id key from collection id key and id
     const collection = this.collection
-    const parsed = collection._model.parse(value as TInsert)
+    const parsed = collection._model.parse(value as TInput)
     const docId = id ?? collection._idGenerator(parsed)
     const idKey = extendKey(collection._keys.idKey, docId)
 
@@ -247,7 +247,7 @@ export class AtomicBuilder<
    * @param atomicChecks - AtomicCheck objects containing a document id and versionstamp.
    * @returns Current AtomicBuilder instance.
    */
-  check(...atomicChecks: AtomicCheck<TBase>[]) {
+  check(...atomicChecks: AtomicCheck<TOutput>[]) {
     // Create Deno atomic checks from atomci checks input list
     const checks: Deno.AtomicCheck[] = atomicChecks.map(
       ({ id, versionstamp }) => {
@@ -281,7 +281,7 @@ export class AtomicBuilder<
    * @param value - The value to add to the document value.
    * @returns Current AtomicBuilder instance.
    */
-  sum(id: KvId, value: TBase extends Deno.KvU64 ? bigint : never) {
+  sum(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never) {
     // Create id key from id and collection id key
     const idKey = extendKey(this.collection._keys.idKey, id)
 
@@ -308,7 +308,7 @@ export class AtomicBuilder<
    * @param value - The value to compare with the existing value.
    * @returns Current AtomicBuilder instance.
    */
-  min(id: KvId, value: TBase extends Deno.KvU64 ? bigint : never) {
+  min(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never) {
     // Create id key from id and collection id key
     const idKey = extendKey(this.collection._keys.idKey, id)
 
@@ -335,7 +335,7 @@ export class AtomicBuilder<
    * @param value - The value to compare with the existing value.
    * @returns Current AtomicBuilder instance.
    */
-  max(id: KvId, value: TBase extends Deno.KvU64 ? bigint : never) {
+  max(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never) {
     // Create id key from id and collection id key
     const idKey = extendKey(this.collection._keys.idKey, id)
 
@@ -369,7 +369,7 @@ export class AtomicBuilder<
    * @param mutations - Atomic mutations to be performed.
    * @returns Current AtomicBuilder instance.
    */
-  mutate(...mutations: AtomicMutation<TBase>[]) {
+  mutate(...mutations: AtomicMutation<TOutput>[]) {
     // Get collection ref
     const collection = this.collection
 
@@ -384,14 +384,14 @@ export class AtomicBuilder<
         }
       }
 
-      const { value: _, ...resTBase } = rest
+      const { value: _, ...resTOutput } = rest
       // deno-lint-ignore no-explicit-any
       const parsed = collection._model.parse(rest.value as any)
 
       return {
         key: idKey,
         value: parsed,
-        ...resTBase,
+        ...resTOutput,
       } as Deno.KvMutation
     })
 

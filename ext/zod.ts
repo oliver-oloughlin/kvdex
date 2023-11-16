@@ -66,24 +66,24 @@ export const KvObjectSchema: z.ZodType<KvObject> = z.record(
 /*               */
 /*****************/
 
-export type ZodInsertModel<T extends z.ZodType<KvValue>> = T extends
+export type ZodInputModel<T extends z.ZodType<KvValue>> = T extends
   z.ZodDefault<infer Z extends z.ZodType> ? (
     (
-      Z extends z.ZodObject<z.ZodRawShape> ? ZodInsertModel<Z>
+      Z extends z.ZodObject<z.ZodRawShape> ? ZodInputModel<Z>
         : z.TypeOf<Z>
     ) | undefined
   )
-  : T extends z.ZodObject<infer U> ? ZodObjectInsertModel<U>
+  : T extends z.ZodObject<infer U> ? ZodObjectInputModel<U>
   : z.TypeOf<T>
 
-export type ZodObjectInsertModel<T extends z.ZodRawShape> =
+export type ZodObjectInputModel<T extends z.ZodRawShape> =
   & {
-    [K in KeysOfThatExtend<T, z.ZodDefault<z.ZodType>>]?: ZodInsertModel<
+    [K in KeysOfThatExtend<T, z.ZodDefault<z.ZodType>>]?: ZodInputModel<
       T[K]
     >
   }
   & {
-    [K in KeysOfThatDontExtend<T, z.ZodDefault<z.ZodType>>]: ZodInsertModel<
+    [K in KeysOfThatDontExtend<T, z.ZodDefault<z.ZodType>>]: ZodInputModel<
       T[K]
     >
   }
@@ -97,7 +97,7 @@ export type ZodObjectInsertModel<T extends z.ZodRawShape> =
 /**
  * Create a model from a Zod schema.
  *
- * Correctly parses the insert model from the given schema.
+ * Correctly parses the input model from the given schema.
  *
  * @example
  * ```ts
@@ -129,11 +129,11 @@ export type ZodObjectInsertModel<T extends z.ZodRawShape> =
  * ```
  *
  * @param schema - Zod schema.
- * @returns A model with base type and insert model.
+ * @returns A model with inferred input and output types.
  */
 export function zodModel<const T extends z.ZodType<KvValue>>(
   schema: T,
-): Model<z.infer<T>, ZodInsertModel<T>> {
+): Model<ZodInputModel<T>, z.infer<T>> {
   return {
     parse: (data) => schema.parse(data),
   }
