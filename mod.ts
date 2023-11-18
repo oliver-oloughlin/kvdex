@@ -17,4 +17,4 @@ export { Document } from "./src/document.ts"
 export * from "./src/errors.ts"
 
 // Expose types
-export type * from "./src/types.ts"
+export * from "./src/types.ts"

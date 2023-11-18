@@ -38,6 +38,37 @@ export type ManyCommitResult = {
 
 export type IdGenerator<T extends KvValue> = (data: T) => KvId
 
+export type JSONError = {
+  message: string
+  name: string
+  cause?: unknown
+  stack?: string
+}
+
+export enum TypeKey {
+  BigInt = "__bigint__",
+  KvU64 = "__kvu64__",
+  Int8Array = "__int8array__",
+  Int16Array = "__int16array__",
+  Int32Array = "__int32array__",
+  BigInt64Array = "__bigint64array__",
+  Uint8Array = "__uint8array__",
+  Uint16Array = "__uint16array__",
+  Uint32Array = "__uint32array__",
+  BigUint64Array = "__biguint64array__",
+  Uint8ClampedArray = "__uint8clampedarray__",
+  Float32Array = "__float32array__",
+  Float64Array = "__float64array__",
+  ArrayBuffer = "__arraybuffer__",
+  Date = "__date__",
+  Set = "__set__",
+  Map = "__map__",
+  RegExp = "__regexp__",
+  DataView = "__dataview__",
+  Error = "__error__",
+  NaN = "__nan__",
+}
+
 /**********************/
 /*                    */
 /*   INTERVAL TYPES   */
@@ -107,8 +138,8 @@ export type AtomicSchema<T extends Schema<SchemaDefinition>> = {
       LargeCollection<
         // deno-lint-ignore no-explicit-any
         any,
-        LargeKvValue,
-        LargeCollectionOptions<LargeKvValue>
+        KvValue,
+        LargeCollectionOptions<KvValue>
       >
     >
   ]: T[K] extends Schema<SchemaDefinition> ? AtomicSchema<T[K]> : T[K]
@@ -231,7 +262,7 @@ export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
 /*                            */
 /******************************/
 
-export type LargeCollectionOptions<T extends LargeKvValue> = CollectionOptions<
+export type LargeCollectionOptions<T extends KvValue> = CollectionOptions<
   T
 >
 
@@ -437,15 +468,3 @@ export type KvValue =
   | RegExp
   | DataView
   | Error
-
-export type LargeKvObject = {
-  [K: string | number]: LargeKvValue | number | boolean | undefined | null
-}
-
-export type LargeKvArray =
-  (LargeKvValue | number | boolean | undefined | null)[]
-
-export type LargeKvValue =
-  | string
-  | LargeKvObject
-  | LargeKvArray

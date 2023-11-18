@@ -11,10 +11,10 @@ import type {
   FindOptions,
   KvId,
   KvKey,
+  KvValue,
   LargeCollectionKeys,
   LargeCollectionOptions,
   LargeDocumentEntry,
-  LargeKvValue,
   ListOptions,
   Model,
   ParseInputType,
@@ -28,6 +28,8 @@ import {
   extendKey,
   getDocumentId,
   kvGetMany,
+  parse,
+  stringify,
 } from "./utils.ts"
 import { Document } from "./document.ts"
 import { CorruptedDocumentDataError } from "./errors.ts"
@@ -49,7 +51,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
  */
 export function largeCollection<
   const TInput,
-  const TOutput extends LargeKvValue,
+  const TOutput extends KvValue,
 >(
   model: Model<TInput, TOutput>,
   options?: LargeCollectionOptions<TOutput>,
@@ -76,7 +78,7 @@ export function largeCollection<
 
 export class LargeCollection<
   const TInput,
-  const TOutput extends LargeKvValue,
+  const TOutput extends KvValue,
   const TOptions extends LargeCollectionOptions<TOutput>,
 > extends Collection<TInput, TOutput, TOptions> {
   readonly _keys: LargeCollectionKeys
@@ -292,7 +294,7 @@ export class LargeCollection<
     }
 
     // Stringify data and initialize json parts list
-    const json = JSON.stringify(parsed)
+    const json = stringify(parsed)
     const jsonParts: string[] = []
 
     // Divide json string by string limit, add parts to json parts list
@@ -406,11 +408,11 @@ export class LargeCollection<
       // Create and return document
       return new Document<TOutput>(this._model, {
         id,
-        value: JSON.parse(json),
+        value: parse(json),
         versionstamp,
       })
     } catch (_e) {
-      // Throw if JSON.parse fails
+      // Throw if parse fails
       throw new CorruptedDocumentDataError(
         `Corrupted document data - failed to parse JSON
         JSON: ${json}

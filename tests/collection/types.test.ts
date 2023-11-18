@@ -2,7 +2,7 @@ import { collection, kvdex, model } from "../../mod.ts"
 import { assert } from "../deps.ts"
 import { useKv } from "../utils.ts"
 
-Deno.test("db - types", async (t) => {
+Deno.test("collection - types", async (t) => {
   await t.step(
     "Should allow and properly store/retrieve all primitive types",
     async () => {
