@@ -527,8 +527,8 @@ export function deepMerge<T1, T2 extends unknown[]>(
  * @param value
  * @returns
  */
-export function stringify(value: unknown) {
-  return JSON.stringify(_replacer(value), replacer)
+export function encode(value: unknown) {
+  return new TextEncoder().encode(JSON.stringify(_replacer(value), replacer))
 }
 
 /**
@@ -537,8 +537,8 @@ export function stringify(value: unknown) {
  * @param value
  * @returns
  */
-export function parse<T>(value: string) {
-  return JSON.parse(value, reviver) as T
+export function decode<T>(value: Uint8Array) {
+  return JSON.parse(new TextDecoder().decode(value), reviver) as T
 }
 
 /*************************/
@@ -576,8 +576,15 @@ function reviver(_key: string, value: unknown) {
  * @returns
  */
 function _replacer(value: unknown): unknown {
-  // Return value if nullish
-  if (value === null || value === undefined) {
+  // Return value if primitive, function or symbol
+  if (
+    value === null ||
+    value === undefined ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "function" ||
+    typeof value === "symbol"
+  ) {
     return value
   }
 

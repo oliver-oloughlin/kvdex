@@ -2,11 +2,12 @@ import { Collection } from "./collection.ts"
 import {
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
-  LARGE_COLLECTION_STRING_LIMIT,
   SEGMENT_KEY_PREFIX,
+  UINT8ARRAY_LENGTH_LIMIT,
 } from "./constants.ts"
 import type {
   CommitResult,
+  Compression,
   FindManyOptions,
   FindOptions,
   KvId,
@@ -25,11 +26,11 @@ import type {
 import {
   allFulfilled,
   createListSelector,
+  decode,
+  encode,
   extendKey,
   getDocumentId,
   kvGetMany,
-  parse,
-  stringify,
 } from "./utils.ts"
 import { Document } from "./document.ts"
 import { CorruptedDocumentDataError } from "./errors.ts"
@@ -83,6 +84,8 @@ export class LargeCollection<
 > extends Collection<TInput, TOutput, TOptions> {
   readonly _keys: LargeCollectionKeys
 
+  private compression?: Compression
+
   constructor(
     kv: Deno.Kv,
     key: KvKey,
@@ -93,6 +96,9 @@ export class LargeCollection<
   ) {
     // Invoke super constructor
     super(kv, key, model, queueHandlers, idempotentListener, options)
+
+    // Set compression
+    this.compression = options?.compression
 
     // Set large collection keys
     this._keys = {
@@ -293,34 +299,32 @@ export class LargeCollection<
       await this.delete(docId)
     }
 
-    // Stringify data and initialize json parts list
-    const json = stringify(parsed)
-    const jsonParts: string[] = []
+    // Encode value as Uint8Array
+    let data = encode(parsed)
 
-    // Divide json string by string limit, add parts to json parts list
-    for (let i = 0; i < json.length; i += LARGE_COLLECTION_STRING_LIMIT) {
-      jsonParts.push(json.substring(i, i + LARGE_COLLECTION_STRING_LIMIT))
-    }
+    // Compress if compression is set
+    data = this.compression?.compress(data) ?? data
 
-    // Set start index, initiate commit result and keys lists
+    // Initialize index, keys list and atomic operation
+    let index = 0
     const keys: KvKey[] = []
-
-    // Execute set operations for json parts, capture keys and commit results
     const atomic = new AtomicWrapper(this.kv)
 
-    jsonParts.forEach((str, index) => {
+    // Set segmented entries
+    for (let i = 0; i < data.length; i += UINT8ARRAY_LENGTH_LIMIT) {
+      const part = data.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT)
       const key = extendKey(this._keys.segmentKey, docId, index)
       keys.push(key)
-      atomic.set(key, str, options)
-    })
+      atomic.set(key, part, options)
+      index++
+    }
 
-    const segmentsCr = await atomic.commit()
-
-    // Determine whether setting json parts was successful
+    // Commit atomic operation and set retry atempts
+    const partsCr = await atomic.commit()
     const retry = options?.retry ?? 0
 
-    // If not successful, delete all json part entries
-    if (!segmentsCr.ok) {
+    // If not successful, delete all parts
+    if (!partsCr.ok) {
       const op = new AtomicWrapper(this.kv)
       keys.forEach((key) => op.delete(key))
       await op.commit()
@@ -352,7 +356,7 @@ export class LargeCollection<
       .set(idKey, entry, options)
       .commit()
 
-    // If not successful, delete all json part entries
+    // If not successful, delete all part entries
     if (!cr.ok) {
       await allFulfilled(keys.map((key) => this.kv.delete(key)))
 
@@ -383,41 +387,35 @@ export class LargeCollection<
     value: LargeDocumentEntry,
     versionstamp: Document<TOutput>["versionstamp"],
   ): Promise<Document<TOutput>> {
-    // Get document segment entries
+    // Get document parts
     const { ids } = value
     const keys = ids.map((segId) => extendKey(this._keys.segmentKey, id, segId))
-    const docEntries = await kvGetMany<string>(keys, this.kv)
+    const docEntries = await kvGetMany<Uint8Array>(keys, this.kv)
 
-    // Gather json parts and check validity
-    const jsonParts = docEntries.reduce(
-      (parts, entry) => entry.value ? [...parts, entry.value] : parts,
-      [] as string[],
+    // Gather parts and check validity
+    let data = Uint8Array.from(
+      docEntries.map((doc) => Array.from(doc.value!)).flat(),
     )
 
-    if (jsonParts.length !== docEntries.length) {
-      throw new CorruptedDocumentDataError(
-        `Corrupted document data - some JSON parts are missing
-        JSON parts: ${jsonParts}
-        `,
-      )
-    }
+    // Decompress if compression is set
+    data = this.compression?.decompress(data) ?? data
 
-    const json = jsonParts.join("")
-
+    // Decode data
+    let decoded: TOutput
     try {
-      // Create and return document
-      return new Document<TOutput>(this._model, {
-        id,
-        value: parse(json),
-        versionstamp,
-      })
-    } catch (_e) {
-      // Throw if parse fails
+      decoded = decode(data)
+    } catch (e) {
+      // Throw if decode fails
       throw new CorruptedDocumentDataError(
-        `Corrupted document data - failed to parse JSON
-        JSON: ${json}
-        `,
+        `Corrupted document data - failed to decode\n${e}`,
       )
     }
+
+    // Return document
+    return new Document<TOutput>(this._model, {
+      id,
+      value: decoded,
+      versionstamp,
+    })
   }
 }

@@ -1,16 +1,18 @@
 import { assert } from "../deps.ts"
-import { mockUser1, mockUserInvalid } from "../mocks.ts"
-import { useDb } from "../utils.ts"
+import { mockUserInvalid } from "../mocks.ts"
+import { generateLargeUsers, useDb } from "../utils.ts"
 
 Deno.test("large_collection - add", async (t) => {
   await t.step("Should add new document entry to collection", async () => {
     await useDb(async (db) => {
-      const cr = await db.l_users.add(mockUser1)
+      const [user] = generateLargeUsers(1)
+
+      const cr = await db.l_users.add(user)
       assert(cr.ok)
 
       const doc = await db.l_users.find(cr.id)
       assert(doc !== null)
-      assert(doc.value.username === mockUser1.username)
+      assert(doc.value.username === user.username)
     })
   })
 
@@ -18,12 +20,14 @@ Deno.test("large_collection - add", async (t) => {
     "Should successfully parse and add new document entry to collection",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.zl_users.add(mockUser1)
+        const [user] = generateLargeUsers(1)
+
+        const cr = await db.zl_users.add(user)
         assert(cr.ok)
 
         const doc = await db.zl_users.find(cr.id)
         assert(doc !== null)
-        assert(doc.value.username === mockUser1.username)
+        assert(doc.value.username === user.username)
       })
     },
   )

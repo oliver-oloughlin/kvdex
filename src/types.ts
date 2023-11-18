@@ -262,9 +262,14 @@ export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
 /*                            */
 /******************************/
 
-export type LargeCollectionOptions<T extends KvValue> = CollectionOptions<
-  T
->
+export type Compression = {
+  compress: (data: Uint8Array) => Uint8Array
+  decompress: (data: Uint8Array) => Uint8Array
+}
+
+export type LargeCollectionOptions<T extends KvValue> = CollectionOptions<T> & {
+  compression?: Compression
+}
 
 export type LargeCollectionKeys = CollectionKeys & {
   segmentKey: KvKey
