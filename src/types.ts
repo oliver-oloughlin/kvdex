@@ -38,35 +38,11 @@ export type ManyCommitResult = {
 
 export type IdGenerator<T extends KvValue> = (data: T) => KvId
 
-export type JSONError = {
-  message: string
-  name: string
-  cause?: unknown
-  stack?: string
-}
-
-export enum TypeKey {
-  BigInt = "__bigint__",
-  KvU64 = "__kvu64__",
-  Int8Array = "__int8array__",
-  Int16Array = "__int16array__",
-  Int32Array = "__int32array__",
-  BigInt64Array = "__bigint64array__",
-  Uint8Array = "__uint8array__",
-  Uint16Array = "__uint16array__",
-  Uint32Array = "__uint32array__",
-  BigUint64Array = "__biguint64array__",
-  Uint8ClampedArray = "__uint8clampedarray__",
-  Float32Array = "__float32array__",
-  Float64Array = "__float64array__",
-  ArrayBuffer = "__arraybuffer__",
-  Date = "__date__",
-  Set = "__set__",
-  Map = "__map__",
-  RegExp = "__regexp__",
-  DataView = "__dataview__",
-  Error = "__error__",
-  NaN = "__nan__",
+export type DenoCore = {
+  deserialize<T>(data: Uint8Array): T
+  serialize<T>(data: T): Uint8Array
+  decode(data: Uint8Array): string
+  encode(data: string): Uint8Array
 }
 
 /**********************/
@@ -138,8 +114,8 @@ export type AtomicSchema<T extends Schema<SchemaDefinition>> = {
       LargeCollection<
         // deno-lint-ignore no-explicit-any
         any,
-        KvValue,
-        LargeCollectionOptions<KvValue>
+        LargeKvValue,
+        LargeCollectionOptions<LargeKvValue>
       >
     >
   ]: T[K] extends Schema<SchemaDefinition> ? AtomicSchema<T[K]> : T[K]
@@ -267,9 +243,11 @@ export type Compression = {
   decompress: (data: Uint8Array) => Uint8Array
 }
 
-export type LargeCollectionOptions<T extends KvValue> = CollectionOptions<T> & {
-  compression?: Compression
-}
+export type LargeCollectionOptions<T extends LargeKvValue> =
+  & CollectionOptions<T>
+  & {
+    compression?: Compression
+  }
 
 export type LargeCollectionKeys = CollectionKeys & {
   segmentKey: KvKey
@@ -453,6 +431,40 @@ export type KvValue =
   | boolean
   | bigint
   | Deno.KvU64
+  | KvObject
+  | KvArray
+  | Int8Array
+  | Int16Array
+  | Int32Array
+  | BigInt64Array
+  | Uint8Array
+  | Uint16Array
+  | Uint32Array
+  | BigUint64Array
+  | Uint8ClampedArray
+  | Float32Array
+  | Float64Array
+  | ArrayBuffer
+  | Date
+  | Set<KvValue>
+  | Map<KvValue, KvValue>
+  | RegExp
+  | DataView
+  | Error
+
+export type LargeKvObject = {
+  [K: string | number]: LargeKvValue
+}
+
+export type LargeKvArray = LargeKvValue[]
+
+export type LargeKvValue =
+  | undefined
+  | null
+  | string
+  | number
+  | boolean
+  | bigint
   | KvObject
   | KvArray
   | Int8Array

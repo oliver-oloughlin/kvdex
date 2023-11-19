@@ -5,7 +5,7 @@ import {
   largeCollection,
 } from "../mod.ts"
 import { model } from "../src/model.ts"
-import { compress, decompress, ulid } from "./deps.ts"
+import { ulid } from "./deps.ts"
 import { TransformUserModel, User, UserSchema } from "./models.ts"
 
 // Create test db
@@ -26,10 +26,6 @@ export function createDb(kv: Deno.Kv) {
     }),
     l_users: largeCollection(model<User>(), {
       idGenerator: () => ulid(),
-      compression: {
-        compress,
-        decompress,
-      },
     }),
     z_users: collection(UserSchema, {
       idGenerator: () => ulid(),
@@ -43,10 +39,6 @@ export function createDb(kv: Deno.Kv) {
     }),
     zl_users: largeCollection(UserSchema, {
       idGenerator: () => ulid(),
-      compression: {
-        compress,
-        decompress,
-      },
     }),
     a_users: collection(TransformUserModel, {
       idGenerator: () => ulid(),
@@ -60,10 +52,6 @@ export function createDb(kv: Deno.Kv) {
     }),
     al_users: largeCollection(TransformUserModel, {
       idGenerator: () => ulid(),
-      compression: {
-        compress,
-        decompress,
-      },
     }),
   })
 }

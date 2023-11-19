@@ -3,9 +3,3 @@ export class InvalidAtomicBuilderCollectionError extends Error {
     super(message, options)
   }
 }
-
-export class CorruptedDocumentDataError extends Error {
-  constructor(message?: string, options?: ErrorOptions) {
-    super(message, options)
-  }
-}

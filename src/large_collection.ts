@@ -12,10 +12,10 @@ import type {
   FindOptions,
   KvId,
   KvKey,
-  KvValue,
   LargeCollectionKeys,
   LargeCollectionOptions,
   LargeDocumentEntry,
+  LargeKvValue,
   ListOptions,
   Model,
   ParseInputType,
@@ -25,15 +25,15 @@ import type {
 } from "./types.ts"
 import {
   allFulfilled,
+  compress,
   createListSelector,
-  decode,
-  encode,
+  decompress,
+  DENO_CORE,
   extendKey,
   getDocumentId,
   kvGetMany,
 } from "./utils.ts"
 import { Document } from "./document.ts"
-import { CorruptedDocumentDataError } from "./errors.ts"
 import { AtomicWrapper } from "./atomic_wrapper.ts"
 
 /**
@@ -52,7 +52,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
  */
 export function largeCollection<
   const TInput,
-  const TOutput extends KvValue,
+  const TOutput extends LargeKvValue,
 >(
   model: Model<TInput, TOutput>,
   options?: LargeCollectionOptions<TOutput>,
@@ -79,12 +79,11 @@ export function largeCollection<
 
 export class LargeCollection<
   const TInput,
-  const TOutput extends KvValue,
+  const TOutput extends LargeKvValue,
   const TOptions extends LargeCollectionOptions<TOutput>,
 > extends Collection<TInput, TOutput, TOptions> {
   readonly _keys: LargeCollectionKeys
-
-  private compression?: Compression
+  private compression: Compression
 
   constructor(
     kv: Deno.Kv,
@@ -98,7 +97,10 @@ export class LargeCollection<
     super(kv, key, model, queueHandlers, idempotentListener, options)
 
     // Set compression
-    this.compression = options?.compression
+    this.compression = options?.compression ?? {
+      compress,
+      decompress,
+    }
 
     // Set large collection keys
     this._keys = {
@@ -299,11 +301,9 @@ export class LargeCollection<
       await this.delete(docId)
     }
 
-    // Encode value as Uint8Array
-    let data = encode(parsed)
-
-    // Compress if compression is set
-    data = this.compression?.compress(data) ?? data
+    // Serialize and decompress
+    const serialized = DENO_CORE.serialize(parsed)
+    const data = this.compression.compress(serialized)
 
     // Initialize index, keys list and atomic operation
     let index = 0
@@ -392,29 +392,19 @@ export class LargeCollection<
     const keys = ids.map((segId) => extendKey(this._keys.segmentKey, id, segId))
     const docEntries = await kvGetMany<Uint8Array>(keys, this.kv)
 
-    // Gather parts and check validity
-    let data = Uint8Array.from(
+    // Gather parts
+    const data = Uint8Array.from(
       docEntries.map((doc) => Array.from(doc.value!)).flat(),
     )
 
-    // Decompress if compression is set
-    data = this.compression?.decompress(data) ?? data
+    // Decompress and deserialize
+    const serialized = this.compression.decompress(data)
+    const deserialized = DENO_CORE.deserialize<TOutput>(serialized)
 
-    // Decode data
-    let decoded: TOutput
-    try {
-      decoded = decode(data)
-    } catch (e) {
-      // Throw if decode fails
-      throw new CorruptedDocumentDataError(
-        `Corrupted document data - failed to decode\n${e}`,
-      )
-    }
-
-    // Return document
+    // Return parsed document
     return new Document<TOutput>(this._model, {
       id,
-      value: decoded,
+      value: deserialized,
       versionstamp,
     })
   }

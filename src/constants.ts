@@ -26,3 +26,6 @@ export const DEFAULT_INTERVAL = 60 * 60 * 1_000 // 1 hour
 export const DEFAULT_INTERVAL_RETRY = 10
 
 export const DEFAULT_MERGE_TYPE: MergeType = "shallow"
+
+// Misc
+export const COMPRESSION_QUALITY_LEVEL = 1
