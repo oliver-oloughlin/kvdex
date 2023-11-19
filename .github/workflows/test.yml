@@ -31,7 +31,7 @@ jobs:
           deno-version: v1.x
 
       - name: Check Types
-        run: deno check --unstable mod.ts
+        run: deno task check
 
       - name: Check formatting
         run: deno fmt --check
@@ -40,4 +40,4 @@ jobs:
         run: deno lint
 
       - name: Run tests
-        run: deno test -A --unstable
+        run: deno task test
