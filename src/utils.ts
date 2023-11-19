@@ -1,7 +1,12 @@
-import { GET_MANY_KEY_LIMIT, UNDELIVERED_KEY_PREFIX } from "./constants.ts"
+import {
+  COMPRESSION_QUALITY_LEVEL,
+  GET_MANY_KEY_LIMIT,
+  UNDELIVERED_KEY_PREFIX,
+} from "./constants.ts"
 import type { IndexableCollection } from "./indexable_collection.ts"
 import type {
   AtomicSetOptions,
+  DenoCore,
   EnqueueOptions,
   FindManyOptions,
   IndexableCollectionOptions,
@@ -17,6 +22,13 @@ import type {
   QueueValue,
   UpdateData,
 } from "./types.ts"
+import { brotliCompressSync, brotliDecompressSync, constants } from "node:zlib"
+
+/*************************/
+/*                       */
+/*   PUBLIC FUNCTIONS    */
+/*                       */
+/*************************/
 
 /**
  * Generate a random document id.
@@ -512,3 +524,34 @@ export function deepMerge<T1, T2 extends unknown[]>(
   // Return recursively merged objects
   return deepMerge(target, ...sources)
 }
+
+/**
+ * Compress a uint8Array.
+ *
+ * @param data - Uint8Array to be compressed.
+ * @returns - Compressed Uint8Array.
+ */
+export function compress(data: Uint8Array) {
+  const buffer = brotliCompressSync(data, {
+    params: { [constants.BROTLI_PARAM_QUALITY]: COMPRESSION_QUALITY_LEVEL },
+  })
+
+  return new Uint8Array(buffer)
+}
+
+/**
+ * Decompress a Uint8Array.
+ *
+ * @param data - Uint8Array to be decompressed.
+ * @returns Decompressed Uint8Array.
+ */
+export function decompress(data: Uint8Array) {
+  const buffer = brotliDecompressSync(data, {
+    params: { [constants.BROTLI_PARAM_QUALITY]: COMPRESSION_QUALITY_LEVEL },
+  })
+
+  return new Uint8Array(buffer)
+}
+
+// @ts-ignore ?
+export const DENO_CORE: DenoCore = Deno[Deno.internal].core

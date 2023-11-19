@@ -38,6 +38,13 @@ export type ManyCommitResult = {
 
 export type IdGenerator<T extends KvValue> = (data: T) => KvId
 
+export type DenoCore = {
+  deserialize<T>(data: Uint8Array): T
+  serialize<T>(data: T): Uint8Array
+  decode(data: Uint8Array): string
+  encode(data: string): Uint8Array
+}
+
 /**********************/
 /*                    */
 /*   INTERVAL TYPES   */
@@ -231,9 +238,16 @@ export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
 /*                            */
 /******************************/
 
-export type LargeCollectionOptions<T extends LargeKvValue> = CollectionOptions<
-  T
->
+export type Compression = {
+  compress: (data: Uint8Array) => Uint8Array
+  decompress: (data: Uint8Array) => Uint8Array
+}
+
+export type LargeCollectionOptions<T extends LargeKvValue> =
+  & CollectionOptions<T>
+  & {
+    compression?: Compression
+  }
 
 export type LargeCollectionKeys = CollectionKeys & {
   segmentKey: KvKey
@@ -439,13 +453,35 @@ export type KvValue =
   | Error
 
 export type LargeKvObject = {
-  [K: string | number]: LargeKvValue | number | boolean | undefined | null
+  [K: string | number]: LargeKvValue
 }
 
-export type LargeKvArray =
-  (LargeKvValue | number | boolean | undefined | null)[]
+export type LargeKvArray = LargeKvValue[]
 
 export type LargeKvValue =
+  | undefined
+  | null
   | string
-  | LargeKvObject
-  | LargeKvArray
+  | number
+  | boolean
+  | bigint
+  | KvObject
+  | KvArray
+  | Int8Array
+  | Int16Array
+  | Int32Array
+  | BigInt64Array
+  | Uint8Array
+  | Uint16Array
+  | Uint32Array
+  | BigUint64Array
+  | Uint8ClampedArray
+  | Float32Array
+  | Float64Array
+  | ArrayBuffer
+  | Date
+  | Set<KvValue>
+  | Map<KvValue, KvValue>
+  | RegExp
+  | DataView
+  | Error

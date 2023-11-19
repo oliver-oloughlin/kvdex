@@ -18,7 +18,7 @@ export const ATOMIC_OPERATION_MUTATION_LIMIT = 1_000
 
 export const GET_MANY_KEY_LIMIT = 10
 
-export const LARGE_COLLECTION_STRING_LIMIT = 30_000
+export const UINT8ARRAY_LENGTH_LIMIT = 65_536
 
 // Defaults
 export const DEFAULT_INTERVAL = 60 * 60 * 1_000 // 1 hour
@@ -26,3 +26,6 @@ export const DEFAULT_INTERVAL = 60 * 60 * 1_000 // 1 hour
 export const DEFAULT_INTERVAL_RETRY = 10
 
 export const DEFAULT_MERGE_TYPE: MergeType = "shallow"
+
+// Misc
+export const COMPRESSION_QUALITY_LEVEL = 1

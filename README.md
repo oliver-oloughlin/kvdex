@@ -1003,7 +1003,7 @@ Any contributions are welcomed and appreciated. How to contribute:
 - Clone this repository
 - Add feature / Refactor
 - Add or refactor tests as needed
-- Ensure code quality (lint + format + test) using `deno task test`
+- Ensure code quality (check + lint + format + test) using `deno task prep`
 - Open Pull Request
 
 This project aims at having as high test coverage as possible to improve code

@@ -1,7 +1,9 @@
 {
   "lock": false,
   "tasks": {
-    "test": "deno check --unstable mod.ts && deno fmt && deno lint && deno test -A --unstable --trace-ops"
+    "check": "deno check --unstable mod.ts ext/zod.ts",
+    "test": "deno test -A --unstable --trace-ops",
+    "prep": "deno task check && deno fmt && deno lint && deno task test"
   },
   "fmt": {
     "semiColons": false
