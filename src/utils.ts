@@ -15,7 +15,6 @@ import type {
   PreparedEnqueue,
   QueueMessage,
   QueueValue,
-  UpdateData,
 } from "./types.ts"
 import { brotliCompressSync, brotliDecompressSync, constants } from "node:zlib"
 
