@@ -8,6 +8,11 @@
   "fmt": {
     "semiColons": false
   },
+  "lint": {
+    "rules": {
+      "exclude": ["no-explicit-any"]
+    }
+  },
   "test": {
     "include": ["./tests"]
   }

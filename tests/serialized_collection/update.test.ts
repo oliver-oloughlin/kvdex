@@ -3,12 +3,12 @@ import { assert } from "../deps.ts"
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts"
 import { useDb, useKv } from "../utils.ts"
 
-Deno.test("large_collection - update", async (t) => {
+Deno.test("serialized_collection - update", async (t) => {
   await t.step(
     "Should partially update document of model type using shallow merge",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.l_users.add(mockUser1)
+        const cr = await db.s_users.add(mockUser1)
         assert(cr.ok)
 
         const updateData = {
@@ -19,7 +19,7 @@ Deno.test("large_collection - update", async (t) => {
           },
         }
 
-        const updateCr = await db.l_users.update(cr.id, updateData, {
+        const updateCr = await db.s_users.update(cr.id, updateData, {
           mergeType: "shallow",
         })
 
@@ -27,7 +27,7 @@ Deno.test("large_collection - update", async (t) => {
         assert(updateCr.id === cr.id)
         assert(updateCr.versionstamp !== cr.versionstamp)
 
-        const doc = await db.l_users.find(cr.id)
+        const doc = await db.s_users.find(cr.id)
 
         assert(doc !== null)
         assert(doc.value.username === mockUser1.username)
@@ -44,7 +44,7 @@ Deno.test("large_collection - update", async (t) => {
     "Should partially update document of model type using deep merge",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.l_users.add(mockUser1)
+        const cr = await db.s_users.add(mockUser1)
         assert(cr.ok)
 
         const updateData = {
@@ -55,7 +55,7 @@ Deno.test("large_collection - update", async (t) => {
           },
         }
 
-        const updateCr = await db.l_users.update(cr.id, updateData, {
+        const updateCr = await db.s_users.update(cr.id, updateData, {
           mergeType: "deep",
         })
 
@@ -63,7 +63,7 @@ Deno.test("large_collection - update", async (t) => {
         assert(updateCr.id === cr.id)
         assert(updateCr.versionstamp !== cr.versionstamp)
 
-        const doc = await db.l_users.find(cr.id)
+        const doc = await db.s_users.find(cr.id)
 
         assert(doc !== null)
         assert(doc.value.username === mockUser1.username)
@@ -122,10 +122,10 @@ Deno.test("large_collection - update", async (t) => {
     await useDb(async (db) => {
       let assertion = true
 
-      const cr = await db.zl_users.add(mockUser1)
+      const cr = await db.zs_users.add(mockUser1)
       assert(cr.ok)
 
-      await db.zl_users.update(cr.id, mockUser2).catch(() => assertion = false)
+      await db.zs_users.update(cr.id, mockUser2).catch(() => assertion = false)
 
       assert(assertion)
     })
@@ -135,10 +135,10 @@ Deno.test("large_collection - update", async (t) => {
     await useDb(async (db) => {
       let assertion = false
 
-      const cr = await db.zl_users.add(mockUser1)
+      const cr = await db.zs_users.add(mockUser1)
       assert(cr.ok)
 
-      await db.zl_users.update(cr.id, mockUserInvalid).catch(() =>
+      await db.zs_users.update(cr.id, mockUserInvalid).catch(() =>
         assertion = true
       )
 

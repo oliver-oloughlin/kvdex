@@ -6,12 +6,7 @@ import {
   KvValueSchema,
   zodModel,
 } from "../../ext/zod.ts"
-import {
-  collection,
-  indexableCollection,
-  kvdex,
-  largeCollection,
-} from "../../mod.ts"
+import { collection, kvdex } from "../../mod.ts"
 import { useKv } from "../utils.ts"
 
 const UserSchema = z.object({
@@ -79,13 +74,13 @@ Deno.test("ext - zod", async (t) => {
     await useKv(async (kv) => {
       const db = kvdex(kv, {
         users: collection(zodModel(UserSchema)),
-        i_users: indexableCollection(zodModel(UserSchema), {
+        i_users: collection(zodModel(UserSchema), {
           indices: {
             username: "primary",
             age: "secondary",
           },
         }),
-        l_users: largeCollection(zodModel(UserSchema)),
+        s_users: collection(zodModel(UserSchema), { serialized: true }),
       })
 
       const cr1 = await db.users.add({
@@ -102,7 +97,7 @@ Deno.test("ext - zod", async (t) => {
         },
       })
 
-      const cr3 = await db.l_users.add({
+      const cr3 = await db.s_users.add({
         username: "oliver",
         address: {
           city: "Bergen",
@@ -124,13 +119,13 @@ Deno.test("ext - zod", async (t) => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
           users: collection(zodModel(UserSchema)),
-          i_users: indexableCollection(zodModel(UserSchema), {
+          i_users: collection(zodModel(UserSchema), {
             indices: {
               username: "primary",
               age: "secondary",
             },
           }),
-          l_users: largeCollection(zodModel(UserSchema)),
+          l_users: collection(zodModel(UserSchema)),
         })
 
         // Default values should not be inferred as optional when selecting

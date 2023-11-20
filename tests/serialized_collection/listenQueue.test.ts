@@ -14,23 +14,23 @@ import { assert } from "../deps.ts"
 import { User } from "../models.ts"
 import { sleep, useKv } from "../utils.ts"
 
-Deno.test("indexable_collection - listenQueue", async (t) => {
+Deno.test("serialized_collection - listenQueue", async (t) => {
   await t.step("Should receive message with string data", async () => {
     await useKv(async (kv) => {
       const data = "data"
       const undeliveredId = "id"
 
       const db = kvdex(kv, {
-        i_users: collection(model<User>(), { indices: {} }),
+        s_users: collection(model<User>()),
       })
-
-      const handlerId = createHandlerId(db.i_users._keys.base, undefined)
 
       let assertion = false
 
-      const listener = db.i_users.listenQueue((msgData) => {
+      const listener = db.s_users.listenQueue((msgData) => {
         assertion = msgData === data
       })
+
+      const handlerId = createHandlerId(db.s_users._keys.base, undefined)
 
       const msg: QueueMessage<QueueValue> = {
         __handlerId__: handlerId,
@@ -49,7 +49,7 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
 
       await sleep(100)
 
-      const undelivered = await db.i_users.findUndelivered(undeliveredId)
+      const undelivered = await db.s_users.findUndelivered(undeliveredId)
       assert(assertion || typeof undelivered?.value === typeof data)
 
       return async () => await listener
@@ -59,12 +59,12 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
   await t.step("Should not receive db queue message", async () => {
     await useKv(async (kv) => {
       const db = kvdex(kv, {
-        i_users: collection(model<User>(), { indices: {} }),
+        l_users: collection(model<User>()),
       })
 
       let assertion = true
 
-      const listener = db.i_users.listenQueue(() => {
+      const listener = db.l_users.listenQueue(() => {
         assertion = false
       })
 

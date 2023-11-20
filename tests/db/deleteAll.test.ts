@@ -14,7 +14,7 @@ Deno.test("db - deleteAll", async (t) => {
         ]
 
         const cr1 = await db.i_users.addMany(users)
-        const cr2 = await db.l_users.addMany(largeUsers)
+        const cr2 = await db.s_users.addMany(largeUsers)
         const cr3 = await db.u64s.addMany(u64s)
 
         assert(cr1.ok)

@@ -2,21 +2,21 @@ import { assert } from "../deps.ts"
 import { mockUser1 } from "../mocks.ts"
 import { generateLargeUsers, useDb } from "../utils.ts"
 
-Deno.test("large_collection - delete", async (t) => {
+Deno.test("serialized_collection - delete", async (t) => {
   await t.step(
     "Should successfully delete a document from the collection",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.l_users.add(mockUser1)
-        const count1 = await db.l_users.count()
+        const cr = await db.s_users.add(mockUser1)
+        const count1 = await db.s_users.count()
 
         assert(cr.ok)
         assert(count1 === 1)
 
-        await db.l_users.delete(cr.id)
+        await db.s_users.delete(cr.id)
 
-        const count2 = await db.l_users.count()
-        const doc = await db.l_users.find(cr.id)
+        const count2 = await db.s_users.count()
+        const doc = await db.s_users.find(cr.id)
 
         assert(count2 === 0)
         assert(doc === null)
@@ -29,17 +29,17 @@ Deno.test("large_collection - delete", async (t) => {
     async () => {
       await useDb(async (db) => {
         const users = generateLargeUsers(1_000)
-        const cr = await db.l_users.addMany(users)
-        const count1 = await db.l_users.count()
+        const cr = await db.s_users.addMany(users)
+        const count1 = await db.s_users.count()
 
         assert(cr.ok)
         assert(count1 === users.length)
 
-        const { result: ids } = await db.l_users.map((doc) => doc.id)
+        const { result: ids } = await db.s_users.map((doc) => doc.id)
 
-        await db.l_users.delete(...ids)
+        await db.s_users.delete(...ids)
 
-        const count2 = await db.l_users.count()
+        const count2 = await db.s_users.count()
         assert(count2 === 0)
       })
     },

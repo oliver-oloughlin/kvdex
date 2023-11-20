@@ -4,17 +4,17 @@ import { User } from "../models.ts"
 import { generateLargeUsers } from "../utils.ts"
 import { useDb } from "../utils.ts"
 
-Deno.test("large_collection - forEach", async (t) => {
+Deno.test("serialized_collection - forEach", async (t) => {
   await t.step(
     "Should run callback function for each document in the collection",
     async () => {
       await useDb(async (db) => {
         const users = generateLargeUsers(1_000)
-        const cr = await db.l_users.addMany(users)
+        const cr = await db.s_users.addMany(users)
         assert(cr.ok)
 
         const docs: Document<User>[] = []
-        await db.l_users.forEach((doc) => docs.push(doc))
+        await db.s_users.forEach((doc) => docs.push(doc))
 
         assert(docs.length === users.length)
         assert(

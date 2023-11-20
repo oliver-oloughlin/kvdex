@@ -1,4 +1,4 @@
-import { Document, kvdex, largeCollection, model } from "../../mod.ts"
+import { collection, Document, kvdex, model } from "../../mod.ts"
 import {
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
@@ -10,13 +10,13 @@ import { mockUser1 } from "../mocks.ts"
 import { User } from "../models.ts"
 import { generateLargeUsers, useDb, useKv } from "../utils.ts"
 
-Deno.test("large_collection - properties", async (t) => {
+Deno.test("serialized_collection - properties", async (t) => {
   await t.step("Keys should have the correct prefixes", async () => {
     await useDb((db) => {
-      const baseKey = db.l_users._keys.baseKey
-      const idKey = db.l_users._keys.idKey
-      const segmentKey = db.l_users._keys.segmentKey
-      const prefix = extendKey([KVDEX_KEY_PREFIX], "l_users")
+      const baseKey = db.s_users._keys.base
+      const idKey = db.s_users._keys.id
+      const segmentKey = db.s_users._keys.segment
+      const prefix = extendKey([KVDEX_KEY_PREFIX], "s_users")
 
       assert(keyEq(baseKey, prefix))
       assert(keyEq(idKey, extendKey(prefix, ID_KEY_PREFIX)))
@@ -27,10 +27,10 @@ Deno.test("large_collection - properties", async (t) => {
   await t.step("Should generate ids with custom id generator", async () => {
     await useKv((kv) => {
       const db = kvdex(kv, {
-        users1: largeCollection(model<User>(), {
+        users1: collection(model<User>(), {
           idGenerator: () => Math.random(),
         }),
-        users2: largeCollection(model<User>(), {
+        users2: collection(model<User>(), {
           idGenerator: (data) => data.username,
         }),
       })
@@ -46,13 +46,13 @@ Deno.test("large_collection - properties", async (t) => {
   await t.step("Should select using pagination", async () => {
     await useDb(async (db) => {
       const users = generateLargeUsers(1_000)
-      const cr = await db.l_users.addMany(users)
+      const cr = await db.s_users.addMany(users)
       assert(cr.ok)
 
       const selected: Document<User>[] = []
       let cursor: string | undefined = undefined
       do {
-        const query = await db.l_users.getMany({
+        const query = await db.s_users.getMany({
           cursor,
           limit: users.length / 10,
         })
@@ -72,14 +72,14 @@ Deno.test("large_collection - properties", async (t) => {
   await t.step("Should select filtered", async () => {
     await useDb(async (db) => {
       const users = generateLargeUsers(10)
-      const cr = await db.l_users.addMany(users)
-      const count1 = await db.l_users.count()
+      const cr = await db.s_users.addMany(users)
+      const count1 = await db.s_users.count()
       assert(cr.ok)
       assert(count1 === users.length)
 
       const sliced = users.slice(5, 7)
 
-      const { result } = await db.l_users.getMany({
+      const { result } = await db.s_users.getMany({
         filter: (doc) =>
           sliced.map((user) => user.username).includes(
             doc.value.username,
@@ -98,13 +98,13 @@ Deno.test("large_collection - properties", async (t) => {
   await t.step("Should select in reverse", async () => {
     await useDb(async (db) => {
       const users = generateLargeUsers(10)
-      const cr = await db.l_users.addMany(users)
-      const count1 = await db.l_users.count()
+      const cr = await db.s_users.addMany(users)
+      const count1 = await db.s_users.count()
       assert(cr.ok)
       assert(count1 === users.length)
 
-      const query1 = await db.l_users.getMany()
-      const query2 = await db.l_users.getMany({ reverse: true })
+      const query1 = await db.s_users.getMany()
+      const query2 = await db.s_users.getMany({ reverse: true })
 
       assert(
         JSON.stringify(query1.result) ===
@@ -116,15 +116,15 @@ Deno.test("large_collection - properties", async (t) => {
   await t.step("Should select from start id", async () => {
     await useDb(async (db) => {
       const users = generateLargeUsers(10)
-      const cr = await db.l_users.addMany(users)
-      const count1 = await db.l_users.count()
+      const cr = await db.s_users.addMany(users)
+      const count1 = await db.s_users.count()
       assert(cr.ok)
       assert(count1 === users.length)
 
       const index = 5
 
-      const query1 = await db.l_users.getMany()
-      const query2 = await db.l_users.getMany({
+      const query1 = await db.s_users.getMany()
+      const query2 = await db.s_users.getMany({
         startId: query1.result.at(index)?.id,
       })
 
@@ -140,15 +140,15 @@ Deno.test("large_collection - properties", async (t) => {
   await t.step("Should select until end id", async () => {
     await useDb(async (db) => {
       const users = generateLargeUsers(10)
-      const cr = await db.l_users.addMany(users)
-      const count1 = await db.l_users.count()
+      const cr = await db.s_users.addMany(users)
+      const count1 = await db.s_users.count()
       assert(cr.ok)
       assert(count1 === users.length)
 
       const index = 5
 
-      const query1 = await db.l_users.getMany()
-      const query2 = await db.l_users.getMany({
+      const query1 = await db.s_users.getMany()
+      const query2 = await db.s_users.getMany({
         endId: query1.result.at(index)?.id,
       })
 
@@ -164,16 +164,16 @@ Deno.test("large_collection - properties", async (t) => {
   await t.step("Should select from start id to end id", async () => {
     await useDb(async (db) => {
       const users = generateLargeUsers(10)
-      const cr = await db.l_users.addMany(users)
-      const count1 = await db.l_users.count()
+      const cr = await db.s_users.addMany(users)
+      const count1 = await db.s_users.count()
       assert(cr.ok)
       assert(count1 === users.length)
 
       const index1 = 5
       const index2 = 7
 
-      const query1 = await db.l_users.getMany()
-      const query2 = await db.l_users.getMany({
+      const query1 = await db.s_users.getMany()
+      const query2 = await db.s_users.getMany({
         startId: query1.result.at(index1)?.id,
         endId: query1.result.at(index2)?.id,
       })
@@ -193,7 +193,7 @@ Deno.test("large_collection - properties", async (t) => {
 
   await t.step("Should correctly infer type of document", async () => {
     await useDb(async (db) => {
-      const doc = await db.l_users.find("")
+      const doc = await db.s_users.find("")
       if (doc) {
         doc.value.age.valueOf()
       }
@@ -204,10 +204,10 @@ Deno.test("large_collection - properties", async (t) => {
     "Should correctly infer insert and output of asymmetric model",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.al_users.add(mockUser1)
+        const cr = await db.as_users.add(mockUser1)
         assert(cr.ok)
 
-        const doc = await db.al_users.find(cr.id)
+        const doc = await db.as_users.find(cr.id)
         assert(doc !== null)
         assert(typeof doc.value.addressStr === "string")
         assert(typeof doc.value.decadeAge === "number")

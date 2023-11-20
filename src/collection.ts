@@ -1,11 +1,6 @@
-import {
-  DEFAULT_MERGE_TYPE,
-  ID_KEY_PREFIX,
-  KVDEX_KEY_PREFIX,
-  UNDELIVERED_KEY_PREFIX,
-} from "./constants.ts"
 import type {
   AtomicListOptions,
+  CheckKeyOf,
   CollectionKeys,
   CollectionOptions,
   CommitResult,
@@ -13,7 +8,9 @@ import type {
   EnqueueOptions,
   FindManyOptions,
   FindOptions,
+  IdempotentListener,
   IdGenerator,
+  IndexDataEntry,
   KvId,
   KvKey,
   KvObject,
@@ -22,9 +19,15 @@ import type {
   ManyCommitResult,
   Model,
   ParseInputType,
+  PossibleCollectionOptions,
+  PrimaryIndexKeys,
+  QueueHandlers,
   QueueListenerOptions,
   QueueMessageHandler,
   QueueValue,
+  SecondaryIndexKeys,
+  Serialization,
+  SerializedEntry,
   SetOptions,
   UpdateData,
   UpdateManyOptions,
@@ -32,9 +35,14 @@ import type {
 } from "./types.ts"
 import {
   allFulfilled,
+  checkIndices,
+  compress,
   createHandlerId,
   createListSelector,
+  decompress,
   deepMerge,
+  deleteIndices,
+  deserialize,
   extendKey,
   generateId,
   getDocumentId,
@@ -42,105 +50,158 @@ import {
   kvGetMany,
   prepareEnqueue,
   selectsAll,
+  serialize,
+  setIndices,
 } from "./utils.ts"
+import {
+  DEFAULT_MERGE_TYPE,
+  ID_KEY_PREFIX,
+  KVDEX_KEY_PREFIX,
+  PRIMARY_INDEX_KEY_PREFIX,
+  SECONDARY_INDEX_KEY_PREFIX,
+  SEGMENT_KEY_PREFIX,
+  UINT8ARRAY_LENGTH_LIMIT,
+  UNDELIVERED_KEY_PREFIX,
+} from "./constants.ts"
+import { AtomicWrapper } from "./atomic_wrapper.ts"
 import { Document } from "./document.ts"
 import { model } from "./model.ts"
-import { AtomicWrapper } from "./atomic_wrapper.ts"
 
-/**
- * Create a collection builder function.
- *
- * @example
- * ```ts
- * collection(model<number>(), {
- *   idGenerator: () => ulid()
- * })
- * ```
- *
- * @param model - Model.
- * @param options - Collection options.
- * @returns A collection builder function.
- */
 export function collection<
   const TInput,
   const TOutput extends KvValue,
+  const TOptions extends CollectionOptions<TOutput>,
 >(
   model: Model<TInput, TOutput>,
-  options?: CollectionOptions<TOutput>,
+  options?: TOptions,
 ) {
   return (
     kv: Deno.Kv,
     key: KvKey,
-    queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-    idempotentListener: () => Promise<void>,
+    queueHandlers: QueueHandlers,
+    idempotentListener: IdempotentListener,
   ) =>
-    new Collection<
-      TInput,
-      TOutput,
-      CollectionOptions<TOutput>
-    >(
+    new Collection<TInput, TOutput, TOptions>(
       kv,
       key,
-      model,
       queueHandlers,
       idempotentListener,
+      model,
       options,
     )
 }
 
-/**
- * Represents a collection of documents stored in the KV store.
- *
- * Contains methods for working on documents in the collection.
- */
 export class Collection<
   const TInput,
   const TOutput extends KvValue,
-  const TOptions extends CollectionOptions<TOutput> = CollectionOptions<
-    TOutput
-  >,
+  const TOptions extends CollectionOptions<TOutput>,
 > {
-  private queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>
-  private idempotentListener: () => Promise<void>
+  private kv: Deno.Kv
+  private queueHandlers: QueueHandlers
+  private idempotentListener: IdempotentListener
+  private serialization?: Serialization
 
-  protected kv: Deno.Kv
-
-  readonly _idGenerator: IdGenerator<KvValue>
-  readonly _keys: CollectionKeys
   readonly _model: Model<TInput, TOutput>
+  readonly _primaryIndexList: string[]
+  readonly _secondaryIndexList: string[]
+  readonly _keys: CollectionKeys
+  readonly _idGenerator: IdGenerator<TOutput>
+  readonly _isIndexable: boolean
+  readonly _isSerialized: boolean
 
   constructor(
     kv: Deno.Kv,
     key: KvKey,
+    queueHandlers: QueueHandlers,
+    idempotentListener: IdempotentListener,
     model: Model<TInput, TOutput>,
-    queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-    idempotentListener: () => Promise<void>,
     options?: TOptions,
   ) {
-    // Set reference to queue handlers and idempotent listener
+    // Set basic fields
+    this.kv = kv
     this.queueHandlers = queueHandlers
     this.idempotentListener = idempotentListener
-
-    // Set the KV instance
-    this.kv = kv
-
-    // Set id generator function
-    this._idGenerator = options?.idGenerator as IdGenerator<KvValue> ??
-      generateId
-
-    // Set model
     this._model = model
+    this._idGenerator = options?.idGenerator ?? generateId
 
-    // Set the collection keys
+    // Set keys
     this._keys = {
-      baseKey: extendKey([KVDEX_KEY_PREFIX], ...key),
-      idKey: extendKey(
+      base: extendKey([KVDEX_KEY_PREFIX], ...key),
+      id: extendKey(
         [KVDEX_KEY_PREFIX],
         ...key,
         ID_KEY_PREFIX,
       ),
+      primaryIndex: extendKey(
+        [KVDEX_KEY_PREFIX],
+        ...key,
+        PRIMARY_INDEX_KEY_PREFIX,
+      ),
+      secondaryIndex: extendKey(
+        [KVDEX_KEY_PREFIX],
+        ...key,
+        SECONDARY_INDEX_KEY_PREFIX,
+      ),
+      segment: extendKey(
+        [KVDEX_KEY_PREFIX],
+        ...key,
+        SEGMENT_KEY_PREFIX,
+      ),
+      undelivered: extendKey(
+        [KVDEX_KEY_PREFIX],
+        UNDELIVERED_KEY_PREFIX,
+        ...key,
+      ),
     }
+
+    // Check all possible options
+    const opts = (options ?? {}) as PossibleCollectionOptions
+
+    // Set index lists
+    this._primaryIndexList = []
+    this._secondaryIndexList = []
+
+    Object.entries(opts?.indices ?? {}).forEach(([index, value]) => {
+      if (value === "primary") {
+        this._primaryIndexList.push(index)
+      } else {
+        this._secondaryIndexList.push(index)
+      }
+    })
+
+    // Set serialization
+    if (opts?.serialized === true) {
+      this.serialization = {
+        serialize,
+        deserialize,
+        compress,
+        decompress,
+      }
+    }
+
+    if (typeof opts?.serialized === "object") {
+      this.serialization = {
+        serialize,
+        deserialize,
+        compress,
+        decompress,
+        ...opts?.serialized,
+      }
+    }
+
+    // Set isIndexable flag
+    this._isIndexable = this._primaryIndexList.length > 0 ||
+      this._secondaryIndexList.length > 0
+
+    // Set doSerialize flag
+    this._isSerialized = !!this.serialization
   }
+
+  /*********************/
+  /*                   */
+  /*   PUBLIC METHODS  */
+  /*                   */
+  /*********************/
 
   /**
    * Finds a document with the given id in the KV store.
@@ -160,20 +221,83 @@ export class Collection<
    */
   async find(id: KvId, options?: FindOptions) {
     // Create document key, get document entry
-    const key = extendKey(this._keys.idKey, id)
-    const result = await this.kv.get<TOutput>(key, options)
+    const key = extendKey(this._keys.id, id)
+    const entry = await this.kv.get(key, options)
+    return await this.constructDocument(entry)
+  }
 
-    // If no entry exists, return null
-    if (result.value === null || result.versionstamp === null) {
-      return null
-    }
+  /**
+   * Find a document by a primary index.
+   *
+   * @example
+   * ```ts
+   * // Finds a user document with the username = "oli"
+   * const userDoc = await db.users.findByPrimaryIndex("username", "oli")
+   * ```
+   *
+   * @param index - Selected index.
+   * @param value - Index value.
+   * @param options - Find options, optional.
+   * @returns A promise resolving to the document found by selected index, or null if not found.
+   */
+  async findByPrimaryIndex<
+    const K extends PrimaryIndexKeys<TOutput, TOptions>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, TOutput>,
+    options?: FindOptions,
+  ) {
+    // Create the index key
+    const key = extendKey(
+      this._keys.primaryIndex,
+      index as KvId,
+      value as KvId,
+    )
 
-    // Return document
-    return new Document(this._model, {
-      id,
-      versionstamp: result.versionstamp,
-      value: result.value,
-    })
+    // Get index entry
+    const entry = await this.kv.get(key, options)
+
+    // Return constructed document
+    return await this.constructDocument(entry)
+  }
+
+  /**
+   * Find documents by a secondary index. Secondary indices are not
+   * unique, and therefore the result is an array of documents.
+   * The method takes an optional options argument that can be used for filtering of documents, and pagination.
+   *
+   * @example
+   * ```ts
+   * // Returns all users with age = 24
+   * const { result } = await db.users.findBySecondaryIndex("age", 24)
+   *
+   * // Returns all users with age = 24 AND username that starts with "o"
+   * const { result } = await db.users.findBySecondaryIndex("age", 24, {
+   *   filter: (doc) => doc.value.username.startsWith("o")
+   * })
+   * ```
+   *
+   * @param index - Selected index.
+   * @param value - Index value.
+   * @param options - List options, optional.
+   * @returns A promise resolving to an object containing the result list and iterator cursor.
+   */
+  async findBySecondaryIndex<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(index: K, value: CheckKeyOf<K, TOutput>, options?: ListOptions<TOutput>) {
+    // Create prefix key
+    const prefixKey = extendKey(
+      this._keys.secondaryIndex,
+      index as KvId,
+      value as KvId,
+    )
+
+    // Add documents to result list by secondary index
+    return await this.handleMany(
+      prefixKey,
+      (doc) => doc,
+      options,
+    )
   }
 
   /**
@@ -194,32 +318,21 @@ export class Collection<
    */
   async findMany(ids: KvId[], options?: FindManyOptions) {
     // Create document keys, get document entries
-    const keys = ids.map((id) => extendKey(this._keys.idKey, id))
-    const entries = await kvGetMany<TOutput>(keys, this.kv, options)
+    const keys = ids.map((id) => extendKey(this._keys.id, id))
+    const entries = await kvGetMany(keys, this.kv, options)
 
     // Create empty result list
     const result: Document<TOutput>[] = []
 
     // Loop over entries, add to result list
-    for (const { key, versionstamp, value } of entries) {
-      // Get the document id
-      const id = getDocumentId(key)
+    for (const entry of entries) {
+      const doc = await this.constructDocument(entry)
 
-      // If no id, or empty entry, then continue to next entry
-      if (
-        typeof id === "undefined" || versionstamp === null || value === null
-      ) {
+      if (!doc) {
         continue
       }
 
-      // Add document to result list
-      result.push(
-        new Document(this._model, {
-          id,
-          versionstamp,
-          value: value,
-        }),
-      )
+      result.push(doc)
     }
 
     // Return result list
@@ -310,10 +423,177 @@ export class Collection<
    * @returns A promise that resovles to void.
    */
   async delete(...ids: KvId[]) {
+    if (this._isIndexable && this._isSerialized) {
+      await allFulfilled(ids.map(async (id) => {
+        // Create document id key, get document and value
+        const idKey = extendKey(this._keys.id, id)
+        const entry = await this.kv.get<SerializedEntry>(idKey)
+        const doc = await this.constructDocument(entry)
+
+        // Create atomic operation and delete all document entries
+        const atomic = new AtomicWrapper(this.kv)
+        atomic.delete(idKey)
+
+        // Delete document entries
+        if (entry.value) {
+          const keys = entry.value.ids.map((segId) =>
+            extendKey(this._keys.segment, id, segId)
+          )
+
+          keys.forEach((key) => atomic.delete(key))
+        }
+
+        // Delete indices
+        if (doc) {
+          deleteIndices(id, doc.value as KvObject, atomic, this)
+        }
+
+        // Commit delete operations
+        await atomic.commit()
+      }))
+
+      return
+    }
+
+    if (this._isIndexable) {
+      // Run delete operations for each id
+      await allFulfilled(ids.map(async (id) => {
+        // Create idKey, get document value
+        const idKey = extendKey(this._keys.id, id)
+        const { value } = await this.kv.get<KvObject>(idKey)
+
+        // If no value, abort delete
+        if (!value) {
+          return
+        }
+
+        // Perform delete using atomic operation
+        const atomic = new AtomicWrapper(this.kv)
+        atomic.delete(idKey)
+        deleteIndices(id, value, atomic, this)
+        await atomic.commit()
+      }))
+
+      return
+    }
+
+    if (this._isSerialized) {
+      // Perform delete for each id
+      await allFulfilled(ids.map(async (id) => {
+        // Create document id key, get document value
+        const idKey = extendKey(this._keys.id, id)
+        const { value } = await this.kv.get<SerializedEntry>(idKey)
+
+        // If no value, abort delete
+        if (!value) {
+          return
+        }
+
+        // Create atomic operation and delete all document entries
+        const atomic = new AtomicWrapper(this.kv)
+        atomic.delete(idKey)
+
+        const keys = value.ids.map((segId) =>
+          extendKey(this._keys.segment, id, segId)
+        )
+
+        keys.forEach((key) => atomic.delete(key))
+
+        // Commit the operation
+        await atomic.commit()
+      }))
+
+      return
+    }
+
     // Perform delete operation for each id
     const atomic = new AtomicWrapper(this.kv, 40)
-    ids.forEach((id) => atomic.delete(extendKey(this._keys.idKey, id)))
+    ids.forEach((id) => atomic.delete(extendKey(this._keys.id, id)))
     await atomic.commit()
+  }
+
+  /**
+   * Delete a document by a primary index.
+   *
+   * @example
+   * ```ts
+   * // Deletes user with username = "oliver"
+   * await db.users.deleteByPrimaryIndex("username", "oliver")
+   * ```
+   *
+   * @param index - Selected index.
+   * @param value - Index value.
+   * @param options - Find options, optional.
+   * @returns A promise that resolves to void.
+   */
+  async deleteByPrimaryIndex<
+    const K extends PrimaryIndexKeys<TOutput, TOptions>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, TOutput>,
+    options?: FindOptions,
+  ) {
+    // Create index key
+    const key = extendKey(
+      this._keys.primaryIndex,
+      index as KvId,
+      value as KvId,
+    )
+
+    // Get index entry
+    const result = await this.kv.get<
+      unknown & Pick<IndexDataEntry<KvObject>, "__id__">
+    >(key, options)
+
+    // If no value, abort delete
+    if (result.value === null || result.versionstamp === null) {
+      return
+    }
+
+    // Extract document id from index entry
+    const { __id__ } = result.value
+
+    // Delete document by id
+    await this.delete(__id__)
+  }
+
+  /**
+   * Delete documents by a secondary index. The method takes an optional options argument that can be used for filtering of documents, and pagination.
+   *
+   * @example
+   * ```ts
+   * // Deletes all users with age = 24
+   * await db.users.deleteBySecondaryIndex("age", 24)
+   *
+   * // Deletes all users with age = 24 AND username that starts with "o"
+   * await db.users.deleteBySecondaryIndex("age", 24, {
+   *   filter: (doc) => doc.value.username.startsWith("o")
+   * })
+   * ```
+   *
+   * @param index - Selected index.
+   * @param value - Index value.
+   * @param options - List options, optional.
+   * @returns A promise that resolves to void.
+   */
+  async deleteBySecondaryIndex<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(index: K, value: CheckKeyOf<K, TOutput>, options?: ListOptions<TOutput>) {
+    // Create prefix key
+    const prefixKey = extendKey(
+      this._keys.secondaryIndex,
+      index as KvId,
+      value as KvId,
+    )
+
+    // Delete documents by secondary index, return iterator cursor
+    const { cursor } = await this.handleMany(
+      prefixKey,
+      (doc) => this.delete(doc.id),
+      options,
+    )
+
+    return { cursor }
   }
 
   /**
@@ -346,7 +626,7 @@ export class Collection<
    */
   async update(
     id: KvId,
-    data: UpdateData<ParseInputType<TInput, TOutput>>,
+    data: UpdateData<TOutput>,
     options?: UpdateOptions,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Get document
@@ -361,6 +641,99 @@ export class Collection<
 
     // Update document and return commit result
     return await this.updateDocument(doc, data, options)
+  }
+
+  /**
+   * Update a document by a primary index.
+   *
+   * @example
+   * ```ts
+   * // Updates a user with username = "oliver" to have age = 56
+   * const result = await db.users.updateByPrimaryIndex("username", "oliver", { age: 56 })
+   *
+   * // Updates a user document using deep merge
+   * const result = await db.users.updateByPrimaryIndex("username", "anders", {
+   *   age: 89,
+   * }, {
+   *   mergeType: "deep",
+   * })
+   * ```
+   *
+   * @param index - Selected index.
+   * @param value - Index value.
+   * @param data - Update data to be inserted into document.
+   * @param options - Set options, optional.
+   * @returns Promise that resolves to a commit result.
+   */
+  async updateByPrimaryIndex<
+    const K extends PrimaryIndexKeys<TOutput, TOptions>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, TOutput>,
+    data: UpdateData<TOutput>,
+    options?: UpdateOptions,
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+    // Find document by primary index
+    const doc = await this.findByPrimaryIndex(index, value)
+
+    // If no document, return commit error
+    if (!doc) {
+      return {
+        ok: false,
+      }
+    }
+
+    // Update document, return result
+    return await this.update(doc.id, data, options)
+  }
+
+  /**
+   * Update documents in the collection by a secondary index.
+   *
+   * @example
+   * ```ts
+   * // Updates all user documents with age = 24 and sets age = 67
+   * const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
+   *
+   * // Updates all user documents where the user's age is 24 and username starts with "o" using deep merge
+   * const { result } = await db.users.updateBySecondaryIndex(
+   *   "age",
+   *   24,
+   *   { age: 67 },
+   *   {
+   *     filter: (doc) => doc.value.username.startsWith("o"),
+   *     mergeType: "deep",
+   *   }
+   * )
+   * ```
+   *
+   * @param index - Selected index.
+   * @param value - Index value.
+   * @param data - Update data to be inserted into document.
+   * @param options - Update many options, optional.
+   * @returns Promise that resolves to an object containing result list and iterator cursor.
+   */
+  async updateBySecondaryIndex<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, TOutput>,
+    data: UpdateData<TOutput>,
+    options?: UpdateManyOptions<TOutput>,
+  ) {
+    // Create prefix key
+    const prefixKey = extendKey(
+      this._keys.secondaryIndex,
+      index as KvId,
+      value as KvId,
+    )
+
+    // Update each document by secondary index, add commit result to result list
+    return await this.handleMany(
+      prefixKey,
+      (doc) => this.updateDocument(doc, data, options),
+      options,
+    )
   }
 
   /**
@@ -386,12 +759,12 @@ export class Collection<
    * @returns Promise resolving to an object containing iterator cursor and result list.
    */
   async updateMany(
-    value: UpdateData<ParseInputType<TInput, TOutput>>,
+    value: UpdateData<TOutput>,
     options?: UpdateManyOptions<TOutput>,
   ) {
     // Update each document, add commit result to result list
     return await this.handleMany(
-      this._keys.idKey,
+      this._keys.id,
       (doc) => this.updateDocument(doc, value, options),
       options,
     )
@@ -481,7 +854,7 @@ export class Collection<
     // Perform quick delete if all documents are to be deleted
     if (selectsAll(options)) {
       // Create list iterator and empty keys list
-      const iter = this.kv.list({ prefix: this._keys.baseKey }, options)
+      const iter = this.kv.list({ prefix: this._keys.base }, options)
       const keys: Deno.KvKey[] = []
 
       // Collect all collection entry keys
@@ -497,7 +870,7 @@ export class Collection<
 
     // Execute delete operation for each document entry
     const { cursor } = await this.handleMany(
-      this._keys.idKey,
+      this._keys.id,
       (doc) => this.delete(doc.id),
       options,
     )
@@ -527,7 +900,7 @@ export class Collection<
   async getMany(options?: ListOptions<TOutput>) {
     // Get each document, return result list and current iterator cursor
     return await this.handleMany(
-      this._keys.idKey,
+      this._keys.id,
       (doc) => doc,
       options,
     )
@@ -559,8 +932,55 @@ export class Collection<
   ) {
     // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
-      this._keys.idKey,
+      this._keys.id,
       async (doc) => await fn(doc),
+      options,
+    )
+
+    // Return iterator cursor
+    return { cursor }
+  }
+
+  /**
+   * Executes a callback function for every document by a secondary index and according to the given options.
+   *
+   * If no options are given, the callback function is executed for all documents matching the index.
+   *
+   * @example
+   * ```ts
+   * // Prints the username of all users where age = 20
+   * await db.users.forEachBySecondaryIndex(
+   *   "age",
+   *   20,
+   *   (doc) => console.log(doc.value.username),
+   * )
+   * ```
+   *
+   * @param index - Selected index.
+   * @param value - Index value.
+   * @param fn - Callback function.
+   * @param options - List options, optional.
+   * @returns A promise that resovles to an object containing the iterator cursor.
+   */
+  async forEachBySecondaryIndex<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, TOutput>,
+    fn: (doc: Document<TOutput>) => unknown,
+    options?: UpdateManyOptions<TOutput>,
+  ) {
+    // Create prefix key
+    const prefixKey = extendKey(
+      this._keys.secondaryIndex,
+      index as KvId,
+      value as KvId,
+    )
+
+    // Execute callback function for each document entry
+    const { cursor } = await this.handleMany(
+      prefixKey,
+      (doc) => fn(doc),
       options,
     )
 
@@ -596,7 +1016,54 @@ export class Collection<
   ) {
     // Execute callback function for each document entry, return result and cursor
     return await this.handleMany(
-      this._keys.idKey,
+      this._keys.id,
+      (doc) => fn(doc),
+      options,
+    )
+  }
+
+  /**
+   * Executes a callback function for every document by a secondary index and according to the given options.
+   *
+   * If no options are given, the callback function is executed for all documents matching the index.
+   *
+   * The results from the callback function are returned as a list.
+   *
+   * @example
+   * ```ts
+   * // Returns a list of usernames of all users where age = 20
+   * const { result } = await db.users.mapBySecondaryIndex(
+   *   "age",
+   *   20,
+   *   (doc) => doc.value.username,
+   * )
+   * ```
+   *
+   * @param index - Selected index.
+   * @param value - Index value.
+   * @param fn - Callback function.
+   * @param options - List options, optional.
+   * @returns A promise that resovles to an object containing a list of the callback results and the iterator cursor.
+   */
+  async mapBySecondaryIndex<
+    const T,
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, TOutput>,
+    fn: (doc: Document<TOutput>) => T,
+    options?: UpdateManyOptions<TOutput>,
+  ) {
+    // Create prefix key
+    const prefixKey = extendKey(
+      this._keys.secondaryIndex,
+      index as KvId,
+      value as KvId,
+    )
+
+    // Execute callback function for each document entry, return result and cursor
+    return await this.handleMany(
+      prefixKey,
       (doc) => fn(doc),
       options,
     )
@@ -625,7 +1092,7 @@ export class Collection<
 
     // Perform efficient count if counting all document entries
     if (selectsAll(options)) {
-      const iter = this.kv.list({ prefix: this._keys.idKey }, options)
+      const iter = this.kv.list({ prefix: this._keys.id }, options)
       for await (const _ of iter) {
         result++
       }
@@ -633,7 +1100,50 @@ export class Collection<
     }
 
     // Perform count using many documents handler
-    await this.handleMany(this._keys.idKey, () => result++, options)
+    await this.handleMany(this._keys.id, () => result++, options)
+    return result
+  }
+
+  /**
+   * Counts the number of documents in the collection by a secondary index.
+   *
+   * @example
+   *
+   * ```ts
+   * // Counts all users where age = 20
+   * const count = await db.users.countBySecondaryIndex("age", 20)
+   * ```
+   *
+   * @param index - Selected index.
+   * @param value - Index value.
+   * @param options - Count options.
+   * @returns A promise that resolves to a number representing the count.
+   */
+  async countBySecondaryIndex<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, TOutput>,
+    options?: CountOptions<TOutput>,
+  ) {
+    // Create prefix key
+    const prefixKey = extendKey(
+      this._keys.secondaryIndex,
+      index as KvId,
+      value as KvId,
+    )
+
+    // Initialize count result
+    let result = 0
+
+    // Update each document by secondary index, add commit result to result list
+    await this.handleMany(
+      prefixKey,
+      () => result++,
+      options,
+    )
+
+    // Return count result
     return result
   }
 
@@ -662,7 +1172,8 @@ export class Collection<
   async enqueue<T extends QueueValue>(data: T, options?: EnqueueOptions) {
     // Prepare message and options for enqueue
     const prep = prepareEnqueue(
-      this._keys.baseKey,
+      this._keys.base,
+      this._keys.undelivered,
       data,
       options,
     )
@@ -703,7 +1214,7 @@ export class Collection<
     options?: QueueListenerOptions,
   ) {
     // Create handler id
-    const handlerId = createHandlerId(this._keys.baseKey, options?.topic)
+    const handlerId = createHandlerId(this._keys.base, options?.topic)
 
     // Add new handler to specified handlers
     const handlers = this.queueHandlers.get(handlerId) ?? []
@@ -735,7 +1246,7 @@ export class Collection<
     options?: FindOptions,
   ) {
     // Create document key, get document entry
-    const key = extendKey(this._keys.baseKey, UNDELIVERED_KEY_PREFIX, id)
+    const key = extendKey(this._keys.undelivered, id)
     const result = await this.kv.get<T>(key, options)
 
     // If no entry exists, return null
@@ -762,11 +1273,567 @@ export class Collection<
    * @param id - Id of undelivered document.
    */
   async deleteUndelivered(id: KvId) {
-    const key = extendKey(this._keys.baseKey, UNDELIVERED_KEY_PREFIX, id)
+    const key = extendKey(this._keys.undelivered, id)
     await this.kv.delete(key)
   }
 
-  /** PROTECTED METHODS */
+  /**********************/
+  /*                    */
+  /*   PRIVATE METHODS  */
+  /*                    */
+  /**********************/
+
+  /**
+   * Set a document entry in the KV store.
+   *
+   * @param id - Document id.
+   * @param value - Document value.
+   * @param options - Set options or undefined.
+   * @param overwrite - Boolean flag determining whether to overwrite existing entry or fail operation.
+   * @returns Promise resolving to a CommitResult object.
+   */
+  private async setDocument(
+    id: KvId | null,
+    value: ParseInputType<TInput, TOutput>,
+    options: SetOptions | undefined,
+    overwrite = false,
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+    // Create id, document key and parse document value
+    const parsed = this._model.parse(value as TInput)
+    const docId = id ?? this._idGenerator(parsed)
+    const idKey = extendKey(this._keys.id, docId)
+
+    // Set indexable and serialized document
+    if (this._isIndexable && this._isSerialized) {
+      return await this.setSerializedIndexableDocument(
+        docId,
+        idKey,
+        parsed,
+        options,
+        overwrite,
+      )
+    }
+
+    // Set indexable document
+    if (this._isIndexable) {
+      return await this.setIndexableDocument(
+        docId,
+        idKey,
+        parsed,
+        options,
+        overwrite,
+      )
+    }
+
+    // Set serialized document
+    if (this._isSerialized) {
+      return await this.setSerializedDocument(
+        docId,
+        idKey,
+        parsed,
+        options,
+        overwrite,
+      )
+    }
+
+    // Set standard document
+    return await this.setStandardDocument(
+      docId,
+      idKey,
+      parsed,
+      options,
+      overwrite,
+    )
+  }
+
+  private async setStandardDocument(
+    docId: KvId,
+    idKey: KvKey,
+    value: TOutput,
+    options: SetOptions | undefined,
+    overwrite = false,
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+    // Create atomic operation with set mutation
+    const atomic = this.kv
+      .atomic()
+      .set(idKey, value, options)
+
+    // If overwrite is false, check for existing document
+    if (!overwrite) {
+      atomic.check({
+        key: idKey,
+        versionstamp: null,
+      })
+    }
+
+    // Perform atomic operation
+    const cr = await atomic.commit()
+
+    // Retry failed operation if remaining attempts
+    const retry = options?.retry ?? 0
+    if (!cr.ok && retry > 0) {
+      return await this.setStandardDocument(
+        docId,
+        idKey,
+        value,
+        { ...options, retry: retry - 1 },
+        overwrite,
+      )
+    }
+
+    // return commit result or error
+    return cr.ok
+      ? {
+        ok: true,
+        versionstamp: cr.versionstamp,
+        id: docId,
+      }
+      : {
+        ok: false,
+      }
+  }
+
+  private async setIndexableDocument(
+    docId: KvId,
+    idKey: KvKey,
+    value: TOutput,
+    options: SetOptions | undefined,
+    overwrite = false,
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+    // Check for index collision
+    const indicesCheck = await checkIndices(
+      value as KvObject,
+      new AtomicWrapper(this.kv),
+      this,
+    ).commit()
+
+    // If index collision is detected, return commit error
+    if (!indicesCheck.ok) {
+      return {
+        ok: false,
+      }
+    }
+
+    // Check for id collision
+    const idCheck = await this.kv
+      .atomic()
+      .check({
+        key: idKey,
+        versionstamp: null,
+      })
+      .commit()
+
+    // If id collision is detected and overwrite is false, return failed operation.
+    if (!idCheck.ok) {
+      if (!overwrite) {
+        return {
+          ok: false,
+        }
+      }
+
+      // Delete existing document before setting new entry
+      await this.delete(docId)
+    }
+
+    // Create atomic operation with set mutation and versionstamp check
+    const atomic = this.kv
+      .atomic()
+      .set(idKey, value, options)
+
+    // Set document indices using atomic operation
+    setIndices(
+      docId,
+      value as KvObject,
+      value as KvObject,
+      atomic,
+      this,
+      options,
+    )
+
+    // Execute the atomic operation
+    const cr = await atomic.commit()
+
+    // Retry failed operation if remaining attempts
+    const retry = options?.retry ?? 0
+    if (!cr.ok && retry > 0) {
+      return await this.setIndexableDocument(
+        docId,
+        idKey,
+        value,
+        { ...options, retry: retry - 1 },
+        overwrite,
+      )
+    }
+
+    // Return commit result or error
+    return cr.ok
+      ? {
+        ok: true,
+        versionstamp: cr.versionstamp,
+        id: docId,
+      }
+      : {
+        ok: false,
+      }
+  }
+
+  private async setSerializedDocument(
+    docId: KvId,
+    idKey: KvKey,
+    value: TOutput,
+    options: SetOptions | undefined,
+    overwrite = false,
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+    // Check if id already exists
+    const check = await this.kv
+      .atomic()
+      .check({
+        key: idKey,
+        versionstamp: null,
+      })
+      .commit()
+
+    // Check if document already exists
+    if (!check.ok) {
+      // If overwrite is false, return commit error
+      if (!overwrite) {
+        return {
+          ok: false,
+        }
+      }
+
+      // If overwrite is true, delete existing document entry
+      await this.delete(docId)
+    }
+
+    // Serialize and decompress
+    const serialized = serialize(value)
+    const data = this.serialization!.compress(serialized)
+
+    // Initialize index, keys list and atomic operation
+    let index = 0
+    const keys: KvKey[] = []
+    const atomic = new AtomicWrapper(this.kv)
+
+    // Set segmented entries
+    for (let i = 0; i < data.length; i += UINT8ARRAY_LENGTH_LIMIT) {
+      const part = data.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT)
+      const key = extendKey(this._keys.segment, docId, index)
+      keys.push(key)
+      atomic.set(key, part, options)
+      index++
+    }
+
+    // Commit atomic operation and set retry atempts
+    const partsCr = await atomic.commit()
+    const retry = options?.retry ?? 0
+
+    // If not successful, delete all parts
+    if (!partsCr.ok) {
+      const op = new AtomicWrapper(this.kv)
+      keys.forEach((key) => op.delete(key))
+      await op.commit()
+
+      // Retry operation if there are remaining attempts
+      if (retry > 0) {
+        return await this.setSerializedDocument(
+          docId,
+          idKey,
+          value,
+          { ...options, retry: retry - 1 },
+          overwrite,
+        )
+      }
+
+      // Return failed operation
+      return {
+        ok: false,
+      }
+    }
+
+    // Create serialized document entry
+    const entry: SerializedEntry = {
+      ids: keys.map((key) => getDocumentId(key)!).filter((id) =>
+        typeof id !== "undefined"
+      ),
+    }
+
+    // Set serialized document entry
+    const cr = await this.kv
+      .atomic()
+      .set(idKey, entry, options)
+      .commit()
+
+    // If not successful, delete all part entries
+    if (!cr.ok) {
+      await allFulfilled(keys.map((key) => this.kv.delete(key)))
+
+      // Retry operation if there are remaining attempts
+      if (retry > 0) {
+        return await this.setSerializedDocument(
+          docId,
+          idKey,
+          value,
+          { ...options, retry: retry - 1 },
+          overwrite,
+        )
+      }
+
+      // Return failed operation
+      return {
+        ok: false,
+      }
+    }
+
+    // Return commit result
+    return {
+      ok: true,
+      id: docId,
+      versionstamp: cr.versionstamp,
+    }
+  }
+
+  private async setSerializedIndexableDocument(
+    docId: KvId,
+    idKey: KvKey,
+    value: TOutput,
+    options: SetOptions | undefined,
+    overwrite = false,
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+    // Check for index collision
+    const indicesCheck = await checkIndices(
+      value as KvObject,
+      new AtomicWrapper(this.kv),
+      this,
+    ).commit()
+
+    // If index collision is detected, return commit error
+    if (!indicesCheck.ok) {
+      return {
+        ok: false,
+      }
+    }
+
+    // Check if id already exists
+    const idCheck = await this.kv
+      .atomic()
+      .check({
+        key: idKey,
+        versionstamp: null,
+      })
+      .commit()
+
+    if (!idCheck.ok) {
+      // If overwrite is false, return commit error
+      if (!overwrite) {
+        return {
+          ok: false,
+        }
+      }
+
+      // If overwrite is true, delete existing document entry
+      await this.delete(docId)
+    }
+
+    // Serialize and compress
+    const serialized = serialize(value)
+    const data = this.serialization!.compress(serialized)
+
+    // Initialize index, keys list and atomic operation
+    let index = 0
+    const keys: KvKey[] = []
+    const atomic = new AtomicWrapper(this.kv)
+
+    // Set segmented entries
+    for (let i = 0; i < data.length; i += UINT8ARRAY_LENGTH_LIMIT) {
+      const part = data.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT)
+      const key = extendKey(this._keys.segment, docId, index)
+      keys.push(key)
+      atomic.set(key, part, options)
+      index++
+    }
+
+    // Commit atomic operation and set retry atempts
+    const partsCr = await atomic.commit()
+    const retry = options?.retry ?? 0
+
+    // If not successful, delete all parts
+    if (!partsCr.ok) {
+      const op = new AtomicWrapper(this.kv)
+      keys.forEach((key) => op.delete(key))
+      await op.commit()
+
+      // Retry operation if there are remaining attempts
+      if (retry > 0) {
+        return await this.setSerializedDocument(
+          docId,
+          idKey,
+          value,
+          { ...options, retry: retry - 1 },
+          overwrite,
+        )
+      }
+
+      // Return failed operation
+      return {
+        ok: false,
+      }
+    }
+
+    // Create serialized document entry
+    const entry: SerializedEntry = {
+      ids: keys.map((key) => getDocumentId(key)!).filter((id) =>
+        typeof id !== "undefined"
+      ),
+    }
+
+    // Set serialized document entry
+    const idEntryCr = await this.kv
+      .atomic()
+      .set(idKey, entry, options)
+      .commit()
+
+    // Set index entries
+    const indexEntriesCr = await setIndices(
+      docId,
+      value as KvObject,
+      entry,
+      new AtomicWrapper(this.kv),
+      this,
+      options,
+    ).commit()
+
+    // If not successful, delete all part entries
+    if (!idEntryCr.ok || !indexEntriesCr.ok) {
+      const atomic = new AtomicWrapper(this.kv)
+      deleteIndices(docId, value as KvObject, atomic, this)
+      keys.forEach((key) => atomic.delete(key))
+      await atomic.commit()
+
+      // Retry operation if there are remaining attempts
+      if (retry > 0) {
+        return await this.setSerializedDocument(
+          docId,
+          idKey,
+          value,
+          { ...options, retry: retry - 1 },
+          overwrite,
+        )
+      }
+
+      // Return failed operation
+      return {
+        ok: false,
+      }
+    }
+
+    // Return commit result
+    return {
+      ok: true,
+      id: docId,
+      versionstamp: idEntryCr.versionstamp,
+    }
+  }
+
+  private async updateDocument(
+    doc: Document<TOutput>,
+    data: UpdateData<TOutput>,
+    options: UpdateOptions | undefined,
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+    // Get document value, delete document entry
+    const { value, id } = doc
+
+    // If indexable, check for index collisions
+    if (this._isIndexable) {
+      const atomic = checkIndices(
+        data as KvObject,
+        new AtomicWrapper(this.kv),
+        this,
+      )
+
+      const cr = await atomic.commit()
+
+      // If check fails, return commit error
+      if (!cr.ok) {
+        return {
+          ok: false,
+        }
+      }
+
+      // Delete document entry
+      await this.delete(id)
+    }
+
+    let updated = data as TOutput
+
+    if (isKvObject(value)) {
+      // Merge value and data according to given merge type
+      const mergeType = options?.mergeType ?? DEFAULT_MERGE_TYPE
+
+      updated = mergeType === "shallow"
+        ? {
+          ...value as KvObject,
+          ...data as KvObject,
+        } as TOutput
+        : deepMerge(value, data) as TOutput
+    }
+
+    // Set new document value
+    return await this.setDocument(
+      id,
+      updated as ParseInputType<TInput, TOutput>,
+      options,
+      true,
+    )
+  }
+
+  private async constructDocument(
+    { key, value, versionstamp }: Deno.KvEntryMaybe<any>,
+  ) {
+    if (!value || !versionstamp) {
+      return null
+    }
+
+    const { __id__ } = value as IndexDataEntry<any>
+    const docId = __id__ ?? getDocumentId(key)
+
+    if (!docId) {
+      return null
+    }
+
+    if (this._isSerialized) {
+      // Get document parts
+      const { ids } = value as SerializedEntry
+
+      const keys = ids.map((segId) =>
+        extendKey(this._keys.segment, docId, segId)
+      )
+
+      const docEntries = await kvGetMany<Uint8Array>(keys, this.kv)
+
+      // Gather parts
+      const data = Uint8Array.from(
+        docEntries.map((doc) => Array.from(doc.value!)).flat(),
+      )
+
+      // Decompress and deserialize
+      const serialized = this.serialization!.decompress(data)
+      const deserialized = deserialize<TOutput>(serialized)
+
+      // Return parsed document
+      return new Document<TOutput>(this._model, {
+        id: docId,
+        value: deserialized,
+        versionstamp,
+      })
+    }
+
+    return new Document<TOutput>(this._model, {
+      id: docId,
+      value: value as TOutput,
+      versionstamp,
+    })
+  }
 
   /**
    * Perform operations on lists of documents in the collection.
@@ -783,7 +1850,7 @@ export class Collection<
   ) {
     // Create list iterator with given options
     const selector = createListSelector(prefixKey, options)
-    const iter = this.kv.list<TOutput>(selector, options)
+    const iter = this.kv.list<KvValue>(selector, options)
 
     // Initiate lists
     const docs: Document<TOutput>[] = []
@@ -791,19 +1858,14 @@ export class Collection<
     const errors: unknown[] = []
 
     // Loop over each document entry
-    for await (const { key, value, versionstamp } of iter) {
-      // Get document id, continue to next entry if undefined
-      const id = getDocumentId(key)
-      if (typeof id === "undefined") {
+    for await (const entry of iter) {
+      // Construct document from entry
+      const doc = await this.constructDocument(entry)
+
+      // Continue if document not constructed
+      if (!doc) {
         continue
       }
-
-      // Create document
-      const doc = new Document(this._model, {
-        id,
-        versionstamp,
-        value: value,
-      })
 
       // Filter document and add to documents list
       const filter = options?.filter
@@ -832,108 +1894,5 @@ export class Collection<
       result,
       cursor: iter.cursor || undefined,
     }
-  }
-
-  /**
-   * Set a document entry in the KV store.
-   *
-   * @param id - Document id.
-   * @param value - Document value.
-   * @param options - Set options or undefined.
-   * @param overwrite - Boolean flag determining whether to overwrite existing entry or fail operation.
-   * @returns Promise resolving to a CommitResult object.
-   */
-  protected async setDocument(
-    id: KvId | null,
-    value: ParseInputType<TInput, TOutput>,
-    options: SetOptions | undefined,
-    overwrite = false,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
-    // Create id, document key and parse document value
-    const parsed = this._model.parse(value as TInput)
-    const docId = id ?? this._idGenerator(parsed)
-    const key = extendKey(this._keys.idKey, docId)
-
-    // Create atomic operation with set mutation
-    const atomic = this.kv.atomic().set(key, parsed, options)
-
-    // If overwrite is false, check for existing document
-    if (!overwrite) {
-      atomic.check({
-        key,
-        versionstamp: null,
-      })
-    }
-
-    // Perform atomic operation
-    const cr = await atomic.commit()
-
-    // Retry failed operation if remaining attempts
-    const retry = options?.retry ?? 0
-    if (!cr.ok && retry > 0) {
-      return await this.setDocument(
-        docId,
-        value,
-        { ...options, retry: retry - 1 },
-        overwrite,
-      )
-    }
-
-    // return commit result or error
-    return cr.ok
-      ? {
-        ok: true,
-        versionstamp: cr.versionstamp,
-        id: docId,
-      }
-      : {
-        ok: false,
-      }
-  }
-
-  /**
-   * Update a document with new data.
-   *
-   * @param doc - Old document.
-   * @param data - New data.
-   * @param options - Set options or undefined.
-   * @returns Promise that resolves to a commit result.
-   */
-  protected async updateDocument(
-    doc: Document<TOutput>,
-    data: UpdateData<ParseInputType<TInput, TOutput>>,
-    options: UpdateOptions | undefined,
-  ) {
-    // Get document value, delete document entry
-    const { value, id } = doc
-
-    // If value is KvObject, perform partial merge and set new document value
-    if (isKvObject(value)) {
-      // Merge value and data according to given merge type
-      const mergeType = options?.mergeType ?? DEFAULT_MERGE_TYPE
-
-      const merged = mergeType === "shallow"
-        ? {
-          ...value as KvObject,
-          ...data as KvObject,
-        }
-        : deepMerge(value, data)
-
-      // Set new document value
-      return await this.setDocument(
-        id,
-        merged as ParseInputType<TInput, TOutput>,
-        options,
-        true,
-      )
-    }
-
-    // Set new document value
-    return await this.setDocument(
-      id,
-      data as ParseInputType<TInput, TOutput>,
-      options,
-      true,
-    )
   }
 }
