@@ -42,13 +42,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
  *
  * @example
  * ```ts
- * import {
- *   kvdex,
- *   model,
- *   collection,
- *   indexableCollection,
- *   largeCollection
- * } from "https://deno.land/x/kvdex/mod.ts"
+ * import { kvdex, model, collection } from "https://deno.land/x/kvdex/mod.ts"
  *
  * type User = {
  *   username: string
@@ -60,8 +54,8 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
  * const db = kvdex(kv, {
  *   numbers: collection(model<number>()),
  *   u64s: collection(model<Deno.KvU64>()),
- *   largeStrings: largeCollection(model<string>()),
- *   users: indexableCollection(model<User>(), {
+ *   serializedStrings: collection(model<string>(), { serialized: true }),
+ *   users: collection(model<User>(), {
  *     indices: {
  *       username: "primary",
  *       age: "secondary"
