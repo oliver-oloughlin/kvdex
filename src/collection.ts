@@ -67,6 +67,35 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
 import { Document } from "./document.ts"
 import { model } from "./model.ts"
 
+/**
+ * Create a new collection within a database context.
+ *
+ * @example
+ * ```ts
+ * import { model, collection, kvdex } from "https://deno.land/x/kvdex/mod.ts"
+ *
+ * type User = {
+ *   username: string
+ *   age: number
+ * }
+ *
+ * const db = kvdex(kv, {
+ *   numbers: collection(model<number>()),
+ *   users: collection(model<User>(), {
+ *     idGenerator: () => crypto.randomUUID(),
+ *     serialized: true,
+ *     indices: {
+ *       username: "primary",
+ *       age: "secondary"
+ *     }
+ *   })
+ * })
+ * ```
+ *
+ * @param model - Collection model.
+ * @param options - Collection options.
+ * @returns A collection builder function.
+ */
 export function collection<
   const TInput,
   const TOutput extends KvValue,
@@ -193,7 +222,7 @@ export class Collection<
     this._isIndexable = this._primaryIndexList.length > 0 ||
       this._secondaryIndexList.length > 0
 
-    // Set doSerialize flag
+    // Set isSerialized flag
     this._isSerialized = !!this.serialization
   }
 
@@ -231,8 +260,8 @@ export class Collection<
    *
    * @example
    * ```ts
-   * // Finds a user document with the username = "oli"
-   * const userDoc = await db.users.findByPrimaryIndex("username", "oli")
+   * // Finds a user document with the username = "oliver"
+   * const userDoc = await db.users.findByPrimaryIndex("username", "oliver")
    * ```
    *
    * @param index - Selected index.
@@ -247,11 +276,15 @@ export class Collection<
     value: CheckKeyOf<K, TOutput>,
     options?: FindOptions,
   ) {
+    // Serialize and compress index value
+    const serialized = serialize(value)
+    const compressed = compress(serialized)
+
     // Create the index key
     const key = extendKey(
       this._keys.primaryIndex,
       index as KvId,
-      value as KvId,
+      compressed,
     )
 
     // Get index entry
@@ -285,11 +318,15 @@ export class Collection<
   async findBySecondaryIndex<
     const K extends SecondaryIndexKeys<TOutput, TOptions>,
   >(index: K, value: CheckKeyOf<K, TOutput>, options?: ListOptions<TOutput>) {
+    // Serialize and compress index value
+    const serialized = serialize(value)
+    const compressed = compress(serialized)
+
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
-      value as KvId,
+      compressed,
     )
 
     // Add documents to result list by secondary index
@@ -424,8 +461,9 @@ export class Collection<
    */
   async delete(...ids: KvId[]) {
     if (this._isIndexable && this._isSerialized) {
+      // Run delete operations for each id
       await allFulfilled(ids.map(async (id) => {
-        // Create document id key, get document and value
+        // Create document id key, get entry and construct document
         const idKey = extendKey(this._keys.id, id)
         const entry = await this.kv.get<SerializedEntry>(idKey)
         const doc = await this.constructDocument(entry)
@@ -533,11 +571,15 @@ export class Collection<
     value: CheckKeyOf<K, TOutput>,
     options?: FindOptions,
   ) {
+    // Serialize and compress index value
+    const serialized = serialize(value)
+    const compressed = compress(serialized)
+
     // Create index key
     const key = extendKey(
       this._keys.primaryIndex,
       index as KvId,
-      value as KvId,
+      compressed,
     )
 
     // Get index entry
@@ -579,11 +621,15 @@ export class Collection<
   async deleteBySecondaryIndex<
     const K extends SecondaryIndexKeys<TOutput, TOptions>,
   >(index: K, value: CheckKeyOf<K, TOutput>, options?: ListOptions<TOutput>) {
+    // Serialize and compress index value
+    const serialized = serialize(value)
+    const compressed = compress(serialized)
+
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
-      value as KvId,
+      compressed,
     )
 
     // Delete documents by secondary index, return iterator cursor
@@ -722,11 +768,15 @@ export class Collection<
     data: UpdateData<TOutput>,
     options?: UpdateManyOptions<TOutput>,
   ) {
+    // Serialize and compress index value
+    const serialized = serialize(value)
+    const compressed = compress(serialized)
+
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
-      value as KvId,
+      compressed,
     )
 
     // Update each document by secondary index, add commit result to result list
@@ -876,6 +926,7 @@ export class Collection<
       options,
     )
 
+    // Return iterator cursor
     return { cursor }
   }
 
@@ -971,11 +1022,15 @@ export class Collection<
     fn: (doc: Document<TOutput>) => unknown,
     options?: UpdateManyOptions<TOutput>,
   ) {
+    // Serialize and compress index value
+    const serialized = serialize(value)
+    const compressed = compress(serialized)
+
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
-      value as KvId,
+      compressed,
     )
 
     // Execute callback function for each document entry
@@ -1055,11 +1110,15 @@ export class Collection<
     fn: (doc: Document<TOutput>) => T,
     options?: UpdateManyOptions<TOutput>,
   ) {
+    // Serialize and compress index value
+    const serialized = serialize(value)
+    const compressed = compress(serialized)
+
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
-      value as KvId,
+      compressed,
     )
 
     // Execute callback function for each document entry, return result and cursor
@@ -1127,11 +1186,15 @@ export class Collection<
     value: CheckKeyOf<K, TOutput>,
     options?: CountOptions<TOutput>,
   ) {
+    // Serialize and compress index value
+    const serialized = serialize(value)
+    const compressed = compress(serialized)
+
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
-      value as KvId,
+      compressed,
     )
 
     // Initialize count result
@@ -1347,6 +1410,16 @@ export class Collection<
     )
   }
 
+  /**
+   * Set a standard document entry.
+   *
+   * @param docId
+   * @param idKey
+   * @param value
+   * @param options
+   * @param overwrite
+   * @returns
+   */
   private async setStandardDocument(
     docId: KvId,
     idKey: KvKey,
@@ -1394,6 +1467,16 @@ export class Collection<
       }
   }
 
+  /**
+   * Set an indexable document entry
+   *
+   * @param docId
+   * @param idKey
+   * @param value
+   * @param options
+   * @param overwrite
+   * @returns
+   */
   private async setIndexableDocument(
     docId: KvId,
     idKey: KvKey,
@@ -1401,20 +1484,6 @@ export class Collection<
     options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
-    // Check for index collision
-    const indicesCheck = await checkIndices(
-      value as KvObject,
-      new AtomicWrapper(this.kv),
-      this,
-    ).commit()
-
-    // If index collision is detected, return commit error
-    if (!indicesCheck.ok) {
-      return {
-        ok: false,
-      }
-    }
-
     // Check for id collision
     const idCheck = await this.kv
       .atomic()
@@ -1436,23 +1505,15 @@ export class Collection<
       await this.delete(docId)
     }
 
-    // Create atomic operation with set mutation and versionstamp check
-    const atomic = this.kv
-      .atomic()
-      .set(idKey, value, options)
-
-    // Set document indices using atomic operation
-    setIndices(
+    // Set entry + indices
+    const cr = await setIndices(
       docId,
       value as KvObject,
       value as KvObject,
-      atomic,
+      this.kv.atomic().set(idKey, value, options),
       this,
       options,
-    )
-
-    // Execute the atomic operation
-    const cr = await atomic.commit()
+    ).commit()
 
     // Retry failed operation if remaining attempts
     const retry = options?.retry ?? 0
@@ -1478,6 +1539,16 @@ export class Collection<
       }
   }
 
+  /**
+   * Set a serialized document entry.
+   *
+   * @param docId
+   * @param idKey
+   * @param value
+   * @param options
+   * @param overwrite
+   * @returns
+   */
   private async setSerializedDocument(
     docId: KvId,
     idKey: KvKey,
@@ -1594,6 +1665,16 @@ export class Collection<
     }
   }
 
+  /**
+   * Set a serialized indexable document entry.
+   *
+   * @param docId
+   * @param idKey
+   * @param value
+   * @param options
+   * @param overwrite
+   * @returns
+   */
   private async setSerializedIndexableDocument(
     docId: KvId,
     idKey: KvKey,
@@ -1715,6 +1796,14 @@ export class Collection<
     }
   }
 
+  /**
+   * Update a document entry with new data.
+   *
+   * @param doc
+   * @param data
+   * @param options
+   * @returns
+   */
   private async updateDocument(
     doc: Document<TOutput>,
     data: UpdateData<TOutput>,
@@ -1767,6 +1856,12 @@ export class Collection<
     )
   }
 
+  /**
+   * Construct a document from an entry.
+   *
+   * @param entry
+   * @returns
+   */
   private async constructDocument(
     { key, value, versionstamp }: Deno.KvEntryMaybe<any>,
   ) {

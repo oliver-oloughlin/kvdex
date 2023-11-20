@@ -202,7 +202,7 @@ export type Model<TInput, TOutput extends KvValue> = {
 export type IndexType = "primary" | "secondary"
 
 export type IndexRecord<T extends KvObject> = {
-  [key in KeysOfThatExtend<T, KvId | undefined>]?: IndexType
+  [K in KeysOfThatExtend<T, KvValue | undefined>]?: IndexType
 }
 
 export type PrimaryIndexKeys<

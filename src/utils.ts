@@ -15,6 +15,7 @@ import type {
   PreparedEnqueue,
   QueueMessage,
   QueueValue,
+  Serialization,
 } from "./types.ts"
 import { brotliCompressSync, brotliDecompressSync, constants } from "node:zlib"
 
@@ -136,11 +137,15 @@ export function setIndices(
     const indexValue = data[index] as KvId | undefined
     if (typeof indexValue === "undefined") return
 
+    // Serialize and compress
+    const serialized = serialize(indexValue)
+    const compressed = compress(serialized)
+
     // Create the index key
     const indexKey = extendKey(
       collection._keys.primaryIndex,
       index,
-      indexValue,
+      compressed,
     )
 
     // Create the index document value
@@ -162,11 +167,15 @@ export function setIndices(
     const indexValue = data[index] as KvId | undefined
     if (typeof indexValue === "undefined") return
 
+    // Serialize and compress
+    const serialized = serialize(indexValue)
+    const compressed = compress(serialized)
+
     // Create the index key
     const indexKey = extendKey(
       collection._keys.secondaryIndex,
       index,
-      indexValue,
+      compressed,
       id,
     )
 
@@ -199,11 +208,15 @@ export function checkIndices(
       return
     }
 
+    // Serialize and compress
+    const serialized = serialize(indexValue)
+    const compressed = compress(serialized)
+
     // Create the index key
     const indexKey = extendKey(
       collection._keys.primaryIndex,
       index,
-      indexValue,
+      compressed,
     )
 
     // Check for existing index entry
@@ -238,11 +251,15 @@ export function deleteIndices(
     const indexValue = data[index] as KvId | undefined
     if (typeof indexValue === "undefined") return
 
+    // Serialize and compress
+    const serialized = serialize(indexValue)
+    const compressed = compress(serialized)
+
     // Create the index key
     const indexKey = extendKey(
       collection._keys.primaryIndex,
       index,
-      indexValue,
+      compressed,
     )
 
     // Add index deletion to atomic operation
@@ -255,11 +272,15 @@ export function deleteIndices(
     const indexValue = data[index] as KvId | undefined
     if (typeof indexValue === "undefined") return
 
+    // Serialize and compress
+    const serialized = serialize(indexValue)
+    const compressed = compress(serialized)
+
     // Create the index key
     const indexKey = extendKey(
       collection._keys.secondaryIndex,
       index,
-      indexValue,
+      compressed,
       id,
     )
 
@@ -267,6 +288,7 @@ export function deleteIndices(
     atomic.delete(indexKey)
   })
 
+  // Return the mutated atomic operation
   return atomic
 }
 
@@ -540,11 +562,53 @@ export function decompress(data: Uint8Array) {
 const DENO_CORE: DenoCore = Deno[Deno.internal].core
 
 export function serialize(data: unknown) {
-  return DENO_CORE.serialize(data)
+  return DENO_CORE.serialize(beforeSerialize(data))
 }
 
 export function deserialize<T>(
   serialized: Uint8Array,
 ) {
-  return DENO_CORE.deserialize<T>(serialized)
+  return afterDeserialize(DENO_CORE.deserialize(serialized)) as T
+}
+
+const KVU64_KEY = "__kvu64__"
+
+export function beforeSerialize(value: unknown): unknown {
+  if (value instanceof Deno.KvU64) {
+    return { [KVU64_KEY]: value.value }
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((val) => beforeSerialize(val))
+  }
+
+  if (isKvObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value as KvObject).map((
+        [key, val],
+      ) => [key, beforeSerialize(val)]),
+    )
+  }
+
+  return value
+}
+
+export function afterDeserialize(value: unknown): unknown {
+  if (isKvObject(value)) {
+    const val = value as KvObject
+
+    if (KVU64_KEY in val) {
+      return new Deno.KvU64(val[KVU64_KEY] as bigint)
+    }
+
+    return Object.fromEntries(
+      Object.entries(val).map(([k, v]) => [k, afterDeserialize(v)]),
+    )
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((v) => afterDeserialize(v))
+  }
+
+  return value
 }
