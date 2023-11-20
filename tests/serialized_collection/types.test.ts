@@ -13,6 +13,7 @@ Deno.test("serialized_collection - types", async (t) => {
           strings: collection(model<string>()),
           numbers: collection(model<number>()),
           bigints: collection(model<bigint>()),
+          u64s: collection(model<Deno.KvU64>()),
         })
 
         const cr1 = await db.nulls.add(null)
@@ -20,18 +21,25 @@ Deno.test("serialized_collection - types", async (t) => {
         const cr3 = await db.strings.add("str1")
         const cr4 = await db.numbers.add(1)
         const cr5 = await db.bigints.add(1n)
+        const cr6 = await db.u64s.add(new Deno.KvU64(1n))
 
         assert(cr1.ok)
         assert(cr2.ok)
         assert(cr3.ok)
         assert(cr4.ok)
         assert(cr5.ok)
+        assert(cr6.ok)
 
         await db.nulls.forEach((doc) => assert(doc.value === null))
         await db.undefineds.forEach((doc) => assert(doc.value === undefined))
         await db.strings.forEach((doc) => assert(typeof doc.value === "string"))
         await db.numbers.forEach((doc) => assert(typeof doc.value === "number"))
         await db.bigints.forEach((doc) => assert(typeof doc.value === "bigint"))
+        await db.u64s.forEach((doc) =>
+          assert(
+            typeof doc.value === "object" && doc.value instanceof Deno.KvU64,
+          )
+        )
       })
     },
   )

@@ -3,15 +3,16 @@
 `kvdex` is a high-level abstraction layer for Deno KV with zero third-party
 dependencies. It's purpose is to enhance the experience of using Deno's KV store
 through additional features such as indexing, strongly typed collections, and
-queue-based intervals, while maintaining as much of the native functionality as
-possible, like atomic operations and queue listeners.
+serialization/compression, while maintaining as much of the native functionality
+as possible, like atomic operations and queue listeners.
 
 ## Highlights
 
 - CRUD operations for selected and ranged documents with strong typing.
 - Primary (unique) and secondary (non-unique) indexing.
 - Extensible model strategy (Zod supported)
-- Segmented storage for large objects that exceed the native size limit.
+- Serialized, compressed and segmented storage for large objects that exceed the
+  native size limit.
 - Support for pagination and filtering.
 - Set intervals built on queues.
 - Message queues at database and collection level with topics.
@@ -26,6 +27,8 @@ possible, like atomic operations and queue listeners.
   - [Database](#database)
   - [Collection Methods](#collection-methods)
     - [find()](#find)
+    - [findByPrimaryIndex()](#findbyprimaryindex)
+    - [findBySecondaryIndex()](#findbysecondaryindex)
     - [findMany()](#findmany)
     - [findUndelivered()](#findundelivered)
     - [add()](#add)
@@ -33,27 +36,24 @@ possible, like atomic operations and queue listeners.
     - [set()](#set)
     - [write()](#write)
     - [update()](#update)
+    - [updateByPrimaryIndex()](#updatebyprimaryindex)
+    - [updateBySecondaryIndex()](#updatebysecondaryindex)
     - [updateMany()](#updatemany)
     - [delete()](#delete)
+    - [deleteByPrimaryIndex()](#deletebyprimaryindex)
+    - [deleteBySecondaryIndex()](#deletebysecondaryindex)
     - [deleteMany()](#deletemany)
     - [deleteUndelivered()](#deleteundelivered)
     - [getMany()](#getmany)
     - [forEach()](#foreach)
+    - [forEachBySecondaryIndex()](#foreachbysecondaryindex)
     - [map()](#map)
+    - [mapBySecondaryIndex()](#mapbysecondaryindex)
     - [count()](#count)
+    - [countBySecondaryIndex()](#countbysecondaryindex)
     - [enqueue()](#enqueue)
     - [listenQueue()](#listenqueue)
-  - [Indexable Collection Methods](#indexable-collection-methods)
-    - [findByPrimaryIndex()](#findbyprimaryindex)
-    - [findBySecondaryIndex()](#findbysecondaryindex)
-    - [updateByPrimaryIndex()](#updatebyprimaryindex)
-    - [updateBySecondaryIndex()](#updatebysecondaryindex)
-    - [deleteByPrimaryIndex()](#deletebyprimaryindex)
-    - [deleteBySecondaryIndex()](#deletebysecondaryindex)
-    - [countBySecondaryIndex()](#countbysecondaryindex)
-    - [forEachBySecondaryIndex()](#foreachbysecondaryindex)
-    - [mapBySecondaryIndex()](#mapbysecondaryindex)
-  - [Large Collections](#large-collections)
+  - [Serialized Collections](#serialized-collections)
   - [Database Methods](#database-methods)
     - [countAll()](#countall)
     - [deleteAll()](#deleteall)
@@ -144,20 +144,16 @@ const UserSchema = z.object({
 instance and a schema definition as arguments.
 
 ```ts
-import { 
-  kvdex,
-  model,
-  collection, 
-  indexableCollection, 
-  largeCollection,
-} from "https://deno.land/x/kvdex/mod.ts"
+import { kvdex, model, collection } from "https://deno.land/x/kvdex/mod.ts"
 
 const kv = await Deno.openKv()
 
 const db = kvdex(kv, {
   numbers: collection(model<number>()),
-  largeStrings: largeCollection(model<string>()),
-  users: indexableCollection(UserSchema, {
+  serializedStrings: collection(model<string>(), {
+    serialized: true
+  }),
+  users: collection(UserSchema, {
     indices: {
       username: "primary" // unique
       age: "secondary" // non-unique
@@ -171,14 +167,9 @@ const db = kvdex(kv, {
 ```
 
 The schema definition contains collection builders, or nested schema
-definitions. Standard collections can hold any type adhering to KvValue (string,
-number, array, object...), large collections can hold strings, arrays and
-objects, while indexable collections can only hold types adhering to KvObject.
-
-All collections take a second options argument. A custom id generator function
-can be set which will be used to auto-generate ids when adding documents to the
-collection. For indexable collections, primary (unique) and secondary
-(non-unique) indexing is supported.
+definitions. Collections can hold any type adhering to KvValue. Indexing can be
+specified for collections of objects, while a custom id generator and
+serialization can be set for all collections.
 
 ## Collection Methods
 
@@ -195,6 +186,31 @@ const userDoc2 = await db.users.find(123n)
 
 const userDoc3 = await db.users.find("oliver", {
   consistency: "eventual", // "strong" by default
+})
+```
+
+### findByPrimaryIndex()
+
+Find a document by a primary index.
+
+```ts
+// Finds a user document with the username = "oliver"
+const userByUsername = await db.users.findByPrimaryIndex("username", "oliver")
+```
+
+### findBySecondaryIndex()
+
+Find documents by a secondary index. Secondary indices are not unique, and
+therefore the result is an array of documents. The method takes an optional
+options argument that can be used for filtering of documents, and pagination.
+
+```ts
+// Returns all users with age = 24
+const { result } = await db.users.findBySecondaryIndex("age", 24)
+
+// Returns all users with age = 24 AND username that starts with "o"
+const { result } = await db.users.findBySecondaryIndex("age", 24, {
+  filter: (doc) => doc.value.username.startsWith("o"),
 })
 ```
 
@@ -327,6 +343,46 @@ const result = await db.users.update("user1", {
 })
 ```
 
+### updateByPrimaryIndex()
+
+Update a document by a primary index.
+
+```ts
+// Updates a user with username = "oliver" to have age = 56
+const result = await db.users.updateByPrimaryIndex("username", "oliver", {
+  age: 56,
+})
+
+// Updates a user document using deep merge
+const result = await db.users.updateByPrimaryIndex("username", "anders", {
+  age: 89,
+}, {
+  mergeType: "deep",
+})
+```
+
+### updateBySecondaryIndex()
+
+Update documents by a secondary index. It takes an optional options argument
+that can be used for filtering of documents to be updated, and pagination. If no
+options are given, all documents by the given index value will we updated.
+
+```ts
+// Updates all user documents with age = 24 and sets age = 67
+const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
+
+// Updates all user documents where the user's age is 24 and username starts with "o" using deep merge
+const { result } = await db.users.updateBySecondaryIndex(
+  "age",
+  24,
+  { age: 67 },
+  {
+    filter: (doc) => doc.value.username.startsWith("o"),
+    mergeType: "deep",
+  },
+)
+```
+
 ### updateMany()
 
 Update the value of multiple existing documents in the KV store. It takes an
@@ -356,6 +412,30 @@ Delete one or more documents with the given ids from the KV store.
 await db.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77")
 
 await db.users.delete("user1", "user2", "user3")
+```
+
+### deleteByPrimaryIndex()
+
+Delete a document by a primary index.
+
+```ts
+// Deletes user with username = "oliver"
+await db.users.deleteByPrimaryIndex("username", "oliver")
+```
+
+### deleteBySecondaryIndex()
+
+Delete documents by a secondary index. The method takes an optional options
+argument that can be used for filtering of documents, and pagination.
+
+```ts
+// Deletes all users with age = 24
+await db.users.deleteBySecondaryIndex("age", 24)
+
+// Deletes all users with age = 24 AND username that starts with "o"
+await db.users.deleteBySecondaryIndex("age", 24, {
+  filter: (doc) => doc.value.username.startsWith("o"),
+})
 ```
 
 ### deleteMany()
@@ -450,6 +530,22 @@ await db.users.forEach((doc) => console.log(doc.value.username), {
 })
 ```
 
+### forEachBySecondaryIndex()
+
+Execute a callback function for documents by a secondary index. Takes an
+optional options argument that can be used for filtering of documents and
+pagination. If no options are given, the callback function will be executed for
+all documents in the collection matching the index.
+
+```ts
+// Prints the username of all users where age = 20
+await db.users.forEachBySecondaryIndex(
+  "age",
+  20,
+  (doc) => console.log(doc.value.username),
+)
+```
+
 ### map()
 
 Execute a callback function for multiple documents in the KV store and retrieve
@@ -478,6 +574,22 @@ const { result } = await db.users.forEach((doc) => doc.value.username, {
 })
 ```
 
+### mapBySecondaryIndex()
+
+Executes a callback function for documents by a secondary index and retrieves
+the results. It takes an optional options argument that can be used for
+filtering of documents and pagination. If no options are given, the callback
+function will be executed for all documents matching the index.
+
+```ts
+// Returns a list of usernames of all users where age = 20
+const { result } = await db.users.mapBySecondaryIndex(
+  "age",
+  20,
+  (doc) => doc.value.username,
+)
+```
+
 ### count()
 
 Count the number of documents in a collection. Takes an optional options
@@ -492,6 +604,17 @@ const count = await db.users.count()
 const count = await db.users.count({
   filter: (doc) => doc.value.age > 20,
 })
+```
+
+### countBySecondaryIndex()
+
+Counts the number of documents in the collection by a secondary index. Takes an
+optional options argument that can be used for filtering of documents. If no
+options are given, it will count all documents matching the index.
+
+```ts
+// Counts all users where age = 20
+const count = await db.users.countBySecondaryIndex("age", 20)
 ```
 
 ### enqueue()
@@ -536,153 +659,38 @@ db.users.listenQueue(async (data) => {
 }, { topic: "posts" })
 ```
 
-## Indexable Collection Methods
+## Serialized Collections
 
-Indexable collections extend the base Collection class and provide all the same
-methods. Note that add/set methods will always fail if an identical index entry
-already exists.
-
-### findByPrimaryIndex()
-
-Find a document by a primary index.
+Serialized collections can store much larger sized data by serializaing,
+compresing and splitting the data across multiple KV entries. There is a
+tradeoff between speed and storage efficiency. Custom serialize and compress
+functions can be set through the collection options.
 
 ```ts
-// Finds a user document with the username = "oliver"
-const userByUsername = await db.users.findByPrimaryIndex("username", "oliver")
-```
+import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
 
-### findBySecondaryIndex()
+type LargeData = {
+  location: string
+  timestamp: Date
+  ...
+}
 
-Find documents by a secondary index. Secondary indices are not unique, and
-therefore the result is an array of documents. The method takes an optional
-options argument that can be used for filtering of documents, and pagination.
+const kv = await Deno.openKv()
+const db = kvdex(kv, {
+  users: collection(model<LargeData>(), {
+    // For default serialization/compression
+    serialized: true
 
-```ts
-// Returns all users with age = 24
-const { result } = await db.users.findBySecondaryIndex("age", 24)
-
-// Returns all users with age = 24 AND username that starts with "o"
-const { result } = await db.users.findBySecondaryIndex("age", 24, {
-  filter: (doc) => doc.value.username.startsWith("o"),
+    // Set custom serialize/compress functions
+    serialized: {
+      serialize: ...,
+      deserialize: ...,
+      compress: ...,
+      decompress: ...,
+    }
+  })
 })
 ```
-
-### updateByPrimaryIndex()
-
-Update a document by a primary index.
-
-```ts
-// Updates a user with username = "oliver" to have age = 56
-const result = await db.users.updateByPrimaryIndex("username", "oliver", {
-  age: 56,
-})
-
-// Updates a user document using deep merge
-const result = await db.users.updateByPrimaryIndex("username", "anders", {
-  age: 89,
-}, {
-  mergeType: "deep",
-})
-```
-
-### updateBySecondaryIndex()
-
-Update documents by a secondary index. It takes an optional options argument
-that can be used for filtering of documents to be updated, and pagination. If no
-options are given, all documents by the given index value will we updated.
-
-```ts
-// Updates all user documents with age = 24 and sets age = 67
-const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
-
-// Updates all user documents where the user's age is 24 and username starts with "o" using deep merge
-const { result } = await db.users.updateBySecondaryIndex(
-  "age",
-  24,
-  { age: 67 },
-  {
-    filter: (doc) => doc.value.username.startsWith("o"),
-    mergeType: "deep",
-  },
-)
-```
-
-### deleteByPrimaryIndex()
-
-Delete a document by a primary index.
-
-```ts
-// Deletes user with username = "oliver"
-await db.users.deleteByPrimaryIndex("username", "oliver")
-```
-
-### deleteBySecondaryIndex()
-
-Delete documents by a secondary index. The method takes an optional options
-argument that can be used for filtering of documents, and pagination.
-
-```ts
-// Deletes all users with age = 24
-await db.users.deleteBySecondaryIndex("age", 24)
-
-// Deletes all users with age = 24 AND username that starts with "o"
-await db.users.deleteBySecondaryIndex("age", 24, {
-  filter: (doc) => doc.value.username.startsWith("o"),
-})
-```
-
-### countBySecondaryIndex()
-
-Counts the number of documents in the collection by a secondary index. Takes an
-optional options argument that can be used for filtering of documents. If no
-options are given, it will count all documents matching the index.
-
-```ts
-// Counts all users where age = 20
-const count = await db.users.countBySecondaryIndex("age", 20)
-```
-
-### forEachBySecondaryIndex()
-
-Execute a callback function for documents by a secondary index. Takes an
-optional options argument that can be used for filtering of documents and
-pagination. If no options are given, the callback function will be executed for
-all documents in the collection matching the index.
-
-```ts
-// Prints the username of all users where age = 20
-await db.users.forEachBySecondaryIndex(
-  "age",
-  20,
-  (doc) => console.log(doc.value.username),
-)
-```
-
-### mapBySecondaryIndex()
-
-Executes a callback function for documents by a secondary index and retrieves
-the results. It takes an optional options argument that can be used for
-filtering of documents and pagination. If no options are given, the callback
-function will be executed for all documents matching the index.
-
-```ts
-// Returns a list of usernames of all users where age = 20
-const { result } = await db.users.mapBySecondaryIndex(
-  "age",
-  20,
-  (doc) => doc.value.username,
-)
-```
-
-## Large Collections
-
-Large collections are distinct from standard collections or indexable
-collections in that they can hold values that exceed the size limit of values in
-Deno KV, currently 64KB. Value types are limited to being of LargeKvValue
-(string, JSON objects and arrays). All base collection methods are available for
-large collections. Document values are divided accross multiple Deno KV entries,
-which impacts the performance of most operations. Only use this collection type
-if you believe your document values will exceed size limit.
 
 ## Database Methods
 
@@ -823,7 +831,7 @@ any point in the building chain to switch the collection context. To execute the
 operation, call "commit" at the end of the chain. An atomic operation returns a
 Deno.KvCommitResult object if successful, and Deno.KvCommitError if not.
 
-**_NOTE_:** Atomic operations are not available for large collections. For
+**_NOTE_:** Atomic operations are not available for serialized collections. For
 indexable collections, any operations performing deletes will not be truly
 atomic in the sense that it performs a single isolated operation. The reason for
 this being that the document data must be read before performing the initial
@@ -831,7 +839,7 @@ delete operation, to then perform another delete operation for the index
 entries. If the initial operation fails, the index entries will not be deleted.
 To avoid collisions and errors related to indexing, an atomic operation will
 always fail if it is trying to delete and write to the same indexable
-collection. It will also fail if trying to set/add a document with existing
+collection. It will also fail if trying to set/add a document with colliding
 index entries.
 
 ### Without checking
