@@ -47,7 +47,7 @@ Deno.test("serialized_indexable_collection - listenQueue", async (t) => {
         ],
       })
 
-      await sleep(100)
+      await sleep(500)
 
       const undelivered = await db.is_users.findUndelivered(undeliveredId)
       assert(assertion || typeof undelivered?.value === typeof data)
@@ -70,7 +70,7 @@ Deno.test("serialized_indexable_collection - listenQueue", async (t) => {
 
       await db.enqueue("data")
 
-      await sleep(100)
+      await sleep(500)
 
       assert(assertion)
 

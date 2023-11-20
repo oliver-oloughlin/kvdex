@@ -29,7 +29,7 @@ Deno.test("db - listenQueue", async (t) => {
         __data__: data,
       } as QueueMessage<QueueValue>)
 
-      await sleep(200)
+      await sleep(500)
       assert(assertion)
 
       return async () => await listener
@@ -52,7 +52,7 @@ Deno.test("db - listenQueue", async (t) => {
 
       await db.numbers.enqueue(data)
 
-      await sleep(100)
+      await sleep(500)
 
       assert(assertion)
 

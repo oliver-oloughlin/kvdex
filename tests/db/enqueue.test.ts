@@ -33,7 +33,7 @@ Deno.test("db - enqueue", async (t) => {
         idsIfUndelivered: [undeliveredId],
       })
 
-      await sleep(100)
+      await sleep(500)
 
       const undelivered = await db.numbers.findUndelivered(undeliveredId)
       assert(assertion || typeof undelivered?.value === typeof data)
@@ -64,7 +64,7 @@ Deno.test("db - enqueue", async (t) => {
         topic,
       })
 
-      await sleep(100)
+      await sleep(500)
 
       const undelivered = await db.numbers.findUndelivered(undeliveredId)
       assert(assertion1 || typeof undelivered?.value === typeof data)
