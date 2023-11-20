@@ -8,12 +8,12 @@ Deno.test("serialized_collection - types", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          nulls: collection(model<null>()),
-          undefineds: collection(model<undefined>()),
-          strings: collection(model<string>()),
-          numbers: collection(model<number>()),
-          bigints: collection(model<bigint>()),
-          u64s: collection(model<Deno.KvU64>()),
+          nulls: collection(model<null>(), { serialized: true }),
+          undefineds: collection(model<undefined>(), { serialized: true }),
+          strings: collection(model<string>(), { serialized: true }),
+          numbers: collection(model<number>(), { serialized: true }),
+          bigints: collection(model<bigint>(), { serialized: true }),
+          u64s: collection(model<Deno.KvU64>(), { serialized: true }),
         })
 
         const cr1 = await db.nulls.add(null)
@@ -49,12 +49,12 @@ Deno.test("serialized_collection - types", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          dates: collection(model<Date>()),
-          sets: collection(model<Set<string>>()),
-          maps: collection(model<Map<string, number>>()),
-          regExps: collection(model<RegExp>()),
-          dataVeiws: collection(model<DataView>()),
-          errors: collection(model<Error>()),
+          dates: collection(model<Date>(), { serialized: true }),
+          sets: collection(model<Set<string>>(), { serialized: true }),
+          maps: collection(model<Map<string, number>>(), { serialized: true }),
+          regExps: collection(model<RegExp>(), { serialized: true }),
+          dataVeiws: collection(model<DataView>(), { serialized: true }),
+          errors: collection(model<Error>(), { serialized: true }),
         })
 
         const cr1 = await db.dates.add(new Date())
@@ -103,19 +103,19 @@ Deno.test("serialized_collection - types", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          arrs: collection(model<Array<string>>()),
-          i8arrs: collection(model<Int8Array>()),
-          i16arrs: collection(model<Int16Array>()),
-          i32arrs: collection(model<Int32Array>()),
-          i64arrs: collection(model<BigInt64Array>()),
-          u8arrs: collection(model<Uint8Array>()),
-          u16arrs: collection(model<Uint16Array>()),
-          u32arrs: collection(model<Uint32Array>()),
-          u64arrs: collection(model<BigUint64Array>()),
-          u8carrs: collection(model<Uint8ClampedArray>()),
-          f32arrs: collection(model<Float32Array>()),
-          f64arrs: collection(model<Float64Array>()),
-          buffers: collection(model<ArrayBuffer>()),
+          arrs: collection(model<Array<string>>(), { serialized: true }),
+          i8arrs: collection(model<Int8Array>(), { serialized: true }),
+          i16arrs: collection(model<Int16Array>(), { serialized: true }),
+          i32arrs: collection(model<Int32Array>(), { serialized: true }),
+          i64arrs: collection(model<BigInt64Array>(), { serialized: true }),
+          u8arrs: collection(model<Uint8Array>(), { serialized: true }),
+          u16arrs: collection(model<Uint16Array>(), { serialized: true }),
+          u32arrs: collection(model<Uint32Array>(), { serialized: true }),
+          u64arrs: collection(model<BigUint64Array>(), { serialized: true }),
+          u8carrs: collection(model<Uint8ClampedArray>(), { serialized: true }),
+          f32arrs: collection(model<Float32Array>(), { serialized: true }),
+          f64arrs: collection(model<Float64Array>(), { serialized: true }),
+          buffers: collection(model<ArrayBuffer>(), { serialized: true }),
         })
 
         const cr1 = await db.arrs.add(["str1", "str2", "str3"])
