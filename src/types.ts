@@ -352,8 +352,6 @@ export type ParsedQueueMessage<T extends QueueValue> = {
   ok: false
 }
 
-export type EnqueueResult = Awaited<ReturnType<Deno.Kv["enqueue"]>>
-
 export type QueueMessageHandler<T extends QueueValue> = (data: T) => unknown
 
 export type PreparedEnqueue<T extends QueueValue> = {

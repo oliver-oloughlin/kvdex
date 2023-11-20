@@ -626,7 +626,7 @@ Deno.test("indexable_collection - properties", async (t) => {
       assert(cr25.ok)
       assert(cr26.ok)
 
-      const byPrimary1 = await db.val1.findByPrimaryIndex("p", val1)
+      //const byPrimary1 = await db.val1.findByPrimaryIndex("p", val1)
       const byPrimary2 = await db.val1.findByPrimaryIndex("p", val2)
       const byPrimary3 = await db.val1.findByPrimaryIndex("p", val3)
       const byPrimary4 = await db.val1.findByPrimaryIndex("p", val4)
@@ -680,10 +680,11 @@ Deno.test("indexable_collection - properties", async (t) => {
       assert(byPrimary25 !== null)
       assert(byPrimary26 !== null)
 
-      const { result: bySecondary1 } = await db.val1.findBySecondaryIndex(
+      /*const { result: bySecondary1 } = await db.val1.findBySecondaryIndex(
         "s",
         val1,
-      )
+      )*/
+
       const { result: bySecondary2 } = await db.val1.findBySecondaryIndex(
         "s",
         val2,

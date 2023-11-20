@@ -1,4 +1,4 @@
-import { collection, Document, kvdex, KvValue, model } from "../../mod.ts"
+import { collection, Document, kvdex, model } from "../../mod.ts"
 import {
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
