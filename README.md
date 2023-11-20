@@ -3,15 +3,16 @@
 `kvdex` is a high-level abstraction layer for Deno KV with zero third-party
 dependencies. It's purpose is to enhance the experience of using Deno's KV store
 through additional features such as indexing, strongly typed collections, and
-queue-based intervals, while maintaining as much of the native functionality as
-possible, like atomic operations and queue listeners.
+serialization/compression, while maintaining as much of the native functionality
+as possible, like atomic operations and queue listeners.
 
 ## Highlights
 
 - CRUD operations for selected and ranged documents with strong typing.
 - Primary (unique) and secondary (non-unique) indexing.
 - Extensible model strategy (Zod supported)
-- Segmented storage for large objects that exceed the native size limit.
+- Serialized, compressed and segmented storage for large objects that exceed the
+  native size limit.
 - Support for pagination and filtering.
 - Set intervals built on queues.
 - Message queues at database and collection level with topics.
@@ -830,7 +831,7 @@ any point in the building chain to switch the collection context. To execute the
 operation, call "commit" at the end of the chain. An atomic operation returns a
 Deno.KvCommitResult object if successful, and Deno.KvCommitError if not.
 
-**_NOTE_:** Atomic operations are not available for large collections. For
+**_NOTE_:** Atomic operations are not available for serialized collections. For
 indexable collections, any operations performing deletes will not be truly
 atomic in the sense that it performs a single isolated operation. The reason for
 this being that the document data must be read before performing the initial
@@ -838,7 +839,7 @@ delete operation, to then perform another delete operation for the index
 entries. If the initial operation fails, the index entries will not be deleted.
 To avoid collisions and errors related to indexing, an atomic operation will
 always fail if it is trying to delete and write to the same indexable
-collection. It will also fail if trying to set/add a document with existing
+collection. It will also fail if trying to set/add a document with colliding
 index entries.
 
 ### Without checking
