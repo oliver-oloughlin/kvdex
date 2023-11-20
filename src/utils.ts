@@ -188,7 +188,7 @@ export function setIndices(
  * @returns The atomic operation with added checks.
  */
 export function checkIndices(
-  data: UpdateData<KvObject>,
+  data: KvObject,
   atomic: Deno.AtomicOperation,
   collection: Collection<any, any, any>,
 ) {

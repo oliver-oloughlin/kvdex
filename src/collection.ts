@@ -593,6 +593,7 @@ export class Collection<
       options,
     )
 
+    // Return iterator cursor
     return { cursor }
   }
 
@@ -1600,20 +1601,6 @@ export class Collection<
     options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
-    // Check for index collision
-    const indicesCheck = await checkIndices(
-      value as KvObject,
-      new AtomicWrapper(this.kv),
-      this,
-    ).commit()
-
-    // If index collision is detected, return commit error
-    if (!indicesCheck.ok) {
-      return {
-        ok: false,
-      }
-    }
-
     // Check if id already exists
     const idCheck = await this.kv
       .atomic()
@@ -1687,26 +1674,19 @@ export class Collection<
       ),
     }
 
-    // Set serialized document entry
-    const idEntryCr = await this.kv
-      .atomic()
-      .set(idKey, entry, options)
-      .commit()
-
-    // Set index entries
-    const indexEntriesCr = await setIndices(
+    // Set serialized document entry + indices
+    const cr = await setIndices(
       docId,
       value as KvObject,
       entry,
-      new AtomicWrapper(this.kv),
+      this.kv.atomic().set(idKey, entry, options),
       this,
       options,
     ).commit()
 
     // If not successful, delete all part entries
-    if (!idEntryCr.ok || !indexEntriesCr.ok) {
+    if (!cr.ok) {
       const atomic = new AtomicWrapper(this.kv)
-      deleteIndices(docId, value as KvObject, atomic, this)
       keys.forEach((key) => atomic.delete(key))
       await atomic.commit()
 
@@ -1731,7 +1711,7 @@ export class Collection<
     return {
       ok: true,
       id: docId,
-      versionstamp: idEntryCr.versionstamp,
+      versionstamp: cr.versionstamp,
     }
   }
 

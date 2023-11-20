@@ -26,7 +26,7 @@ Deno.test("serialized_indexable_collection - deleteBySecondaryIndex", async (t) 
         assert(byPrimary1?.value.username === user1.username)
         assert(bySecondary1.result.length === 2)
 
-        await db.i_users.deleteBySecondaryIndex("age", user1.age)
+        await db.is_users.deleteBySecondaryIndex("age", user1.age)
 
         const count2 = await db.is_users.count()
 

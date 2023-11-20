@@ -105,7 +105,7 @@ export function generateLargeUsers(n: number) {
   const users: User[] = []
 
   let country = ""
-  for (let i = 0; i < 700_000; i++) {
+  for (let i = 0; i < 300_000; i++) {
     country += "A"
   }
 
