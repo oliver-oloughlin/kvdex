@@ -1,15 +1,10 @@
-import {
-  COMPRESSION_QUALITY_LEVEL,
-  GET_MANY_KEY_LIMIT,
-  UNDELIVERED_KEY_PREFIX,
-} from "./constants.ts"
-import type { IndexableCollection } from "./indexable_collection.ts"
+import { COMPRESSION_QUALITY_LEVEL, GET_MANY_KEY_LIMIT } from "./constants.ts"
+import type { Collection } from "./collection.ts"
 import type {
   AtomicSetOptions,
   DenoCore,
   EnqueueOptions,
   FindManyOptions,
-  IndexableCollectionOptions,
   IndexDataEntry,
   KvId,
   KvKey,
@@ -20,7 +15,6 @@ import type {
   PreparedEnqueue,
   QueueMessage,
   QueueValue,
-  UpdateData,
 } from "./types.ts"
 import { brotliCompressSync, brotliDecompressSync, constants } from "node:zlib"
 
@@ -128,32 +122,32 @@ export function isKvObject(value: unknown) {
  * @param options - Set options or undefined.
  * @returns The atomic operation with added mutations.
  */
-export function setIndices<
-  TInput,
-  TOutput extends KvObject,
-  TOptions extends IndexableCollectionOptions<TOutput>,
->(
+export function setIndices(
   id: KvId,
-  data: TOutput,
+  data: KvObject,
+  value: KvObject,
   atomic: Deno.AtomicOperation,
-  collection: IndexableCollection<TInput, TOutput, TOptions>,
+  collection: Collection<any, any, any>,
   options: AtomicSetOptions | undefined,
 ) {
   // Set primary indices using primary index list
-  collection.primaryIndexList.forEach((index) => {
+  collection._primaryIndexList.forEach((index) => {
     // Get the index value from data, if undefined continue to next index
     const indexValue = data[index] as KvId | undefined
     if (typeof indexValue === "undefined") return
 
     // Create the index key
     const indexKey = extendKey(
-      collection._keys.primaryIndexKey,
+      collection._keys.primaryIndex,
       index,
       indexValue,
     )
 
     // Create the index document value
-    const indexEntry: IndexDataEntry<TOutput> = { ...data, __id__: id }
+    const indexEntry: IndexDataEntry<KvObject> = {
+      ...value,
+      __id__: id,
+    }
 
     // Add index insertion to atomic operation, check for exisitng indices
     atomic.set(indexKey, indexEntry, options).check({
@@ -163,21 +157,21 @@ export function setIndices<
   })
 
   // Set secondary indices using secondary index list
-  collection.secondaryIndexList.forEach((index) => {
+  collection._secondaryIndexList.forEach((index) => {
     // Get the index value from data, if undefined continue to next index
     const indexValue = data[index] as KvId | undefined
     if (typeof indexValue === "undefined") return
 
     // Create the index key
     const indexKey = extendKey(
-      collection._keys.secondaryIndexKey,
+      collection._keys.secondaryIndex,
       index,
       indexValue,
       id,
     )
 
     // Add index insertion to atomic operation, check for exisitng indices
-    atomic.set(indexKey, data, options)
+    atomic.set(indexKey, value, options)
   })
 
   // Return the mutated atomic operation
@@ -187,26 +181,18 @@ export function setIndices<
 /**
  * Check for index collisions when inserting update data.
  *
- * @param id - Document id.
  * @param data - Update data.
  * @param atomic - Atomic operation.
  * @param collection - Collection context.
  * @returns The atomic operation with added checks.
  */
-export function checkIndices<
-  TInput,
-  TOutput extends KvObject,
-  TData extends
-    | TOutput
-    | UpdateData<TOutput>,
-  TOptions extends IndexableCollectionOptions<TOutput>,
->(
-  data: TData,
+export function checkIndices(
+  data: KvObject,
   atomic: Deno.AtomicOperation,
-  collection: IndexableCollection<TInput, TOutput, TOptions>,
+  collection: Collection<any, any, any>,
 ) {
   // Check primary indices using primary index list
-  collection.primaryIndexList.forEach((index) => {
+  collection._primaryIndexList.forEach((index) => {
     // Get the index value from data, if undefined continue to next index
     const indexValue = data[index] as KvId | undefined
     if (typeof indexValue === "undefined") {
@@ -215,7 +201,7 @@ export function checkIndices<
 
     // Create the index key
     const indexKey = extendKey(
-      collection._keys.primaryIndexKey,
+      collection._keys.primaryIndex,
       index,
       indexValue,
     )
@@ -240,25 +226,21 @@ export function checkIndices<
  * @param collection - The collection context.
  * @returns The atomic operation with added mutations.
  */
-export function deleteIndices<
-  TInput,
-  TOutput extends KvObject,
-  TOptions extends IndexableCollectionOptions<TOutput>,
->(
+export function deleteIndices(
   id: KvId,
-  data: TOutput,
+  data: KvObject,
   atomic: Deno.AtomicOperation,
-  collection: IndexableCollection<TInput, TOutput, TOptions>,
+  collection: Collection<any, any, any>,
 ) {
   // Delete primary indices using primary index list
-  collection.primaryIndexList.forEach((index) => {
+  collection._primaryIndexList.forEach((index) => {
     // Get the index value from data, if undefined continue to next index
     const indexValue = data[index] as KvId | undefined
     if (typeof indexValue === "undefined") return
 
     // Create the index key
     const indexKey = extendKey(
-      collection._keys.primaryIndexKey,
+      collection._keys.primaryIndex,
       index,
       indexValue,
     )
@@ -268,14 +250,14 @@ export function deleteIndices<
   })
 
   // Delete seocndary indices using secondary index list
-  collection.secondaryIndexList.forEach((index) => {
+  collection._secondaryIndexList.forEach((index) => {
     // Get the index value from data, if undefined continue to next index
     const indexValue = data[index] as KvId | undefined
     if (typeof indexValue === "undefined") return
 
     // Create the index key
     const indexKey = extendKey(
-      collection._keys.secondaryIndexKey,
+      collection._keys.secondaryIndex,
       index,
       indexValue,
       id,
@@ -348,19 +330,20 @@ export async function allFulfilled<const T>(
  * @returns Prepared enqueue
  */
 export function prepareEnqueue<const T extends QueueValue>(
-  key: KvKey,
+  baseKey: KvKey,
+  undeliveredKey: KvKey,
   data: T,
   options: EnqueueOptions | undefined,
 ): PreparedEnqueue<T> {
   // Create queue message
   const msg: QueueMessage<T> = {
     __data__: data,
-    __handlerId__: createHandlerId(key, options?.topic),
+    __handlerId__: createHandlerId(baseKey, options?.topic),
   }
 
   // Create keys if undelivered
   const keysIfUndelivered = options?.idsIfUndelivered?.map((id) =>
-    extendKey(key, UNDELIVERED_KEY_PREFIX, id)
+    extendKey(undeliveredKey, id)
   )
 
   // Return prepared enqueue
@@ -554,4 +537,14 @@ export function decompress(data: Uint8Array) {
 }
 
 // @ts-ignore ?
-export const DENO_CORE: DenoCore = Deno[Deno.internal].core
+const DENO_CORE: DenoCore = Deno[Deno.internal].core
+
+export function serialize(data: unknown) {
+  return DENO_CORE.serialize(data)
+}
+
+export function deserialize<T>(
+  serialized: Uint8Array,
+) {
+  return DENO_CORE.deserialize<T>(serialized)
+}

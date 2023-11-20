@@ -2,15 +2,15 @@ import { assert } from "../deps.ts"
 import { mockUserInvalid } from "../mocks.ts"
 import { generateLargeUsers, useDb } from "../utils.ts"
 
-Deno.test("large_collection - add", async (t) => {
+Deno.test("serialized_collection - add", async (t) => {
   await t.step("Should add new document entry to collection", async () => {
     await useDb(async (db) => {
       const [user] = generateLargeUsers(1)
 
-      const cr = await db.l_users.add(user)
+      const cr = await db.s_users.add(user)
       assert(cr.ok)
 
-      const doc = await db.l_users.find(cr.id)
+      const doc = await db.s_users.find(cr.id)
       assert(doc !== null)
       assert(doc.value.username === user.username)
     })
@@ -22,10 +22,10 @@ Deno.test("large_collection - add", async (t) => {
       await useDb(async (db) => {
         const [user] = generateLargeUsers(1)
 
-        const cr = await db.zl_users.add(user)
+        const cr = await db.zs_users.add(user)
         assert(cr.ok)
 
-        const doc = await db.zl_users.find(cr.id)
+        const doc = await db.zs_users.find(cr.id)
         assert(doc !== null)
         assert(doc.value.username === user.username)
       })
@@ -37,7 +37,7 @@ Deno.test("large_collection - add", async (t) => {
     async () => {
       await useDb(async (db) => {
         let assertion = false
-        await db.zl_users.add(mockUserInvalid).catch(() => assertion = true)
+        await db.zs_users.add(mockUserInvalid).catch(() => assertion = true)
         assert(assertion)
       })
     },

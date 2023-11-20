@@ -1,5 +1,4 @@
 import type { Collection } from "./collection.ts"
-import type { LargeCollection } from "./large_collection.ts"
 import type { Document } from "./document.ts"
 
 /*********************/
@@ -8,13 +7,9 @@ import type { Document } from "./document.ts"
 /*                   */
 /*********************/
 
-export type CollectionBuilderFn = (
-  kv: Deno.Kv,
-  key: KvKey,
-  queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
-  idempotentListener: () => Promise<void>,
-  // deno-lint-ignore no-explicit-any
-) => Collection<any, KvValue, CollectionOptions<KvValue>>
+export type BuilderFn = (
+  ...args: any
+) => any
 
 export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
 
@@ -104,22 +99,8 @@ export type CollectionSelector<
   TInput,
   TOutput extends KvValue,
 > = (
-  schema: AtomicSchema<TSchema>,
+  schema: TSchema,
 ) => Collection<TInput, TOutput, CollectionOptions<TOutput>>
-
-export type AtomicSchema<T extends Schema<SchemaDefinition>> = {
-  [
-    K in KeysOfThatDontExtend<
-      T,
-      LargeCollection<
-        // deno-lint-ignore no-explicit-any
-        any,
-        LargeKvValue,
-        LargeCollectionOptions<LargeKvValue>
-      >
-    >
-  ]: T[K] extends Schema<SchemaDefinition> ? AtomicSchema<T[K]> : T[K]
-}
 
 export type PrepareDeleteFn = (kv: Deno.Kv) => Promise<PreparedIndexDelete>
 
@@ -177,42 +158,46 @@ export type AtomicSetOptions = NonNullable<
 /*                      */
 /************************/
 
-export type CollectionOptions<T extends KvValue> = {
-  /**
-   * Set a custom function for automatic id generation.
-   */
-  idGenerator?: IdGenerator<T>
-}
+export type CollectionOptions<T extends KvValue> =
+  & {
+    idGenerator?: IdGenerator<T>
+    serialized?: true | Partial<Serialization>
+  }
+  & (
+    T extends KvObject ? {
+        indices?: IndexRecord<T>
+      }
+      : { [K in never]: never }
+  )
+
+export type PossibleCollectionOptions = CollectionOptions<
+  Record<string, never>
+>
 
 export type CollectionKeys = {
-  baseKey: KvKey
-  idKey: KvKey
+  base: KvKey
+  id: KvKey
+  primaryIndex: KvKey
+  secondaryIndex: KvKey
+  segment: KvKey
+  undelivered: KvKey
 }
+
+export type IdempotentListener = () => Promise<void>
+
+export type ParseInputType<TInput, TOutput extends KvValue> = TInput extends
+  KvValue ? TInput : TOutput
 
 export type Model<TInput, TOutput extends KvValue> = {
   parse: (data: TInput) => TOutput
   __validate?: (data: unknown) => TOutput
 }
 
-export type ParseInputType<TInput, TOutput extends KvValue> = TInput extends
-  KvValue ? TInput : TOutput
-
-/**********************************/
-/*                                */
-/*   INDEXABLE COLLECTION TYPES   */
-/*                                */
-/**********************************/
-
-export type IndexableCollectionOptions<T extends KvObject> =
-  & CollectionOptions<T>
-  & {
-    indices: IndexRecord<T>
-  }
-
-export type IndexableCollectionKeys = CollectionKeys & {
-  primaryIndexKey: KvKey
-  secondaryIndexKey: KvKey
-}
+/*******************/
+/*                 */
+/*   INDEX TYPES   */
+/*                 */
+/*******************/
 
 export type IndexType = "primary" | "secondary"
 
@@ -220,40 +205,38 @@ export type IndexRecord<T extends KvObject> = {
   [key in KeysOfThatExtend<T, KvId | undefined>]?: IndexType
 }
 
-export type PrimaryIndexKeys<T1 extends KvObject, T2 extends IndexRecord<T1>> =
-  KeysOfThatExtend<T2, "primary">
+export type PrimaryIndexKeys<
+  T1 extends KvValue,
+  T2 extends CollectionOptions<T1>,
+> = T2 extends { indices: IndexRecord<KvObject> }
+  ? KeysOfThatExtend<T2["indices"], "primary">
+  : never
 
 export type SecondaryIndexKeys<
-  T1 extends KvObject,
-  T2 extends IndexRecord<T1>,
-> = KeysOfThatExtend<T2, "secondary">
+  T1 extends KvValue,
+  T2 extends CollectionOptions<T1>,
+> = T2 extends { indices: IndexRecord<KvObject> }
+  ? KeysOfThatExtend<T2["indices"], "secondary">
+  : never
 
 export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
   __id__: KvId
 }
 
-/******************************/
-/*                            */
-/*   LARGE COLLECTION TYPES   */
-/*                            */
-/******************************/
+/***************************/
+/*                         */
+/*   SERIALIZATION TYPES   */
+/*                         */
+/***************************/
 
-export type Compression = {
+export type Serialization = {
+  serialize: <T>(data: T) => Uint8Array
+  deserialize: <T>(data: Uint8Array) => T
   compress: (data: Uint8Array) => Uint8Array
   decompress: (data: Uint8Array) => Uint8Array
 }
 
-export type LargeCollectionOptions<T extends LargeKvValue> =
-  & CollectionOptions<T>
-  & {
-    compression?: Compression
-  }
-
-export type LargeCollectionKeys = CollectionKeys & {
-  segmentKey: KvKey
-}
-
-export type LargeDocumentEntry = {
+export type SerializedEntry = {
   ids: KvId[]
 }
 
@@ -340,12 +323,12 @@ export type QueueListenerOptions = {
 /********************/
 
 export type SchemaDefinition = {
-  [key: string]: SchemaDefinition | CollectionBuilderFn
+  [key: string]: SchemaDefinition | BuilderFn
 }
 
 export type Schema<T extends SchemaDefinition> = {
   [K in keyof T]: T[K] extends SchemaDefinition ? Schema<T[K]>
-    : T[K] extends CollectionBuilderFn ? ReturnType<T[K]>
+    : T[K] extends BuilderFn ? ReturnType<T[K]>
     : never
 }
 
@@ -377,6 +360,8 @@ export type PreparedEnqueue<T extends QueueValue> = {
   msg: QueueMessage<T>
   options: KvEnqueueOptions
 }
+
+export type QueueHandlers = Map<string, QueueMessageHandler<QueueValue>[]>
 
 /******************/
 /*                */
@@ -431,40 +416,6 @@ export type KvValue =
   | boolean
   | bigint
   | Deno.KvU64
-  | KvObject
-  | KvArray
-  | Int8Array
-  | Int16Array
-  | Int32Array
-  | BigInt64Array
-  | Uint8Array
-  | Uint16Array
-  | Uint32Array
-  | BigUint64Array
-  | Uint8ClampedArray
-  | Float32Array
-  | Float64Array
-  | ArrayBuffer
-  | Date
-  | Set<KvValue>
-  | Map<KvValue, KvValue>
-  | RegExp
-  | DataView
-  | Error
-
-export type LargeKvObject = {
-  [K: string | number]: LargeKvValue
-}
-
-export type LargeKvArray = LargeKvValue[]
-
-export type LargeKvValue =
-  | undefined
-  | null
-  | string
-  | number
-  | boolean
-  | bigint
   | KvObject
   | KvArray
   | Int8Array

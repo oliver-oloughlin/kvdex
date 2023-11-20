@@ -230,6 +230,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
     // Prepare and perform enqueue operation
     const prep = prepareEnqueue(
       [KVDEX_KEY_PREFIX],
+      [KVDEX_KEY_PREFIX, UNDELIVERED_KEY_PREFIX],
       data,
       options,
     )

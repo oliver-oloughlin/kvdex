@@ -1,18 +1,18 @@
-import { kvdex, largeCollection, model } from "../../mod.ts"
+import { collection, kvdex, model } from "../../mod.ts"
 import { assert } from "../deps.ts"
 import { useKv } from "../utils.ts"
 
-Deno.test("large_collection - types", async (t) => {
+Deno.test("serialized_collection - types", async (t) => {
   await t.step(
     "Should allow and properly store/retrieve all primitive types",
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          nulls: largeCollection(model<null>()),
-          undefineds: largeCollection(model<undefined>()),
-          strings: largeCollection(model<string>()),
-          numbers: largeCollection(model<number>()),
-          bigints: largeCollection(model<bigint>()),
+          nulls: collection(model<null>()),
+          undefineds: collection(model<undefined>()),
+          strings: collection(model<string>()),
+          numbers: collection(model<number>()),
+          bigints: collection(model<bigint>()),
         })
 
         const cr1 = await db.nulls.add(null)
@@ -41,12 +41,12 @@ Deno.test("large_collection - types", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          dates: largeCollection(model<Date>()),
-          sets: largeCollection(model<Set<string>>()),
-          maps: largeCollection(model<Map<string, number>>()),
-          regExps: largeCollection(model<RegExp>()),
-          dataVeiws: largeCollection(model<DataView>()),
-          errors: largeCollection(model<Error>()),
+          dates: collection(model<Date>()),
+          sets: collection(model<Set<string>>()),
+          maps: collection(model<Map<string, number>>()),
+          regExps: collection(model<RegExp>()),
+          dataVeiws: collection(model<DataView>()),
+          errors: collection(model<Error>()),
         })
 
         const cr1 = await db.dates.add(new Date())
@@ -95,19 +95,19 @@ Deno.test("large_collection - types", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          arrs: largeCollection(model<Array<string>>()),
-          i8arrs: largeCollection(model<Int8Array>()),
-          i16arrs: largeCollection(model<Int16Array>()),
-          i32arrs: largeCollection(model<Int32Array>()),
-          i64arrs: largeCollection(model<BigInt64Array>()),
-          u8arrs: largeCollection(model<Uint8Array>()),
-          u16arrs: largeCollection(model<Uint16Array>()),
-          u32arrs: largeCollection(model<Uint32Array>()),
-          u64arrs: largeCollection(model<BigUint64Array>()),
-          u8carrs: largeCollection(model<Uint8ClampedArray>()),
-          f32arrs: largeCollection(model<Float32Array>()),
-          f64arrs: largeCollection(model<Float64Array>()),
-          buffers: largeCollection(model<ArrayBuffer>()),
+          arrs: collection(model<Array<string>>()),
+          i8arrs: collection(model<Int8Array>()),
+          i16arrs: collection(model<Int16Array>()),
+          i32arrs: collection(model<Int32Array>()),
+          i64arrs: collection(model<BigInt64Array>()),
+          u8arrs: collection(model<Uint8Array>()),
+          u16arrs: collection(model<Uint16Array>()),
+          u32arrs: collection(model<Uint32Array>()),
+          u64arrs: collection(model<BigUint64Array>()),
+          u8carrs: collection(model<Uint8ClampedArray>()),
+          f32arrs: collection(model<Float32Array>()),
+          f64arrs: collection(model<Float64Array>()),
+          buffers: collection(model<ArrayBuffer>()),
         })
 
         const cr1 = await db.arrs.add(["str1", "str2", "str3"])

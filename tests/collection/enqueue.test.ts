@@ -19,7 +19,7 @@ Deno.test("collection - enqueue", async (t) => {
         numbers: collection(model<number>()),
       })
 
-      const handlerId = createHandlerId(db.numbers._keys.baseKey, undefined)
+      const handlerId = createHandlerId(db.numbers._keys.base, undefined)
 
       let assertion = false
 

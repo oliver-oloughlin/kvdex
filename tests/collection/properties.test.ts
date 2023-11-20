@@ -9,8 +9,8 @@ import { generateUsers, useDb, useKv } from "../utils.ts"
 Deno.test("collection - properties", async (t) => {
   await t.step("Keys should have the correct prefixes", async () => {
     await useDb((db) => {
-      const baseKey = db.users._keys.baseKey
-      const idKey = db.users._keys.idKey
+      const baseKey = db.users._keys.base
+      const idKey = db.users._keys.id
       const prefix = extendKey([KVDEX_KEY_PREFIX], "users")
 
       assert(keyEq(baseKey, prefix))
@@ -26,6 +26,9 @@ Deno.test("collection - properties", async (t) => {
         }),
         users2: collection(model<User>(), {
           idGenerator: (data) => data.username,
+          indices: {
+            username: "primary",
+          },
         }),
       })
 

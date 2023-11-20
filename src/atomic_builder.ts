@@ -1,7 +1,5 @@
 import type { Collection } from "./collection.ts"
-import { InvalidAtomicBuilderCollectionError } from "./errors.ts"
-import { IndexableCollection } from "./indexable_collection.ts"
-import { LargeCollection } from "./large_collection.ts"
+import { InvalidCollectionError } from "./errors.ts"
 import type {
   AtomicCheck,
   AtomicMutation,
@@ -9,7 +7,6 @@ import type {
   CollectionOptions,
   CollectionSelector,
   EnqueueOptions,
-  IndexableCollectionOptions,
   KvId,
   KvObject,
   KvValue,
@@ -60,9 +57,9 @@ export class AtomicBuilder<
     operations?: Operations,
   ) {
     // Check for large collection
-    if (collection instanceof LargeCollection) {
-      throw new InvalidAtomicBuilderCollectionError(
-        "Atomic operations are not supported for LargeCollection",
+    if (collection._isSerialized) {
+      throw new InvalidCollectionError(
+        "Atomic operations are not supported for serialized collections",
       )
     }
 
@@ -156,7 +153,7 @@ export class AtomicBuilder<
     const collection = this.collection
     const parsed = collection._model.parse(value as TInput)
     const docId = id ?? collection._idGenerator(parsed)
-    const idKey = extendKey(collection._keys.idKey, docId)
+    const idKey = extendKey(collection._keys.id, docId)
 
     // Add set operation
     this.operations.atomic.check({ key: idKey, versionstamp: null }).set(
@@ -165,23 +162,20 @@ export class AtomicBuilder<
       options,
     )
 
-    if (collection instanceof IndexableCollection) {
+    if (collection._isIndexable) {
       // Set data as KvObject type
       const _data = parsed as KvObject
 
       // Add collection id key for collision detection
-      this.operations.indexAddCollectionKeys.push(collection._keys.baseKey)
+      this.operations.indexAddCollectionKeys.push(collection._keys.base)
 
       // Add indexing operations
       setIndices(
         docId,
         _data,
+        _data,
         this.operations.atomic,
-        this.collection as unknown as IndexableCollection<
-          KvObject,
-          KvObject,
-          IndexableCollectionOptions<KvObject>
-        >,
+        this.collection,
         options,
       )
     }
@@ -206,15 +200,15 @@ export class AtomicBuilder<
   delete(id: KvId) {
     // Create id key from id and collection id key
     const collection = this.collection
-    const idKey = extendKey(collection._keys.idKey, id)
+    const idKey = extendKey(collection._keys.id, id)
 
     // Add delete operation
     this.operations.atomic.delete(idKey)
 
     // If collection is indexable, handle indexing
-    if (this.collection instanceof IndexableCollection) {
+    if (this.collection._isIndexable) {
       // Add collection key for collision detection
-      this.operations.indexDeleteCollectionKeys.push(collection._keys.baseKey)
+      this.operations.indexDeleteCollectionKeys.push(collection._keys.base)
 
       // Add delete preperation function to prepeare delete functions list
       this.operations.prepareDeleteFns.push(async (kv) => {
@@ -251,7 +245,7 @@ export class AtomicBuilder<
     // Create Deno atomic checks from atomci checks input list
     const checks: Deno.AtomicCheck[] = atomicChecks.map(
       ({ id, versionstamp }) => {
-        const key = extendKey(this.collection._keys.idKey, id)
+        const key = extendKey(this.collection._keys.id, id)
         return {
           key,
           versionstamp,
@@ -283,7 +277,7 @@ export class AtomicBuilder<
    */
   sum(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never) {
     // Create id key from id and collection id key
-    const idKey = extendKey(this.collection._keys.idKey, id)
+    const idKey = extendKey(this.collection._keys.id, id)
 
     // Add sum operation to atomic ops list
     this.operations.atomic.sum(idKey, value)
@@ -310,7 +304,7 @@ export class AtomicBuilder<
    */
   min(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never) {
     // Create id key from id and collection id key
-    const idKey = extendKey(this.collection._keys.idKey, id)
+    const idKey = extendKey(this.collection._keys.id, id)
 
     // Add min operation to atomic ops list
     this.operations.atomic.min(idKey, value)
@@ -337,7 +331,7 @@ export class AtomicBuilder<
    */
   max(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never) {
     // Create id key from id and collection id key
-    const idKey = extendKey(this.collection._keys.idKey, id)
+    const idKey = extendKey(this.collection._keys.id, id)
 
     // Add max operation to atomic ops list
     this.operations.atomic.max(idKey, value)
@@ -375,7 +369,7 @@ export class AtomicBuilder<
 
     // Map from atomic mutations to kv mutations
     const kvMutations: Deno.KvMutation[] = mutations.map(({ id, ...rest }) => {
-      const idKey = extendKey(collection._keys.idKey, id)
+      const idKey = extendKey(collection._keys.id, id)
 
       if (rest.type === "delete") {
         return {
@@ -409,7 +403,7 @@ export class AtomicBuilder<
       }
 
       // If collection is indexable, handle indexing
-      if (collection instanceof IndexableCollection) {
+      if (collection._isIndexable) {
         // Get document id from mutation key
         const id = getDocumentId(mut.key)
 
@@ -421,18 +415,15 @@ export class AtomicBuilder<
         // If mutation type is "set", handle setting of indices
         if (mut.type === "set") {
           // Add collection key for collision detection
-          this.operations.indexAddCollectionKeys.push(collection._keys.baseKey)
+          this.operations.indexAddCollectionKeys.push(collection._keys.base)
 
           // Add indexing operations to atomic ops list
           setIndices(
             id,
             mut.value as KvObject,
+            mut.value as KvObject,
             this.operations.atomic,
-            this.collection as unknown as IndexableCollection<
-              KvObject,
-              KvObject,
-              IndexableCollectionOptions<KvObject>
-            >,
+            this.collection,
             {
               ...mut,
             },
@@ -443,7 +434,7 @@ export class AtomicBuilder<
         if (mut.type === "delete") {
           // Add collection key for collision detection
           this.operations.indexDeleteCollectionKeys.push(
-            collection._keys.baseKey,
+            collection._keys.base,
           )
 
           // Add delete preperation function to delete preperation functions list
@@ -493,7 +484,8 @@ export class AtomicBuilder<
   enqueue(data: QueueValue, options?: EnqueueOptions) {
     // Prepare and add enqueue operation
     const prep = prepareEnqueue(
-      this.collection._keys.baseKey,
+      this.collection._keys.base,
+      this.collection._keys.undelivered,
       data,
       options,
     )
@@ -551,11 +543,7 @@ export class AtomicBuilder<
             id,
             data,
             atomic,
-            this.collection as unknown as IndexableCollection<
-              KvObject,
-              KvObject,
-              IndexableCollectionOptions<KvObject>
-            >,
+            this.collection,
           )
 
           // Execute atomic operation

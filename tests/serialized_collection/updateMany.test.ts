@@ -3,16 +3,16 @@ import { assert } from "../deps.ts"
 import { mockUser1, mockUserInvalid } from "../mocks.ts"
 import { generateLargeUsers, generateNumbers, useDb, useKv } from "../utils.ts"
 
-Deno.test("large_collection - updateMany", async (t) => {
+Deno.test("serialized_collection - updateMany", async (t) => {
   await t.step(
     "Should partially update 1000 documents of model type using shallow merge",
     async () => {
       await useDb(async (db) => {
         const users = generateLargeUsers(1_000)
-        const cr = await db.l_users.addMany(users)
+        const cr = await db.s_users.addMany(users)
         assert(cr.ok)
 
-        const { result: docs } = await db.l_users.getMany()
+        const { result: docs } = await db.s_users.getMany()
         const ids = docs.map((doc) => doc.id)
         const versionstamps = docs.map((doc) => doc.versionstamp)
 
@@ -24,7 +24,7 @@ Deno.test("large_collection - updateMany", async (t) => {
           },
         }
 
-        const { result } = await db.l_users.updateMany(updateData, {
+        const { result } = await db.s_users.updateMany(updateData, {
           mergeType: "shallow",
         })
 
@@ -35,7 +35,7 @@ Deno.test("large_collection - updateMany", async (t) => {
           ),
         )
 
-        await db.l_users.forEach((doc) => {
+        await db.s_users.forEach((doc) => {
           assert(doc.value.address.country === updateData.address.country)
           assert(doc.value.address.city === updateData.address.city)
           assert(doc.value.address.houseNr === updateData.address.houseNr)
@@ -50,10 +50,10 @@ Deno.test("large_collection - updateMany", async (t) => {
     async () => {
       await useDb(async (db) => {
         const users = generateLargeUsers(1_000)
-        const cr = await db.l_users.addMany(users)
+        const cr = await db.s_users.addMany(users)
         assert(cr.ok)
 
-        const { result: docs } = await db.l_users.getMany()
+        const { result: docs } = await db.s_users.getMany()
         const ids = docs.map((doc) => doc.id)
         const versionstamps = docs.map((doc) => doc.versionstamp)
 
@@ -65,7 +65,7 @@ Deno.test("large_collection - updateMany", async (t) => {
           },
         }
 
-        const { result } = await db.l_users.updateMany(updateData, {
+        const { result } = await db.s_users.updateMany(updateData, {
           mergeType: "deep",
         })
 
@@ -76,7 +76,7 @@ Deno.test("large_collection - updateMany", async (t) => {
           ),
         )
 
-        await db.l_users.forEach((doc) => {
+        await db.s_users.forEach((doc) => {
           assert(doc.value.address.country === updateData.address.country)
           assert(doc.value.address.city === updateData.address.city)
           assert(doc.value.address.houseNr === updateData.address.houseNr)
@@ -166,10 +166,10 @@ Deno.test("large_collection - updateMany", async (t) => {
       const users = generateLargeUsers(10)
       let assertion = true
 
-      const cr = await db.zl_users.addMany(users)
+      const cr = await db.zs_users.addMany(users)
       assert(cr.ok)
 
-      await db.zl_users.updateMany(mockUser1).catch(() => assertion = false)
+      await db.zs_users.updateMany(mockUser1).catch(() => assertion = false)
 
       assert(assertion)
     })
@@ -180,10 +180,10 @@ Deno.test("large_collection - updateMany", async (t) => {
       const users = generateLargeUsers(10)
       let assertion = false
 
-      const cr = await db.zl_users.addMany(users)
+      const cr = await db.zs_users.addMany(users)
       assert(cr.ok)
 
-      await db.zl_users.updateMany(mockUserInvalid).catch(() =>
+      await db.zs_users.updateMany(mockUserInvalid).catch(() =>
         assertion = true
       )
 

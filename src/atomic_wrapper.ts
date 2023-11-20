@@ -80,7 +80,7 @@ export class AtomicWrapper implements Deno.AtomicOperation {
     )
 
     // Check status of all commits
-    const success = settled.every((v) => v.status === "fulfilled")
+    const success = settled.every((v) => v.status === "fulfilled" && v.value.ok)
 
     // If successful, return commit result
     if (success) {
