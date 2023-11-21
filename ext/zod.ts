@@ -1,12 +1,5 @@
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts"
-import type {
-  KeysOfThatDontExtend,
-  KeysOfThatExtend,
-  KvArray,
-  KvObject,
-  KvValue,
-  Model,
-} from "../mod.ts"
+import type { KvArray, KvObject, KvValue, Model } from "../mod.ts"
 
 /*******************/
 /*                 */
@@ -60,33 +53,32 @@ export const KvObjectSchema: z.ZodType<KvObject> = z.record(
   KvValueSchema,
 )
 
-/*****************/
-/*               */
-/*     TYPES     */
-/*               */
-/*****************/
-
-export type ZodInputModel<T extends z.ZodType<KvValue>> = T extends
-  z.ZodDefault<infer Z extends z.ZodType> ? (
-    (
-      Z extends z.ZodObject<z.ZodRawShape> ? ZodInputModel<Z>
-        : z.TypeOf<Z>
-    ) | undefined
-  )
-  : T extends z.ZodObject<infer U> ? ZodObjectInputModel<U>
-  : z.TypeOf<T>
-
-export type ZodObjectInputModel<T extends z.ZodRawShape> =
-  & {
-    [K in KeysOfThatExtend<T, z.ZodDefault<z.ZodType>>]?: ZodInputModel<
-      T[K]
-    >
-  }
-  & {
-    [K in KeysOfThatDontExtend<T, z.ZodDefault<z.ZodType>>]: ZodInputModel<
-      T[K]
-    >
-  }
+export const QueueValueSchema = z.null()
+  .or(z.string())
+  .or(z.number())
+  .or(z.boolean())
+  .or(z.bigint())
+  .or(z.instanceof(Deno.KvU64))
+  .or(LazyKvObjectSchema)
+  .or(LazyKvArraySchema)
+  .or(z.instanceof(Int8Array))
+  .or(z.instanceof(Int16Array))
+  .or(z.instanceof(Int32Array))
+  .or(z.instanceof(BigInt64Array))
+  .or(z.instanceof(Uint8Array))
+  .or(z.instanceof(Uint16Array))
+  .or(z.instanceof(Uint32Array))
+  .or(z.instanceof(BigUint64Array))
+  .or(z.instanceof(Uint8ClampedArray))
+  .or(z.instanceof(Float32Array))
+  .or(z.instanceof(Float64Array))
+  .or(z.instanceof(ArrayBuffer))
+  .or(z.date())
+  .or(z.set(LazyKvValueSchema))
+  .or(z.map(LazyKvValueSchema, LazyKvValueSchema))
+  .or(z.instanceof(RegExp))
+  .or(z.instanceof(DataView))
+  .or(z.instanceof(Error))
 
 /*****************/
 /*               */
@@ -133,7 +125,7 @@ export type ZodObjectInputModel<T extends z.ZodRawShape> =
  */
 export function zodModel<const T extends z.ZodType<KvValue>>(
   schema: T,
-): Model<ZodInputModel<T>, z.infer<T>> {
+): Model<z.input<T>, z.infer<T>> {
   return {
     parse: (data) => schema.parse(data),
   }
