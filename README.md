@@ -2,7 +2,7 @@
 
 `kvdex` is a high-level abstraction layer for Deno KV with zero third-party
 dependencies. It's purpose is to enhance the experience of using Deno's KV store
-through additional features such as indexing, strongly typed collections, and
+through additional features such as indexing, strongly typed collections and
 serialization/compression, while maintaining as much of the native functionality
 as possible, like atomic operations and queue listeners.
 
@@ -10,7 +10,7 @@ as possible, like atomic operations and queue listeners.
 
 - CRUD operations for selected and ranged documents with strong typing.
 - Primary (unique) and secondary (non-unique) indexing.
-- Extensible model strategy (Zod supported)
+- Extensible model strategy (Zod supported).
 - Serialized, compressed and segmented storage for large objects that exceed the
   native size limit.
 - Support for pagination and filtering.
@@ -81,9 +81,9 @@ Collections are typed using models. Standard models can be defined using the
 `model()` function. Alternatively, any object that implements the Model type can
 be used as a model. Zod is therefore compatible, without being a dependency (see
 [zodModel()](#zodmodel) for additional support). The standard model uses type
-casting only, and does not validate any data when parsing. Assymetric models can
+casting only, and does not validate any data when parsing. Asymmetric models can
 be created by passing a transform function which maps from an input type to an
-output type. Assymetric models are useful for storing derived values or filling
+output type. Asymmetric models are useful for storing derived values or filling
 default values. It is up to the developer to choose the strategy that fits their
 use case the best.
 
