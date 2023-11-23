@@ -8,13 +8,14 @@ import {
 import { KVDEX_KEY_PREFIX } from "../../src/constants.ts"
 import { createHandlerId } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
-import { sleep, useKv } from "../utils.ts"
+import { createResolver, sleep, useKv } from "../utils.ts"
 
 Deno.test("db - listenQueue", async (t) => {
   await t.step("Should receive message with string data", async () => {
     await useKv(async (kv) => {
       const data = "data"
       const db = kvdex(kv, {})
+      const sleeper = createResolver()
 
       const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined)
 
@@ -22,6 +23,7 @@ Deno.test("db - listenQueue", async (t) => {
 
       const listener = db.listenQueue((msgData) => {
         assertion = msgData === data
+        sleeper.resolve()
       })
 
       await kv.enqueue({
@@ -29,7 +31,7 @@ Deno.test("db - listenQueue", async (t) => {
         __data__: data,
       } as QueueMessage<QueueValue>)
 
-      await sleep(500)
+      await sleeper.promise
       assert(assertion)
 
       return async () => await listener

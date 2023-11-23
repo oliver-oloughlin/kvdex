@@ -9,6 +9,8 @@ import type {
   KvId,
   KvKey,
   KvValue,
+  LoopMessage,
+  LoopOptions,
   QueueListenerOptions,
   QueueMessageHandler,
   QueueValue,
@@ -29,6 +31,7 @@ import { AtomicBuilder } from "./atomic_builder.ts"
 import {
   DEFAULT_INTERVAL,
   DEFAULT_INTERVAL_RETRY,
+  DEFAULT_LOOP_RETRY,
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
@@ -325,7 +328,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
   }
 
   /**
-   * Set an interval for a callback function to be invoked.
+   * Create an interval for a callback function to be invoked, built on queues.
    *
    * Interval defaults to 1 hour if not set.
    *
@@ -333,7 +336,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    *
    * @example
    * ```ts
-   * // Will repeat indeefinitely without delay
+   * // Will repeat indeefinitely with 1 hour interval
    * db.setInterval(() => console.log("Hello World!"))
    *
    * // First callback starts after a 10 second delay, after that there is a 5 second delay between callbacks
@@ -345,10 +348,10 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    *   interval: 5_000,
    *
    *   // ...or set a dynamic interval
-   *   interval: ({ count }) => count * 500
+   *   interval: ({ count }) => count * 500,
    *
    *   // Count starts at 0 and is given before the current callback is run
-   *   exit: ({ count }) => count === 10,
+   *   exitOn: ({ count }) => count === 10,
    * })
    * ```
    *
@@ -376,7 +379,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
           topic: id,
         })
 
-        // Check if message was delivered, break loop if successful
+        // Check if message was delivered, break for-loop if successful
         const doc = await this.findUndelivered(id)
 
         if (doc === null) {
@@ -425,8 +428,9 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
         // Enqueue next callback
         enqueue({
           count: msg.count + 1,
-          previousInterval: interval,
-          previousTimestamp: new Date(),
+          interval,
+          timestamp: new Date(),
+          first: false,
         }, interval),
 
         // Invoke callback function
@@ -437,8 +441,116 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
     // Enqueue first task
     await enqueue({
       count: 0,
-      previousInterval: options?.startDelay ?? 0,
-      previousTimestamp: null,
+      interval: options?.startDelay ?? 0,
+      timestamp: new Date(),
+      first: true,
+    }, options?.startDelay)
+
+    // Return listener
+    return listener
+  }
+
+  /**
+   * Create a sequential loop built on queues.
+   *
+   * @example
+   * ```ts
+   * // Prints "Hello World!" 10 times, with 1 second delay
+   * db.loop(() => console.log("Hello World!"), {
+   *   delay: 1_000,
+   *   exitOn: ({ count }) => count <= 9,
+   * })
+   * ```
+   *
+   * @param fn
+   * @param options
+   * @returns
+   */
+  async loop<const T1 extends QueueValue>(
+    fn: (msg: LoopMessage<Awaited<T1>>) => T1 | Promise<T1>,
+    options?: LoopOptions<Awaited<T1>>,
+  ) {
+    // Create loop handler id
+    const id = crypto.randomUUID()
+
+    // Create loop enqueuer
+    const enqueue = async (
+      msg: LoopMessage<Awaited<T1>>,
+      delay: number | undefined,
+    ) => {
+      // Try enqueuing until delivered on number of retries is exhausted
+      for (let i = 0; i <= (options?.retry ?? DEFAULT_LOOP_RETRY); i++) {
+        await this.enqueue(msg, {
+          idsIfUndelivered: [id],
+          delay,
+          topic: id,
+        })
+
+        // Check if message was delivered, break for-loop if successful
+        const doc = await this.findUndelivered(id)
+
+        if (doc === null) {
+          break
+        }
+
+        // Delete undelivered entry before retrying
+        await this.deleteUndelivered(id)
+      }
+    }
+
+    // Add loop listener
+    const listener = this.listenQueue<LoopMessage<Awaited<T1>>>(async (msg) => {
+      // Check if exit criteria is met, terminate loop if true
+      let exit = false
+      try {
+        exit = await options?.exitOn?.(msg) ?? false
+      } catch (e) {
+        console.error(
+          `An error was caught while running exitOn task for loop {ID = ${id}}`,
+          e,
+        )
+      }
+
+      if (exit) {
+        await options?.onExit?.(msg)
+        return
+      }
+
+      // Set the next delay
+      let delay = 0
+      try {
+        if (typeof options?.delay === "function") {
+          delay = await options.delay(msg)
+        } else {
+          delay = options?.delay ?? 0
+        }
+      } catch (e) {
+        console.error(
+          `An error was caught while setting the next callback delay for loop {ID = ${id}}`,
+          e,
+        )
+      }
+
+      // Run task
+      const result = await fn(msg)
+
+      // Enqueue next task
+      await enqueue({
+        count: msg.count + 1,
+        result: result as unknown as Awaited<T1>,
+        delay: delay,
+        timestamp: new Date(),
+        first: false,
+      }, delay)
+    }, { topic: id })
+
+    // Enqueue first task
+    await enqueue({
+      count: 0,
+      result: null,
+      delay: options?.startDelay ?? 0,
+      timestamp: new Date(),
+      first: true,
     }, options?.startDelay)
 
     // Return listener

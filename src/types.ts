@@ -54,23 +54,23 @@ export type SetIntervalOptions = {
    */
   interval?: number | ((msg: IntervalMessage) => number | Promise<number>)
 
-  /** Exit condition used to terminate interval. */
+  /** Exit condition used to terminate the interval. */
   exitOn?: (msg: IntervalMessage) => boolean | Promise<boolean>
 
-  /** Task to be run when terminating an interval, executed after ```exitOn()``` returns true. */
+  /** Task to be run when terminating the interval, executed after `exitOn()` returns true. */
   onExit?: (msg: IntervalMessage) => unknown
 
   /**
-   * Delay before running the first job.
+   * Delay before running the first task.
    *
-   * If not set, will run first job immediately.
+   * If not set, will run the first task immediately.
    */
   startDelay?: number
 
   /**
-   * Number of retry attempts upon failed job deliver.
+   * Number of retry attempts upon failed enqueue delivery.
    *
-   * When all retry attempts are spent the interval will terminate.
+   * When all retry attempts are spent, the interval will terminate.
    *
    * @default 10
    */
@@ -78,15 +78,83 @@ export type SetIntervalOptions = {
 }
 
 export type IntervalMessage = {
-  /** Job number, starts at 0. */
+  /** Task number, starts at 0 for the first task. */
   count: number
 
-  /** Previously set interval. */
-  previousInterval: number
+  /** Previously set interval. Equal to `startDelay` or 0 for the first task. */
+  interval: number
 
-  /** Timestamp of previous executed callback, is null for first callback. */
-  previousTimestamp: Date | null
+  /** Enqueue timestamp of current task. */
+  timestamp: Date
+
+  /** True if the current task is the first callback, false if not. */
+  first: boolean
 }
+
+/******************/
+/*                */
+/*   LOOP TYPES   */
+/*                */
+/******************/
+
+export type LoopOptions<T> = {
+  /**
+   * Static or dynamic delay in milliseconds.
+   *
+   * If not set, next callback is invoked immediately on task end.
+   */
+  delay?: number | ((msg: LoopMessage<T>) => number | Promise<number>)
+
+  /** Exit condition used to terminate the loop. */
+  exitOn?: (msg: LoopMessage<T>) => boolean | Promise<boolean>
+
+  /** Task to be run when terminating the loop, executed after `exitOn()` returns true. */
+  onExit?: (msg: LoopMessage<T>) => unknown
+
+  /**
+   * Delay before running the first task.
+   *
+   * If not set, will run the first task immediately.
+   */
+  startDelay?: number
+
+  /**
+   * Number of retry attempts upon failed enqueue delivery.
+   *
+   * When all retry attempts are spent, the loop will terminate.
+   *
+   * @default 10
+   */
+  retry?: number
+}
+
+export type LoopMessage<T> =
+  & {
+    /** Task number, starts at 0. */
+    count: number
+
+    /** Previously set delay, is equal to `startDelay` or 0 for the first task. */
+    delay: number
+
+    /** Enqueue timestamp of current task. */
+    timestamp: Date
+  }
+  & (
+    | {
+      /** Result of prevous task. Is null for the first task. */
+      result: T
+
+      /** True if the current task is the first callback, false if not. */
+      first: false
+    }
+    | {
+      /** Result of prevous task. Is null for the first task. */
+      result: null
+
+      /** True if the current task is the first callback, false if not. */
+      first: true
+    }
+  )
 
 /****************************/
 /*                          */

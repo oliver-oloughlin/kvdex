@@ -12,7 +12,7 @@ import {
 import { createHandlerId, extendKey } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
 import { User } from "../models.ts"
-import { sleep, useKv } from "../utils.ts"
+import { createResolver, sleep, useKv } from "../utils.ts"
 
 Deno.test("indexable_collection - listenQueue", async (t) => {
   await t.step("Should receive message with string data", async () => {
@@ -24,12 +24,13 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
         i_users: collection(model<User>(), { indices: {} }),
       })
 
+      const sleeper = createResolver()
       const handlerId = createHandlerId(db.i_users._keys.base, undefined)
-
       let assertion = false
 
       const listener = db.i_users.listenQueue((msgData) => {
         assertion = msgData === data
+        sleeper.resolve()
       })
 
       const msg: QueueMessage<QueueValue> = {
@@ -47,7 +48,7 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
         ],
       })
 
-      await sleep(500)
+      await sleeper.promise
 
       const undelivered = await db.i_users.findUndelivered(undeliveredId)
       assert(assertion || typeof undelivered?.value === typeof data)

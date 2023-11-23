@@ -11,13 +11,14 @@ import {
 } from "../../src/constants.ts"
 import { createHandlerId, extendKey } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
-import { sleep, useKv } from "../utils.ts"
+import { createResolver, sleep, useKv } from "../utils.ts"
 
 Deno.test("collection - listenQueue", async (t) => {
   await t.step("Should receive message with string data", async () => {
     await useKv(async (kv) => {
       const data = "data"
       const undeliveredId = "id"
+      const sleeper = createResolver()
 
       const db = kvdex(kv, {
         numbers: collection(model<number>()),
@@ -29,6 +30,7 @@ Deno.test("collection - listenQueue", async (t) => {
 
       const listener = db.numbers.listenQueue((msgData) => {
         assertion = msgData === data
+        sleeper.resolve()
       })
 
       const msg: QueueMessage<QueueValue> = {
@@ -46,7 +48,7 @@ Deno.test("collection - listenQueue", async (t) => {
         ],
       })
 
-      await sleep(500)
+      await sleeper.promise
 
       const undelivered = await db.numbers.findUndelivered(undeliveredId)
       assert(assertion || typeof undelivered?.value === typeof data)

@@ -99,23 +99,17 @@ export const QueueValueSchema = z.null()
  *
  * const UserSchema = z.object({
  *   username: z.string(),
- *   gender: z.string().default("not given"),
+ *   gender: z.string().default("undefined"),
  * })
  *
  * const kv = await Deno.openKv()
  *
  * const db = kvdex(kv, {
- *   users_basic: collection(UserSchema),
- *   users_zod: collection(zodModel(UserSchema)),
- * })
- *
- * // Produces a type error for missing "gender" field.
- * const result = await db.users_basic.add({
- *   username: "oliver",
+ *   users: collection(zodModel(UserSchema)),
  * })
  *
  * // No type error for missing "gender" field.
- * const result = await db.users_zod.add({
+ * const result2 = await db.users.add({
  *   username: "oliver",
  * })
  * ```
