@@ -8,7 +8,7 @@ import {
 import { createHandlerId } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
 import { User } from "../models.ts"
-import { sleep, useDb, useKv } from "../utils.ts"
+import { createResolver, useDb, useKv } from "../utils.ts"
 
 Deno.test("serialized_collection - enqueue", async (t) => {
   await t.step("Should enqueue message with string data", async () => {
@@ -20,20 +20,21 @@ Deno.test("serialized_collection - enqueue", async (t) => {
         s_users: collection(model<User>(), { serialized: true }),
       })
 
+      const sleeper = createResolver()
       const handlerId = createHandlerId(db.s_users._keys.base, undefined)
-
       let assertion = false
 
       const listener = kv.listenQueue((msg) => {
         const qMsg = msg as QueueMessage<QueueValue>
         assertion = qMsg.__handlerId__ === handlerId && qMsg.__data__ === data
+        sleeper.resolve()
       })
 
       await db.s_users.enqueue(data, {
         idsIfUndelivered: [undeliveredId],
       })
 
-      await sleep(500)
+      await sleeper.promise
 
       const undelivered = await db.s_users.findUndelivered(undeliveredId)
       assert(assertion || typeof undelivered?.value === typeof data)
@@ -48,10 +49,14 @@ Deno.test("serialized_collection - enqueue", async (t) => {
       const undeliveredId = "undelivered"
       const topic = "topic"
 
+      const sleeper = createResolver()
       let assertion1 = false
       let assertion2 = true
 
-      const l1 = db.s_users.listenQueue(() => assertion1 = true, { topic })
+      const l1 = db.s_users.listenQueue(() => {
+        assertion1 = true
+        sleeper.resolve()
+      }, { topic })
 
       const l2 = db.s_users.listenQueue(() => assertion2 = false)
 
@@ -60,7 +65,7 @@ Deno.test("serialized_collection - enqueue", async (t) => {
         topic,
       })
 
-      await sleep(500)
+      await sleeper.promise
 
       const undelivered = await db.s_users.findUndelivered(undeliveredId)
       assert(assertion1 || typeof undelivered?.value === typeof data)

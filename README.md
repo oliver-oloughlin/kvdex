@@ -62,6 +62,7 @@ as possible, like atomic operations and queue listeners.
     - [enqueue()](#enqueue-1)
     - [listenQueue()](#listenqueue-1)
     - [setInterval()](#setinterval)
+    - [loop()](#loop)
     - [atomic()](#atomic)
   - [Atomic Operations](#atomic-operations)
     - [Without checking](#without-checking)
@@ -783,9 +784,8 @@ db.listenQueue(async (data) => {
 
 ### setInterval()
 
-Create an interval with a callback function that can run indefinitely or until
-an exit condition is met. Interval defaults to 1 hour if not set. Like with
-queue listeners, multiple intervals can be created.
+Create an interval built on queues that can run indefinitely or until an exit
+condition is met. Interval defaults to 1 hour if not set.
 
 ```ts
 // Will repeat indefinitely with 1 hour interval
@@ -804,6 +804,21 @@ db.setInterval(() => console.log("I terminate after running 10 times"), {
 
   // Count starts at 0, exitOn is run before the current callback
   exitOn: ({ count }) => count === 10,
+})
+```
+
+### loop()
+
+Create a loop built on queues that can run indefinitely or until an exit
+condition is met. In contrast to `setInterval()`, the callback function in a
+loop is run sequentially, meaning the next callback is not enqueued until the
+previous task finishes.
+
+```ts
+// Prints "Hello World!" 10 times, with 1 second delay
+db.loop(() => console.log("Hello World!"), {
+  delay: 1_000,
+  exitOn: ({ count }) => count >= 9,
 })
 ```
 

@@ -8,13 +8,14 @@ import {
 import { KVDEX_KEY_PREFIX } from "../../src/constants.ts"
 import { createHandlerId } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
-import { sleep, useKv } from "../utils.ts"
+import { createResolver, useKv } from "../utils.ts"
 
 Deno.test("db - enqueue", async (t) => {
   await t.step("Should enqueue message with string data", async () => {
     await useKv(async (kv) => {
       const data = "data"
       const undeliveredId = "undelivered"
+      const sleeper = createResolver()
 
       const db = kvdex(kv, {
         numbers: collection(model<number>()),
@@ -27,13 +28,14 @@ Deno.test("db - enqueue", async (t) => {
       const listener = kv.listenQueue((msg) => {
         const qMsg = msg as QueueMessage<QueueValue>
         assertion = qMsg.__handlerId__ === handlerId && qMsg.__data__ === data
+        sleeper.resolve()
       })
 
       await db.enqueue("data", {
         idsIfUndelivered: [undeliveredId],
       })
 
-      await sleep(500)
+      await sleeper.promise
 
       const undelivered = await db.numbers.findUndelivered(undeliveredId)
       assert(assertion || typeof undelivered?.value === typeof data)
@@ -47,6 +49,7 @@ Deno.test("db - enqueue", async (t) => {
       const data = "data"
       const undeliveredId = "undelivered"
       const topic = "topic"
+      const sleeper = createResolver()
 
       const db = kvdex(kv, {
         numbers: collection(model<number>()),
@@ -55,16 +58,21 @@ Deno.test("db - enqueue", async (t) => {
       let assertion1 = false
       let assertion2 = true
 
-      const l1 = db.listenQueue(() => assertion1 = true, { topic })
+      const l1 = db.listenQueue(() => {
+        assertion1 = true
+        sleeper.resolve()
+      }, { topic })
 
-      const l2 = db.listenQueue(() => assertion2 = false)
+      const l2 = db.listenQueue(() => {
+        assertion2 = false
+      })
 
       await db.enqueue("data", {
         idsIfUndelivered: [undeliveredId],
         topic,
       })
 
-      await sleep(500)
+      await sleeper.promise
 
       const undelivered = await db.numbers.findUndelivered(undeliveredId)
       assert(assertion1 || typeof undelivered?.value === typeof data)

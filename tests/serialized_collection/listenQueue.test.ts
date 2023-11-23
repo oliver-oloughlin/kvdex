@@ -12,7 +12,7 @@ import {
 import { createHandlerId, extendKey } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
 import { User } from "../models.ts"
-import { sleep, useKv } from "../utils.ts"
+import { createResolver, sleep, useKv } from "../utils.ts"
 
 Deno.test("serialized_collection - listenQueue", async (t) => {
   await t.step("Should receive message with string data", async () => {
@@ -24,10 +24,12 @@ Deno.test("serialized_collection - listenQueue", async (t) => {
         s_users: collection(model<User>()),
       })
 
+      const sleeper = createResolver()
       let assertion = false
 
       const listener = db.s_users.listenQueue((msgData) => {
         assertion = msgData === data
+        sleeper.resolve()
       })
 
       const handlerId = createHandlerId(db.s_users._keys.base, undefined)
@@ -47,7 +49,7 @@ Deno.test("serialized_collection - listenQueue", async (t) => {
         ],
       })
 
-      await sleep(500)
+      await sleeper.promise
 
       const undelivered = await db.s_users.findUndelivered(undeliveredId)
       assert(assertion || typeof undelivered?.value === typeof data)
