@@ -6,6 +6,8 @@ through additional features such as indexing, strongly typed collections and
 serialization/compression, while maintaining as much of the native functionality
 as possible, like atomic operations and queue listeners.
 
+_Supported Deno verisons:_ **^1.37.0**
+
 ## Highlights
 
 - CRUD operations for selected and ranged documents with strong typing.
