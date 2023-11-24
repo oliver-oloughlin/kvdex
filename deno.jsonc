@@ -3,6 +3,7 @@
   "tasks": {
     "check": "deno check --unstable mod.ts ext/zod.ts",
     "test": "deno test -A --unstable --trace-ops",
+    "bench": "deno bench -A --unstable",
     "prep": "deno task check && deno fmt && deno lint && deno task test"
   },
   "fmt": {
@@ -15,5 +16,8 @@
   },
   "test": {
     "include": ["./tests"]
+  },
+  "bench": {
+    "include": ["./benchmarks"]
   }
 }

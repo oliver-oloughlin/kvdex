@@ -9,6 +9,10 @@ export function createDb(kv: Deno.Kv) {
     u64s: collection(model<Deno.KvU64>(), {
       idGenerator: () => ulid(),
     }),
+    s_u64s: collection(model<Deno.KvU64>(), {
+      idGenerator: () => ulid(),
+      serialized: true,
+    }),
     users: collection(model<User>(), {
       idGenerator: () => ulid(),
     }),
