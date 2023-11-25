@@ -545,7 +545,7 @@ export class Collection<
     }
 
     // Perform delete operation for each id
-    const atomic = new AtomicWrapper(this.kv, 40)
+    const atomic = new AtomicWrapper(this.kv)
     ids.forEach((id) => atomic.delete(extendKey(this._keys.id, id)))
     await atomic.commit()
   }
@@ -1398,7 +1398,7 @@ export class Collection<
     }
 
     // Initialize atomic operation and keys list
-    const atomic = new AtomicWrapper(this.kv)
+    const atomic = new AtomicWrapper(this.kv, options?.atomicBatchSize)
     const keys: KvKey[] = []
     let docValue: any = value
 
@@ -1494,7 +1494,7 @@ export class Collection<
     if (this._isIndexable) {
       const atomic = checkIndices(
         data as KvObject,
-        new AtomicWrapper(this.kv),
+        new AtomicWrapper(this.kv, options?.atomicBatchSize),
         this,
       )
 
