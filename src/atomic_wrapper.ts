@@ -84,9 +84,11 @@ export class AtomicWrapper implements Deno.AtomicOperation {
 
     // If successful, return commit result
     if (success) {
+      const cr = (settled.at(0) as any).value as Deno.KvCommitResult
+      const versionstamp = cr.versionstamp
       return {
         ok: true,
-        versionstamp: "0",
+        versionstamp: versionstamp ?? "0",
       }
     }
 

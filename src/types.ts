@@ -317,7 +317,7 @@ export type SerializedEntry = {
 export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
   /** Number of retry attempts before returning failed operation */
   retry?: number
-}
+} & AtomicBatchOptions
 
 export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   /**
@@ -335,10 +335,14 @@ export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   endId?: KvId
 }
 
-export type AtomicListOptions<T extends KvValue> = ListOptions<T> & {
+export type AtomicBatchOptions = {
   /** Batch size of atomic operations where applicable */
   atomicBatchSize?: number
 }
+
+export type AtomicListOptions<T extends KvValue> =
+  & ListOptions<T>
+  & AtomicBatchOptions
 
 export type CountOptions<T extends KvValue> =
   & CountAllOptions
@@ -365,10 +369,7 @@ export type UpdateManyOptions<T extends KvValue> =
 
 export type CountAllOptions = Pick<ListOptions<KvValue>, "consistency">
 
-export type DeleteAllOptions = Pick<
-  AtomicListOptions<KvValue>,
-  "atomicBatchSize"
->
+export type DeleteAllOptions = AtomicBatchOptions
 
 export type EnqueueOptions =
   & Omit<
