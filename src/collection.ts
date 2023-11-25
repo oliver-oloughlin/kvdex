@@ -1360,124 +1360,16 @@ export class Collection<
     id: KvId | null,
     value: ParseInputType<TInput, TOutput>,
     options: SetOptions | undefined,
-    overwrite = false,
+    overwrite: boolean,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Create id, document key and parse document value
     const parsed = this._model.parse(value as TInput)
     const docId = id ?? this._idGenerator(parsed)
     const idKey = extendKey(this._keys.id, docId)
-
-    // Set indexable and serialized document
-    if (this._isIndexable && this._isSerialized) {
-      return await this.setSerializedIndexableDocument(
-        docId,
-        idKey,
-        parsed,
-        options,
-        overwrite,
-      )
-    }
-
-    // Set indexable document
-    if (this._isIndexable) {
-      return await this.setIndexableDocument(
-        docId,
-        idKey,
-        parsed,
-        options,
-        overwrite,
-      )
-    }
-
-    // Set serialized document
-    if (this._isSerialized) {
-      return await this.setSerializedDocument(
-        docId,
-        idKey,
-        parsed,
-        options,
-        overwrite,
-      )
-    }
-
-    // Set standard document
-    return await this.setStandardDocument(
-      docId,
-      idKey,
-      parsed,
-      options,
-      overwrite,
-    )
+    return await this.setDoc(docId, idKey, parsed, options, overwrite)
   }
 
-  /**
-   * Set a standard document entry.
-   *
-   * @param docId
-   * @param idKey
-   * @param value
-   * @param options
-   * @param overwrite
-   * @returns
-   */
-  private async setStandardDocument(
-    docId: KvId,
-    idKey: KvKey,
-    value: TOutput,
-    options: SetOptions | undefined,
-    overwrite = false,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
-    // Create atomic operation with set mutation
-    const atomic = this.kv
-      .atomic()
-      .set(idKey, value, options)
-
-    // If overwrite is false, check for existing document
-    if (!overwrite) {
-      atomic.check({
-        key: idKey,
-        versionstamp: null,
-      })
-    }
-
-    // Perform atomic operation
-    const cr = await atomic.commit()
-
-    // Retry failed operation if remaining attempts
-    const retry = options?.retry ?? 0
-    if (!cr.ok && retry > 0) {
-      return await this.setStandardDocument(
-        docId,
-        idKey,
-        value,
-        { ...options, retry: retry - 1 },
-        overwrite,
-      )
-    }
-
-    // return commit result or error
-    return cr.ok
-      ? {
-        ok: true,
-        versionstamp: cr.versionstamp,
-        id: docId,
-      }
-      : {
-        ok: false,
-      }
-  }
-
-  /**
-   * Set an indexable document entry
-   *
-   * @param docId
-   * @param idKey
-   * @param value
-   * @param options
-   * @param overwrite
-   * @returns
-   */
-  private async setIndexableDocument(
+  async setDoc(
     docId: KvId,
     idKey: KvKey,
     value: TOutput,
@@ -1493,165 +1385,83 @@ export class Collection<
       })
       .commit()
 
-    // If id collision is detected and overwrite is false, return failed operation.
     if (!idCheck.ok) {
+      // If overwrite is false, return commit error
       if (!overwrite) {
         return {
           ok: false,
         }
       }
 
-      // Delete existing document before setting new entry
+      // If overwrite is true, delete existing document entry
       await this.delete(docId)
     }
 
-    // Set entry + indices
-    const cr = await setIndices(
-      docId,
-      value as KvObject,
-      value as KvObject,
-      this.kv.atomic().set(idKey, value, options),
-      this,
-      options,
-    ).commit()
+    // Initialize atomic operation and keys list
+    const atomic = new AtomicWrapper(this.kv)
+    const keys: KvKey[] = []
+    let docValue: any = value
 
-    // Retry failed operation if remaining attempts
-    const retry = options?.retry ?? 0
-    if (!cr.ok && retry > 0) {
-      return await this.setIndexableDocument(
+    // Serialize if enabled
+    if (this._isSerialized) {
+      const serialized = this.serialization!.serialize(value)
+      const compressed = this.serialization!.compress(serialized)
+
+      // Set segmented entries
+      let index = 0
+      for (let i = 0; i < compressed.length; i += UINT8ARRAY_LENGTH_LIMIT) {
+        const part = compressed.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT)
+        const key = extendKey(this._keys.segment, docId, index)
+        keys.push(key)
+        atomic.set(key, part, options)
+        index++
+      }
+
+      // Set serialized document entry
+      docValue = {
+        ids: keys.map((key) => getDocumentId(key)!).filter((id) =>
+          typeof id !== "undefined"
+        ),
+      } as SerializedEntry
+    }
+
+    // Set documetn entry
+    atomic.set(idKey, docValue, options)
+
+    // Set indices if is indexable
+    if (this._isIndexable) {
+      setIndices(
         docId,
-        idKey,
-        value,
-        { ...options, retry: retry - 1 },
-        overwrite,
+        value as KvObject,
+        docValue,
+        atomic,
+        this,
+        options,
       )
     }
 
-    // Return commit result or error
-    return cr.ok
-      ? {
-        ok: true,
-        versionstamp: cr.versionstamp,
-        id: docId,
-      }
-      : {
-        ok: false,
-      }
-  }
+    // Commit atomic operation
+    const cr = await atomic.commit()
 
-  /**
-   * Set a serialized document entry.
-   *
-   * @param docId
-   * @param idKey
-   * @param value
-   * @param options
-   * @param overwrite
-   * @returns
-   */
-  private async setSerializedDocument(
-    docId: KvId,
-    idKey: KvKey,
-    value: TOutput,
-    options: SetOptions | undefined,
-    overwrite = false,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
-    // Check if id already exists
-    const check = await this.kv
-      .atomic()
-      .check({
-        key: idKey,
-        versionstamp: null,
-      })
-      .commit()
-
-    // Check if document already exists
-    if (!check.ok) {
-      // If overwrite is false, return commit error
-      if (!overwrite) {
-        return {
-          ok: false,
-        }
-      }
-
-      // If overwrite is true, delete existing document entry
-      await this.delete(docId)
-    }
-
-    // Serialize and decompress
-    const serialized = serialize(value)
-    const data = this.serialization!.compress(serialized)
-
-    // Initialize index, keys list and atomic operation
-    let index = 0
-    const keys: KvKey[] = []
-    const atomic = new AtomicWrapper(this.kv)
-
-    // Set segmented entries
-    for (let i = 0; i < data.length; i += UINT8ARRAY_LENGTH_LIMIT) {
-      const part = data.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT)
-      const key = extendKey(this._keys.segment, docId, index)
-      keys.push(key)
-      atomic.set(key, part, options)
-      index++
-    }
-
-    // Commit atomic operation and set retry atempts
-    const partsCr = await atomic.commit()
-    const retry = options?.retry ?? 0
-
-    // If not successful, delete all parts
-    if (!partsCr.ok) {
-      const op = new AtomicWrapper(this.kv)
-      keys.forEach((key) => op.delete(key))
-      await op.commit()
-
-      // Retry operation if there are remaining attempts
-      if (retry > 0) {
-        return await this.setSerializedDocument(
-          docId,
-          idKey,
-          value,
-          { ...options, retry: retry - 1 },
-          overwrite,
-        )
-      }
-
-      // Return failed operation
-      return {
-        ok: false,
-      }
-    }
-
-    // Create serialized document entry
-    const entry: SerializedEntry = {
-      ids: keys.map((key) => getDocumentId(key)!).filter((id) =>
-        typeof id !== "undefined"
-      ),
-    }
-
-    // Set serialized document entry
-    const cr = await this.kv
-      .atomic()
-      .set(idKey, entry, options)
-      .commit()
-
-    // If not successful, delete all part entries
+    // Delete all entries if failed
     if (!cr.ok) {
-      await allFulfilled(keys.map((key) => this.kv.delete(key)))
+      const deletes = new AtomicWrapper(this.kv)
+      deletes.delete(idKey)
 
-      // Retry operation if there are remaining attempts
-      if (retry > 0) {
-        return await this.setSerializedDocument(
+      keys.forEach((key) => deletes.delete(key))
+
+      if (!this._isIndexable) {
+        deleteIndices(
           docId,
-          idKey,
-          value,
-          { ...options, retry: retry - 1 },
-          overwrite,
+          value as KvObject,
+          deletes,
+          this,
         )
       }
 
-      // Return failed operation
+      await deletes.commit()
+
+      // Return commit error
       return {
         ok: false,
       }
@@ -1659,140 +1469,8 @@ export class Collection<
 
     // Return commit result
     return {
-      ok: true,
+      ...cr,
       id: docId,
-      versionstamp: cr.versionstamp,
-    }
-  }
-
-  /**
-   * Set a serialized indexable document entry.
-   *
-   * @param docId
-   * @param idKey
-   * @param value
-   * @param options
-   * @param overwrite
-   * @returns
-   */
-  private async setSerializedIndexableDocument(
-    docId: KvId,
-    idKey: KvKey,
-    value: TOutput,
-    options: SetOptions | undefined,
-    overwrite = false,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
-    // Check if id already exists
-    const idCheck = await this.kv
-      .atomic()
-      .check({
-        key: idKey,
-        versionstamp: null,
-      })
-      .commit()
-
-    if (!idCheck.ok) {
-      // If overwrite is false, return commit error
-      if (!overwrite) {
-        return {
-          ok: false,
-        }
-      }
-
-      // If overwrite is true, delete existing document entry
-      await this.delete(docId)
-    }
-
-    // Serialize and compress
-    const serialized = serialize(value)
-    const data = this.serialization!.compress(serialized)
-
-    // Initialize index, keys list and atomic operation
-    let index = 0
-    const keys: KvKey[] = []
-    const atomic = new AtomicWrapper(this.kv)
-
-    // Set segmented entries
-    for (let i = 0; i < data.length; i += UINT8ARRAY_LENGTH_LIMIT) {
-      const part = data.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT)
-      const key = extendKey(this._keys.segment, docId, index)
-      keys.push(key)
-      atomic.set(key, part, options)
-      index++
-    }
-
-    // Commit atomic operation and set retry atempts
-    const partsCr = await atomic.commit()
-    const retry = options?.retry ?? 0
-
-    // If not successful, delete all parts
-    if (!partsCr.ok) {
-      const op = new AtomicWrapper(this.kv)
-      keys.forEach((key) => op.delete(key))
-      await op.commit()
-
-      // Retry operation if there are remaining attempts
-      if (retry > 0) {
-        return await this.setSerializedDocument(
-          docId,
-          idKey,
-          value,
-          { ...options, retry: retry - 1 },
-          overwrite,
-        )
-      }
-
-      // Return failed operation
-      return {
-        ok: false,
-      }
-    }
-
-    // Create serialized document entry
-    const entry: SerializedEntry = {
-      ids: keys.map((key) => getDocumentId(key)!).filter((id) =>
-        typeof id !== "undefined"
-      ),
-    }
-
-    // Set serialized document entry + indices
-    const cr = await setIndices(
-      docId,
-      value as KvObject,
-      entry,
-      this.kv.atomic().set(idKey, entry, options),
-      this,
-      options,
-    ).commit()
-
-    // If not successful, delete all part entries
-    if (!cr.ok) {
-      const atomic = new AtomicWrapper(this.kv)
-      keys.forEach((key) => atomic.delete(key))
-      await atomic.commit()
-
-      // Retry operation if there are remaining attempts
-      if (retry > 0) {
-        return await this.setSerializedDocument(
-          docId,
-          idKey,
-          value,
-          { ...options, retry: retry - 1 },
-          overwrite,
-        )
-      }
-
-      // Return failed operation
-      return {
-        ok: false,
-      }
-    }
-
-    // Return commit result
-    return {
-      ok: true,
-      id: docId,
-      versionstamp: cr.versionstamp,
     }
   }
 
