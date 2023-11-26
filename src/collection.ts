@@ -1369,6 +1369,16 @@ export class Collection<
     return await this.setDoc(docId, idKey, parsed, options, overwrite)
   }
 
+  /**
+   * Inner set document.
+   *
+   * @param docId
+   * @param idKey
+   * @param value
+   * @param options
+   * @param overwrite
+   * @returns
+   */
   async setDoc(
     docId: KvId,
     idKey: KvKey,
@@ -1376,31 +1386,16 @@ export class Collection<
     options: SetOptions | undefined,
     overwrite = false,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
-    // Check for id collision
-    const idCheck = await this.kv
-      .atomic()
-      .check({
-        key: idKey,
-        versionstamp: null,
-      })
-      .commit()
-
-    if (!idCheck.ok) {
-      // If overwrite is false, return commit error
-      if (!overwrite) {
-        return {
-          ok: false,
-        }
-      }
-
-      // If overwrite is true, delete existing document entry
-      await this.delete(docId)
-    }
-
     // Initialize atomic operation and keys list
-    const atomic = new AtomicWrapper(this.kv, options?.atomicBatchSize)
+    const atomic = this.kv.atomic()
     const keys: KvKey[] = []
     let docValue: any = value
+
+    // Check for id collision
+    atomic.check({
+      key: idKey,
+      versionstamp: null,
+    })
 
     // Serialize if enabled
     if (this._isSerialized) {
@@ -1425,7 +1420,7 @@ export class Collection<
       } as SerializedEntry
     }
 
-    // Set documetn entry
+    // Set document entry
     atomic.set(idKey, docValue, options)
 
     // Set indices if is indexable
@@ -1443,23 +1438,46 @@ export class Collection<
     // Commit atomic operation
     const cr = await atomic.commit()
 
-    // Delete all entries if failed
+    // Handle failed operation
     if (!cr.ok) {
-      const deletes = new AtomicWrapper(this.kv)
-      deletes.delete(idKey)
+      // If overwrite is true, check for id and indices collision
+      if (overwrite) {
+        const [
+          idCheck,
+          indicesCheck,
+        ] = await Promise.all([
+          this.kv
+            .atomic()
+            .check({
+              key: idKey,
+              versionstamp: null,
+            })
+            .commit(),
 
-      keys.forEach((key) => deletes.delete(key))
+          checkIndices(
+            value as KvObject,
+            this.kv.atomic(),
+            this,
+          ).commit(),
+        ])
 
-      if (!this._isIndexable) {
-        deleteIndices(
-          docId,
-          value as KvObject,
-          deletes,
-          this,
-        )
+        // If only id collision, delete exisitng document and try again
+        if (!idCheck.ok && indicesCheck.ok) {
+          await this.delete(docId)
+          return await this.setDoc(docId, idKey, value, options, overwrite)
+        }
+
+        // Operation is not retryable if indices collision is detected
+        return {
+          ok: false,
+        }
       }
 
-      await deletes.commit()
+      // Check for remaining retry attempts
+      const retry = options?.retry ?? 0
+      if (retry > 0) {
+        return await this.setDoc(docId, idKey, value, options, overwrite)
+      }
 
       // Return commit error
       return {
@@ -1494,7 +1512,7 @@ export class Collection<
     if (this._isIndexable) {
       const atomic = checkIndices(
         data as KvObject,
-        new AtomicWrapper(this.kv, options?.atomicBatchSize),
+        this.kv.atomic(),
         this,
       )
 
@@ -1513,8 +1531,8 @@ export class Collection<
 
     let updated = data as TOutput
 
+    // Perform merge if value is kv object
     if (isKvObject(value)) {
-      // Merge value and data according to given merge type
       const mergeType = options?.mergeType ?? DEFAULT_MERGE_TYPE
 
       updated = mergeType === "shallow"

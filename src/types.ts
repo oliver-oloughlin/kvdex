@@ -317,7 +317,7 @@ export type SerializedEntry = {
 export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
   /** Number of retry attempts before returning failed operation */
   retry?: number
-} & AtomicBatchOptions
+}
 
 export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
   /**
