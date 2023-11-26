@@ -32,6 +32,7 @@ import {
   DEFAULT_INTERVAL,
   DEFAULT_INTERVAL_RETRY,
   DEFAULT_LOOP_RETRY,
+  INTERVAL_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   LOOP_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
@@ -367,7 +368,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
     options?: SetIntervalOptions,
   ) {
     // Check if loop has already been initialized
-    const nameKey = extendKey([KVDEX_KEY_PREFIX, LOOP_KEY_PREFIX], name)
+    const nameKey = extendKey([KVDEX_KEY_PREFIX, INTERVAL_KEY_PREFIX], name)
     const nameEntry = await this.kv.get<true>(nameKey)
 
     if (nameEntry.value) {
