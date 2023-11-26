@@ -13,6 +13,10 @@ export const SEGMENT_KEY_PREFIX = "__segment__"
 
 export const UNDELIVERED_KEY_PREFIX = "__undelivered__"
 
+export const INTERVAL_KEY_PREFIX = "__interval__"
+
+export const LOOP_KEY_PREFIX = "__loop__"
+
 // Fixed limits
 export const ATOMIC_OPERATION_MUTATION_LIMIT = 1_000
 

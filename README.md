@@ -820,7 +820,7 @@ previous task finishes.
 // Prints "Hello World!" 10 times, with 1 second delay
 db.loop(() => console.log("Hello World!"), {
   delay: 1_000,
-  exitOn: ({ count }) => count >= 9,
+  exitOn: ({ count }) => count === 10,
 })
 ```
 
