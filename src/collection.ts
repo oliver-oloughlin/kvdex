@@ -42,15 +42,18 @@ import {
   decompress,
   deepMerge,
   deleteIndices,
-  deserialize,
+  denoCoreDeserialize,
+  denoCoreSerialize,
   extendKey,
   generateId,
   getDocumentId,
+  isDeployRuntime,
   isKvObject,
+  jsonDeserialize,
+  jsonSerialize,
   kvGetMany,
   prepareEnqueue,
   selectsAll,
-  serialize,
   setIndices,
 } from "./utils.ts"
 import {
@@ -128,13 +131,13 @@ export class Collection<
   private kv: Deno.Kv
   private queueHandlers: QueueHandlers
   private idempotentListener: IdempotentListener
-  private serialization?: Serialization
 
   readonly _model: Model<TInput, TOutput>
   readonly _primaryIndexList: string[]
   readonly _secondaryIndexList: string[]
   readonly _keys: CollectionKeys
   readonly _idGenerator: IdGenerator<TOutput>
+  readonly _serialization: Serialization
   readonly _isIndexable: boolean
   readonly _isSerialized: boolean
 
@@ -199,17 +202,21 @@ export class Collection<
     })
 
     // Set serialization
+    this._isSerialized = !!opts?.serialized
+
+    const isDeploy = isDeployRuntime()
+    const serialize = isDeploy ? jsonSerialize : denoCoreSerialize
+    const deserialize = isDeploy ? jsonDeserialize : denoCoreDeserialize
+
     if (opts?.serialized === true) {
-      this.serialization = {
+      this._serialization = {
         serialize,
         deserialize,
         compress,
         decompress,
       }
-    }
-
-    if (typeof opts?.serialized === "object") {
-      this.serialization = {
+    } else {
+      this._serialization = {
         serialize,
         deserialize,
         compress,
@@ -221,9 +228,6 @@ export class Collection<
     // Set isIndexable flag
     this._isIndexable = this._primaryIndexList.length > 0 ||
       this._secondaryIndexList.length > 0
-
-    // Set isSerialized flag
-    this._isSerialized = !!this.serialization
   }
 
   /*********************/
@@ -277,8 +281,8 @@ export class Collection<
     options?: FindOptions,
   ) {
     // Serialize and compress index value
-    const serialized = serialize(value)
-    const compressed = compress(serialized)
+    const serialized = this._serialization.serialize(value)
+    const compressed = this._serialization.compress(serialized)
 
     // Create the index key
     const key = extendKey(
@@ -319,8 +323,8 @@ export class Collection<
     const K extends SecondaryIndexKeys<TOutput, TOptions>,
   >(index: K, value: CheckKeyOf<K, TOutput>, options?: ListOptions<TOutput>) {
     // Serialize and compress index value
-    const serialized = serialize(value)
-    const compressed = compress(serialized)
+    const serialized = this._serialization.serialize(value)
+    const compressed = this._serialization.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -572,8 +576,8 @@ export class Collection<
     options?: FindOptions,
   ) {
     // Serialize and compress index value
-    const serialized = serialize(value)
-    const compressed = compress(serialized)
+    const serialized = this._serialization.serialize(value)
+    const compressed = this._serialization.compress(serialized)
 
     // Create index key
     const key = extendKey(
@@ -622,8 +626,8 @@ export class Collection<
     const K extends SecondaryIndexKeys<TOutput, TOptions>,
   >(index: K, value: CheckKeyOf<K, TOutput>, options?: ListOptions<TOutput>) {
     // Serialize and compress index value
-    const serialized = serialize(value)
-    const compressed = compress(serialized)
+    const serialized = this._serialization.serialize(value)
+    const compressed = this._serialization.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -769,8 +773,8 @@ export class Collection<
     options?: UpdateManyOptions<TOutput>,
   ) {
     // Serialize and compress index value
-    const serialized = serialize(value)
-    const compressed = compress(serialized)
+    const serialized = this._serialization.serialize(value)
+    const compressed = this._serialization.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1023,8 +1027,8 @@ export class Collection<
     options?: UpdateManyOptions<TOutput>,
   ) {
     // Serialize and compress index value
-    const serialized = serialize(value)
-    const compressed = compress(serialized)
+    const serialized = this._serialization.serialize(value)
+    const compressed = this._serialization.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1111,8 +1115,8 @@ export class Collection<
     options?: UpdateManyOptions<TOutput>,
   ) {
     // Serialize and compress index value
-    const serialized = serialize(value)
-    const compressed = compress(serialized)
+    const serialized = this._serialization.serialize(value)
+    const compressed = this._serialization.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1187,8 +1191,8 @@ export class Collection<
     options?: CountOptions<TOutput>,
   ) {
     // Serialize and compress index value
-    const serialized = serialize(value)
-    const compressed = compress(serialized)
+    const serialized = this._serialization.serialize(value)
+    const compressed = this._serialization.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1399,8 +1403,8 @@ export class Collection<
 
     // Serialize if enabled
     if (this._isSerialized) {
-      const serialized = this.serialization!.serialize(value)
-      const compressed = this.serialization!.compress(serialized)
+      const serialized = this._serialization.serialize(value)
+      const compressed = this._serialization.compress(serialized)
 
       // Set segmented entries
       let index = 0
@@ -1588,8 +1592,8 @@ export class Collection<
       )
 
       // Decompress and deserialize
-      const serialized = this.serialization!.decompress(data)
-      const deserialized = deserialize<TOutput>(serialized)
+      const serialized = this._serialization.decompress(data)
+      const deserialized = this._serialization.deserialize<TOutput>(serialized)
 
       // Return parsed document
       return new Document<TOutput>(this._model, {
