@@ -38,12 +38,12 @@ Deno.test("serialized_indexable_collection - properties", async (t) => {
         users1: collection(model<User>(), {
           idGenerator: () => Math.random(),
           indices: {},
-          serialized: true,
+          serialize: true,
         }),
         users2: collection(model<User>(), {
           idGenerator: (data) => data.username,
           indices: {},
-          serialized: true,
+          serialize: true,
         }),
       })
 
@@ -221,7 +221,7 @@ Deno.test("serialized_indexable_collection - properties", async (t) => {
               optPrimary: "primary",
               optSecondary: "secondary",
             },
-            serialized: true,
+            serialize: true,
           },
         ),
       })
@@ -419,182 +419,182 @@ Deno.test("serialized_indexable_collection - properties", async (t) => {
 
       const db = kvdex(kv, {
         val1: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val2: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val3: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val4: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val5: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val6: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val7: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val8: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val9: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val10: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val11: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val12: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val13: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val14: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val15: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val16: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val17: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val18: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val19: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val20: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val21: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val22: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val23: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val24: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val25: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",
           },
         }),
         val26: collection(model<Data>(), {
-          serialized: true,
+          serialize: true,
           indices: {
             p: "primary",
             s: "secondary",

@@ -26,8 +26,8 @@ import type {
   QueueMessageHandler,
   QueueValue,
   SecondaryIndexKeys,
-  Serialization,
   SerializedEntry,
+  Serializer,
   SetOptions,
   UpdateData,
   UpdateManyOptions,
@@ -40,7 +40,6 @@ import {
   createHandlerId,
   createListSelector,
   decompress,
-  deepMerge,
   deleteIndices,
   denoCoreDeserialize,
   denoCoreSerialize,
@@ -69,6 +68,7 @@ import {
 import { AtomicWrapper } from "./atomic_wrapper.ts"
 import { Document } from "./document.ts"
 import { model } from "./model.ts"
+import { concat, deepMerge } from "./deps.ts"
 
 /**
  * Create a new collection within a database context.
@@ -137,7 +137,7 @@ export class Collection<
   readonly _secondaryIndexList: string[]
   readonly _keys: CollectionKeys
   readonly _idGenerator: IdGenerator<TOutput>
-  readonly _serialization: Serialization
+  readonly _serializer: Serializer
   readonly _isIndexable: boolean
   readonly _isSerialized: boolean
 
@@ -202,26 +202,40 @@ export class Collection<
     })
 
     // Set serialization
-    this._isSerialized = !!opts?.serialized
+    this._isSerialized = !!opts?.serialize
 
     const isDeploy = isDeployRuntime()
-    const serialize = isDeploy ? jsonSerialize : denoCoreSerialize
-    const deserialize = isDeploy ? jsonDeserialize : denoCoreDeserialize
+    const defaultSerialize = isDeploy ? jsonSerialize : denoCoreSerialize
+    const defaultDeserialize = isDeploy ? jsonDeserialize : denoCoreDeserialize
 
-    if (opts?.serialized === true) {
-      this._serialization = {
-        serialize,
-        deserialize,
+    if (opts?.serialize === true) {
+      this._serializer = {
+        serialize: defaultSerialize,
+        deserialize: defaultDeserialize,
+        compress,
+        decompress,
+      }
+    } else if (opts?.serialize === "core") {
+      this._serializer = {
+        serialize: denoCoreSerialize,
+        deserialize: denoCoreDeserialize,
+        compress,
+        decompress,
+      }
+    } else if (opts?.serialize == "json") {
+      this._serializer = {
+        serialize: jsonSerialize,
+        deserialize: jsonDeserialize,
         compress,
         decompress,
       }
     } else {
-      this._serialization = {
-        serialize,
-        deserialize,
+      this._serializer = {
+        serialize: defaultSerialize,
+        deserialize: defaultDeserialize,
         compress,
         decompress,
-        ...opts?.serialized,
+        ...opts?.serialize,
       }
     }
 
@@ -281,8 +295,8 @@ export class Collection<
     options?: FindOptions,
   ) {
     // Serialize and compress index value
-    const serialized = this._serialization.serialize(value)
-    const compressed = this._serialization.compress(serialized)
+    const serialized = this._serializer.serialize(value)
+    const compressed = this._serializer.compress(serialized)
 
     // Create the index key
     const key = extendKey(
@@ -323,8 +337,8 @@ export class Collection<
     const K extends SecondaryIndexKeys<TOutput, TOptions>,
   >(index: K, value: CheckKeyOf<K, TOutput>, options?: ListOptions<TOutput>) {
     // Serialize and compress index value
-    const serialized = this._serialization.serialize(value)
-    const compressed = this._serialization.compress(serialized)
+    const serialized = this._serializer.serialize(value)
+    const compressed = this._serializer.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -576,8 +590,8 @@ export class Collection<
     options?: FindOptions,
   ) {
     // Serialize and compress index value
-    const serialized = this._serialization.serialize(value)
-    const compressed = this._serialization.compress(serialized)
+    const serialized = this._serializer.serialize(value)
+    const compressed = this._serializer.compress(serialized)
 
     // Create index key
     const key = extendKey(
@@ -626,8 +640,8 @@ export class Collection<
     const K extends SecondaryIndexKeys<TOutput, TOptions>,
   >(index: K, value: CheckKeyOf<K, TOutput>, options?: ListOptions<TOutput>) {
     // Serialize and compress index value
-    const serialized = this._serialization.serialize(value)
-    const compressed = this._serialization.compress(serialized)
+    const serialized = this._serializer.serialize(value)
+    const compressed = this._serializer.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -773,8 +787,8 @@ export class Collection<
     options?: UpdateManyOptions<TOutput>,
   ) {
     // Serialize and compress index value
-    const serialized = this._serialization.serialize(value)
-    const compressed = this._serialization.compress(serialized)
+    const serialized = this._serializer.serialize(value)
+    const compressed = this._serializer.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1027,8 +1041,8 @@ export class Collection<
     options?: UpdateManyOptions<TOutput>,
   ) {
     // Serialize and compress index value
-    const serialized = this._serialization.serialize(value)
-    const compressed = this._serialization.compress(serialized)
+    const serialized = this._serializer.serialize(value)
+    const compressed = this._serializer.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1115,8 +1129,8 @@ export class Collection<
     options?: UpdateManyOptions<TOutput>,
   ) {
     // Serialize and compress index value
-    const serialized = this._serialization.serialize(value)
-    const compressed = this._serialization.compress(serialized)
+    const serialized = this._serializer.serialize(value)
+    const compressed = this._serializer.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1191,8 +1205,8 @@ export class Collection<
     options?: CountOptions<TOutput>,
   ) {
     // Serialize and compress index value
-    const serialized = this._serialization.serialize(value)
-    const compressed = this._serialization.compress(serialized)
+    const serialized = this._serializer.serialize(value)
+    const compressed = this._serializer.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1403,8 +1417,8 @@ export class Collection<
 
     // Serialize if enabled
     if (this._isSerialized) {
-      const serialized = this._serialization.serialize(value)
-      const compressed = this._serialization.compress(serialized)
+      const serialized = this._serializer.serialize(value)
+      const compressed = this._serializer.compress(serialized)
 
       // Set segmented entries
       let index = 0
@@ -1544,7 +1558,11 @@ export class Collection<
           ...value as KvObject,
           ...data as KvObject,
         } as TOutput
-        : deepMerge(value, data) as TOutput
+        : deepMerge(value as KvObject, data as KvObject, {
+          arrays: "merge",
+          maps: "merge",
+          sets: "merge",
+        }) as TOutput
     }
 
     // Set new document value
@@ -1586,14 +1604,12 @@ export class Collection<
 
       const docEntries = await kvGetMany<Uint8Array>(keys, this.kv)
 
-      // Gather parts
-      const data = Uint8Array.from(
-        docEntries.map((doc) => Array.from(doc.value!)).flat(),
-      )
+      // Concatenate chunks
+      const data = concat(docEntries.map((entry) => entry.value!))
 
       // Decompress and deserialize
-      const serialized = this._serialization.decompress(data)
-      const deserialized = this._serialization.deserialize<TOutput>(serialized)
+      const serialized = this._serializer.decompress(data)
+      const deserialized = this._serializer.deserialize<TOutput>(serialized)
 
       // Return parsed document
       return new Document<TOutput>(this._model, {

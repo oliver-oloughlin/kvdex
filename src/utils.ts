@@ -16,7 +16,12 @@ import type {
   QueueMessage,
   QueueValue,
 } from "./types.ts"
-import { brotliCompressSync, brotliDecompressSync, constants } from "node:zlib"
+import {
+  brotliCompressSync,
+  brotliDecompressSync,
+  constants,
+  ulid,
+} from "./deps.ts"
 
 /*************************/
 /*                       */
@@ -30,7 +35,7 @@ import { brotliCompressSync, brotliDecompressSync, constants } from "node:zlib"
  * @returns A generated id of type KvId.
  */
 export function generateId() {
-  return crypto.randomUUID()
+  return ulid()
 }
 
 /**
@@ -137,8 +142,8 @@ export function setIndices(
     if (typeof indexValue === "undefined") return
 
     // Serialize and compress
-    const serialized = collection._serialization.serialize(indexValue)
-    const compressed = collection._serialization.compress(serialized)
+    const serialized = collection._serializer.serialize(indexValue)
+    const compressed = collection._serializer.compress(serialized)
 
     // Create the index key
     const indexKey = extendKey(
@@ -167,8 +172,8 @@ export function setIndices(
     if (typeof indexValue === "undefined") return
 
     // Serialize and compress
-    const serialized = collection._serialization.serialize(indexValue)
-    const compressed = collection._serialization.compress(serialized)
+    const serialized = collection._serializer.serialize(indexValue)
+    const compressed = collection._serializer.compress(serialized)
 
     // Create the index key
     const indexKey = extendKey(
@@ -208,8 +213,8 @@ export function checkIndices(
     }
 
     // Serialize and compress
-    const serialized = collection._serialization.serialize(indexValue)
-    const compressed = collection._serialization.compress(serialized)
+    const serialized = collection._serializer.serialize(indexValue)
+    const compressed = collection._serializer.compress(serialized)
 
     // Create the index key
     const indexKey = extendKey(
@@ -251,8 +256,8 @@ export function deleteIndices(
     if (typeof indexValue === "undefined") return
 
     // Serialize and compress
-    const serialized = collection._serialization.serialize(indexValue)
-    const compressed = collection._serialization.compress(serialized)
+    const serialized = collection._serializer.serialize(indexValue)
+    const compressed = collection._serializer.compress(serialized)
 
     // Create the index key
     const indexKey = extendKey(
@@ -272,8 +277,8 @@ export function deleteIndices(
     if (typeof indexValue === "undefined") return
 
     // Serialize and compress
-    const serialized = collection._serialization.serialize(indexValue)
-    const compressed = collection._serialization.compress(serialized)
+    const serialized = collection._serializer.serialize(indexValue)
+    const compressed = collection._serializer.compress(serialized)
 
     // Create the index key
     const indexKey = extendKey(
@@ -489,44 +494,6 @@ export function selectsAll<T extends KvValue>(
  */
 export function clamp(min: number, n: number, max: number) {
   return Math.min(Math.max(min, n), max)
-}
-
-/**
- * Deep merge two or more objects.
- * @param target - Target object, of which keys will take lowest priority.
- * @param sources - Source objects in ascending priority.
- */
-export function deepMerge<T1, T2 extends unknown[]>(
-  target: T1,
-  ...sources: T2
-): T1 & T2[number] {
-  // Check for exhausted sources
-  if (!sources.length) {
-    return target as T1 & T2[number]
-  }
-
-  // Get next source object
-  const source = sources.shift()
-
-  // Check if target and source are kv objects
-  if (isKvObject(target) && isKvObject(source)) {
-    // Type cast target and source as KvObject
-    const t = target as KvObject
-    const s = source as KvObject
-
-    // Loop over every key in source, merge accordingly
-    for (const key in s) {
-      if (isKvObject(s[key])) {
-        if (!t[key]) t[key] = {}
-        deepMerge(t[key], s[key])
-      } else {
-        t[key] = s[key]
-      }
-    }
-  }
-
-  // Return recursively merged objects
-  return deepMerge(target, ...sources)
 }
 
 /**
