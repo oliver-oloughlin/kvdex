@@ -2,7 +2,7 @@ import { assert } from "../deps.ts"
 import { generateLargeUsers } from "../utils.ts"
 import { useDb } from "../utils.ts"
 
-Deno.test("indexable_collection - count", async (t) => {
+Deno.test("serialized_indexable_collection - count", async (t) => {
   await t.step(
     "Should correctly count total number of documents in the collection",
     async () => {

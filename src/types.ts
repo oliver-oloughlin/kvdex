@@ -229,7 +229,7 @@ export type AtomicSetOptions = NonNullable<
 export type CollectionOptions<T extends KvValue> =
   & {
     idGenerator?: IdGenerator<T>
-    serialized?: true | Partial<Serialization>
+    serialize?: SerializeOptions
   }
   & (
     T extends KvObject ? {
@@ -291,13 +291,13 @@ export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
   __id__: KvId
 }
 
-/***************************/
-/*                         */
-/*   SERIALIZATION TYPES   */
-/*                         */
-/***************************/
+/***********************/
+/*                     */
+/*   SERIALIZE TYPES   */
+/*                     */
+/***********************/
 
-export type Serialization = {
+export type Serializer = {
   serialize: <T>(data: T) => Uint8Array
   deserialize: <T>(data: Uint8Array) => T
   compress: (data: Uint8Array) => Uint8Array
@@ -307,6 +307,8 @@ export type Serialization = {
 export type SerializedEntry = {
   ids: KvId[]
 }
+
+export type SerializeOptions = true | "core" | "json" | Partial<Serializer>
 
 /***************************/
 /*                         */

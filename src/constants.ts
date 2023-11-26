@@ -31,7 +31,7 @@ export const DEFAULT_INTERVAL_RETRY = 10
 
 export const DEFAULT_LOOP_RETRY = 10
 
-export const DEFAULT_MERGE_TYPE: MergeType = "shallow"
+export const DEFAULT_MERGE_TYPE: MergeType = "deep"
 
 // Misc
 export const COMPRESSION_QUALITY_LEVEL = 1

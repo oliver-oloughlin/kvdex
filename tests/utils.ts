@@ -1,83 +1,64 @@
 import { collection, kvdex } from "../mod.ts"
 import { model } from "../src/model.ts"
-import { ulid } from "./deps.ts"
 import { TransformUserModel, User, UserSchema } from "./models.ts"
 
 // Create test db
 export function createDb(kv: Deno.Kv) {
   return kvdex(kv, {
-    u64s: collection(model<Deno.KvU64>(), {
-      idGenerator: () => ulid(),
-    }),
+    u64s: collection(model<Deno.KvU64>()),
     s_u64s: collection(model<Deno.KvU64>(), {
-      idGenerator: () => ulid(),
-      serialized: true,
+      serialize: true,
     }),
-    users: collection(model<User>(), {
-      idGenerator: () => ulid(),
-    }),
+    users: collection(model<User>()),
     i_users: collection(model<User>(), {
-      idGenerator: () => ulid(),
       indices: {
         username: "primary",
         age: "secondary",
       },
     }),
     s_users: collection(model<User>(), {
-      idGenerator: () => ulid(),
-      serialized: true,
+      serialize: true,
     }),
     is_users: collection(model<User>(), {
-      idGenerator: () => ulid(),
       indices: {
         username: "primary",
         age: "secondary",
       },
-      serialized: true,
+      serialize: true,
     }),
-    z_users: collection(UserSchema, {
-      idGenerator: () => ulid(),
-    }),
+    z_users: collection(UserSchema),
     zi_users: collection(UserSchema, {
-      idGenerator: () => ulid(),
       indices: {
         username: "primary",
         age: "secondary",
       },
     }),
     zs_users: collection(UserSchema, {
-      idGenerator: () => ulid(),
-      serialized: true,
+      serialize: true,
     }),
     zis_users: collection(UserSchema, {
-      idGenerator: () => ulid(),
       indices: {
         username: "primary",
         age: "secondary",
       },
-      serialized: true,
+      serialize: true,
     }),
-    a_users: collection(TransformUserModel, {
-      idGenerator: () => ulid(),
-    }),
+    a_users: collection(TransformUserModel),
     ai_users: collection(TransformUserModel, {
-      idGenerator: () => ulid(),
       indices: {
         name: "primary",
         decadeAge: "secondary",
       },
     }),
     as_users: collection(TransformUserModel, {
-      idGenerator: () => ulid(),
-      serialized: true,
+      serialize: true,
     }),
     ais_users: collection(TransformUserModel, {
-      idGenerator: () => ulid(),
       indices: {
         name: "primary",
         decadeAge: "secondary",
       },
-      serialized: true,
+      serialize: true,
     }),
   })
 }

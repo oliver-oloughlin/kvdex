@@ -3,7 +3,7 @@ import { mockUser1, mockUser2 } from "../mocks.ts"
 import { TransformUserModel } from "../models.ts"
 import { useDb } from "../utils.ts"
 
-Deno.test("indexable_collection - findBySecondaryIndex", async (t) => {
+Deno.test("serialized_indexable_collection - findBySecondaryIndex", async (t) => {
   await t.step("Should find documents by secondary index", async () => {
     await useDb(async (db) => {
       const cr1 = await db.i_users.add(mockUser1)

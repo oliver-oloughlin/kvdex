@@ -80,7 +80,7 @@ Deno.test("ext - zod", async (t) => {
             age: "secondary",
           },
         }),
-        s_users: collection(zodModel(UserSchema), { serialized: true }),
+        s_users: collection(zodModel(UserSchema), { serialize: true }),
       })
 
       const cr1 = await db.users.add({

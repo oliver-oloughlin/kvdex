@@ -17,7 +17,7 @@ Deno.test("serialized_collection - enqueue", async (t) => {
       const undeliveredId = "undelivered"
 
       const db = kvdex(kv, {
-        s_users: collection(model<User>(), { serialized: true }),
+        s_users: collection(model<User>(), { serialize: true }),
       })
 
       const sleeper = createResolver()

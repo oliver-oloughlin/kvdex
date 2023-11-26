@@ -154,9 +154,10 @@ const kv = await Deno.openKv()
 const db = kvdex(kv, {
   numbers: collection(model<number>()),
   serializedStrings: collection(model<string>(), {
-    serialized: true
+    serialize: true
   }),
   users: collection(UserSchema, {
+    idGenerator: () => crypto.randomUUID(),
     indices: {
       username: "primary" // unique
       age: "secondary" // non-unique
@@ -172,10 +173,8 @@ const db = kvdex(kv, {
 The schema definition contains collection builders, or nested schema
 definitions. Collections can hold any type adhering to KvValue. Indexing can be
 specified for collections of objects, while a custom id generator and
-serialization can be set for all collections. Note that the default id setter
-for documents is `crypto.randomUUID()`, which means documents are ordered at
-random by default as KV orders values by their key. To store documents ordered
-by insertion timestamp, set a custom idGenerator, such as `ulid()`.
+serialization can be set for all collections. The default id generator is
+`ulid()` from Deno's standard library.
 
 ## Collection Methods
 
@@ -250,8 +249,8 @@ const doc2 = await db.users.findUndelivered("undelivered_id", {
 
 ### add()
 
-Add a new document to the KV store with an auto-generated id (uuid). Upon
-completion, a CommitResult object will be returned with the document id,
+Add a new document to the KV store with an auto-generated id (ulid by default).
+Upon completion, a CommitResult object will be returned with the document id,
 versionstamp and ok flag.
 
 ```ts
@@ -266,16 +265,12 @@ const result = await db.users.add({
     houseNumber: null,
   },
 })
-
-if (result.ok) {
-  console.log(result.id) // f897e3cf-bd6d-44ac-8c36-d7ab97a82d77
-}
 ```
 
 ### addMany()
 
-Add multiple document entries to the KV store with auto-generated ids (uuid).
-Upon completion, a list of CommitResult objects will be returned.
+Add multiple document entries to the KV store with auto-generated ids (ulid by
+default). Upon completion, a list of CommitResult objects will be returned.
 
 ```ts
 // Adds 5 new document entries to the KV store.
@@ -332,7 +327,7 @@ Update the value of an exisiting document in the KV store. For primitive values,
 arrays and built-in objects (Date, RegExp, etc.), this method overwrites the
 exisiting data with the new value. For custom objects (Models), this method
 performs a partial update, merging the new value with the existing data using
-shallow merge by default, or optionally using deep merge. Upon completion, a
+deep merge by default, or optionally using shallow merge. Upon completion, a
 CommitResult object will be returned with the document id, versionstamp and ok
 flag. If no document with a matching id exists in the collection, the operation
 will fail.
@@ -341,11 +336,11 @@ will fail.
 // Updates the document with a new value
 const result = await db.numbers.update("num1", 42)
 
-// Partial update using deep merge, only updates the age field
+// Partial update using shallow merge, only updates the age field
 const result = await db.users.update("user1", {
   age: 67,
 }, {
-  mergeType: "deep",
+  mergeType: "shallow",
 })
 ```
 
@@ -359,11 +354,11 @@ const result = await db.users.updateByPrimaryIndex("username", "oliver", {
   age: 56,
 })
 
-// Updates a user document using deep merge
+// Updates a user document using shallow merge
 const result = await db.users.updateByPrimaryIndex("username", "anders", {
   age: 89,
 }, {
-  mergeType: "deep",
+  mergeType: "shallow",
 })
 ```
 
@@ -377,14 +372,14 @@ options are given, all documents by the given index value will we updated.
 // Updates all user documents with age = 24 and sets age = 67
 const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
 
-// Updates all user documents where the user's age is 24 and username starts with "o" using deep merge
+// Updates all user documents where the user's age is 24 and username starts with "o" using shallow merge
 const { result } = await db.users.updateBySecondaryIndex(
   "age",
   24,
   { age: 67 },
   {
     filter: (doc) => doc.value.username.startsWith("o"),
-    mergeType: "deep",
+    mergeType: "shallow",
   },
 )
 ```
@@ -400,10 +395,10 @@ documents in the collection.
 // Updates all user documents and sets age = 67
 const { result } = await db.users.updateMany({ age: 67 })
 
-// Updates all user documents using deep merge where the user's age is above 20
+// Updates all user documents using deep shallow where the user's age is above 20
 const { result } = await db.users.updateMany({ age: 67 }, {
   filter: (doc) => doc.value.age > 20,
-  mergeType: "deep",
+  mergeType: "shallow",
 })
 
 // Only updates first user document, as username is a primary index
@@ -670,7 +665,11 @@ db.users.listenQueue(async (data) => {
 Serialized collections can store much larger sized data by serializaing,
 compresing and splitting the data across multiple KV entries. There is a
 tradeoff between speed and storage efficiency. Custom serialize and compress
-functions can be set through the collection options.
+functions can be set through the collection options. The default serializer
+picks between the Deno core serializer and custom json serializer depending on
+being run in the standard Deno runtime or on Deploy (uses the slower json
+serializer on Deploy as Deno core is not exposed). Alternatively, the serializer
+can be specified to always use core or json.
 
 ```ts
 import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
@@ -684,11 +683,17 @@ type LargeData = {
 const kv = await Deno.openKv()
 const db = kvdex(kv, {
   users: collection(model<LargeData>(), {
-    // For default serialization/compression
-    serialized: true
+    // Use default serialize/compress
+    serialize: true,
+
+    // Use Deno core serializer
+    serialize: "core",
+
+    // Use json serializer
+    serialize: "json",
 
     // Set custom serialize/compress functions
-    serialized: {
+    serialize: {
       serialize: ...,
       deserialize: ...,
       compress: ...,
