@@ -6,7 +6,7 @@ through additional features such as indexing, strongly typed collections and
 serialization/compression, while maintaining as much of the native functionality
 as possible, like atomic operations and queue listeners.
 
-_Supported Deno verisons:_ **^1.37.0**
+_Supported Deno verisons:_ **^1.37.2**
 
 ## Highlights
 
@@ -172,7 +172,10 @@ const db = kvdex(kv, {
 The schema definition contains collection builders, or nested schema
 definitions. Collections can hold any type adhering to KvValue. Indexing can be
 specified for collections of objects, while a custom id generator and
-serialization can be set for all collections.
+serialization can be set for all collections. Note that the default id setter
+for documents is `crypto.randomUUID()`, which means documents are ordered at
+random by default as KV orders values by their key. To store documents ordered
+by insertion timestamp, set a custom idGenerator, such as `ulid()`.
 
 ## Collection Methods
 
@@ -791,10 +794,10 @@ condition is met. Interval defaults to 1 hour if not set.
 
 ```ts
 // Will repeat indefinitely with 1 hour interval
-db.setInterval(() => console.log("Hello World!"))
+db.setInterval("greeting", () => console.log("Hello World!"))
 
 // First callback is invoked after a 10 second delay, after that there is a 5 second delay between callbacks
-db.setInterval(() => console.log("I terminate after running 10 times"), {
+db.setInterval("terminator", () => console.log("I terminate after running 10 times"), {
   // Delay before the first callback is invoked
   startDelay: 10_000,
 
@@ -818,9 +821,9 @@ previous task finishes.
 
 ```ts
 // Prints "Hello World!" 10 times, with 1 second delay
-db.loop(() => console.log("Hello World!"), {
+db.loop("greeting", () => console.log("Hello World!"), {
   delay: 1_000,
-  exitOn: ({ count }) => count >= 9,
+  exitOn: ({ count }) => count === 10,
 })
 ```
 

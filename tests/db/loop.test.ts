@@ -1,6 +1,6 @@
 import { kvdex } from "../../mod.ts"
 import { assert } from "../deps.ts"
-import { createResolver, useDb, useKv } from "../utils.ts"
+import { createResolver, sleep, useDb, useKv } from "../utils.ts"
 
 Deno.test("db - loop", async (t) => {
   await t.step(
@@ -12,12 +12,12 @@ Deno.test("db - loop", async (t) => {
         let count1 = 0
         let count2 = 0
 
-        const listener1 = db.loop(() => count1++, {
+        const listener1 = db.loop("l1", () => count1++, {
           exitOn: ({ first }) => first,
           onExit: () => sleeper1.resolve(),
         })
 
-        const listener2 = db.loop(() => count2++, {
+        const listener2 = db.loop("l2", () => count2++, {
           exitOn: (msg) => msg.count < 1,
           onExit: () => sleeper2.resolve(),
         })
@@ -42,6 +42,7 @@ Deno.test("db - loop", async (t) => {
         let count = 0
 
         const listener = db.loop<number>(
+          "l1",
           ({ first, result }) => {
             count++
             return first ? 1 : result + 1
@@ -59,6 +60,39 @@ Deno.test("db - loop", async (t) => {
         await promise
 
         return async () => await listener
+      })
+    },
+  )
+
+  await t.step(
+    "Should not initialize second loop with identical name",
+    async () => {
+      await useDb(async (db) => {
+        const sleeper = createResolver()
+
+        let count1 = 0
+        let count2 = 0
+
+        const listener1 = db.loop("l1", () => count1++, {
+          exitOn: ({ count }) => count === 10,
+          onExit: () => sleeper.resolve(),
+          delay: 50,
+        })
+
+        await sleep(10)
+
+        const listener2 = db.loop("l1", () => count2++, {
+          exitOn: ({ count }) => count === 10,
+          onExit: () => sleeper.resolve(),
+          delay: 25,
+        })
+
+        await sleeper.promise
+
+        assert(count1 === 10)
+        assert(count2 === 0)
+
+        return async () => await Promise.all([listener1, listener2])
       })
     },
   )
