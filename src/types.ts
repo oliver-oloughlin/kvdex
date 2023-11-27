@@ -308,7 +308,7 @@ export type SerializedEntry = {
   ids: KvId[]
 }
 
-export type SerializeOptions = true | "core" | "json" | Partial<Serializer>
+export type SerializeOptions = "auto" | "core" | "json" | Partial<Serializer>
 
 /***************************/
 /*                         */

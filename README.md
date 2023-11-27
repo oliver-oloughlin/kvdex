@@ -154,7 +154,7 @@ const kv = await Deno.openKv()
 const db = kvdex(kv, {
   numbers: collection(model<number>()),
   serializedStrings: collection(model<string>(), {
-    serialize: true
+    serialize: "auto"
   }),
   users: collection(UserSchema, {
     idGenerator: () => crypto.randomUUID(),
@@ -665,11 +665,11 @@ db.users.listenQueue(async (data) => {
 Serialized collections can store much larger sized data by serializaing,
 compresing and splitting the data across multiple KV entries. There is a
 tradeoff between speed and storage efficiency. Custom serialize and compress
-functions can be set through the collection options. The default serializer
-picks between the Deno core serializer and custom json serializer depending on
-being run in the standard Deno runtime or on Deploy (uses the slower json
-serializer on Deploy as Deno core is not exposed). Alternatively, the serializer
-can be specified to always use core or json.
+functions can be set through the collection options. Setting the serialize
+option to "auto" picks between the Deno core serializer and custom json
+serializer depending on being run in the standard Deno runtime or on Deploy
+(uses the slower json serializer on Deploy as Deno core is not exposed).
+Alternatively, the serialize option can be set to specify between core or json.
 
 ```ts
 import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
@@ -683,8 +683,8 @@ type LargeData = {
 const kv = await Deno.openKv()
 const db = kvdex(kv, {
   users: collection(model<LargeData>(), {
-    // Use default serialize/compress
-    serialize: true,
+    // Picks default serialize/compress
+    serialize: "auto",
 
     // Use Deno core serializer
     serialize: "core",

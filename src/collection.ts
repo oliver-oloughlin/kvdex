@@ -208,7 +208,7 @@ export class Collection<
     const defaultSerialize = isDeploy ? jsonSerialize : denoCoreSerialize
     const defaultDeserialize = isDeploy ? jsonDeserialize : denoCoreDeserialize
 
-    if (opts?.serialize === true) {
+    if (opts?.serialize === "auto") {
       this._serializer = {
         serialize: defaultSerialize,
         deserialize: defaultDeserialize,

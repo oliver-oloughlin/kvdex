@@ -59,7 +59,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
  * const db = kvdex(kv, {
  *   numbers: collection(model<number>()),
  *   u64s: collection(model<Deno.KvU64>()),
- *   serializedStrings: collection(model<string>(), { serialize: true }),
+ *   serializedStrings: collection(model<string>(), { serialize: "auto" }),
  *   users: collection(model<User>(), {
  *     indices: {
  *       username: "primary",
