@@ -7,7 +7,7 @@ export function createDb(kv: Deno.Kv) {
   return kvdex(kv, {
     u64s: collection(model<Deno.KvU64>()),
     s_u64s: collection(model<Deno.KvU64>(), {
-      serialize: true,
+      serialize: "auto",
     }),
     users: collection(model<User>()),
     i_users: collection(model<User>(), {
@@ -17,14 +17,14 @@ export function createDb(kv: Deno.Kv) {
       },
     }),
     s_users: collection(model<User>(), {
-      serialize: true,
+      serialize: "auto",
     }),
     is_users: collection(model<User>(), {
       indices: {
         username: "primary",
         age: "secondary",
       },
-      serialize: true,
+      serialize: "auto",
     }),
     z_users: collection(UserSchema),
     zi_users: collection(UserSchema, {
@@ -34,14 +34,14 @@ export function createDb(kv: Deno.Kv) {
       },
     }),
     zs_users: collection(UserSchema, {
-      serialize: true,
+      serialize: "auto",
     }),
     zis_users: collection(UserSchema, {
       indices: {
         username: "primary",
         age: "secondary",
       },
-      serialize: true,
+      serialize: "auto",
     }),
     a_users: collection(TransformUserModel),
     ai_users: collection(TransformUserModel, {
@@ -51,14 +51,14 @@ export function createDb(kv: Deno.Kv) {
       },
     }),
     as_users: collection(TransformUserModel, {
-      serialize: true,
+      serialize: "auto",
     }),
     ais_users: collection(TransformUserModel, {
       indices: {
         name: "primary",
         decadeAge: "secondary",
       },
-      serialize: true,
+      serialize: "auto",
     }),
   })
 }

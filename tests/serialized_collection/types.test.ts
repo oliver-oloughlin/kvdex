@@ -8,12 +8,12 @@ Deno.test("serialized_collection - types", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          nulls: collection(model<null>(), { serialize: true }),
-          undefineds: collection(model<undefined>(), { serialize: true }),
-          strings: collection(model<string>(), { serialize: true }),
-          numbers: collection(model<number>(), { serialize: true }),
-          bigints: collection(model<bigint>(), { serialize: true }),
-          u64s: collection(model<Deno.KvU64>(), { serialize: true }),
+          nulls: collection(model<null>(), { serialize: "auto" }),
+          undefineds: collection(model<undefined>(), { serialize: "auto" }),
+          strings: collection(model<string>(), { serialize: "auto" }),
+          numbers: collection(model<number>(), { serialize: "auto" }),
+          bigints: collection(model<bigint>(), { serialize: "auto" }),
+          u64s: collection(model<Deno.KvU64>(), { serialize: "auto" }),
         })
 
         const cr1 = await db.nulls.add(null)
@@ -49,12 +49,12 @@ Deno.test("serialized_collection - types", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          dates: collection(model<Date>(), { serialize: true }),
-          sets: collection(model<Set<string>>(), { serialize: true }),
-          maps: collection(model<Map<string, number>>(), { serialize: true }),
-          regExps: collection(model<RegExp>(), { serialize: true }),
-          dataVeiws: collection(model<DataView>(), { serialize: true }),
-          errors: collection(model<Error>(), { serialize: true }),
+          dates: collection(model<Date>(), { serialize: "auto" }),
+          sets: collection(model<Set<string>>(), { serialize: "auto" }),
+          maps: collection(model<Map<string, number>>(), { serialize: "auto" }),
+          regExps: collection(model<RegExp>(), { serialize: "auto" }),
+          dataVeiws: collection(model<DataView>(), { serialize: "auto" }),
+          errors: collection(model<Error>(), { serialize: "auto" }),
         })
 
         const cr1 = await db.dates.add(new Date())
@@ -103,19 +103,21 @@ Deno.test("serialized_collection - types", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          arrs: collection(model<Array<string>>(), { serialize: true }),
-          i8arrs: collection(model<Int8Array>(), { serialize: true }),
-          i16arrs: collection(model<Int16Array>(), { serialize: true }),
-          i32arrs: collection(model<Int32Array>(), { serialize: true }),
-          i64arrs: collection(model<BigInt64Array>(), { serialize: true }),
-          u8arrs: collection(model<Uint8Array>(), { serialize: true }),
-          u16arrs: collection(model<Uint16Array>(), { serialize: true }),
-          u32arrs: collection(model<Uint32Array>(), { serialize: true }),
-          u64arrs: collection(model<BigUint64Array>(), { serialize: true }),
-          u8carrs: collection(model<Uint8ClampedArray>(), { serialize: true }),
-          f32arrs: collection(model<Float32Array>(), { serialize: true }),
-          f64arrs: collection(model<Float64Array>(), { serialize: true }),
-          buffers: collection(model<ArrayBuffer>(), { serialize: true }),
+          arrs: collection(model<Array<string>>(), { serialize: "auto" }),
+          i8arrs: collection(model<Int8Array>(), { serialize: "auto" }),
+          i16arrs: collection(model<Int16Array>(), { serialize: "auto" }),
+          i32arrs: collection(model<Int32Array>(), { serialize: "auto" }),
+          i64arrs: collection(model<BigInt64Array>(), { serialize: "auto" }),
+          u8arrs: collection(model<Uint8Array>(), { serialize: "auto" }),
+          u16arrs: collection(model<Uint16Array>(), { serialize: "auto" }),
+          u32arrs: collection(model<Uint32Array>(), { serialize: "auto" }),
+          u64arrs: collection(model<BigUint64Array>(), { serialize: "auto" }),
+          u8carrs: collection(model<Uint8ClampedArray>(), {
+            serialize: "auto",
+          }),
+          f32arrs: collection(model<Float32Array>(), { serialize: "auto" }),
+          f64arrs: collection(model<Float64Array>(), { serialize: "auto" }),
+          buffers: collection(model<ArrayBuffer>(), { serialize: "auto" }),
         })
 
         const cr1 = await db.arrs.add(["str1", "str2", "str3"])
