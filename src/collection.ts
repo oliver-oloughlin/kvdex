@@ -395,7 +395,9 @@ export class Collection<
   }
 
   /**
-   * Adds a new document to the KV store with a randomely generated id.
+   * Adds a new document to the KV store with a generated id.
+   *
+   * Does not overwrite existing documents with coliiding id.
    *
    * @example
    * ```ts
@@ -407,7 +409,7 @@ export class Collection<
    *
    * @param data - Document value.
    * @param options - Set options, optional.
-   * @returns Promise resolving to a CommitResult object.
+   * @returns Promise resolving to a CommitResult or CommitError.
    */
   async add(value: ParseInputType<TInput, TOutput>, options?: SetOptions) {
     // Set document value with generated id
@@ -416,6 +418,8 @@ export class Collection<
 
   /**
    * Adds a new document with the given id to the KV store.
+   *
+   * Does not overwrite existing documents with coliiding id.
    *
    * @example
    * ```ts
@@ -428,7 +432,7 @@ export class Collection<
    * @param id - Document id.
    * @param data - Document value.
    * @param options - Set options, optional.
-   * @returns Promise resolving to a CommitResult object.
+   * @returns Promise resolving to a CommitResult or CommitError.
    */
   async set(
     id: KvId,
@@ -455,7 +459,7 @@ export class Collection<
    * @param id - Document id.
    * @param value - Document value.
    * @param options - Set options, optional.
-   * @returns Promise resolving to a CommitResult object.
+   * @returns Promise resolving to a CommitResult or CommitError.
    */
   async write(
     id: KvId,
@@ -668,8 +672,8 @@ export class Collection<
    * this method overrides the old value with the new one.
    *
    * For custom object types, this method merges the
-   * new data with the exisiting data using shallow merge
-   * by default, or optionally using deep merge.
+   * new data with the exisiting data using deep merge
+   * by default, or optionally using shallow merge.
    *
    * @example
    * ```ts
@@ -840,7 +844,7 @@ export class Collection<
   }
 
   /**
-   * Adds multiple documents to the KV store.
+   * Adds multiple documents to the KV store with generated ids.
    *
    * @example
    * ```ts
@@ -862,7 +866,7 @@ export class Collection<
    *
    * @param values - Document values to be added.
    * @param options - Set options, optional.
-   * @returns A promise that resolves to a list of Deno.KvCommitResult or Deno.KvCommitError objects
+   * @returns A promise that resolves to a list of CommitResults or CommitErrors.
    */
   async addMany(
     values: ParseInputType<TInput, TOutput>[],
