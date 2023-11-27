@@ -59,7 +59,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
  * const db = kvdex(kv, {
  *   numbers: collection(model<number>()),
  *   u64s: collection(model<Deno.KvU64>()),
- *   serializedStrings: collection(model<string>(), { serialized: true }),
+ *   serializedStrings: collection(model<string>(), { serialize: true }),
  *   users: collection(model<User>(), {
  *     indices: {
  *       username: "primary",
@@ -140,8 +140,9 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
   }
 
   /**
-   * Initiates an atomic operation.
-   * Takes a selector function as argument which is used to select an initial collection.
+   * Initializes an atomic operation.
+   *
+   * Takes a selector function as argument which is used to select an initial collection context.
    *
    * @example
    * ```ts
