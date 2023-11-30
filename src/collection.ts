@@ -482,6 +482,9 @@ export class Collection<
    * @returns A promise that resovles to void.
    */
   async delete(...ids: KvId[]) {
+    // Initialize atomic operation
+    const atomic = new AtomicWrapper(this.kv)
+
     if (this._isIndexable && this._isSerialized) {
       // Run delete operations for each id
       await allFulfilled(ids.map(async (id) => {
@@ -490,11 +493,9 @@ export class Collection<
         const entry = await this.kv.get<SerializedEntry>(idKey)
         const doc = await this.constructDocument(entry)
 
-        // Create atomic operation and delete all document entries
-        const atomic = new AtomicWrapper(this.kv)
+        // Delete document entries
         atomic.delete(idKey)
 
-        // Delete document entries
         if (entry.value) {
           const keys = entry.value.ids.map((segId) =>
             extendKey(this._keys.segment, id, segId)
@@ -503,15 +504,13 @@ export class Collection<
           keys.forEach((key) => atomic.delete(key))
         }
 
-        // Delete indices
         if (doc) {
           deleteIndices(id, doc.value as KvObject, atomic, this)
         }
-
-        // Commit delete operations
-        await atomic.commit()
       }))
 
+      // Commit the operation
+      await atomic.commit()
       return
     }
 
@@ -527,13 +526,13 @@ export class Collection<
           return
         }
 
-        // Perform delete using atomic operation
-        const atomic = new AtomicWrapper(this.kv)
+        // Delete document entries
         atomic.delete(idKey)
         deleteIndices(id, value, atomic, this)
-        await atomic.commit()
       }))
 
+      // Commit the operation
+      await atomic.commit()
       return
     }
 
@@ -549,8 +548,7 @@ export class Collection<
           return
         }
 
-        // Create atomic operation and delete all document entries
-        const atomic = new AtomicWrapper(this.kv)
+        // Delete document entries
         atomic.delete(idKey)
 
         const keys = value.ids.map((segId) =>
@@ -558,16 +556,14 @@ export class Collection<
         )
 
         keys.forEach((key) => atomic.delete(key))
-
-        // Commit the operation
-        await atomic.commit()
       }))
 
+      // Commit the operation
+      await atomic.commit()
       return
     }
 
-    // Perform delete operation for each id
-    const atomic = new AtomicWrapper(this.kv)
+    // Perform delete for each id and commit the operation
     ids.forEach((id) => atomic.delete(extendKey(this._keys.id, id)))
     await atomic.commit()
   }
