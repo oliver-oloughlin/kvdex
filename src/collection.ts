@@ -1370,6 +1370,11 @@ export class Collection<
   /**
    * Delete the version history of a document by id.
    *
+   * @example
+   * ```ts
+   * await db.users.deleteHistory("user_id")
+   * ```
+   *
    * @param id - Document id.
    */
   async deleteHistory(id: KvId) {
