@@ -176,4 +176,38 @@ Deno.test("indexable_collection - history", async (t) => {
       })
     },
   )
+
+  await t.step("Should delete all document history", async () => {
+    await useKv(async (kv) => {
+      const db = kvdex(kv, {
+        users: collection(model<User>(), {
+          history: true,
+          indices: {
+            username: "primary",
+            age: "secondary",
+          },
+        }),
+      })
+
+      const id = "id"
+      await db.users.write(id, mockUser1)
+      await db.users.write(id, mockUser2)
+      await db.users.write(id, mockUser3)
+      const cr = await db.users.add(mockUser1)
+
+      assert(cr.ok)
+
+      const history1_1 = await db.users.findHistory(id)
+      const history1_2 = await db.users.findHistory(cr.id)
+      assert(history1_1.length === 3)
+      assert(history1_2.length === 1)
+
+      await db.users.deleteHistory(id)
+
+      const history2_1 = await db.users.findHistory(id)
+      const history2_2 = await db.users.findHistory(cr.id)
+      assert(history2_1.length === 0)
+      assert(history2_2.length === 1)
+    })
+  })
 })
