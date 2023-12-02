@@ -237,9 +237,9 @@ const userDocs2 = await db.users.findMany(["abc", 123, 123n], {
 
 ### findHistory()
 
-Retrieve the version history of a document by id. Each version history entry
-contains a copy of the document value and a timestamp. Delete operations are not
-recorded.
+Retrieve the version history of a document by id. A history entry contains a
+timestamp, type of either "write" or "delete", and a copy of the document value
+if the type is "write".
 
 ```ts
 const history = await db.users.findHistory("user_id")

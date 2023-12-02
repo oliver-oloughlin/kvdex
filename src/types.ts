@@ -264,10 +264,18 @@ export type Model<TInput, TOutput extends KvValue> = {
   __validate?: (data: unknown) => TOutput
 }
 
-export type HistoryEntry<T> = {
+export type WriteHistoryEntry<T> = {
+  type: "write"
   timestamp: Date
   value: T
 }
+
+export type DeleteHistoryEntry = {
+  type: "delete"
+  timestamp: Date
+}
+
+export type HistoryEntry<T> = WriteHistoryEntry<T> | DeleteHistoryEntry
 
 /*******************/
 /*                 */
