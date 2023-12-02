@@ -3,9 +3,9 @@ import { assert } from "../deps.ts"
 import { User } from "../models.ts"
 import { generateLargeUsers, generateUsers, useKv } from "../utils.ts"
 
-Deno.test("db - deleteAll", async (t) => {
+Deno.test("db - wipe", async (t) => {
   await t.step(
-    "Should delete all documents from the database without deleting history entries",
+    "Should delete all kvdex entries from the database, including history entries",
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
@@ -47,7 +47,7 @@ Deno.test("db - deleteAll", async (t) => {
         const count1 = await db.countAll()
         assert(count1 === users.length + largeUsers.length + u64s.length)
 
-        await db.deleteAll()
+        await db.wipe()
 
         const count2 = await db.countAll()
         const h1 = await db.i_users.findHistory(docs1[0].id)
@@ -55,9 +55,9 @@ Deno.test("db - deleteAll", async (t) => {
         const h3 = await db.u64s.findHistory(docs3[0].id)
 
         assert(count2 === 0)
-        assert(h1.length > 0)
-        assert(h2.length > 0)
-        assert(h3.length > 0)
+        assert(h1.length === 0)
+        assert(h2.length === 0)
+        assert(h3.length === 0)
       })
     },
   )

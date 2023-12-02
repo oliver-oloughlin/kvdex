@@ -60,6 +60,7 @@ _Supported Deno verisons:_ **^1.37.2**
   - [Database Methods](#database-methods)
     - [countAll()](#countall)
     - [deleteAll()](#deleteall)
+    - [wipe()](#wipe)
     - [deleteUndelivered()](#deleteundelivered-1)
     - [findUndelivered()](#findundelivered-1)
     - [enqueue()](#enqueue-1)
@@ -738,6 +739,15 @@ argument that can be used to set the consistency mode.
 ```ts
 // Deletes all documents in the KV store across all collections
 await db.deleteAll()
+```
+
+### wipe()
+
+Delete all kvdex entries, including undelivered and history entries.
+
+```ts
+// Deletes all kvdex entries
+await db.wipe()
 ```
 
 ### deleteUndelivered()
