@@ -32,6 +32,7 @@ _Supported Deno verisons:_ **^1.37.2**
     - [findByPrimaryIndex()](#findbyprimaryindex)
     - [findBySecondaryIndex()](#findbysecondaryindex)
     - [findMany()](#findmany)
+    - [findHistory()](#findhistory)
     - [findUndelivered()](#findundelivered)
     - [add()](#add)
     - [addMany()](#addmany)
@@ -157,6 +158,7 @@ const db = kvdex(kv, {
     serialize: "auto"
   }),
   users: collection(UserSchema, {
+    history: true,
     idGenerator: () => crypto.randomUUID(),
     indices: {
       username: "primary" // unique
@@ -173,8 +175,8 @@ const db = kvdex(kv, {
 The schema definition contains collection builders, or nested schema
 definitions. Collections can hold any type adhering to KvValue. Indexing can be
 specified for collections of objects, while a custom id generator and
-serialization can be set for all collections. The default id generator is
-`ulid()` from Deno's standard library.
+serialization can be set for all collections, in addition to enabling version
+history. The default id generator is `ulid()` from Deno's standard library.
 
 ## Collection Methods
 
@@ -231,6 +233,16 @@ const userDocs1 = await db.users.findMany(["abc", 123, 123n])
 const userDocs2 = await db.users.findMany(["abc", 123, 123n], {
   consistency: "eventual", // "strong" by default
 })
+```
+
+### findHistory()
+
+Retrieve the version history of a document by id. Each version history entry
+contains a copy of the document value and a timestamp. Delete operations are not
+recorded.
+
+```ts
+const history = await db.users.findHistory("user_id")
 ```
 
 ### findUndelivered()

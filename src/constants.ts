@@ -17,6 +17,8 @@ export const INTERVAL_KEY_PREFIX = "__interval__"
 
 export const LOOP_KEY_PREFIX = "__loop__"
 
+export const HISTORY_KEY_PREFIX = "__history__"
+
 // Fixed limits
 export const ATOMIC_OPERATION_MUTATION_LIMIT = 1_000
 

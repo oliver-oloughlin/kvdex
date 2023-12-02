@@ -8,6 +8,7 @@ import type {
   EnqueueOptions,
   FindManyOptions,
   FindOptions,
+  HistoryEntry,
   IdempotentListener,
   IdGenerator,
   IndexDataEntry,
@@ -57,6 +58,7 @@ import {
 } from "./utils.ts"
 import {
   DEFAULT_MERGE_TYPE,
+  HISTORY_KEY_PREFIX,
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   PRIMARY_INDEX_KEY_PREFIX,
@@ -68,7 +70,7 @@ import {
 import { AtomicWrapper } from "./atomic_wrapper.ts"
 import { Document } from "./document.ts"
 import { model } from "./model.ts"
-import { concat, deepMerge } from "./deps.ts"
+import { concat, deepMerge, ulid } from "./deps.ts"
 
 /**
  * Create a new collection within a database context.
@@ -140,6 +142,7 @@ export class Collection<
   readonly _serializer: Serializer
   readonly _isIndexable: boolean
   readonly _isSerialized: boolean
+  readonly _keepsHistory: boolean
 
   constructor(
     kv: Deno.Kv,
@@ -182,6 +185,17 @@ export class Collection<
       undelivered: extendKey(
         [KVDEX_KEY_PREFIX],
         UNDELIVERED_KEY_PREFIX,
+        ...key,
+      ),
+      history: extendKey(
+        [KVDEX_KEY_PREFIX],
+        HISTORY_KEY_PREFIX,
+        ...key,
+      ),
+      historySegment: extendKey(
+        [KVDEX_KEY_PREFIX],
+        HISTORY_KEY_PREFIX,
+        SEGMENT_KEY_PREFIX,
         ...key,
       ),
     }
@@ -242,13 +256,16 @@ export class Collection<
     // Set isIndexable flag
     this._isIndexable = this._primaryIndexList.length > 0 ||
       this._secondaryIndexList.length > 0
+
+    // Set keepsHistory flag
+    this._keepsHistory = options?.history ?? false
   }
 
-  /*********************/
-  /*                   */
-  /*   PUBLIC METHODS  */
-  /*                   */
-  /*********************/
+  /**********************/
+  /*                    */
+  /*   PUBLIC METHODS   */
+  /*                    */
+  /**********************/
 
   /**
    * Finds a document with the given id in the KV store.
@@ -388,6 +405,67 @@ export class Collection<
       }
 
       result.push(doc)
+    }
+
+    // Return result list
+    return result
+  }
+
+  /**
+   * Get the version history of a document by id.
+   *
+   * @example
+   * ```ts
+   * const history = await db.users.findHistory("user_id")
+   * ```
+   *
+   * @param id - Document id.
+   * @returns A promise resolving to a list of history entries.
+   */
+  async findHistory(id: KvId) {
+    // Initialize result list and create history key prefix
+    const result: HistoryEntry<TOutput>[] = []
+    const historyKeyPrefix = extendKey(this._keys.history, id)
+
+    // Create hsitory entries iterator
+    const iter = this.kv.list<HistoryEntry<TOutput>>({
+      prefix: historyKeyPrefix,
+    })
+
+    // Collect history entries
+    for await (const { value, key } of iter) {
+      // Handle serialized entries
+      if (value.value !== null && this._isSerialized) {
+        const { ids } = value.value as SerializedEntry
+        const timeId = getDocumentId(key)!
+
+        const keys = ids.map((segmentId) =>
+          extendKey(this._keys.historySegment, id, timeId, segmentId)
+        )
+
+        const entries = await kvGetMany<Uint8Array>(keys, this.kv)
+
+        // Concatenate chunks
+        const data = concat(entries.map((entry) => entry.value!))
+
+        // Decompress and deserialize
+        const serialized = this._serializer.decompress(data)
+        const deserialized = this._serializer.deserialize<TOutput>(serialized)
+
+        // Add history entry
+        result.push({
+          timestamp: value.timestamp,
+          value: this._model.__validate?.(deserialized) ??
+            this._model.parse(deserialized as any),
+        })
+      } else {
+        // Add history entry
+        result.push({
+          timestamp: value.timestamp,
+          value: this._model.__validate?.(value.value) ??
+            this._model.parse(value.value as any),
+        })
+      }
     }
 
     // Return result list
@@ -1359,11 +1437,11 @@ export class Collection<
     await this.kv.delete(key)
   }
 
-  /**********************/
-  /*                    */
-  /*   PRIVATE METHODS  */
-  /*                    */
-  /**********************/
+  /***********************/
+  /*                     */
+  /*   PRIVATE METHODS   */
+  /*                     */
+  /***********************/
 
   /**
    * Set a document entry in the KV store.
@@ -1406,8 +1484,9 @@ export class Collection<
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Initialize atomic operation and keys list
     const atomic = this.kv.atomic()
-    const keys: KvKey[] = []
+    const ids: KvId[] = []
     let docValue: any = value
+    const timeId = ulid()
 
     // Check for id collision
     atomic.check({
@@ -1425,21 +1504,44 @@ export class Collection<
       for (let i = 0; i < compressed.length; i += UINT8ARRAY_LENGTH_LIMIT) {
         const part = compressed.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT)
         const key = extendKey(this._keys.segment, docId, index)
-        keys.push(key)
+        ids.push(index)
         atomic.set(key, part, options)
+
+        // Set history segments if keeps history
+        if (this._keepsHistory) {
+          const historySegmentKey = extendKey(
+            this._keys.historySegment,
+            docId,
+            timeId,
+            index,
+          )
+
+          atomic.set(historySegmentKey, part)
+        }
+
         index++
       }
 
       // Set serialized document entry
       docValue = {
-        ids: keys.map((key) => getDocumentId(key)!).filter((id) =>
-          typeof id !== "undefined"
-        ),
-      } as SerializedEntry
+        ids,
+      }
     }
 
     // Set document entry
     atomic.set(idKey, docValue, options)
+
+    // Set history entry if keeps history
+    if (this._keepsHistory) {
+      const historyKey = extendKey(this._keys.history, docId, timeId)
+
+      const historyEntry: HistoryEntry<any> = {
+        timestamp: new Date(),
+        value: docValue,
+      }
+
+      atomic.set(historyKey, historyEntry)
+    }
 
     // Set indices if is indexable
     if (this._isIndexable) {
