@@ -230,6 +230,7 @@ export type CollectionOptions<T extends KvValue> =
   & {
     idGenerator?: IdGenerator<T>
     serialize?: SerializeOptions
+    history?: true
   }
   & (
     T extends KvObject ? {
@@ -249,6 +250,8 @@ export type CollectionKeys = {
   secondaryIndex: KvKey
   segment: KvKey
   undelivered: KvKey
+  history: KvKey
+  historySegment: KvKey
 }
 
 export type IdempotentListener = () => Promise<void>
@@ -260,6 +263,19 @@ export type Model<TInput, TOutput extends KvValue> = {
   parse: (data: TInput) => TOutput
   __validate?: (data: unknown) => TOutput
 }
+
+export type WriteHistoryEntry<T> = {
+  type: "write"
+  timestamp: Date
+  value: T
+}
+
+export type DeleteHistoryEntry = {
+  type: "delete"
+  timestamp: Date
+}
+
+export type HistoryEntry<T> = WriteHistoryEntry<T> | DeleteHistoryEntry
 
 /*******************/
 /*                 */

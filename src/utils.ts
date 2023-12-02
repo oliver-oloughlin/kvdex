@@ -30,7 +30,7 @@ import {
 /*************************/
 
 /**
- * Generate a random document id.
+ * Generate a new document id.
  *
  * @returns A generated id of type KvId.
  */
