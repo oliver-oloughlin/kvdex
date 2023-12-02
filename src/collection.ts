@@ -1735,6 +1735,13 @@ export class Collection<
     }
   }
 
+  /**
+   * Delete documents by id.
+   *
+   * @param ids - List of document ids.
+   * @param recordHistory - Whether to record history entry or not.
+   * @returns
+   */
   private async deleteDocuments(ids: KvId[], recordHistory: boolean) {
     // Initialize atomic operation
     const atomic = new AtomicWrapper(this.kv)
