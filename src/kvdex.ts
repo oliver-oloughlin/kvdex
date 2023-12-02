@@ -183,9 +183,14 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    *
    * @example
    * ```ts
-   * // Deletes all documents across all collections
    * await db.deleteAll()
    * ```
+   *
+   * @example
+   * ```ts
+   * await db.deleteAll({ atomicBatchSize: 500 })
+   * ```
+   *
    * @param options - Atomic batch options.
    * @returns Promise resolving to void.
    */
@@ -198,8 +203,12 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    *
    * @example
    * ```ts
-   * // Deletes all kvdex entries
    * await db.wipe()
+   * ```
+   *
+   * @example
+   * ```ts
+   * await db.wipe({ atomicBatchSize: 500 })
    * ```
    *
    * @param options - Atomic batch options.

@@ -46,6 +46,7 @@ _Supported Deno verisons:_ **^1.37.2**
     - [deleteByPrimaryIndex()](#deletebyprimaryindex)
     - [deleteBySecondaryIndex()](#deletebysecondaryindex)
     - [deleteMany()](#deletemany)
+    - [deleteHistory()](#deletehistory)
     - [deleteUndelivered()](#deleteundelivered)
     - [getMany()](#getmany)
     - [forEach()](#foreach)
@@ -480,6 +481,14 @@ await db.users.deleteMany({
 })
 ```
 
+### deleteHistory()
+
+Delete the version history of a document by id.
+
+```ts
+await db.users.deleteHistory("user_id")
+```
+
 ### deleteUndelivered()
 
 Delete an undelivered document entry by id from the collection queue.
@@ -733,12 +742,13 @@ const count = await db.countAll()
 
 ### deleteAll()
 
-Delete all documents across all collections. It takes an optional options
-argument that can be used to set the consistency mode.
+Delete all documents across all collections.
 
 ```ts
-// Deletes all documents in the KV store across all collections
 await db.deleteAll()
+
+// Excplicity set the atomic batch size between 1-1000
+await db.deleteAll({ atomicBatchSize: 500 })
 ```
 
 ### wipe()
@@ -746,8 +756,10 @@ await db.deleteAll()
 Delete all kvdex entries, including undelivered and history entries.
 
 ```ts
-// Deletes all kvdex entries
 await db.wipe()
+
+// Excplicity set the atomic batch size between 1-1000
+await db.wipe({ atomicBatchSize: 500 })
 ```
 
 ### deleteUndelivered()

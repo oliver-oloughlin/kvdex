@@ -1368,6 +1368,38 @@ export class Collection<
   }
 
   /**
+   * Delete the version history of a document by id.
+   *
+   * @example
+   * ```ts
+   * await db.users.deleteHistory("user_id")
+   * ```
+   *
+   * @param id - Document id.
+   */
+  async deleteHistory(id: KvId) {
+    // Initialize atomic operation and create iterators
+    const atomic = new AtomicWrapper(this.kv)
+    const historyKeyPrefix = extendKey(this._keys.history, id)
+    const historySegmentKeyPrefix = extendKey(this._keys.historySegment, id)
+    const historyIter = this.kv.list({ prefix: historyKeyPrefix })
+    const historySegmentIter = this.kv.list({ prefix: historySegmentKeyPrefix })
+
+    // Delete history entries
+    for await (const { key } of historyIter) {
+      atomic.delete(key)
+    }
+
+    // Delete any history segment entries
+    for await (const { key } of historySegmentIter) {
+      atomic.delete(key)
+    }
+
+    // Commit atomic operation
+    await atomic.commit()
+  }
+
+  /**
    * Delete an undelivered document entry by id from the collection queue.
    *
    * @example
