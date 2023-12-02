@@ -1,8 +1,8 @@
 import type {
+  AtomicBatchOptions,
   CollectionOptions,
   CollectionSelector,
   CountAllOptions,
-  DeleteAllOptions,
   EnqueueOptions,
   FindOptions,
   IntervalMessage,
@@ -186,10 +186,25 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    * // Deletes all documents across all collections
    * await db.deleteAll()
    * ```
-   * @param options - Delete all options, optional.
+   * @param options - Atomic batch options.
    * @returns Promise resolving to void.
    */
-  async deleteAll(options?: DeleteAllOptions) {
+  async deleteAll(options?: AtomicBatchOptions) {
+    await _deleteAll(this.kv, this.schema, options)
+  }
+
+  /**
+   * Wipe all kvdex entries, including undelivered and history entries.
+   *
+   * @example
+   * ```ts
+   * // Deletes all kvdex entries
+   * await db.wipe()
+   * ```
+   *
+   * @param options - Atomic batch options.
+   */
+  async wipe(options?: AtomicBatchOptions) {
     // Create iterator
     const iter = this.kv.list({ prefix: [KVDEX_KEY_PREFIX] })
 
@@ -649,7 +664,7 @@ function _createSchema<const T extends SchemaDefinition>(
  * @param kv - Deno KV instance.
  * @param schemaOrCollection - Schema or Collection object.
  * @param options - CountAll options.
- * @returns Promise resolving to void the total count of documents in schema collections or collection.
+ * @returns Promise resolving to the total count of documents in schema collections or collection.
  */
 async function _countAll(
   kv: Deno.Kv,
@@ -670,4 +685,33 @@ async function _countAll(
 
   // Return the sum of collection counts
   return counts.reduce((sum, c) => sum + c, 0)
+}
+
+/**
+ * Delete all documents in the KV store.
+ *
+ * @param kv - Deno KV instance.
+ * @param schemaOrCollection - Schema or Collection object.
+ * @param options - DeleteAll options.
+ * @returns Promise resolving to void.
+ */
+async function _deleteAll(
+  kv: Deno.Kv,
+  schemaOrCollection:
+    | Schema<SchemaDefinition>
+    | Collection<KvValue, KvValue, CollectionOptions<KvValue>>,
+  options?: AtomicBatchOptions,
+): Promise<void> {
+  // If input is a collection, perform deleteMany
+  if (schemaOrCollection instanceof Collection) {
+    await schemaOrCollection.deleteMany(options)
+    return
+  }
+
+  // Recursively perform delete for all schemas/collections
+  await allFulfilled(
+    Object.values(schemaOrCollection).map((val) =>
+      _deleteAll(kv, val, options)
+    ),
+  )
 }

@@ -387,8 +387,6 @@ export type UpdateManyOptions<T extends KvValue> =
 
 export type CountAllOptions = Pick<ListOptions<KvValue>, "consistency">
 
-export type DeleteAllOptions = AtomicBatchOptions
-
 export type EnqueueOptions =
   & Omit<
     KvEnqueueOptions,
