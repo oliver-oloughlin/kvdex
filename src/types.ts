@@ -189,7 +189,7 @@ export type AtomicCheck<T extends KvValue> = {
   versionstamp: Document<T>["versionstamp"]
 }
 
-export type AtomicMutation<T extends KvValue> =
+export type AtomicMutation<T> =
   & {
     id: KvId
   }
@@ -200,16 +200,21 @@ export type AtomicMutation<T extends KvValue> =
       expireIn?: number
     }
     | {
+      type: "add"
+      value: T
+      expireIn?: number
+    }
+    | {
       type: "sum"
-      value: T extends Deno.KvU64 ? T : never
+      value: T extends Deno.KvU64 ? bigint : never
     }
     | {
       type: "min"
-      value: T extends Deno.KvU64 ? T : never
+      value: T extends Deno.KvU64 ? bigint : never
     }
     | {
       type: "max"
-      value: T extends Deno.KvU64 ? T : never
+      value: T extends Deno.KvU64 ? bigint : never
     }
     | {
       type: "delete"

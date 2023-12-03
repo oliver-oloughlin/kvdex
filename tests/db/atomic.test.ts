@@ -180,9 +180,10 @@ Deno.test("db - atomic", async (t) => {
   await t.step("Should perform mutation operations", async () => {
     await useDb(async (db) => {
       const initial = new Deno.KvU64(100n)
-      const value = new Deno.KvU64(200n)
+      const set = new Deno.KvU64(200n)
+      const add = new Deno.KvU64(300n)
       const id = "id"
-      const addition = new Deno.KvU64(100n)
+      const sum = new Deno.KvU64(100n)
       const min1 = new Deno.KvU64(10n)
       const min2 = new Deno.KvU64(200n)
       const max1 = new Deno.KvU64(200n)
@@ -203,32 +204,37 @@ Deno.test("db - atomic", async (t) => {
           {
             id,
             type: "set",
-            value,
+            value: set,
+          },
+          {
+            id,
+            type: "add",
+            value: add,
           },
           {
             id: cr1.id,
             type: "sum",
-            value: addition,
+            value: sum.value,
           },
           {
             id: cr2.id,
             type: "min",
-            value: min1,
+            value: min1.value,
           },
           {
             id: cr3.id,
             type: "min",
-            value: min2,
+            value: min2.value,
           },
           {
             id: cr4.id,
             type: "max",
-            value: max1,
+            value: max1.value,
           },
           {
             id: cr5.id,
             type: "max",
-            value: max2,
+            value: max2.value,
           },
           {
             id: cr6.id,
@@ -237,7 +243,12 @@ Deno.test("db - atomic", async (t) => {
         )
         .commit()
 
-      const docNew = await db.u64s.find(id)
+      const docSet = await db.u64s.find(id)
+
+      const { result: [docAdd] } = await db.u64s.getMany({
+        filter: (d) => d.value.value === 300n,
+      })
+
       const doc1 = await db.u64s.find(cr1.id)
       const doc2 = await db.u64s.find(cr2.id)
       const doc3 = await db.u64s.find(cr3.id)
@@ -245,8 +256,9 @@ Deno.test("db - atomic", async (t) => {
       const doc5 = await db.u64s.find(cr5.id)
       const doc6 = await db.u64s.find(cr6.id)
 
-      assert(docNew?.value.value === value.value)
-      assert(doc1?.value.value === initial.value + addition.value)
+      assert(docSet?.value.value === set.value)
+      assert(docAdd?.value.value === add.value)
+      assert(doc1?.value.value === initial.value + sum.value)
       assert(doc2?.value.value === min1.value)
       assert(doc3?.value.value === initial.value)
       assert(doc4?.value.value === max1.value)
@@ -353,6 +365,44 @@ Deno.test("db - atomic", async (t) => {
       assert(assertion1)
       assert(assertion2)
       assert(assertion3)
+    })
+  })
+
+  await t.step("Should retain history in correct order", async () => {
+    await useKv(async (kv) => {
+      const db = kvdex(kv, {
+        numbers: collection(model<number>(), { history: true }),
+      })
+
+      const id = "id"
+
+      await db
+        .atomic((s) => s.numbers)
+        .add(100)
+        .set(id, 200)
+        .commit()
+
+      await sleep(10)
+
+      await db
+        .atomic((s) => s.numbers)
+        .delete(id)
+        .commit()
+
+      const { result: [doc] } = await db.numbers.getMany({
+        filter: (d) => d.value === 100,
+      })
+
+      const [h] = await db.numbers.findHistory(doc.id)
+      assert(h.type === "write")
+      assert(h.value === 100)
+
+      const [h1, h2] = await db.numbers.findHistory(id)
+
+      assert(h1.type === "write")
+      assert(h1.value === 200)
+      assert(h1.timestamp.valueOf() <= h2.timestamp.valueOf())
+      assert(h2.type === "delete")
     })
   })
 })
