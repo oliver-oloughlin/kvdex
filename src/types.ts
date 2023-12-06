@@ -406,6 +406,8 @@ export type QueueListenerOptions = {
   topic?: string
 }
 
+export type WatchOptions = NonNullable<Parameters<Deno.Kv["watch"]>[1]>
+
 /********************/
 /*                  */
 /*   SCHEMA TYPES   */

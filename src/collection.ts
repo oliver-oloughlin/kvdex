@@ -33,6 +33,7 @@ import type {
   UpdateData,
   UpdateManyOptions,
   UpdateOptions,
+  WatchOptions,
 } from "./types.ts"
 import {
   allFulfilled,
@@ -1412,6 +1413,33 @@ export class Collection<
   async deleteUndelivered(id: KvId) {
     const key = extendKey(this._keys.undelivered, id)
     await this.kv.delete(key)
+  }
+
+  async watch(
+    id: KvId,
+    fn: (doc: Document<TOutput> | null) => unknown,
+    options?: WatchOptions,
+  ) {
+    const key = extendKey(this._keys.id, id)
+    const stream = this.kv.watch([key], options)
+
+    for await (const entries of stream) {
+      const entry = entries.at(0)
+      const docId = getDocumentId(entry?.key ?? [])
+
+      if (!entry || entry.versionstamp === null || !docId) {
+        await fn(null)
+        return
+      }
+
+      const doc = await this.constructDocument(entry)
+
+      try {
+        await fn(doc)
+      } catch (e) {
+        console.error(e)
+      }
+    }
   }
 
   /***********************/
