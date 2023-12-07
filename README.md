@@ -4,9 +4,9 @@
 dependencies. It's purpose is to enhance the experience of using Deno's KV store
 through additional features such as indexing, strongly typed collections and
 serialization/compression, while maintaining as much of the native functionality
-as possible, like atomic operations and queue listeners.
+as possible, like watch, atomic operations and queue listeners.
 
-_Supported Deno verisons:_ **^1.37.2**
+_Supported Deno verisons:_ **^1.38.5**
 
 ## Highlights
 
@@ -57,6 +57,8 @@ _Supported Deno verisons:_ **^1.37.2**
     - [countBySecondaryIndex()](#countbysecondaryindex)
     - [enqueue()](#enqueue)
     - [listenQueue()](#listenqueue)
+    - [watch()](#watch)
+    - [watchMany()](#watchmany)
   - [Serialized Collections](#serialized-collections)
   - [Database Methods](#database-methods)
     - [countAll()](#countall)
@@ -680,6 +682,40 @@ db.users.listenQueue(async (data) => {
 
   console.log("POSTED:", dataBody, res.ok)
 }, { topic: "posts" })
+```
+
+### watch()
+
+Listen for live changes to a single document by id.
+
+```ts
+// Updates the document value every second
+setInterval(() => db.numbers.set("id", Math.random()), 1_000)
+
+// Listen for any updates to the document value
+db.numbers.watch("id", (doc) => {
+  // Document will be null if the latest update was a delete operation
+  console.log(doc?.value)
+})
+```
+
+### watchMany()
+
+Listen for live changes to an array of specified documents by id.
+
+```ts
+// Delayed setting of document values
+setTimeout(() => db.numbers.set("id1", 10), 1_000)
+setTimeout(() => db.numbers.set("id2", 20), 2_000)
+setTimeout(() => db.numbers.set("id3", 30), 3_000)
+
+// Listen for any updates to the document values
+db.numbers.watchMany(["id1", "id2", "id3"], (docs) => {
+  // Prints for each update to any of the documents
+  console.log(docs[0]?.value) // 10, 10, 10
+  console.log(docs[1]?.value) // null, 20, 20
+  console.log(docs[2]?.value) // null, null, 30
+})
 ```
 
 ## Serialized Collections

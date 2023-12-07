@@ -1415,30 +1415,92 @@ export class Collection<
     await this.kv.delete(key)
   }
 
+  /**
+   * Listen for live changes to a single document by id.
+   *
+   * @example
+   * ```ts
+   * // Updates the document value every second
+   * setInterval(() => db.numbers.set("id", Math.random()), 1_000)
+   *
+   * // Listen for any updates to the document value
+   * db.numbers.watch("id", (doc) => {
+   *   // Document will be null if the latest update was a delete operation
+   *   console.log(doc?.value)
+   * })
+   * ```
+   *
+   * @param id - Id of document to watch for.
+   * @param fn - Callback function to be invoked on each update.
+   * @param options - Watch options.
+   */
   async watch(
     id: KvId,
     fn: (doc: Document<TOutput> | null) => unknown,
     options?: WatchOptions,
   ) {
+    // Create watch stream
     const key = extendKey(this._keys.id, id)
     const stream = this.kv.watch([key], options)
 
+    // Catch incoming updates
     for await (const entries of stream) {
+      // Get first entry
       const entry = entries.at(0)
-      const docId = getDocumentId(entry?.key ?? [])
 
-      if (!entry || entry.versionstamp === null || !docId) {
+      // If no entry is found, invoke callback function with null
+      if (!entry) {
         await fn(null)
-        return
+        continue
       }
 
+      // Construct document and invoke callback function
       const doc = await this.constructDocument(entry)
+      await fn(doc)
+    }
+  }
 
-      try {
-        await fn(doc)
-      } catch (e) {
-        console.error(e)
-      }
+  /**
+   * Listen for live changes to an array of specified documents by id.
+   *
+   * @example
+   * ```ts
+   * // Delayed setting of document values
+   * setTimeout(() => db.numbers.set("id1", 10), 1_000)
+   * setTimeout(() => db.numbers.set("id2", 20), 2_000)
+   * setTimeout(() => db.numbers.set("id3", 30), 3_000)
+   *
+   * // Listen for any updates to the document values
+   * db.numbers.watchMany(["id1", "id2", "id3"], (docs) => {
+   *   // Prints for each update to any of the documents
+   *   console.log(docs[0]?.value) // 10, 10, 10
+   *   console.log(docs[1]?.value) // null, 20, 20
+   *   console.log(docs[2]?.value) // null, null, 30
+   * })
+   * ```
+   *
+   * @param ids - List of ids of documents to watch.
+   * @param fn - Callback function to be invoked on each update.
+   * @param options - Watch options.
+   */
+  async watchMany(
+    ids: KvId[],
+    fn: (doc: (Document<TOutput> | null)[]) => unknown,
+    options?: WatchOptions,
+  ) {
+    // Create watch stream
+    const keys = ids.map((id) => extendKey(this._keys.id, id))
+    const stream = this.kv.watch(keys, options)
+
+    // Catch incoming updates
+    for await (const entries of stream) {
+      // Construct documents
+      const docs = await Array.fromAsync(
+        entries.map((entry) => this.constructDocument(entry)),
+      )
+
+      // Invoke callback function
+      await fn(docs)
     }
   }
 
@@ -1485,7 +1547,7 @@ export class Collection<
     idKey: KvKey,
     value: TOutput,
     options: SetOptions | undefined,
-    overwrite = false,
+    overwrite: boolean,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Initialize atomic operation and keys list
     const atomic = this.kv.atomic()
@@ -1494,10 +1556,12 @@ export class Collection<
     const timeId = ulid()
 
     // Check for id collision
-    atomic.check({
-      key: idKey,
-      versionstamp: null,
-    })
+    if (!overwrite) {
+      atomic.check({
+        key: idKey,
+        versionstamp: null,
+      })
+    }
 
     // Serialize if enabled
     if (this._isSerialized) {
@@ -1527,7 +1591,7 @@ export class Collection<
         index++
       }
 
-      // Set serialized document entry
+      // Set serialized document value
       docValue = {
         ids,
       }
@@ -1566,49 +1630,17 @@ export class Collection<
 
     // Handle failed operation
     if (!cr.ok) {
-      // If overwrite is true, check for id and indices collision
-      if (overwrite) {
-        const [
-          idCheck,
-          indicesCheck,
-        ] = await Promise.all([
-          this.kv
-            .atomic()
-            .check({
-              key: idKey,
-              versionstamp: null,
-            })
-            .commit(),
-
-          checkIndices(
-            value as KvObject,
-            this.kv.atomic(),
-            this,
-          ).commit(),
-        ])
-
-        // If only id collision, delete exisitng document and try again
-        if (!idCheck.ok && indicesCheck.ok) {
-          await this.deleteDocuments([docId], false)
-          return await this.setDoc(docId, idKey, value, options, overwrite)
-        }
-
-        // Operation is not retryable if indices collision is detected
+      const retry = options?.retry ?? 0
+      if (!retry) {
         return {
           ok: false,
         }
       }
 
-      // Check for remaining retry attempts
-      const retry = options?.retry ?? 0
-      if (retry > 0) {
-        return await this.setDoc(docId, idKey, value, options, overwrite)
-      }
-
-      // Return commit error
-      return {
-        ok: false,
-      }
+      return await this.setDoc(docId, idKey, value, {
+        ...options,
+        retry: retry - 1,
+      }, overwrite)
     }
 
     // Return commit result
@@ -1634,7 +1666,7 @@ export class Collection<
     // Get document value, delete document entry
     const { value, id } = doc
 
-    // If indexable, check for index collisions
+    // If indexable, check for index collisions and delete exisitng index entries
     if (this._isIndexable) {
       const atomic = checkIndices(
         data as KvObject,
@@ -1651,8 +1683,29 @@ export class Collection<
         }
       }
 
-      // Delete document entry
-      await this.deleteDocuments([id], false)
+      // Delete existing indices
+      const doc = await this.find(id)
+      if (doc) {
+        await deleteIndices(
+          id,
+          doc.value as KvObject,
+          this.kv.atomic(),
+          this,
+        ).commit()
+      }
+    }
+
+    // If serialized, delete existing segment entries
+    if (this._isSerialized) {
+      const atomic = new AtomicWrapper(this.kv)
+      const keyPrefix = extendKey(this._keys.segment, id)
+      const iter = this.kv.list({ prefix: keyPrefix })
+
+      for await (const { key } of iter) {
+        atomic.delete(key)
+      }
+
+      await atomic.commit()
     }
 
     let updated = data as TOutput
