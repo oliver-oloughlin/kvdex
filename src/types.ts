@@ -340,6 +340,13 @@ export type SerializeOptions = "auto" | "core" | "json" | Partial<Serializer>
 export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
   /** Number of retry attempts before returning failed operation */
   retry?: number
+
+  /**
+   * Whether the operation should overwrite an existing document with the same id or not.
+   *
+   * @default false
+   */
+  overwrite?: boolean
 }
 
 export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
@@ -375,7 +382,7 @@ export type FindOptions = NonNullable<Parameters<Deno.Kv["get"]>[1]>
 
 export type FindManyOptions = NonNullable<Parameters<Deno.Kv["getMany"]>[1]>
 
-export type UpdateOptions = SetOptions & {
+export type UpdateOptions = Omit<SetOptions, "overwrite"> & {
   /**
    * Strategy when merging objects.
    *

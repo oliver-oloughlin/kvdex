@@ -24,7 +24,7 @@ Deno.test({
 
         await db.i_users.set(id, mockUser1)
         await sleep(500)
-        await db.i_users.write(id, mockUser2)
+        await db.i_users.set(id, mockUser2, { overwrite: true })
         await sleep(500)
         await db.i_users.update(id, mockUser3)
         await sleep(500)
@@ -55,7 +55,7 @@ Deno.test({
 
         await db.i_users.set(id2, mockUser1)
         await sleep(500)
-        await db.i_users.write(id2, mockUser2)
+        await db.i_users.set(id2, mockUser2, { overwrite: true })
         await sleep(500)
         await db.i_users.update(id2, mockUser3)
         await sleep(500)

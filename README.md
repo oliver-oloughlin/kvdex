@@ -37,7 +37,6 @@ _Supported Deno verisons:_ **^1.38.5**
     - [add()](#add)
     - [addMany()](#addmany)
     - [set()](#set)
-    - [write()](#write)
     - [update()](#update)
     - [updateByPrimaryIndex()](#updatebyprimaryindex)
     - [updateBySecondaryIndex()](#updatebysecondaryindex)
@@ -307,34 +306,20 @@ await result = await db.users.addMany([
 
 ### set()
 
-Add a new document to the KV store with a given id of type KvId. Upon
+Set a document entry in the KV store with a given id of type KvId. Upon
 completion, a CommitResult object will be returned with the document id,
-versionstamp and ok flag. If a document with a matching id already exists in the
-collection, the operation will fail.
+versionstamp and ok flag.
 
 ```ts
-const result = await db.numbers.set("id_1", 2048)
+// Add a new document if the id is not already in use
+const result1 = await db.numbers.set("id", 1024)
 
-if (result.ok) {
-  console.log(result.id) // id_1
+// Overwrite any existing document with the same id
+const result2 = await db.numbers.set("id", 2048, { overwrite: true })
+
+if (result1.ok) {
+  console.log(result.id) // id
 }
-```
-
-### write()
-
-Write a document to the KV store with a given id of type KvId. Sets a new
-document entry if no document already exists, overwrites an existing entry if it
-does. Upon completion, a CommitResult object will be returned with the document
-id, verisonstamp and ok flag. Contrary to update(), this method will only
-perform full overwrites, no partial updates. This method will not fail whether
-an existing id already exists or not.
-
-```ts
-const result1 = await db.numbers.write("id_1", 1024)
-const result2 = await db.numbers.write("id_1", 2048)
-const doc = await db.numbers.find("id_1")
-
-console.log(doc?.value) // 2048
 ```
 
 ### update()

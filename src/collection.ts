@@ -500,7 +500,7 @@ export class Collection<
    */
   async add(value: ParseInputType<TInput, TOutput>, options?: SetOptions) {
     // Set document value with generated id
-    return await this.setDocument(null, value, options, false)
+    return await this.setDocument(null, value, options)
   }
 
   /**
@@ -526,7 +526,7 @@ export class Collection<
     data: ParseInputType<TInput, TOutput>,
     options?: SetOptions,
   ) {
-    return await this.setDocument(id, data, options, false)
+    return await this.setDocument(id, data, options)
   }
 
   /**
@@ -536,6 +536,11 @@ export class Collection<
    *
    * Does not overwrite existing entries if there is a primary index collision.
    *
+   * @deprecated
+   * This method is deprecated and will be removed in a future release.
+   *
+   * Please use `set()` with the option `overwrite: true` instead.
+   *
    * @example
    * ```ts
    * const result = await db.users.write("anders", {
@@ -543,6 +548,7 @@ export class Collection<
    *   age: 24
    * })
    * ```
+   *
    * @param id - Document id.
    * @param value - Document value.
    * @param options - Set options, optional.
@@ -553,7 +559,7 @@ export class Collection<
     value: ParseInputType<TInput, TOutput>,
     options?: SetOptions,
   ) {
-    return await this.setDocument(id, value, options, true)
+    return await this.setDocument(id, value, { ...options, overwrite: true })
   }
 
   /**
@@ -1523,13 +1529,12 @@ export class Collection<
     id: KvId | null,
     value: ParseInputType<TInput, TOutput>,
     options: SetOptions | undefined,
-    overwrite: boolean,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Create id, document key and parse document value
     const parsed = this._model.parse(value as TInput)
     const docId = id ?? this._idGenerator(parsed)
     const idKey = extendKey(this._keys.id, docId)
-    return await this.setDoc(docId, idKey, parsed, options, overwrite)
+    return await this.setDoc(docId, idKey, parsed, options)
   }
 
   /**
@@ -1547,7 +1552,6 @@ export class Collection<
     idKey: KvKey,
     value: TOutput,
     options: SetOptions | undefined,
-    overwrite: boolean,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Initialize atomic operation and keys list
     const atomic = this.kv.atomic()
@@ -1556,7 +1560,7 @@ export class Collection<
     const timeId = ulid()
 
     // Check for id collision
-    if (!overwrite) {
+    if (!options?.overwrite) {
       atomic.check({
         key: idKey,
         versionstamp: null,
@@ -1640,7 +1644,7 @@ export class Collection<
       return await this.setDoc(docId, idKey, value, {
         ...options,
         retry: retry - 1,
-      }, overwrite)
+      })
     }
 
     // Return commit result
@@ -1730,8 +1734,10 @@ export class Collection<
     return await this.setDocument(
       id,
       updated as ParseInputType<TInput, TOutput>,
-      options,
-      true,
+      {
+        ...options,
+        overwrite: true,
+      },
     )
   }
 
