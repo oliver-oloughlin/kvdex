@@ -59,6 +59,49 @@ Deno.test("serialized_indexable_collection - set", async (t) => {
     },
   )
 
+  await t.step(
+    "Should overwrite document in collection with colliding id",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.is_users.set("id", user1)
+        assert(cr1.ok)
+
+        const cr2 = await db.is_users.set("id", user2, { overwrite: true })
+        assert(cr2.ok)
+
+        const doc = await db.is_users.find("id")
+        assert(doc !== null)
+        assert(doc.value.username === user2.username)
+      })
+    },
+  )
+
+  await t.step(
+    "Should not overwrite document in collection with colliding primary index",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.is_users.set("id1", user1)
+        assert(cr1.ok)
+
+        const cr2 = await db.is_users.set("id2", user1, { overwrite: true })
+        assert(!cr2.ok)
+
+        const byPrimary = await db.is_users.findByPrimaryIndex(
+          "username",
+          user1.username,
+        )
+
+        const bySecondary = await db.is_users.findBySecondaryIndex(
+          "age",
+          user1.age,
+        )
+
+        assert(byPrimary?.id === cr1.id)
+        assert(bySecondary.result.length === 1)
+      })
+    },
+  )
+
   await t.step("Should successfully parse and set document", async () => {
     await useDb(async (db) => {
       let assertion = true

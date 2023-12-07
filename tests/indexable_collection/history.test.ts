@@ -1,6 +1,6 @@
 import { collection, kvdex, model } from "../../mod.ts"
 import { assert } from "../deps.ts"
-import { sleep, useKv } from "../utils.ts"
+import { generateUsers, sleep, useKv } from "../utils.ts"
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts"
 import type { User } from "../models.ts"
 
@@ -193,7 +193,7 @@ Deno.test("indexable_collection - history", async (t) => {
       await db.users.write(id, mockUser1)
       await db.users.write(id, mockUser2)
       await db.users.write(id, mockUser3)
-      const cr = await db.users.add(mockUser1)
+      const cr = await db.users.add(generateUsers(1)[0])
 
       assert(cr.ok)
 

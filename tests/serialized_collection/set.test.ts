@@ -31,6 +31,23 @@ Deno.test("serialized_collection - set", async (t) => {
     },
   )
 
+  await t.step(
+    "Should overwrite document in collection with colliding id",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.s_users.set("id", mockUser1)
+        assert(cr1.ok)
+
+        const cr2 = await db.s_users.set("id", mockUser2, { overwrite: true })
+        assert(cr2.ok)
+
+        const doc = await db.s_users.find("id")
+        assert(doc !== null)
+        assert(doc.value.username === mockUser2.username)
+      })
+    },
+  )
+
   await t.step("Should successfully parse and set document", async () => {
     await useDb(async (db) => {
       let assertion = true
