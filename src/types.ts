@@ -349,14 +349,14 @@ export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
   overwrite?: boolean
 }
 
-export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
+export type ListOptions<T> = Deno.KvListOptions & {
   /**
    * Filter documents based on predicate.
    *
    * @param doc - Document.
    * @returns true or false.
    */
-  filter?: (doc: Document<T>) => boolean
+  filter?: (value: T) => boolean
 
   /** Id of document to start from. */
   startId?: KvId
@@ -370,11 +370,11 @@ export type AtomicBatchOptions = {
   atomicBatchSize?: number
 }
 
-export type AtomicListOptions<T extends KvValue> =
+export type AtomicListOptions<T> =
   & ListOptions<T>
   & AtomicBatchOptions
 
-export type CountOptions<T extends KvValue> =
+export type CountOptions<T> =
   & CountAllOptions
   & Pick<ListOptions<T>, "filter">
 
@@ -393,11 +393,11 @@ export type UpdateOptions = Omit<SetOptions, "overwrite"> & {
 
 export type MergeType = "shallow" | "deep"
 
-export type UpdateManyOptions<T extends KvValue> =
+export type UpdateManyOptions<T> =
   & ListOptions<T>
   & UpdateOptions
 
-export type CountAllOptions = Pick<ListOptions<KvValue>, "consistency">
+export type CountAllOptions = Pick<ListOptions<any>, "consistency">
 
 export type EnqueueOptions =
   & Omit<

@@ -9,7 +9,6 @@ import type {
   KvId,
   KvKey,
   KvObject,
-  KvValue,
   ListOptions,
   ParsedQueueMessage,
   PreparedEnqueue,
@@ -438,7 +437,7 @@ export function parseQueueMessage<T extends QueueValue>(
  * @param options - List options.
  * @returns A list selector.
  */
-export function createListSelector<const T extends KvValue>(
+export function createListSelector<T>(
   prefixKey: KvKey,
   options: ListOptions<T> | undefined,
 ): Deno.KvListSelector {
@@ -471,7 +470,7 @@ export function createListSelector<const T extends KvValue>(
  * @param options - List options.
  * @returns true if list options selects all entries, false if potentially not.
  */
-export function selectsAll<T extends KvValue>(
+export function selectsAll<T>(
   options: ListOptions<T> | undefined,
 ) {
   return (
