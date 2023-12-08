@@ -428,7 +428,7 @@ export class Collection<
    *
    * @example
    * ```ts
-   * const history = await db.users.findHistory("user_id")
+   * const { result } = await db.users.findHistory("user_id")
    * ```
    *
    * @param id - Document id.
@@ -834,6 +834,54 @@ export class Collection<
     )
   }
 
+  /**
+   * Update an existing document by either id or primary index, or set a new document
+   * entry if no document with matching id/index exists.
+   *
+   * When upserting by primary index, an id can be optionally specified which
+   * will be used when setting a new document entry, otherwise an id will be generated.
+   *
+   * @example
+   * ```ts
+   * // Upsert by id
+   * const result1 = await db.users.upsert({
+   *   id: "user_id",
+   *   update: { username: "Chris" },
+   *   set: {
+   *     username: "Chris",
+   *     age: 54,
+   *     activities: ["bowling"],
+   *     address: {
+   *       country: "USA",
+   *       city: "Las Vegas"
+   *       street: "St. Boulevard"
+   *       houseNumber: 23
+   *     }
+   *   }
+   * })
+   *
+   * // Upsert by index
+   * const result2 = await db.users.upsert({
+   *   index: ["username", "Jack"],
+   *   update: { username: "Chris" },
+   *   set: {
+   *     username: "Chris",
+   *     age: 54,
+   *     activities: ["bowling"],
+   *     address: {
+   *       country: "USA",
+   *       city: "Las Vegas"
+   *       street: "St. Boulevard"
+   *       houseNumber: 23
+   *     }
+   *   }
+   * })
+   * ```
+   *
+   * @param input - Upsert input, including id or index, update data and set data.
+   * @param options - Upsert options.
+   * @returns A promise resolving to either CommitResult or CommitError.
+   */
   async upsert<
     const TIndex extends PrimaryIndexKeys<TOutput, TOptions>,
   >(

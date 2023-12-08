@@ -41,6 +41,7 @@ _Supported Deno verisons:_ **^1.38.5**
     - [updateByPrimaryIndex()](#updatebyprimaryindex)
     - [updateBySecondaryIndex()](#updatebysecondaryindex)
     - [updateMany()](#updatemany)
+    - [upsert()](#upsert)
     - [delete()](#delete)
     - [deleteByPrimaryIndex()](#deletebyprimaryindex)
     - [deleteBySecondaryIndex()](#deletebysecondaryindex)
@@ -245,7 +246,7 @@ timestamp, type of either "write" or "delete", and a copy of the document value
 if the type is "write".
 
 ```ts
-const history = await db.users.findHistory("user_id")
+const { result } = await db.users.findHistory("user_id")
 ```
 
 ### findUndelivered()
@@ -404,6 +405,49 @@ const { result } = await db.users.updateMany({ age: 67 }, {
 
 // Only updates first user document, as username is a primary index
 const { result } = await db.users.updateMany({ username: "XuserX" })
+```
+
+### upsert()
+
+Update an existing document by either id or primary index, or set a new document
+entry if no document with matching id/index exists. When upserting by primary
+index, an id can be optionally specified which will be used when setting a new
+document entry, otherwise an id will be generated.
+
+```ts
+// Upsert by id
+const result1 = await db.users.upsert({
+  id: "user_id",
+  update: { username: "Chris" },
+  set: {
+    username: "Chris",
+    age: 54,
+    activities: ["bowling"],
+    address: {
+      country: "USA",
+      city: "Las Vegas"
+      street: "St. Boulevard"
+      houseNumber: 23
+    }
+  }
+})
+
+// Upsert by index
+const result2 = await db.users.upsert({
+  index: ["username", "Jack"],
+  update: { username: "Chris" },
+  set: {
+    username: "Chris",
+    age: 54,
+    activities: ["bowling"],
+    address: {
+      country: "USA",
+      city: "Las Vegas"
+      street: "St. Boulevard"
+      houseNumber: 23
+    }
+  }
+})
 ```
 
 ### delete()
