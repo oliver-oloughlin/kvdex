@@ -351,9 +351,9 @@ export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
 
 export type ListOptions<T> = Deno.KvListOptions & {
   /**
-   * Filter documents based on predicate.
+   * Filter based on predicate.
    *
-   * @param doc - Document.
+   * @param value - Input value.
    * @returns true or false.
    */
   filter?: (value: T) => boolean
@@ -414,6 +414,33 @@ export type QueueListenerOptions = {
 }
 
 export type WatchOptions = NonNullable<Parameters<Deno.Kv["watch"]>[1]>
+
+export type IdUpsertInput<TInput, TOutput extends KvValue> = {
+  id: KvId
+  set: ParseInputType<TInput, TOutput>
+  update: UpdateData<TOutput>
+}
+
+export type PrimaryIndexUpsertInput<
+  TInput,
+  TOutput extends KvValue,
+  TIndex,
+> = {
+  id?: KvId
+  index: [TIndex, CheckKeyOf<TIndex, TOutput>]
+  set: ParseInputType<TInput, TOutput>
+  update: UpdateData<TOutput>
+}
+
+export type UpsertInput<
+  TInput,
+  TOutput extends KvValue,
+  TIndex,
+> =
+  | IdUpsertInput<TInput, TOutput>
+  | PrimaryIndexUpsertInput<TInput, TOutput, TIndex>
+
+export type UpsertOptions = UpdateOptions
 
 /********************/
 /*                  */

@@ -11,6 +11,7 @@ import type {
   HistoryEntry,
   IdempotentListener,
   IdGenerator,
+  IdUpsertInput,
   IndexDataEntry,
   KvId,
   KvKey,
@@ -22,6 +23,7 @@ import type {
   ParseInputType,
   PossibleCollectionOptions,
   PrimaryIndexKeys,
+  PrimaryIndexUpsertInput,
   QueueHandlers,
   QueueListenerOptions,
   QueueMessageHandler,
@@ -33,6 +35,8 @@ import type {
   UpdateData,
   UpdateManyOptions,
   UpdateOptions,
+  UpsertInput,
+  UpsertOptions,
   WatchOptions,
 } from "./types.ts"
 import {
@@ -828,6 +832,57 @@ export class Collection<
       (doc) => this.updateDocument(doc, data, options),
       options,
     )
+  }
+
+  async upsert<
+    const TIndex extends PrimaryIndexKeys<TOutput, TOptions>,
+  >(
+    input: UpsertInput<TInput, TOutput, TIndex>,
+    options?: UpsertOptions,
+  ) {
+    // Check if is id or primary index upsert
+    if ((input as any).index !== undefined) {
+      const inp = input as PrimaryIndexUpsertInput<TInput, TOutput, TIndex>
+
+      // First attempt update
+      const updateCr = await this.updateByPrimaryIndex(
+        ...inp.index,
+        inp.update,
+        options,
+      )
+
+      if (updateCr.ok) {
+        return updateCr
+      }
+
+      // If id is present, set new entry with given id
+      if (inp.id) {
+        return await this.set(inp.id, inp.set, {
+          ...options,
+          overwrite: false,
+        })
+      }
+
+      // If no id, set new entry with generated id
+      return await this.add(inp.set, {
+        ...options,
+        overwrite: false,
+      })
+    } else {
+      // First attempt update
+      const id = (input as IdUpsertInput<TInput, TOutput>).id
+      const updateCr = await this.update(id, input.update, options)
+
+      if (updateCr.ok) {
+        return updateCr
+      }
+
+      // Set new entry with given id
+      return await this.set(id, input.set, {
+        ...options,
+        overwrite: false,
+      })
+    }
   }
 
   /**
