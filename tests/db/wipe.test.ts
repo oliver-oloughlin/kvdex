@@ -50,9 +50,9 @@ Deno.test("db - wipe", async (t) => {
         await db.wipe()
 
         const count2 = await db.countAll()
-        const h1 = await db.i_users.findHistory(docs1[0].id)
-        const h2 = await db.s_users.findHistory(docs2[0].id)
-        const h3 = await db.u64s.findHistory(docs3[0].id)
+        const { result: h1 } = await db.i_users.findHistory(docs1[0].id)
+        const { result: h2 } = await db.s_users.findHistory(docs2[0].id)
+        const { result: h3 } = await db.u64s.findHistory(docs3[0].id)
 
         assert(count2 === 0)
         assert(h1.length === 0)

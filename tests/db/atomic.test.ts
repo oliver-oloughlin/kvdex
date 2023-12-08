@@ -393,11 +393,11 @@ Deno.test("db - atomic", async (t) => {
         filter: (d) => d.value === 100,
       })
 
-      const [h] = await db.numbers.findHistory(doc.id)
+      const { result: [h] } = await db.numbers.findHistory(doc.id)
       assert(h.type === "write")
       assert(h.value === 100)
 
-      const [h1, h2] = await db.numbers.findHistory(id)
+      const { result: [h1, h2] } = await db.numbers.findHistory(id)
 
       assert(h1.type === "write")
       assert(h1.value === 200)

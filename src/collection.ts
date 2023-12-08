@@ -11,6 +11,7 @@ import type {
   HistoryEntry,
   IdempotentListener,
   IdGenerator,
+  IdUpsertInput,
   IndexDataEntry,
   KvId,
   KvKey,
@@ -22,6 +23,7 @@ import type {
   ParseInputType,
   PossibleCollectionOptions,
   PrimaryIndexKeys,
+  PrimaryIndexUpsertInput,
   QueueHandlers,
   QueueListenerOptions,
   QueueMessageHandler,
@@ -33,6 +35,8 @@ import type {
   UpdateData,
   UpdateManyOptions,
   UpdateOptions,
+  UpsertInput,
+  UpsertOptions,
   WatchOptions,
 } from "./types.ts"
 import {
@@ -353,7 +357,11 @@ export class Collection<
    */
   async findBySecondaryIndex<
     const K extends SecondaryIndexKeys<TOutput, TOptions>,
-  >(index: K, value: CheckKeyOf<K, TOutput>, options?: ListOptions<TOutput>) {
+  >(
+    index: K,
+    value: CheckKeyOf<K, TOutput>,
+    options?: ListOptions<Document<TOutput>>,
+  ) {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
     const compressed = this._serializer.compress(serialized)
@@ -420,24 +428,25 @@ export class Collection<
    *
    * @example
    * ```ts
-   * const history = await db.users.findHistory("user_id")
+   * const { result } = await db.users.findHistory("user_id")
    * ```
    *
    * @param id - Document id.
    * @returns A promise resolving to a list of history entries.
    */
-  async findHistory(id: KvId) {
+  async findHistory(id: KvId, options?: ListOptions<HistoryEntry<TOutput>>) {
     // Initialize result list and create history key prefix
     const result: HistoryEntry<TOutput>[] = []
-    const historyKeyPrefix = extendKey(this._keys.history, id)
+    const keyPrefix = extendKey(this._keys.history, id)
+    const selector = createListSelector(keyPrefix, options)
 
     // Create hsitory entries iterator
-    const iter = this.kv.list<HistoryEntry<TOutput>>({
-      prefix: historyKeyPrefix,
-    })
+    const iter = this.kv.list<HistoryEntry<TOutput>>(selector, options)
 
     // Collect history entries
     for await (const { value, key } of iter) {
+      let historyEntry: HistoryEntry<TOutput> = value
+
       // Handle serialized entries
       if (value.type === "write" && this._isSerialized) {
         const { ids } = value.value as SerializedEntry
@@ -456,29 +465,35 @@ export class Collection<
         const serialized = this._serializer.decompress(data)
         const deserialized = this._serializer.deserialize<TOutput>(serialized)
 
-        // Add history entry
-        result.push({
+        // Set history entry
+        historyEntry = {
           type: value.type,
           timestamp: value.timestamp,
           value: this._model.__validate?.(deserialized) ??
             this._model.parse(deserialized as any),
-        })
+        }
       } else if (value.type === "write") {
-        // Add history entry with parsed value
-        result.push({
+        // Set history entry
+        historyEntry = {
           type: value.type,
           timestamp: value.timestamp,
           value: this._model.__validate?.(value.value) ??
             this._model.parse(value.value as any),
-        })
-      } else {
-        // Add "delete" history entry
-        result.push(value)
+        }
+      }
+
+      // Filter and add history entry to result list
+      const filter = options?.filter
+      if (!filter || filter(historyEntry)) {
+        result.push(historyEntry)
       }
     }
 
-    // Return result list
-    return result
+    // Return result list and iterator cursor
+    return {
+      result,
+      cursor: iter.cursor || undefined,
+    }
   }
 
   /**
@@ -648,7 +663,11 @@ export class Collection<
    */
   async deleteBySecondaryIndex<
     const K extends SecondaryIndexKeys<TOutput, TOptions>,
-  >(index: K, value: CheckKeyOf<K, TOutput>, options?: ListOptions<TOutput>) {
+  >(
+    index: K,
+    value: CheckKeyOf<K, TOutput>,
+    options?: ListOptions<Document<TOutput>>,
+  ) {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
     const compressed = this._serializer.compress(serialized)
@@ -794,7 +813,7 @@ export class Collection<
     index: K,
     value: CheckKeyOf<K, TOutput>,
     data: UpdateData<TOutput>,
-    options?: UpdateManyOptions<TOutput>,
+    options?: UpdateManyOptions<Document<TOutput>>,
   ) {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
@@ -813,6 +832,105 @@ export class Collection<
       (doc) => this.updateDocument(doc, data, options),
       options,
     )
+  }
+
+  /**
+   * Update an existing document by either id or primary index, or set a new document
+   * entry if no document with matching id/index exists.
+   *
+   * When upserting by primary index, an id can be optionally specified which
+   * will be used when setting a new document entry, otherwise an id will be generated.
+   *
+   * @example
+   * ```ts
+   * // Upsert by id
+   * const result1 = await db.users.upsert({
+   *   id: "user_id",
+   *   update: { username: "Chris" },
+   *   set: {
+   *     username: "Chris",
+   *     age: 54,
+   *     activities: ["bowling"],
+   *     address: {
+   *       country: "USA",
+   *       city: "Las Vegas"
+   *       street: "St. Boulevard"
+   *       houseNumber: 23
+   *     }
+   *   }
+   * })
+   *
+   * // Upsert by index
+   * const result2 = await db.users.upsert({
+   *   index: ["username", "Jack"],
+   *   update: { username: "Chris" },
+   *   set: {
+   *     username: "Chris",
+   *     age: 54,
+   *     activities: ["bowling"],
+   *     address: {
+   *       country: "USA",
+   *       city: "Las Vegas"
+   *       street: "St. Boulevard"
+   *       houseNumber: 23
+   *     }
+   *   }
+   * })
+   * ```
+   *
+   * @param input - Upsert input, including id or index, update data and set data.
+   * @param options - Upsert options.
+   * @returns A promise resolving to either CommitResult or CommitError.
+   */
+  async upsert<
+    const TIndex extends PrimaryIndexKeys<TOutput, TOptions>,
+  >(
+    input: UpsertInput<TInput, TOutput, TIndex>,
+    options?: UpsertOptions,
+  ) {
+    // Check if is id or primary index upsert
+    if ((input as any).index !== undefined) {
+      const inp = input as PrimaryIndexUpsertInput<TInput, TOutput, TIndex>
+
+      // First attempt update
+      const updateCr = await this.updateByPrimaryIndex(
+        ...inp.index,
+        inp.update,
+        options,
+      )
+
+      if (updateCr.ok) {
+        return updateCr
+      }
+
+      // If id is present, set new entry with given id
+      if (inp.id) {
+        return await this.set(inp.id, inp.set, {
+          ...options,
+          overwrite: false,
+        })
+      }
+
+      // If no id, set new entry with generated id
+      return await this.add(inp.set, {
+        ...options,
+        overwrite: false,
+      })
+    } else {
+      // First attempt update
+      const id = (input as IdUpsertInput<TInput, TOutput>).id
+      const updateCr = await this.update(id, input.update, options)
+
+      if (updateCr.ok) {
+        return updateCr
+      }
+
+      // Set new entry with given id
+      return await this.set(id, input.set, {
+        ...options,
+        overwrite: false,
+      })
+    }
   }
 
   /**
@@ -839,7 +957,7 @@ export class Collection<
    */
   async updateMany(
     value: UpdateData<TOutput>,
-    options?: UpdateManyOptions<TOutput>,
+    options?: UpdateManyOptions<Document<TOutput>>,
   ) {
     // Update each document, add commit result to result list
     return await this.handleMany(
@@ -929,7 +1047,7 @@ export class Collection<
    * @param options - List options, optional.
    * @returns A promise that resovles to an object containing the iterator cursor
    */
-  async deleteMany(options?: AtomicListOptions<TOutput>) {
+  async deleteMany(options?: AtomicListOptions<Document<TOutput>>) {
     // Perform quick delete if all documents are to be deleted
     if (selectsAll(options)) {
       // Create list iterator and empty keys list, init atomic operation
@@ -997,7 +1115,7 @@ export class Collection<
    * @param options - List options, optional.
    * @returns A promise that resovles to an object containing a list of the retrieved documents and the iterator cursor
    */
-  async getMany(options?: ListOptions<TOutput>) {
+  async getMany(options?: ListOptions<Document<TOutput>>) {
     // Get each document, return result list and current iterator cursor
     return await this.handleMany(
       this._keys.id,
@@ -1028,7 +1146,7 @@ export class Collection<
    */
   async forEach(
     fn: (doc: Document<TOutput>) => unknown,
-    options?: ListOptions<TOutput>,
+    options?: ListOptions<Document<TOutput>>,
   ) {
     // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
@@ -1068,7 +1186,7 @@ export class Collection<
     index: K,
     value: CheckKeyOf<K, TOutput>,
     fn: (doc: Document<TOutput>) => unknown,
-    options?: UpdateManyOptions<TOutput>,
+    options?: UpdateManyOptions<Document<TOutput>>,
   ) {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
@@ -1116,7 +1234,7 @@ export class Collection<
    */
   async map<const T>(
     fn: (doc: Document<TOutput>) => T,
-    options?: ListOptions<TOutput>,
+    options?: ListOptions<Document<TOutput>>,
   ) {
     // Execute callback function for each document entry, return result and cursor
     return await this.handleMany(
@@ -1156,7 +1274,7 @@ export class Collection<
     index: K,
     value: CheckKeyOf<K, TOutput>,
     fn: (doc: Document<TOutput>) => T,
-    options?: UpdateManyOptions<TOutput>,
+    options?: UpdateManyOptions<Document<TOutput>>,
   ) {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
@@ -1194,7 +1312,7 @@ export class Collection<
    * @param options - Count options, optional.
    * @returns A promise that resolves to a number representing the count.
    */
-  async count(options?: CountOptions<TOutput>) {
+  async count(options?: CountOptions<Document<TOutput>>) {
     // Initiate count result
     let result = 0
 
@@ -1232,7 +1350,7 @@ export class Collection<
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
-    options?: CountOptions<TOutput>,
+    options?: CountOptions<Document<TOutput>>,
   ) {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
@@ -1804,7 +1922,7 @@ export class Collection<
   protected async handleMany<const T>(
     prefixKey: KvKey,
     fn: (doc: Document<TOutput>) => T,
-    options: ListOptions<TOutput> | undefined,
+    options: ListOptions<Document<TOutput>> | undefined,
   ) {
     // Create list iterator with given options
     const selector = createListSelector(prefixKey, options)

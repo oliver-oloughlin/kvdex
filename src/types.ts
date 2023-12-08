@@ -349,14 +349,14 @@ export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
   overwrite?: boolean
 }
 
-export type ListOptions<T extends KvValue> = Deno.KvListOptions & {
+export type ListOptions<T> = Deno.KvListOptions & {
   /**
-   * Filter documents based on predicate.
+   * Filter based on predicate.
    *
-   * @param doc - Document.
+   * @param value - Input value.
    * @returns true or false.
    */
-  filter?: (doc: Document<T>) => boolean
+  filter?: (value: T) => boolean
 
   /** Id of document to start from. */
   startId?: KvId
@@ -370,11 +370,11 @@ export type AtomicBatchOptions = {
   atomicBatchSize?: number
 }
 
-export type AtomicListOptions<T extends KvValue> =
+export type AtomicListOptions<T> =
   & ListOptions<T>
   & AtomicBatchOptions
 
-export type CountOptions<T extends KvValue> =
+export type CountOptions<T> =
   & CountAllOptions
   & Pick<ListOptions<T>, "filter">
 
@@ -393,11 +393,11 @@ export type UpdateOptions = Omit<SetOptions, "overwrite"> & {
 
 export type MergeType = "shallow" | "deep"
 
-export type UpdateManyOptions<T extends KvValue> =
+export type UpdateManyOptions<T> =
   & ListOptions<T>
   & UpdateOptions
 
-export type CountAllOptions = Pick<ListOptions<KvValue>, "consistency">
+export type CountAllOptions = Pick<ListOptions<any>, "consistency">
 
 export type EnqueueOptions =
   & Omit<
@@ -414,6 +414,33 @@ export type QueueListenerOptions = {
 }
 
 export type WatchOptions = NonNullable<Parameters<Deno.Kv["watch"]>[1]>
+
+export type IdUpsertInput<TInput, TOutput extends KvValue> = {
+  id: KvId
+  set: ParseInputType<TInput, TOutput>
+  update: UpdateData<TOutput>
+}
+
+export type PrimaryIndexUpsertInput<
+  TInput,
+  TOutput extends KvValue,
+  TIndex,
+> = {
+  id?: KvId
+  index: [TIndex, CheckKeyOf<TIndex, TOutput>]
+  set: ParseInputType<TInput, TOutput>
+  update: UpdateData<TOutput>
+}
+
+export type UpsertInput<
+  TInput,
+  TOutput extends KvValue,
+  TIndex,
+> =
+  | IdUpsertInput<TInput, TOutput>
+  | PrimaryIndexUpsertInput<TInput, TOutput, TIndex>
+
+export type UpsertOptions = UpdateOptions
 
 /********************/
 /*                  */
