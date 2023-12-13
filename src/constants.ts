@@ -13,10 +13,6 @@ export const SEGMENT_KEY_PREFIX = "__segment__"
 
 export const UNDELIVERED_KEY_PREFIX = "__undelivered__"
 
-export const INTERVAL_KEY_PREFIX = "__interval__"
-
-export const LOOP_KEY_PREFIX = "__loop__"
-
 export const HISTORY_KEY_PREFIX = "__history__"
 
 // Fixed limits
@@ -37,3 +33,7 @@ export const DEFAULT_MERGE_TYPE: MergeType = "deep"
 
 // Misc
 export const COMPRESSION_QUALITY_LEVEL = 1
+
+export const MIN_INTERVAL_START_DELAY = 1_000
+
+export const MIN_LOOP_START_DELAY = 1_000

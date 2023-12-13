@@ -33,6 +33,8 @@ import {
   DEFAULT_INTERVAL_RETRY,
   DEFAULT_LOOP_RETRY,
   KVDEX_KEY_PREFIX,
+  MIN_INTERVAL_START_DELAY,
+  MIN_LOOP_START_DELAY,
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
 import { model } from "./model.ts"
@@ -359,13 +361,16 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    *
    * Will repeat indefinitely if no exit condition is set.
    *
+   * There is an enforced minimum start delay of 1 second to ensure
+   * the queue listener is registered before the first delivery.
+   *
    * @example
    * ```ts
    * // Will repeat indeefinitely with 1 hour interval
-   * db.setInterval("greeting", () => console.log("Hello World!"))
+   * db.setInterval(() => console.log("Hello World!"))
    *
    * // First callback starts after a 10 second delay, after that there is a 5 second delay between callbacks
-   * db.setInterval("terminator", () => console.log("I terminate after the 10th run"), {
+   * db.setInterval(() => console.log("I terminate after the 10th run"), {
    *   // 10 second delay before the first job callback invoked
    *   startDelay: 10_000,
    *
@@ -464,12 +469,18 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
     }, { topic: id })
 
     // Enqueue first task
-    await enqueue({
-      count: 0,
-      interval: options?.startDelay ?? 0,
-      timestamp: new Date(),
-      first: true,
-    }, Math.max(options?.startDelay ?? 0, 300))
+    await enqueue(
+      {
+        count: 0,
+        interval: options?.startDelay ?? 0,
+        timestamp: new Date(),
+        first: true,
+      },
+      Math.max(
+        options?.startDelay ?? MIN_LOOP_START_DELAY,
+        MIN_INTERVAL_START_DELAY,
+      ),
+    )
 
     // Return listener
     return listener
@@ -478,18 +489,23 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
   /**
    * Create a sequential loop built on queues.
    *
+   * Will repeat indefinitely if no exit condition is set.
+   *
+   * There is an enforced minimum start delay of 1 second to ensure
+   * the queue listener is registered before the first delivery.
+   *
    * @example
    * ```ts
-   * // Prints "Hello World!" 10 times, with 1 second delay
-   * db.loop("greeting", () => console.log("Hello World!"), {
-   *   delay: 1_000,
+   * // Prints "Hello World!" 10 times, with a 3 second delay between each iteration
+   * db.loop(() => console.log("Hello World!"), {
+   *   delay: 3_000,
    *   exitOn: ({ count }) => count === 10,
    * })
    * ```
    *
    * @param fn - Callback function.
    * @param options - Loop options.
-   * @returns - A listener promise.
+   * @returns A listener promise.
    */
   async loop<const T1 extends QueueValue>(
     fn: (msg: LoopMessage<Awaited<T1>>) => T1 | Promise<T1>,
@@ -570,13 +586,19 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
     }, { topic: id })
 
     // Enqueue first task
-    await enqueue({
-      count: 0,
-      result: null,
-      delay: options?.startDelay ?? 0,
-      timestamp: new Date(),
-      first: true,
-    }, options?.startDelay)
+    await enqueue(
+      {
+        count: 0,
+        result: null,
+        delay: options?.startDelay ?? 0,
+        timestamp: new Date(),
+        first: true,
+      },
+      Math.max(
+        options?.startDelay ?? MIN_LOOP_START_DELAY,
+        MIN_LOOP_START_DELAY,
+      ),
+    )
 
     // Return listener
     return await listener

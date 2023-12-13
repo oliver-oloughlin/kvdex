@@ -894,14 +894,16 @@ db.listenQueue(async (data) => {
 ### setInterval()
 
 Create an interval built on queues that can run indefinitely or until an exit
-condition is met. Interval defaults to 1 hour if not set.
+condition is met. Interval defaults to 1 hour if not set, while there is an
+enforced minimum start delay of 1 second to ensure the queue listener is
+registered before the first delivery.
 
 ```ts
 // Will repeat indefinitely with 1 hour interval
-db.setInterval("greeting", () => console.log("Hello World!"))
+db.setInterval(() => console.log("Hello World!"))
 
 // First callback is invoked after a 10 second delay, after that there is a 5 second delay between callbacks
-db.setInterval("terminator", () => console.log("I terminate after running 10 times"), {
+db.setInterval(() => console.log("I terminate after running 10 times"), {
   // Delay before the first callback is invoked
   startDelay: 10_000,
 
@@ -921,12 +923,13 @@ db.setInterval("terminator", () => console.log("I terminate after running 10 tim
 Create a loop built on queues that can run indefinitely or until an exit
 condition is met. In contrast to `setInterval()`, the callback function in a
 loop is run sequentially, meaning the next callback is not enqueued until the
-previous task finishes.
+previous task finishes. There is an enforced minimum start delay of 1 second to
+ensure the queue listener is registered before the first delivery.
 
 ```ts
-// Prints "Hello World!" 10 times, with 1 second delay
-db.loop("greeting", () => console.log("Hello World!"), {
-  delay: 1_000,
+// Prints "Hello World!" 10 times, with a 3 second delay between each iteration
+db.loop(() => console.log("Hello World!"), {
+  delay: 3_000,
   exitOn: ({ count }) => count === 10,
 })
 ```
