@@ -32,9 +32,7 @@ import {
   DEFAULT_INTERVAL,
   DEFAULT_INTERVAL_RETRY,
   DEFAULT_LOOP_RETRY,
-  INTERVAL_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
-  LOOP_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
 import { model } from "./model.ts"
@@ -382,32 +380,16 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    * })
    * ```
    *
-   * @param name - Interval identifier.
    * @param fn - Callback function.
    * @param options - Set interval options.
    * @returns A listener promise.
    */
   async setInterval(
-    name: string,
     fn: (msg: IntervalMessage) => unknown,
     options?: SetIntervalOptions,
   ) {
-    // Check if loop has already been initialized
-    const nameKey = extendKey([KVDEX_KEY_PREFIX, INTERVAL_KEY_PREFIX], name)
-    const nameEntry = await this.kv.get<true>(nameKey)
-
-    if (nameEntry.value) {
-      return await this.idempotentListener()
-    }
-
-    // Persist interval key
-    const cr = await this.kv.set(nameKey, true)
-    if (!cr.ok) {
-      throw Error(`Failed to initialize interval "${name}"`)
-    }
-
     // Set id
-    const nameId = `interval-${name}`
+    const id = crypto.randomUUID()
 
     // Create interval enqueuer
     const enqueue = async (
@@ -417,20 +399,20 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
       // Try enqueuing until delivered on number of retries is exhausted
       for (let i = 0; i <= (options?.retry ?? DEFAULT_INTERVAL_RETRY); i++) {
         await this.enqueue(msg, {
-          idsIfUndelivered: [nameId],
+          idsIfUndelivered: [id],
           delay,
-          topic: nameId,
+          topic: id,
         })
 
         // Check if message was delivered, break for-loop if successful
-        const doc = await this.findUndelivered(nameId)
+        const doc = await this.findUndelivered(id)
 
         if (doc === null) {
           break
         }
 
         // Delete undelivered entry before retrying
-        await this.deleteUndelivered(nameId)
+        await this.deleteUndelivered(id)
       }
     }
 
@@ -442,13 +424,12 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
         exit = await options?.exitOn?.(msg) ?? false
       } catch (e) {
         console.error(
-          `An error was caught while running exitOn task for interval "${name}"`,
+          `An error was caught while running exitOn task for interval {ID = ${id}}`,
           e,
         )
       }
 
       if (exit) {
-        await this.kv.delete(nameKey)
         await options?.onExit?.(msg)
         return
       }
@@ -463,7 +444,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
         }
       } catch (e) {
         console.error(
-          `An error was caught while setting the next callback delay for interval "${name}`,
+          `An error was caught while setting the next callback delay for interval {ID = ${id}}`,
           e,
         )
       }
@@ -480,7 +461,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
         // Invoke callback function
         fn(msg),
       ])
-    }, { topic: nameId })
+    }, { topic: id })
 
     // Enqueue first task
     await enqueue({
@@ -491,7 +472,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
     }, options?.startDelay)
 
     // Return listener
-    return await listener
+    return listener
   }
 
   /**
@@ -506,32 +487,16 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    * })
    * ```
    *
-   * @param name - Loop identifier.
    * @param fn - Callback function.
    * @param options - Loop options.
    * @returns - A listener promise.
    */
   async loop<const T1 extends QueueValue>(
-    name: string,
     fn: (msg: LoopMessage<Awaited<T1>>) => T1 | Promise<T1>,
     options?: LoopOptions<Awaited<T1>>,
   ) {
-    // Check if loop has already been initialized
-    const nameKey = extendKey([KVDEX_KEY_PREFIX, LOOP_KEY_PREFIX], name)
-    const nameEntry = await this.kv.get<true>(nameKey)
-
-    if (nameEntry.value) {
-      return await this.idempotentListener()
-    }
-
-    // Persist loop key
-    const cr = await this.kv.set(nameKey, true)
-    if (!cr.ok) {
-      throw Error(`Failed to initialize loop "${name}"`)
-    }
-
     // Set id
-    const nameId = `loop-${name}`
+    const id = crypto.randomUUID()
 
     // Create loop enqueuer
     const enqueue = async (
@@ -541,20 +506,20 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
       // Try enqueuing until delivered on number of retries is exhausted
       for (let i = 0; i <= (options?.retry ?? DEFAULT_LOOP_RETRY); i++) {
         await this.enqueue(msg, {
-          idsIfUndelivered: [nameId],
+          idsIfUndelivered: [id],
           delay,
-          topic: nameId,
+          topic: id,
         })
 
         // Check if message was delivered, break for-loop if successful
-        const doc = await this.findUndelivered(nameId)
+        const doc = await this.findUndelivered(id)
 
         if (doc === null) {
           break
         }
 
         // Delete undelivered entry before retrying
-        await this.deleteUndelivered(nameId)
+        await this.deleteUndelivered(id)
       }
     }
 
@@ -566,13 +531,12 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
         exit = await options?.exitOn?.(msg) ?? false
       } catch (e) {
         console.error(
-          `An error was caught while running exitOn task for loop "${name}"`,
+          `An error was caught while running exitOn task for loop {ID = ${id}}`,
           e,
         )
       }
 
       if (exit) {
-        await this.kv.delete(nameKey)
         await options?.onExit?.(msg)
         return
       }
@@ -587,7 +551,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
         }
       } catch (e) {
         console.error(
-          `An error was caught while setting the next callback delay for loop "${name}"`,
+          `An error was caught while setting the next callback delay for loop {ID = ${id}}`,
           e,
         )
       }
@@ -603,7 +567,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
         timestamp: new Date(),
         first: false,
       }, delay)
-    }, { topic: nameId })
+    }, { topic: id })
 
     // Enqueue first task
     await enqueue({
