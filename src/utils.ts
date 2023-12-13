@@ -489,7 +489,7 @@ export function selectsAll<T>(
  * @param min - Lower limit.
  * @param n - Number to be clamped.
  * @param max - Upper limit.
- * @returns - A clamped value.
+ * @returns A clamped value.
  */
 export function clamp(min: number, n: number, max: number) {
   return Math.min(Math.max(min, n), max)
@@ -499,7 +499,7 @@ export function clamp(min: number, n: number, max: number) {
  * Compress a uint8Array.
  *
  * @param data - Uint8Array to be compressed.
- * @returns - Compressed Uint8Array.
+ * @returns Compressed Uint8Array.
  */
 export function compress(data: Uint8Array) {
   const buffer = brotliCompressSync(data, {

@@ -1397,7 +1397,7 @@ export class Collection<
    *
    * @param data - Data to be added to the collection queue.
    * @param options - Enqueue options, optional.
-   * @returns - Promise resolving to Deno.KvCommitResult.
+   * @returns A promise resolving to Deno.KvCommitResult.
    */
   async enqueue<T extends QueueValue>(data: T, options?: EnqueueOptions) {
     // Prepare message and options for enqueue

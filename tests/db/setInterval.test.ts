@@ -1,5 +1,5 @@
 import { assert } from "../deps.ts"
-import { createResolver, sleep, useDb } from "../utils.ts"
+import { createResolver, useDb } from "../utils.ts"
 
 Deno.test("db - setInterval", async (t) => {
   await t.step(
@@ -14,19 +14,19 @@ Deno.test("db - setInterval", async (t) => {
         const sleeper2 = createResolver()
         const sleeper3 = createResolver()
 
-        const l1 = db.setInterval("i1", () => count1++, {
+        const l1 = db.setInterval(() => count1++, {
           interval: 10,
           exitOn: ({ count }) => count === 2,
           onExit: sleeper1.resolve,
         })
 
-        const l2 = db.setInterval("i2", () => count2++, {
+        const l2 = db.setInterval(() => count2++, {
           interval: () => Math.random() * 20,
           exitOn: ({ first }) => first,
           onExit: sleeper2.resolve,
         })
 
-        const l3 = db.setInterval("i3", () => count3++, {
+        const l3 = db.setInterval(() => count3++, {
           interval: 10,
           exitOn: ({ interval }) => interval > 0,
           onExit: sleeper3.resolve,
@@ -41,39 +41,6 @@ Deno.test("db - setInterval", async (t) => {
         assert(count3 === 1)
 
         return async () => await Promise.all([l1, l2, l3])
-      })
-    },
-  )
-
-  await t.step(
-    "Should not initialize second interval with identical name",
-    async () => {
-      await useDb(async (db) => {
-        const sleeper = createResolver()
-
-        let count1 = 0
-        let count2 = 0
-
-        const listener1 = db.setInterval("i1", () => count1++, {
-          exitOn: ({ count }) => count === 10,
-          onExit: () => sleeper.resolve(),
-          interval: 50,
-        })
-
-        await sleep(10)
-
-        const listener2 = db.setInterval("i1", () => count2++, {
-          exitOn: ({ count }) => count === 10,
-          onExit: () => sleeper.resolve(),
-          interval: 25,
-        })
-
-        await sleeper.promise
-
-        assert(count1 === 10)
-        assert(count2 === 0)
-
-        return async () => await Promise.all([listener1, listener2])
       })
     },
   )
