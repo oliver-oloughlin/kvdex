@@ -449,6 +449,8 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
         )
       }
 
+      await new Promise((r) => setTimeout(r, 500))
+
       await allFulfilled([
         // Enqueue next callback
         enqueue({
@@ -456,7 +458,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
           interval,
           timestamp: new Date(),
           first: false,
-        }, interval),
+        }, Math.max(interval, 500)),
 
         // Invoke callback function
         fn(msg),
