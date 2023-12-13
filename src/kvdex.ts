@@ -257,6 +257,8 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
       options,
     )
 
+    console.log("ENQUEUE PREP:", prep)
+
     return await this.kv.enqueue(prep.msg, prep.options)
   }
 
