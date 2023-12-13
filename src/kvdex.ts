@@ -400,6 +400,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
     ) => {
       // Try enqueuing until delivered on number of retries is exhausted
       for (let i = 0; i <= (options?.retry ?? DEFAULT_INTERVAL_RETRY); i++) {
+        console.log("ENQUEUEING:", msg, delay)
         await this.enqueue(msg, {
           idsIfUndelivered: [id],
           delay,
