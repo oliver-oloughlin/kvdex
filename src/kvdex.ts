@@ -469,7 +469,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
       interval: options?.startDelay ?? 0,
       timestamp: new Date(),
       first: true,
-    }, Math.max(options?.startDelay ?? 0, 500))
+    }, Math.max(options?.startDelay ?? 0, 200))
 
     // Return listener
     return listener
