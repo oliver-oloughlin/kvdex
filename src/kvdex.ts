@@ -463,15 +463,13 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
       ])
     }, { topic: id })
 
-    await new Promise((r) => setTimeout(r, 500))
-
     // Enqueue first task
     await enqueue({
       count: 0,
       interval: options?.startDelay ?? 0,
       timestamp: new Date(),
       first: true,
-    }, Math.max(options?.startDelay ?? 500, 500))
+    }, options?.startDelay)
 
     // Return listener
     return listener
