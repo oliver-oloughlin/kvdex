@@ -524,7 +524,7 @@ export type KvVersionstamp<T extends KvValue> = Deno.KvEntry<T>["versionstamp"]
 
 export type KvKey = [Deno.KvKeyPart, ...Deno.KvKey]
 
-export type KvId = Deno.KvKeyPart
+export type KvId = Exclude<Deno.KvKeyPart, Exclude<Deno.KvKeyPart, KvValue>>
 
 export type KvObject = {
   [K: string | number]: KvValue
