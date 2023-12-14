@@ -464,6 +464,14 @@ export function createListSelector<T>(
   }
 }
 
+export function createListOptions<T>(options: ListOptions<T> | undefined) {
+  const limit = options?.limit && options.limit + (options.offset ?? 0)
+  return {
+    ...options,
+    limit,
+  }
+}
+
 /**
  *  Checks whether the specified list options selects all entries or potentially limits the selection.
  *
@@ -479,7 +487,8 @@ export function selectsAll<T>(
     !options?.endId &&
     !options?.startId &&
     !options?.filter &&
-    !options?.limit
+    !options?.limit &&
+    !options?.offset
   )
 }
 

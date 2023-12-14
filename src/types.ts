@@ -358,6 +358,13 @@ export type ListOptions<T> = Deno.KvListOptions & {
    */
   filter?: (value: T) => boolean
 
+  /**
+   * Number of results to offset by.
+   *
+   * If set, the actual limit for the KV.list operation is set equal to offset + limit.
+   */
+  offset?: number
+
   /** Id of document to start from. */
   startId?: KvId
 
@@ -373,10 +380,6 @@ export type AtomicBatchOptions = {
 export type AtomicListOptions<T> =
   & ListOptions<T>
   & AtomicBatchOptions
-
-export type CountOptions<T> =
-  & CountAllOptions
-  & Pick<ListOptions<T>, "filter">
 
 export type FindOptions = NonNullable<Parameters<Deno.Kv["get"]>[1]>
 
@@ -420,6 +423,12 @@ export type IdUpsertInput<TInput, TOutput extends KvValue> = {
   set: ParseInputType<TInput, TOutput>
   update: UpdateData<TOutput>
 }
+
+/********************/
+/*                  */
+/*   UPSERT TYPES   */
+/*                  */
+/********************/
 
 export type PrimaryIndexUpsertInput<
   TInput,

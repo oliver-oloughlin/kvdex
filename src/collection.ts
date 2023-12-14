@@ -4,7 +4,6 @@ import type {
   CollectionKeys,
   CollectionOptions,
   CommitResult,
-  CountOptions,
   EnqueueOptions,
   FindManyOptions,
   FindOptions,
@@ -44,6 +43,7 @@ import {
   checkIndices,
   compress,
   createHandlerId,
+  createListOptions,
   createListSelector,
   decompress,
   deleteIndices,
@@ -441,10 +441,21 @@ export class Collection<
     const selector = createListSelector(keyPrefix, options)
 
     // Create hsitory entries iterator
-    const iter = this.kv.list<HistoryEntry<TOutput>>(selector, options)
+    const listOptions = createListOptions(options)
+    const iter = this.kv.list<HistoryEntry<TOutput>>(selector, listOptions)
 
     // Collect history entries
+    let count = 0
+    const offset = options?.offset ?? 0
     for await (const { value, key } of iter) {
+      // Skip by offset
+      count++
+
+      if (count <= offset) {
+        continue
+      }
+
+      // Cast history entry
       let historyEntry: HistoryEntry<TOutput> = value
 
       // Handle serialized entries
@@ -1052,6 +1063,7 @@ export class Collection<
     if (selectsAll(options)) {
       // Create list iterator and empty keys list, init atomic operation
       const iter = this.kv.list({ prefix: this._keys.base }, options)
+
       const keys: Deno.KvKey[] = []
       const atomic = new AtomicWrapper(this.kv, options?.atomicBatchSize)
 
@@ -1312,7 +1324,7 @@ export class Collection<
    * @param options - Count options, optional.
    * @returns A promise that resolves to a number representing the count.
    */
-  async count(options?: CountOptions<Document<TOutput>>) {
+  async count(options?: ListOptions<Document<TOutput>>) {
     // Initiate count result
     let result = 0
 
@@ -1350,7 +1362,7 @@ export class Collection<
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
-    options?: CountOptions<Document<TOutput>>,
+    options?: ListOptions<Document<TOutput>>,
   ) {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
@@ -1926,7 +1938,8 @@ export class Collection<
   ) {
     // Create list iterator with given options
     const selector = createListSelector(prefixKey, options)
-    const iter = this.kv.list<KvValue>(selector, options)
+    const listOptions = createListOptions(options)
+    const iter = this.kv.list<KvValue>(selector, listOptions)
 
     // Initiate lists
     const docs: Document<TOutput>[] = []
@@ -1934,7 +1947,16 @@ export class Collection<
     const errors: unknown[] = []
 
     // Loop over each document entry
+    let count = 0
+    const offset = options?.offset ?? 0
     for await (const entry of iter) {
+      // Skip by offset
+      count++
+
+      if (count <= offset) {
+        continue
+      }
+
       // Construct document from entry
       const doc = await this.constructDocument(entry)
 

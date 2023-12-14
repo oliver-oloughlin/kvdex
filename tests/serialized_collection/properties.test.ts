@@ -45,7 +45,7 @@ Deno.test("serialized_collection - properties", async (t) => {
     })
   })
 
-  await t.step("Should select using pagination", async () => {
+  await t.step("Should select using cursor pagination", async () => {
     await useDb(async (db) => {
       const users = generateLargeUsers(1_000)
       const cr = await db.s_users.addMany(users)
@@ -62,6 +62,28 @@ Deno.test("serialized_collection - properties", async (t) => {
         selected.push(...query.result)
         cursor = query.cursor
       } while (cursor)
+
+      assert(
+        users.every((user) =>
+          selected.some((doc) => doc.value.username === user.username)
+        ),
+      )
+    })
+  })
+
+  await t.step("Should select using offset pagination", async () => {
+    await useDb(async (db) => {
+      const users = generateLargeUsers(1_000)
+      const cr = await db.s_users.addMany(users)
+      assert(cr.ok)
+
+      const selected: Document<User>[] = []
+      const limit = 50
+      for (let offset = 0; offset < users.length; offset += limit) {
+        const { result } = await db.s_users.getMany({ offset, limit })
+        selected.push(...result)
+        assert(result.length === 50)
+      }
 
       assert(
         users.every((user) =>
