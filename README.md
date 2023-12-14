@@ -4,7 +4,7 @@
 dependencies. It's purpose is to enhance the experience of using Deno's KV store
 through additional features such as indexing, strongly typed collections and
 serialization/compression, while maintaining as much of the native functionality
-as possible, like watch, atomic operations and queue listeners.
+as possible, like atomic operations, real-time watch and queue listeners.
 
 _Supported Deno verisons:_ **^1.38.5**
 
@@ -326,8 +326,8 @@ if (result1.ok) {
 ### update()
 
 Update the value of an exisiting document in the KV store. For primitive values,
-arrays and built-in objects (Date, RegExp, etc.), this method overwrites the
-exisiting data with the new value. For custom objects (Models), this method
+arrays and built-in objects (Array, Date, RegExp, etc.), this method overwrites
+the exisiting data with the new value. For plain object values, this method
 performs a partial update, merging the new value with the existing data using
 deep merge by default, or optionally using shallow merge. Upon completion, a
 CommitResult object will be returned with the document id, versionstamp and ok
