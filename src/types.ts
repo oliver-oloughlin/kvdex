@@ -381,10 +381,6 @@ export type AtomicListOptions<T> =
   & ListOptions<T>
   & AtomicBatchOptions
 
-export type CountOptions<T> =
-  & CountAllOptions
-  & Pick<ListOptions<T>, "filter">
-
 export type FindOptions = NonNullable<Parameters<Deno.Kv["get"]>[1]>
 
 export type FindManyOptions = NonNullable<Parameters<Deno.Kv["getMany"]>[1]>
@@ -427,6 +423,12 @@ export type IdUpsertInput<TInput, TOutput extends KvValue> = {
   set: ParseInputType<TInput, TOutput>
   update: UpdateData<TOutput>
 }
+
+/********************/
+/*                  */
+/*   UPSERT TYPES   */
+/*                  */
+/********************/
 
 export type PrimaryIndexUpsertInput<
   TInput,

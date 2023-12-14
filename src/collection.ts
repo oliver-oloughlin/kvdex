@@ -4,7 +4,6 @@ import type {
   CollectionKeys,
   CollectionOptions,
   CommitResult,
-  CountOptions,
   EnqueueOptions,
   FindManyOptions,
   FindOptions,
@@ -1325,7 +1324,7 @@ export class Collection<
    * @param options - Count options, optional.
    * @returns A promise that resolves to a number representing the count.
    */
-  async count(options?: CountOptions<Document<TOutput>>) {
+  async count(options?: ListOptions<Document<TOutput>>) {
     // Initiate count result
     let result = 0
 
@@ -1363,7 +1362,7 @@ export class Collection<
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
-    options?: CountOptions<Document<TOutput>>,
+    options?: ListOptions<Document<TOutput>>,
   ) {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
