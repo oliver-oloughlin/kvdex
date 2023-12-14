@@ -44,6 +44,7 @@ import {
   checkIndices,
   compress,
   createHandlerId,
+  createListOptions,
   createListSelector,
   decompress,
   deleteIndices,
@@ -441,10 +442,21 @@ export class Collection<
     const selector = createListSelector(keyPrefix, options)
 
     // Create hsitory entries iterator
-    const iter = this.kv.list<HistoryEntry<TOutput>>(selector, options)
+    const listOptions = createListOptions(options)
+    const iter = this.kv.list<HistoryEntry<TOutput>>(selector, listOptions)
 
     // Collect history entries
+    let count = 0
+    const offset = options?.offset ?? 0
     for await (const { value, key } of iter) {
+      // Skip by offset
+      count++
+
+      if (count <= offset) {
+        continue
+      }
+
+      // Cast history entry
       let historyEntry: HistoryEntry<TOutput> = value
 
       // Handle serialized entries
@@ -1052,6 +1064,7 @@ export class Collection<
     if (selectsAll(options)) {
       // Create list iterator and empty keys list, init atomic operation
       const iter = this.kv.list({ prefix: this._keys.base }, options)
+
       const keys: Deno.KvKey[] = []
       const atomic = new AtomicWrapper(this.kv, options?.atomicBatchSize)
 
@@ -1926,7 +1939,8 @@ export class Collection<
   ) {
     // Create list iterator with given options
     const selector = createListSelector(prefixKey, options)
-    const iter = this.kv.list<KvValue>(selector, options)
+    const listOptions = createListOptions(options)
+    const iter = this.kv.list<KvValue>(selector, listOptions)
 
     // Initiate lists
     const docs: Document<TOutput>[] = []
@@ -1934,7 +1948,16 @@ export class Collection<
     const errors: unknown[] = []
 
     // Loop over each document entry
+    let count = 0
+    const offset = options?.offset ?? 0
     for await (const entry of iter) {
+      // Skip by offset
+      count++
+
+      if (count <= offset) {
+        continue
+      }
+
       // Construct document from entry
       const doc = await this.constructDocument(entry)
 

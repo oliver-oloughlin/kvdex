@@ -358,6 +358,13 @@ export type ListOptions<T> = Deno.KvListOptions & {
    */
   filter?: (value: T) => boolean
 
+  /**
+   * Number of results to offset by.
+   *
+   * If set, the actual limit for the KV.list operation is set equal to offset + limit.
+   */
+  offset?: number
+
   /** Id of document to start from. */
   startId?: KvId
 
