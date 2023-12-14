@@ -15,8 +15,9 @@ _Supported Deno verisons:_ **^1.38.5**
 - Extensible model strategy (Zod supported).
 - Serialized, compressed and segmented storage for large objects that exceed the
   native size limit.
+- Real-time data watching.
 - Support for pagination and filtering.
-- Set intervals built on queues.
+- Intervals and loops built on queues.
 - Message queues at database and collection level with topics.
 - Support for atomic operations.
 
@@ -119,7 +120,7 @@ type User = {
 const UserModel = model<User>()
 
 // Asymmetric model (mapped output)
-const AsyncUserModel = model((user: User) => ({
+const AsymmetricUserModel = model((user: User) => ({
   upperCaseUsername: user.username.toUpperCase(),
   ageInDecades: user.age / 10,
   createdAt: new Date(),
@@ -133,7 +134,7 @@ import { z } from "https://deno.land/x/zod/mod.ts"
 
 type User = z.infer<typeof UserModel>
 
-const UserSchema = z.object({
+const UserModel = z.object({
   username: z.string(),
   age: z.number(),
   activities: z.array(z.string()),
@@ -161,7 +162,7 @@ const db = kvdex(kv, {
   serializedStrings: collection(model<string>(), {
     serialize: "auto"
   }),
-  users: collection(UserSchema, {
+  users: collection(UserModel, {
     history: true,
     idGenerator: () => crypto.randomUUID(),
     indices: {
