@@ -25,7 +25,7 @@ Deno.test("serialized_collection - updateMany", async (t) => {
         }
 
         const { result } = await db.s_users.updateMany(updateData, {
-          mergeType: "shallow",
+          strategy: "merge-shallow",
         })
 
         assert(
@@ -66,7 +66,7 @@ Deno.test("serialized_collection - updateMany", async (t) => {
         }
 
         const { result } = await db.s_users.updateMany(updateData, {
-          mergeType: "deep",
+          strategy: "merge-deep",
         })
 
         assert(

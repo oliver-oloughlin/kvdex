@@ -28,7 +28,7 @@ Deno.test("serialized_indexable_collection - updateBySecondaryIndex", async (t) 
           "age",
           user1.age,
           updateData,
-          { mergeType: "shallow" },
+          { strategy: "merge-shallow" },
         )
 
         assert(
@@ -71,7 +71,7 @@ Deno.test("serialized_indexable_collection - updateBySecondaryIndex", async (t) 
           "age",
           user1.age,
           updateData,
-          { mergeType: "deep" },
+          { strategy: "merge-deep" },
         )
 
         assert(

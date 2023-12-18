@@ -1,4 +1,4 @@
-import type { MergeType } from "./types.ts"
+import type { UpdateStrategy } from "./types.ts"
 
 // Key prefixes
 export const KVDEX_KEY_PREFIX = "__kvdex__"
@@ -29,7 +29,7 @@ export const DEFAULT_INTERVAL_RETRY = 10
 
 export const DEFAULT_LOOP_RETRY = 10
 
-export const DEFAULT_MERGE_TYPE: MergeType = "deep"
+export const DEFAULT_UPDATE_STRATEGY: UpdateStrategy = "merge-deep"
 
 // Misc
 export const COMPRESSION_QUALITY_LEVEL = 1

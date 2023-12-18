@@ -21,7 +21,7 @@ Deno.test("indexable_collection - update", async (t) => {
         }
 
         const updateCr = await db.i_users.update(cr.id, updateData, {
-          mergeType: "shallow",
+          strategy: "merge-shallow",
         })
 
         const byId = await db.i_users.find(cr.id)
@@ -77,7 +77,7 @@ Deno.test("indexable_collection - update", async (t) => {
         }
 
         const updateCr = await db.i_users.update(cr.id, updateData, {
-          mergeType: "deep",
+          strategy: "merge-deep",
         })
 
         const byId = await db.i_users.find(cr.id)

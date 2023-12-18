@@ -25,7 +25,7 @@ Deno.test("serialized_indexable_collection - updateByPrimaryIndex", async (t) =>
           mockUser1.username,
           updateData,
           {
-            mergeType: "shallow",
+            strategy: "merge-shallow",
           },
         )
 
@@ -86,7 +86,7 @@ Deno.test("serialized_indexable_collection - updateByPrimaryIndex", async (t) =>
           mockUser1.username,
           updateData,
           {
-            mergeType: "deep",
+            strategy: "merge-deep",
           },
         )
 

@@ -23,7 +23,7 @@ Deno.test("serialized_indexable_collection - update", async (t) => {
         }
 
         const updateCr = await db.is_users.update(cr.id, updateData, {
-          mergeType: "shallow",
+          strategy: "merge-shallow",
         })
 
         const byId = await db.is_users.find(cr.id)
@@ -77,7 +77,7 @@ Deno.test("serialized_indexable_collection - update", async (t) => {
         }
 
         const updateCr = await db.is_users.update(cr.id, updateData, {
-          mergeType: "deep",
+          strategy: "merge-deep",
         })
 
         const byId = await db.is_users.find(cr.id)

@@ -24,7 +24,7 @@ Deno.test("indexable_collection - updateMany", async (t) => {
         }
 
         const { result } = await db.i_users.updateMany(updateData, {
-          mergeType: "shallow",
+          strategy: "merge-shallow",
         })
 
         assert(
@@ -65,7 +65,7 @@ Deno.test("indexable_collection - updateMany", async (t) => {
         }
 
         const { result } = await db.i_users.updateMany(updateData, {
-          mergeType: "deep",
+          strategy: "merge-deep",
         })
 
         assert(

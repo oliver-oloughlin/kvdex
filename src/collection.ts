@@ -34,6 +34,7 @@ import type {
   UpdateData,
   UpdateManyOptions,
   UpdateOptions,
+  UpdateStrategy,
   UpsertInput,
   UpsertOptions,
   WatchOptions,
@@ -62,7 +63,7 @@ import {
   setIndices,
 } from "./utils.ts"
 import {
-  DEFAULT_MERGE_TYPE,
+  DEFAULT_UPDATE_STRATEGY,
   HISTORY_KEY_PREFIX,
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
@@ -729,10 +730,10 @@ export class Collection<
    * @param options - Set options, optional.
    * @returns
    */
-  async update(
+  async update<const T extends UpdateOptions>(
     id: KvId,
-    data: UpdateData<TOutput>,
-    options?: UpdateOptions,
+    data: UpdateData<TOutput, T["strategy"]>,
+    options?: T,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Get document
     const doc = await this.find(id)
@@ -772,11 +773,12 @@ export class Collection<
    */
   async updateByPrimaryIndex<
     const K extends PrimaryIndexKeys<TOutput, TOptions>,
+    const T extends UpdateOptions,
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
-    data: UpdateData<TOutput>,
-    options?: UpdateOptions,
+    data: UpdateData<TOutput, T["strategy"]>,
+    options?: T,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Find document by primary index
     const doc = await this.findByPrimaryIndex(index, value)
@@ -789,7 +791,7 @@ export class Collection<
     }
 
     // Update document, return result
-    return await this.update(doc.id, data, options)
+    return await this.updateDocument(doc, data, options)
   }
 
   /**
@@ -820,11 +822,12 @@ export class Collection<
    */
   async updateBySecondaryIndex<
     const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const T extends UpdateManyOptions<Document<TOutput>>,
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
-    data: UpdateData<TOutput>,
-    options?: UpdateManyOptions<Document<TOutput>>,
+    data: UpdateData<TOutput, T["strategy"]>,
+    options?: T,
   ) {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
@@ -895,13 +898,19 @@ export class Collection<
    */
   async upsert<
     const TIndex extends PrimaryIndexKeys<TOutput, TOptions>,
+    const TUpsertOptions extends UpsertOptions,
   >(
-    input: UpsertInput<TInput, TOutput, TIndex>,
-    options?: UpsertOptions,
+    input: UpsertInput<TInput, TOutput, TIndex, TUpsertOptions["strategy"]>,
+    options?: TUpsertOptions,
   ) {
     // Check if is id or primary index upsert
     if ((input as any).index !== undefined) {
-      const inp = input as PrimaryIndexUpsertInput<TInput, TOutput, TIndex>
+      const inp = input as PrimaryIndexUpsertInput<
+        TInput,
+        TOutput,
+        TIndex,
+        TUpsertOptions["strategy"]
+      >
 
       // First attempt update
       const updateCr = await this.updateByPrimaryIndex(
@@ -929,7 +938,9 @@ export class Collection<
       })
     } else {
       // First attempt update
-      const id = (input as IdUpsertInput<TInput, TOutput>).id
+      const id =
+        (input as IdUpsertInput<TInput, TOutput, TUpsertOptions["strategy"]>).id
+
       const updateCr = await this.update(id, input.update, options)
 
       if (updateCr.ok) {
@@ -966,9 +977,9 @@ export class Collection<
    * @param options - Update many options, optional.
    * @returns Promise resolving to an object containing iterator cursor and result list.
    */
-  async updateMany(
-    value: UpdateData<TOutput>,
-    options?: UpdateManyOptions<Document<TOutput>>,
+  async updateMany<const T extends UpdateManyOptions<Document<TOutput>>>(
+    value: UpdateData<TOutput, T["strategy"]>,
+    options?: T,
   ) {
     // Update each document, add commit result to result list
     return await this.handleMany(
@@ -1794,7 +1805,7 @@ export class Collection<
    */
   private async updateDocument(
     doc: Document<TOutput>,
-    data: UpdateData<TOutput>,
+    data: UpdateData<TOutput, UpdateStrategy>,
     options: UpdateOptions | undefined,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Get document value, delete document entry
@@ -1842,28 +1853,29 @@ export class Collection<
       await atomic.commit()
     }
 
-    let updated = data as TOutput
+    // Determine update strategy and check for type object
+    const strategy = options?.strategy ?? DEFAULT_UPDATE_STRATEGY
+    const isObject = isKvObject(value)
 
-    // Perform merge if value is kv object
-    if (isKvObject(value)) {
-      const mergeType = options?.mergeType ?? DEFAULT_MERGE_TYPE
+    // Handle different update strategies
+    const updated = strategy === "replace"
+      ? data as TOutput
+      : strategy === "merge-shallow" && isObject
+      ? {
+        ...value as KvObject,
+        ...data as KvObject,
+      }
+      : deepMerge({ value }, { value: data }).value
 
-      updated = mergeType === "shallow"
-        ? {
-          ...value as KvObject,
-          ...data as KvObject,
-        } as TOutput
-        : deepMerge(value as KvObject, data as KvObject, {
-          arrays: "merge",
-          maps: "merge",
-          sets: "merge",
-        }) as TOutput
-    }
+    // Parse updated value
+    const parsed = this._model.__validate?.(updated) ??
+      this._model.parse(updated as any)
 
     // Set new document value
-    return await this.setDocument(
+    return await this.setDoc(
       id,
-      updated as ParseInputType<TInput, TOutput>,
+      extendKey(this._keys.id, id),
+      parsed,
       {
         ...options,
         overwrite: true,

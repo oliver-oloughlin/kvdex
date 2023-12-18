@@ -387,14 +387,16 @@ export type FindManyOptions = NonNullable<Parameters<Deno.Kv["getMany"]>[1]>
 
 export type UpdateOptions = Omit<SetOptions, "overwrite"> & {
   /**
-   * Strategy when merging objects.
+   * Strategy to use when updating a value.
    *
-   * @default "shallow"
+   * `merge-shallow` is only applicable for plain object values.
+   *
+   * @default "merge-deep"
    */
-  mergeType?: MergeType
+  strategy?: UpdateStrategy
 }
 
-export type MergeType = "shallow" | "deep"
+export type UpdateStrategy = "replace" | "merge-shallow" | "merge-deep"
 
 export type UpdateManyOptions<T> =
   & ListOptions<T>
@@ -418,10 +420,14 @@ export type QueueListenerOptions = {
 
 export type WatchOptions = NonNullable<Parameters<Deno.Kv["watch"]>[1]>
 
-export type IdUpsertInput<TInput, TOutput extends KvValue> = {
+export type IdUpsertInput<
+  TInput,
+  TOutput extends KvValue,
+  TStrategy extends UpdateStrategy | undefined,
+> = {
   id: KvId
   set: ParseInputType<TInput, TOutput>
-  update: UpdateData<TOutput>
+  update: UpdateData<TOutput, TStrategy>
 }
 
 /********************/
@@ -434,20 +440,22 @@ export type PrimaryIndexUpsertInput<
   TInput,
   TOutput extends KvValue,
   TIndex,
+  TStrategy extends UpdateStrategy | undefined,
 > = {
   id?: KvId
   index: [TIndex, CheckKeyOf<TIndex, TOutput>]
   set: ParseInputType<TInput, TOutput>
-  update: UpdateData<TOutput>
+  update: UpdateData<TOutput, TStrategy>
 }
 
 export type UpsertInput<
   TInput,
   TOutput extends KvValue,
   TIndex,
+  TStrategy extends UpdateStrategy | undefined,
 > =
-  | IdUpsertInput<TInput, TOutput>
-  | PrimaryIndexUpsertInput<TInput, TOutput, TIndex>
+  | IdUpsertInput<TInput, TOutput, TStrategy>
+  | PrimaryIndexUpsertInput<TInput, TOutput, TIndex, TStrategy>
 
 export type UpsertOptions = UpdateOptions
 
@@ -502,8 +510,10 @@ export type QueueHandlers = Map<string, QueueMessageHandler<QueueValue>[]>
 /*                */
 /******************/
 
-export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T>
-  : T
+export type UpdateData<
+  TOutput extends KvValue,
+  TStrategy extends UpdateStrategy | undefined,
+> = TStrategy extends "replace" ? TOutput : Partial<TOutput>
 
 export type FlatDocumentData<T extends KvValue> =
   & Omit<DocumentData<T>, "value">
