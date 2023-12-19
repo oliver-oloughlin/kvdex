@@ -6,7 +6,7 @@ import { useDb } from "../utils.ts"
 
 Deno.test("serialized_indexable_collection - updateByPrimaryIndex", async (t) => {
   await t.step(
-    "Should partially update document and indices by primary index, using shallow merge",
+    "Should update document of KvObject type using shallow merge",
     async () => {
       await useDb(async (db) => {
         const cr = await db.is_users.add(mockUser1)
@@ -67,7 +67,7 @@ Deno.test("serialized_indexable_collection - updateByPrimaryIndex", async (t) =>
   )
 
   await t.step(
-    "Should partially update document and indices by primary index, using deep merge",
+    "Should update document of KvObject type using deep merge",
     async () => {
       await useDb(async (db) => {
         const cr = await db.is_users.add(mockUser1)
@@ -86,7 +86,7 @@ Deno.test("serialized_indexable_collection - updateByPrimaryIndex", async (t) =>
           mockUser1.username,
           updateData,
           {
-            strategy: "merge-deep",
+            strategy: "merge",
           },
         )
 
@@ -117,7 +117,60 @@ Deno.test("serialized_indexable_collection - updateByPrimaryIndex", async (t) =>
           assert(doc.value.address.country === updateData.address.country)
           assert(doc.value.address.city === updateData.address.city)
           assert(doc.value.address.houseNr === updateData.address.houseNr)
-          assert(typeof doc.value.address.street !== "undefined")
+          assert(doc.value.address.street !== undefined)
+        }
+
+        asserts(byId)
+        asserts(byPrimary)
+        asserts(bySecondary.result.at(0) ?? null)
+      })
+    },
+  )
+
+  await t.step(
+    "Should update document of KvObject type using replace",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_users.add(mockUser1)
+        assert(cr.ok)
+
+        const updateCr = await db.is_users.updateByPrimaryIndex(
+          "username",
+          mockUser1.username,
+          mockUser2,
+          {
+            strategy: "replace",
+          },
+        )
+
+        const byId = await db.is_users.find(cr.id)
+
+        const byPrimary = await db.is_users.findByPrimaryIndex(
+          "username",
+          mockUser2.username,
+        )
+
+        const bySecondary = await db.is_users.findBySecondaryIndex(
+          "age",
+          mockUser2.age,
+        )
+
+        assert(updateCr.ok)
+        assert(updateCr.id === cr.id)
+        assert(byPrimary?.id === cr.id)
+        assert(bySecondary.result.at(0)?.id === cr.id)
+        assert(updateCr.versionstamp !== cr.versionstamp)
+        assert(updateCr.versionstamp === byPrimary.versionstamp)
+        assert(updateCr.versionstamp === bySecondary.result.at(0)?.versionstamp)
+
+        const asserts = (doc: Document<User> | null) => {
+          assert(doc !== null)
+          assert(doc.value.username === mockUser2.username)
+          assert(doc.value.age === mockUser2.age)
+          assert(doc.value.address.country === mockUser2.address.country)
+          assert(doc.value.address.city === mockUser2.address.city)
+          assert(doc.value.address.houseNr === mockUser2.address.houseNr)
+          assert(doc.value.address.street === mockUser2.address.street)
         }
 
         asserts(byId)

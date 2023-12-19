@@ -1,4 +1,5 @@
 import type { Collection } from "./collection.ts"
+import type { DeepMergeOptions } from "./deps.ts"
 import type { Document } from "./document.ts"
 
 /*********************/
@@ -389,14 +390,19 @@ export type UpdateOptions = Omit<SetOptions, "overwrite"> & {
   /**
    * Strategy to use when updating a value.
    *
-   * `merge-shallow` is only applicable for plain object values.
+   * For primtive types and built-in objects (Date, RegExp, etc.) "replace" strategy is always used.
    *
-   * @default "merge-deep"
+   * `merge-shallow` is only applicable for plain object types.
+   *
+   * @default "merge"
    */
   strategy?: UpdateStrategy
+
+  /** Options to apply when deep-merging objects. */
+  mergeOptions?: DeepMergeOptions
 }
 
-export type UpdateStrategy = "replace" | "merge-shallow" | "merge-deep"
+export type UpdateStrategy = "replace" | "merge" | "merge-shallow"
 
 export type UpdateManyOptions<T> =
   & ListOptions<T>

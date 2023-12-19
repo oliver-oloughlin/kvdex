@@ -29,7 +29,7 @@ export const DEFAULT_INTERVAL_RETRY = 10
 
 export const DEFAULT_LOOP_RETRY = 10
 
-export const DEFAULT_UPDATE_STRATEGY: UpdateStrategy = "merge-deep"
+export const DEFAULT_UPDATE_STRATEGY: UpdateStrategy = "merge"
 
 // Misc
 export const COMPRESSION_QUALITY_LEVEL = 1

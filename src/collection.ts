@@ -1855,17 +1855,18 @@ export class Collection<
 
     // Determine update strategy and check for type object
     const strategy = options?.strategy ?? DEFAULT_UPDATE_STRATEGY
+    const mergeOptions = options?.mergeOptions
     const isObject = isKvObject(value)
 
     // Handle different update strategies
     const updated = strategy === "replace"
       ? data as TOutput
-      : strategy === "merge-shallow" && isObject
+      : isObject && strategy === "merge-shallow"
       ? {
         ...value as KvObject,
         ...data as KvObject,
       }
-      : deepMerge({ value }, { value: data }).value
+      : deepMerge({ value }, { value: data }, mergeOptions).value
 
     // Parse updated value
     const parsed = this._model.__validate?.(updated) ??

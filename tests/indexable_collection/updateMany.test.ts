@@ -4,16 +4,16 @@ import { generateUsers, useDb } from "../utils.ts"
 
 Deno.test("indexable_collection - updateMany", async (t) => {
   await t.step(
-    "Should partially update 1000 documents using shallow merge",
+    "Should update 1000 documents of KvObject type using shallow merge",
     async () => {
       await useDb(async (db) => {
         const users = generateUsers(1_000)
         const cr = await db.i_users.addMany(users)
         assert(cr.ok)
 
-        const { result: docs } = await db.i_users.getMany()
-        const ids = docs.map((doc) => doc.id)
-        const versionstamps = docs.map((doc) => doc.versionstamp)
+        const docs = await db.i_users.getMany()
+        const ids = docs.result.map((doc) => doc.id)
+        const versionstamps = docs.result.map((doc) => doc.versionstamp)
 
         const updateData = {
           address: {
@@ -45,16 +45,16 @@ Deno.test("indexable_collection - updateMany", async (t) => {
   )
 
   await t.step(
-    "Should partially update 1000 documents using deep merge",
+    "Should update 1000 documents of KvObject type using deep merge",
     async () => {
       await useDb(async (db) => {
         const users = generateUsers(1_000)
         const cr = await db.i_users.addMany(users)
         assert(cr.ok)
 
-        const { result: docs } = await db.i_users.getMany()
-        const ids = docs.map((doc) => doc.id)
-        const versionstamps = docs.map((doc) => doc.versionstamp)
+        const docs = await db.i_users.getMany()
+        const ids = docs.result.map((doc) => doc.id)
+        const versionstamps = docs.result.map((doc) => doc.versionstamp)
 
         const updateData = {
           address: {
@@ -65,7 +65,7 @@ Deno.test("indexable_collection - updateMany", async (t) => {
         }
 
         const { result } = await db.i_users.updateMany(updateData, {
-          strategy: "merge-deep",
+          strategy: "merge",
         })
 
         assert(
@@ -79,8 +79,62 @@ Deno.test("indexable_collection - updateMany", async (t) => {
           assert(doc.value.address.country === updateData.address.country)
           assert(doc.value.address.city === updateData.address.city)
           assert(doc.value.address.houseNr === updateData.address.houseNr)
-          assert(typeof doc.value.address.street !== "undefined")
+          assert(doc.value.address.street !== undefined)
         })
+      })
+    },
+  )
+
+  await t.step(
+    "Should only update one document of type KvObject using replace (primary index collision)",
+    async () => {
+      await useDb(async (db) => {
+        const users = generateUsers(1_000)
+        const cr = await db.i_users.addMany(users)
+        assert(cr.ok)
+
+        const docs = await db.i_users.getMany()
+        const ids = docs.result.map((doc) => doc.id)
+        const versionstamps = docs.result.map((doc) => doc.versionstamp)
+
+        const { result } = await db.i_users.updateMany(mockUser1, {
+          strategy: "replace",
+        })
+
+        assert(
+          result.some((cr) =>
+            cr.ok && ids.includes(cr.id) &&
+            !versionstamps.includes(cr.versionstamp)
+          ),
+        )
+
+        assert(
+          result.some((cr) => !cr.ok),
+        )
+
+        const byPrimary = await db.i_users.findByPrimaryIndex(
+          "username",
+          mockUser1.username,
+        )
+
+        const { result: [bySecondary] } = await db.i_users.findBySecondaryIndex(
+          "age",
+          mockUser1.age,
+        )
+
+        assert(byPrimary !== null)
+        assert(byPrimary.value.username === mockUser1.username)
+        assert(byPrimary.value.address.country === mockUser1.address.country)
+        assert(byPrimary.value.address.city === mockUser1.address.city)
+        assert(byPrimary.value.address.houseNr === mockUser1.address.houseNr)
+        assert(byPrimary.value.address.street === mockUser1.address.street)
+
+        assert(bySecondary !== null)
+        assert(bySecondary.value.username === mockUser1.username)
+        assert(bySecondary.value.address.country === mockUser1.address.country)
+        assert(bySecondary.value.address.city === mockUser1.address.city)
+        assert(bySecondary.value.address.houseNr === mockUser1.address.houseNr)
+        assert(bySecondary.value.address.street === mockUser1.address.street)
       })
     },
   )
