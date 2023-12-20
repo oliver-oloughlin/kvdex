@@ -704,24 +704,24 @@ export class Collection<
   /**
    * Updates a document with the given id in the KV store.
    *
-   * For primitive values, arrays and built-in objects,
-   * this method overrides the old value with the new one.
-   *
-   * For custom object types, this method merges the
-   * new data with the exisiting data using deep merge
-   * by default, or optionally using shallow merge.
+   * By default, the `merge` strategy is used when available, falling back to
+   * `replace` for primitive types and built-in objects (Date, RegExp, etc.).
+   * For plain objects, the `merge-shallow` strategy is also supported.
    *
    * @example
    * ```ts
-   * // Updates by overriding the existing value
-   * const resulTOutput = await db.numbers.update("num1", 10)
+   * // Updates by replacing the existing value
+   * const result = await db.numbers.update("num1", 10)
+   * ```
    *
-   * // Partial update using deep merge, only updates the age field
-   * const resulTInput = await db.users.update("oliver", {
-   *   age: 30
-   * }, {
-   *   mergeType: "deep"
-   * })
+   * @example
+   * ```ts
+   * // Partial update using merge, only updates the age field
+   * const result = await db.users.update(
+   *   "oliver",
+   *   { age: 30 },
+   *   { strategy: "merge" }
+   * )
    * ```
    *
    * @param id - Id of document to be updated
@@ -755,13 +755,17 @@ export class Collection<
    * ```ts
    * // Updates a user with username = "oliver" to have age = 56
    * const result = await db.users.updateByPrimaryIndex("username", "oliver", { age: 56 })
+   * ```
    *
-   * // Updates a user document using deep merge
-   * const result = await db.users.updateByPrimaryIndex("username", "anders", {
-   *   age: 89,
-   * }, {
-   *   mergeType: "deep",
-   * })
+   * @example
+   * ```ts
+   * // Updates a user document using shallow merge
+   * const result = await db.users.updateByPrimaryIndex(
+   *   "username",
+   *   "anders",
+   *   { age: 89 },
+   *   { strategy: "merge-shallow" }
+   * )
    * ```
    *
    * @param index - Selected index.
@@ -800,15 +804,18 @@ export class Collection<
    * ```ts
    * // Updates all user documents with age = 24 and sets age = 67
    * const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
+   * ```
    *
-   * // Updates all user documents where the user's age is 24 and username starts with "o" using deep merge
+   * @example
+   * ```ts
+   * // Updates all users where age = 24 and username starts with "o", using shallow merge
    * const { result } = await db.users.updateBySecondaryIndex(
    *   "age",
    *   24,
    *   { age: 67 },
    *   {
    *     filter: (doc) => doc.value.username.startsWith("o"),
-   *     mergeType: "deep",
+   *     strategy: "merge-shallow",
    *   }
    * )
    * ```
@@ -857,7 +864,7 @@ export class Collection<
    * @example
    * ```ts
    * // Upsert by id
-   * const result1 = await db.users.upsert({
+   * const result = await db.users.upsert({
    *   id: "user_id",
    *   update: { username: "Chris" },
    *   set: {
@@ -872,9 +879,12 @@ export class Collection<
    *     }
    *   }
    * })
+   * ```
    *
+   * @example
+   * ```ts
    * // Upsert by index
-   * const result2 = await db.users.upsert({
+   * const result = await db.users.upsert({
    *   index: ["username", "Jack"],
    *   update: { username: "Chris" },
    *   set: {
@@ -961,15 +971,21 @@ export class Collection<
    * ```ts
    * // Updates all user documents and sets name = 67
    * await db.users.updateMany({ age: 67 })
+   * ```
    *
-   * // Updates all user documents using deep merge where the user's age is above 20
+   * @example
+   * ```ts
+   * // Updates all users where age > 20, using shallow merge
    * await db.users.updateMany({ age: 67 }, {
    *   filter: (doc) => doc.value.age > 20,
-   *   mergeType: "deep"
+   *   strategy: "merge-shallow"
    * })
+   * ```
    *
-   * // Only updates first user document, as username is a primary index
-   * await db.users.updateMany({ username: "XuserX" })
+   * @example
+   * ```ts
+   * // Only updates first user document and fails the rest when username is a primary index
+   * const { result } = await db.users.updateMany({ username: "oliver" })
    * ```
    *
    * @param value - Updated value to be inserted into documents.
@@ -1852,9 +1868,8 @@ export class Collection<
       await atomic.commit()
     }
 
-    // Determine update strategy and check for type object
+    // Determine update strategy and check value type
     const strategy = options?.strategy ?? DEFAULT_UPDATE_STRATEGY
-    const mergeOptions = options?.mergeOptions
     const isObject = isKvObject(value)
 
     // Handle different update strategies
@@ -1865,7 +1880,7 @@ export class Collection<
         ...value as KvObject,
         ...data as KvObject,
       }
-      : deepMerge({ value }, { value: data }, mergeOptions).value
+      : deepMerge({ value }, { value: data }, options?.mergeOptions).value
 
     // Parse updated value
     const parsed = this._model.__validate?.(updated) ??
