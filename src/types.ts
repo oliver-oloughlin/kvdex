@@ -487,28 +487,27 @@ export type Schema<T extends SchemaDefinition> = {
 /*                 */
 /*******************/
 
-export type QueueValue = Exclude<KvValue, undefined>
-
-export type QueueMessage<T extends QueueValue> = {
+export type QueueMessage<T extends KvValue> = {
+  __is_undefined__: boolean
   __handlerId__: string
   __data__: T
 }
 
-export type ParsedQueueMessage<T extends QueueValue> = {
+export type ParsedQueueMessage<T extends KvValue> = {
   ok: true
   msg: QueueMessage<T>
 } | {
   ok: false
 }
 
-export type QueueMessageHandler<T extends QueueValue> = (data: T) => unknown
+export type QueueMessageHandler<T extends KvValue> = (data: T) => unknown
 
-export type PreparedEnqueue<T extends QueueValue> = {
+export type PreparedEnqueue<T extends KvValue> = {
   msg: QueueMessage<T>
   options: KvEnqueueOptions
 }
 
-export type QueueHandlers = Map<string, QueueMessageHandler<QueueValue>[]>
+export type QueueHandlers = Map<string, QueueMessageHandler<KvValue>[]>
 
 /******************/
 /*                */

@@ -53,33 +53,6 @@ export const KvObjectSchema: z.ZodType<KvObject> = z.record(
   KvValueSchema,
 )
 
-export const QueueValueSchema = z.null()
-  .or(z.string())
-  .or(z.number())
-  .or(z.boolean())
-  .or(z.bigint())
-  .or(z.instanceof(Deno.KvU64))
-  .or(LazyKvObjectSchema)
-  .or(LazyKvArraySchema)
-  .or(z.instanceof(Int8Array))
-  .or(z.instanceof(Int16Array))
-  .or(z.instanceof(Int32Array))
-  .or(z.instanceof(BigInt64Array))
-  .or(z.instanceof(Uint8Array))
-  .or(z.instanceof(Uint16Array))
-  .or(z.instanceof(Uint32Array))
-  .or(z.instanceof(BigUint64Array))
-  .or(z.instanceof(Uint8ClampedArray))
-  .or(z.instanceof(Float32Array))
-  .or(z.instanceof(Float64Array))
-  .or(z.instanceof(ArrayBuffer))
-  .or(z.date())
-  .or(z.set(LazyKvValueSchema))
-  .or(z.map(LazyKvValueSchema, LazyKvValueSchema))
-  .or(z.instanceof(RegExp))
-  .or(z.instanceof(DataView))
-  .or(z.instanceof(Error))
-
 /*****************/
 /*               */
 /*   FUNCTIONS   */

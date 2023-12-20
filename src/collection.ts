@@ -26,7 +26,6 @@ import type {
   QueueHandlers,
   QueueListenerOptions,
   QueueMessageHandler,
-  QueueValue,
   SecondaryIndexKeys,
   SerializedEntry,
   Serializer,
@@ -1422,7 +1421,7 @@ export class Collection<
    * @param options - Enqueue options, optional.
    * @returns A promise resolving to Deno.KvCommitResult.
    */
-  async enqueue<T extends QueueValue>(data: T, options?: EnqueueOptions) {
+  async enqueue<T extends KvValue>(data: T, options?: EnqueueOptions) {
     // Prepare message and options for enqueue
     const prep = prepareEnqueue(
       this._keys.base,
@@ -1462,7 +1461,7 @@ export class Collection<
    * @param options - Queue listener options.
    * @returns void.
    */
-  async listenQueue<T extends QueueValue = QueueValue>(
+  async listenQueue<T extends KvValue = KvValue>(
     handler: QueueMessageHandler<T>,
     options?: QueueListenerOptions,
   ) {
@@ -1471,7 +1470,7 @@ export class Collection<
 
     // Add new handler to specified handlers
     const handlers = this.queueHandlers.get(handlerId) ?? []
-    handlers.push(handler as QueueMessageHandler<QueueValue>)
+    handlers.push(handler as QueueMessageHandler<KvValue>)
     this.queueHandlers.set(handlerId, handlers)
 
     // Activate idempotent listener

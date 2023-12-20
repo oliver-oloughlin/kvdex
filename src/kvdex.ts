@@ -13,7 +13,6 @@ import type {
   LoopOptions,
   QueueListenerOptions,
   QueueMessageHandler,
-  QueueValue,
   Schema,
   SchemaDefinition,
   SetIntervalOptions,
@@ -79,7 +78,7 @@ export function kvdex<const T extends SchemaDefinition>(
 ) {
   // Set listener activated flag and queue handlers map
   let listener: Promise<void>
-  const queueHandlers = new Map<string, QueueMessageHandler<QueueValue>[]>()
+  const queueHandlers = new Map<string, QueueMessageHandler<KvValue>[]>()
 
   // Create idempotent listener activator
   const idempotentListener = () => {
@@ -124,13 +123,13 @@ export function kvdex<const T extends SchemaDefinition>(
 export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
   private kv: Deno.Kv
   private schema: TSchema
-  private queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>
+  private queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>
   private idempotentListener: () => Promise<void>
 
   constructor(
     kv: Deno.Kv,
     schema: TSchema,
-    queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+    queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>,
     idempotentListener: () => Promise<void>,
   ) {
     this.kv = kv
@@ -250,7 +249,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    * @param data - Data to be added to the database queue.
    * @param options - Enqueue options, optional.
    */
-  async enqueue<T extends QueueValue>(data: T, options?: EnqueueOptions) {
+  async enqueue<T extends KvValue>(data: T, options?: EnqueueOptions) {
     // Prepare and perform enqueue operation
     const prep = prepareEnqueue(
       [KVDEX_KEY_PREFIX],
@@ -286,7 +285,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    * @param handler - Message handler function.
    * @param options - Queue listener options.
    */
-  listenQueue<const T extends QueueValue>(
+  listenQueue<const T extends KvValue>(
     handler: QueueMessageHandler<T>,
     options?: QueueListenerOptions,
   ) {
@@ -295,7 +294,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
 
     // Add new handler to specified handlers
     const handlers = this.queueHandlers.get(handlerId) ?? []
-    handlers.push(handler as QueueMessageHandler<QueueValue>)
+    handlers.push(handler as QueueMessageHandler<KvValue>)
     this.queueHandlers.set(handlerId, handlers)
 
     // Activate idempotent listener
@@ -507,7 +506,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    * @param options - Loop options.
    * @returns A listener promise.
    */
-  async loop<const T1 extends QueueValue>(
+  async loop<const T1 extends KvValue>(
     fn: (msg: LoopMessage<Awaited<T1>>) => T1 | Promise<T1>,
     options?: LoopOptions<Awaited<T1>>,
   ) {
@@ -622,7 +621,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
 function _createSchema<const T extends SchemaDefinition>(
   def: T,
   kv: Deno.Kv,
-  queueHandlers: Map<string, QueueMessageHandler<QueueValue>[]>,
+  queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>,
   idempotentListener: () => Promise<void>,
   treeKey?: KvKey,
 ): Schema<T> {

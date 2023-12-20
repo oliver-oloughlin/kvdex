@@ -1,10 +1,4 @@
-import {
-  collection,
-  kvdex,
-  model,
-  QueueMessage,
-  QueueValue,
-} from "../../mod.ts"
+import { collection, kvdex, KvValue, model, QueueMessage } from "../../mod.ts"
 import { KVDEX_KEY_PREFIX } from "../../src/constants.ts"
 import { createHandlerId } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
@@ -26,10 +20,13 @@ Deno.test("db - listenQueue", async (t) => {
         sleeper.resolve()
       })
 
-      await kv.enqueue({
+      const msg: QueueMessage<KvValue> = {
+        __is_undefined__: false,
         __handlerId__: handlerId,
         __data__: data,
-      } as QueueMessage<QueueValue>)
+      }
+
+      await kv.enqueue(msg)
 
       await sleeper.promise
       assert(assertion)

@@ -14,7 +14,6 @@ import type {
   KvValue,
   Operations,
   ParseInputType,
-  QueueValue,
   Schema,
   SchemaDefinition,
 } from "./types.ts"
@@ -383,7 +382,7 @@ export class AtomicBuilder<
    * @param options - Enqueue options, optional.
    * @returns A promise resolving to Deno.KvCommitResult.
    */
-  enqueue(data: QueueValue, options?: EnqueueOptions) {
+  enqueue(data: KvValue, options?: EnqueueOptions) {
     // Prepare and add enqueue operation
     const prep = prepareEnqueue(
       this.collection._keys.base,

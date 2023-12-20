@@ -1,10 +1,4 @@
-import {
-  collection,
-  kvdex,
-  model,
-  QueueMessage,
-  QueueValue,
-} from "../../mod.ts"
+import { collection, kvdex, KvValue, model, QueueMessage } from "../../mod.ts"
 import { KVDEX_KEY_PREFIX } from "../../src/constants.ts"
 import { createHandlerId } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
@@ -26,12 +20,12 @@ Deno.test("db - enqueue", async (t) => {
       let assertion = false
 
       const listener = kv.listenQueue((msg) => {
-        const qMsg = msg as QueueMessage<QueueValue>
+        const qMsg = msg as QueueMessage<KvValue>
         assertion = qMsg.__handlerId__ === handlerId && qMsg.__data__ === data
         sleeper.resolve()
       })
 
-      await db.enqueue("data", {
+      await db.enqueue(data, {
         idsIfUndelivered: [undeliveredId],
       })
 
@@ -67,7 +61,7 @@ Deno.test("db - enqueue", async (t) => {
         assertion2 = false
       })
 
-      await db.enqueue("data", {
+      await db.enqueue(data, {
         idsIfUndelivered: [undeliveredId],
         topic,
       })
@@ -79,6 +73,42 @@ Deno.test("db - enqueue", async (t) => {
       assert(assertion2)
 
       return async () => await Promise.all([l1, l2])
+    })
+  })
+
+  await t.step("Should enqueue message with undefined data", async () => {
+    await useKv(async (kv) => {
+      const data = undefined
+      const undeliveredId = "undelivered"
+      const sleeper = createResolver()
+
+      const db = kvdex(kv, {
+        numbers: collection(model<number>()),
+      })
+
+      const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined)
+
+      let assertion = false
+
+      const listener = kv.listenQueue((msg) => {
+        const qMsg = msg as QueueMessage<KvValue>
+
+        assertion = qMsg.__handlerId__ === handlerId &&
+          qMsg.__data__ === data && qMsg.__is_undefined__ === true
+
+        sleeper.resolve()
+      })
+
+      await db.enqueue(data, {
+        idsIfUndelivered: [undeliveredId],
+      })
+
+      await sleeper.promise
+
+      const undelivered = await db.numbers.findUndelivered(undeliveredId)
+      assert(assertion || typeof undelivered?.value === typeof data)
+
+      return async () => await listener
     })
   })
 })
