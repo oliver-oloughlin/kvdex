@@ -1,10 +1,4 @@
-import {
-  collection,
-  kvdex,
-  model,
-  QueueMessage,
-  QueueValue,
-} from "../../mod.ts"
+import { collection, kvdex, KvValue, model, QueueMessage } from "../../mod.ts"
 import { createHandlerId } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts"
@@ -281,7 +275,7 @@ Deno.test("db - atomic", async (t) => {
       let assertion = false
 
       const listener = kv.listenQueue((msg) => {
-        const qMsg = msg as QueueMessage<QueueValue>
+        const qMsg = msg as QueueMessage<KvValue>
         assertion = qMsg.__handlerId__ === handlerId && qMsg.__data__ === data
       })
 

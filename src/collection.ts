@@ -26,7 +26,6 @@ import type {
   QueueHandlers,
   QueueListenerOptions,
   QueueMessageHandler,
-  QueueValue,
   SecondaryIndexKeys,
   SerializedEntry,
   Serializer,
@@ -34,6 +33,7 @@ import type {
   UpdateData,
   UpdateManyOptions,
   UpdateOptions,
+  UpdateStrategy,
   UpsertInput,
   UpsertOptions,
   WatchOptions,
@@ -62,7 +62,7 @@ import {
   setIndices,
 } from "./utils.ts"
 import {
-  DEFAULT_MERGE_TYPE,
+  DEFAULT_UPDATE_STRATEGY,
   HISTORY_KEY_PREFIX,
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
@@ -704,24 +704,24 @@ export class Collection<
   /**
    * Updates a document with the given id in the KV store.
    *
-   * For primitive values, arrays and built-in objects,
-   * this method overrides the old value with the new one.
-   *
-   * For custom object types, this method merges the
-   * new data with the exisiting data using deep merge
-   * by default, or optionally using shallow merge.
+   * By default, the `merge` strategy is used when available, falling back to
+   * `replace` for primitive types and built-in objects (Date, RegExp, etc.).
+   * For plain objects, the `merge-shallow` strategy is also supported.
    *
    * @example
    * ```ts
-   * // Updates by overriding the existing value
-   * const resulTOutput = await db.numbers.update("num1", 10)
+   * // Updates by replacing the existing value
+   * const result = await db.numbers.update("num1", 10)
+   * ```
    *
-   * // Partial update using deep merge, only updates the age field
-   * const resulTInput = await db.users.update("oliver", {
-   *   age: 30
-   * }, {
-   *   mergeType: "deep"
-   * })
+   * @example
+   * ```ts
+   * // Partial update using merge, only updates the age field
+   * const result = await db.users.update(
+   *   "oliver",
+   *   { age: 30 },
+   *   { strategy: "merge" }
+   * )
    * ```
    *
    * @param id - Id of document to be updated
@@ -729,10 +729,10 @@ export class Collection<
    * @param options - Set options, optional.
    * @returns
    */
-  async update(
+  async update<const T extends UpdateOptions>(
     id: KvId,
-    data: UpdateData<TOutput>,
-    options?: UpdateOptions,
+    data: UpdateData<TOutput, T["strategy"]>,
+    options?: T,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Get document
     const doc = await this.find(id)
@@ -755,13 +755,17 @@ export class Collection<
    * ```ts
    * // Updates a user with username = "oliver" to have age = 56
    * const result = await db.users.updateByPrimaryIndex("username", "oliver", { age: 56 })
+   * ```
    *
-   * // Updates a user document using deep merge
-   * const result = await db.users.updateByPrimaryIndex("username", "anders", {
-   *   age: 89,
-   * }, {
-   *   mergeType: "deep",
-   * })
+   * @example
+   * ```ts
+   * // Updates a user document using shallow merge
+   * const result = await db.users.updateByPrimaryIndex(
+   *   "username",
+   *   "anders",
+   *   { age: 89 },
+   *   { strategy: "merge-shallow" }
+   * )
    * ```
    *
    * @param index - Selected index.
@@ -772,11 +776,12 @@ export class Collection<
    */
   async updateByPrimaryIndex<
     const K extends PrimaryIndexKeys<TOutput, TOptions>,
+    const T extends UpdateOptions,
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
-    data: UpdateData<TOutput>,
-    options?: UpdateOptions,
+    data: UpdateData<TOutput, T["strategy"]>,
+    options?: T,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Find document by primary index
     const doc = await this.findByPrimaryIndex(index, value)
@@ -789,7 +794,7 @@ export class Collection<
     }
 
     // Update document, return result
-    return await this.update(doc.id, data, options)
+    return await this.updateDocument(doc, data, options)
   }
 
   /**
@@ -799,15 +804,18 @@ export class Collection<
    * ```ts
    * // Updates all user documents with age = 24 and sets age = 67
    * const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
+   * ```
    *
-   * // Updates all user documents where the user's age is 24 and username starts with "o" using deep merge
+   * @example
+   * ```ts
+   * // Updates all users where age = 24 and username starts with "o", using shallow merge
    * const { result } = await db.users.updateBySecondaryIndex(
    *   "age",
    *   24,
    *   { age: 67 },
    *   {
    *     filter: (doc) => doc.value.username.startsWith("o"),
-   *     mergeType: "deep",
+   *     strategy: "merge-shallow",
    *   }
    * )
    * ```
@@ -820,11 +828,12 @@ export class Collection<
    */
   async updateBySecondaryIndex<
     const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const T extends UpdateManyOptions<Document<TOutput>>,
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
-    data: UpdateData<TOutput>,
-    options?: UpdateManyOptions<Document<TOutput>>,
+    data: UpdateData<TOutput, T["strategy"]>,
+    options?: T,
   ) {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
@@ -855,7 +864,7 @@ export class Collection<
    * @example
    * ```ts
    * // Upsert by id
-   * const result1 = await db.users.upsert({
+   * const result = await db.users.upsert({
    *   id: "user_id",
    *   update: { username: "Chris" },
    *   set: {
@@ -870,9 +879,12 @@ export class Collection<
    *     }
    *   }
    * })
+   * ```
    *
+   * @example
+   * ```ts
    * // Upsert by index
-   * const result2 = await db.users.upsert({
+   * const result = await db.users.upsert({
    *   index: ["username", "Jack"],
    *   update: { username: "Chris" },
    *   set: {
@@ -895,13 +907,19 @@ export class Collection<
    */
   async upsert<
     const TIndex extends PrimaryIndexKeys<TOutput, TOptions>,
+    const TUpsertOptions extends UpsertOptions,
   >(
-    input: UpsertInput<TInput, TOutput, TIndex>,
-    options?: UpsertOptions,
+    input: UpsertInput<TInput, TOutput, TIndex, TUpsertOptions["strategy"]>,
+    options?: TUpsertOptions,
   ) {
     // Check if is id or primary index upsert
     if ((input as any).index !== undefined) {
-      const inp = input as PrimaryIndexUpsertInput<TInput, TOutput, TIndex>
+      const inp = input as PrimaryIndexUpsertInput<
+        TInput,
+        TOutput,
+        TIndex,
+        TUpsertOptions["strategy"]
+      >
 
       // First attempt update
       const updateCr = await this.updateByPrimaryIndex(
@@ -929,7 +947,9 @@ export class Collection<
       })
     } else {
       // First attempt update
-      const id = (input as IdUpsertInput<TInput, TOutput>).id
+      const id =
+        (input as IdUpsertInput<TInput, TOutput, TUpsertOptions["strategy"]>).id
+
       const updateCr = await this.update(id, input.update, options)
 
       if (updateCr.ok) {
@@ -951,24 +971,30 @@ export class Collection<
    * ```ts
    * // Updates all user documents and sets name = 67
    * await db.users.updateMany({ age: 67 })
+   * ```
    *
-   * // Updates all user documents using deep merge where the user's age is above 20
+   * @example
+   * ```ts
+   * // Updates all users where age > 20, using shallow merge
    * await db.users.updateMany({ age: 67 }, {
    *   filter: (doc) => doc.value.age > 20,
-   *   mergeType: "deep"
+   *   strategy: "merge-shallow"
    * })
+   * ```
    *
-   * // Only updates first user document, as username is a primary index
-   * await db.users.updateMany({ username: "XuserX" })
+   * @example
+   * ```ts
+   * // Only updates first user document and fails the rest when username is a primary index
+   * const { result } = await db.users.updateMany({ username: "oliver" })
    * ```
    *
    * @param value - Updated value to be inserted into documents.
    * @param options - Update many options, optional.
    * @returns Promise resolving to an object containing iterator cursor and result list.
    */
-  async updateMany(
-    value: UpdateData<TOutput>,
-    options?: UpdateManyOptions<Document<TOutput>>,
+  async updateMany<const T extends UpdateManyOptions<Document<TOutput>>>(
+    value: UpdateData<TOutput, T["strategy"]>,
+    options?: T,
   ) {
     // Update each document, add commit result to result list
     return await this.handleMany(
@@ -1411,7 +1437,7 @@ export class Collection<
    * @param options - Enqueue options, optional.
    * @returns A promise resolving to Deno.KvCommitResult.
    */
-  async enqueue<T extends QueueValue>(data: T, options?: EnqueueOptions) {
+  async enqueue<T extends KvValue>(data: T, options?: EnqueueOptions) {
     // Prepare message and options for enqueue
     const prep = prepareEnqueue(
       this._keys.base,
@@ -1451,7 +1477,7 @@ export class Collection<
    * @param options - Queue listener options.
    * @returns void.
    */
-  async listenQueue<T extends QueueValue = QueueValue>(
+  async listenQueue<T extends KvValue = KvValue>(
     handler: QueueMessageHandler<T>,
     options?: QueueListenerOptions,
   ) {
@@ -1460,7 +1486,7 @@ export class Collection<
 
     // Add new handler to specified handlers
     const handlers = this.queueHandlers.get(handlerId) ?? []
-    handlers.push(handler as QueueMessageHandler<QueueValue>)
+    handlers.push(handler as QueueMessageHandler<KvValue>)
     this.queueHandlers.set(handlerId, handlers)
 
     // Activate idempotent listener
@@ -1794,7 +1820,7 @@ export class Collection<
    */
   private async updateDocument(
     doc: Document<TOutput>,
-    data: UpdateData<TOutput>,
+    data: UpdateData<TOutput, UpdateStrategy>,
     options: UpdateOptions | undefined,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Get document value, delete document entry
@@ -1842,28 +1868,29 @@ export class Collection<
       await atomic.commit()
     }
 
-    let updated = data as TOutput
+    // Determine update strategy and check value type
+    const strategy = options?.strategy ?? DEFAULT_UPDATE_STRATEGY
+    const isObject = isKvObject(value)
 
-    // Perform merge if value is kv object
-    if (isKvObject(value)) {
-      const mergeType = options?.mergeType ?? DEFAULT_MERGE_TYPE
+    // Handle different update strategies
+    const updated = strategy === "replace"
+      ? data as TOutput
+      : isObject && strategy === "merge-shallow"
+      ? {
+        ...value as KvObject,
+        ...data as KvObject,
+      }
+      : deepMerge({ value }, { value: data }, options?.mergeOptions).value
 
-      updated = mergeType === "shallow"
-        ? {
-          ...value as KvObject,
-          ...data as KvObject,
-        } as TOutput
-        : deepMerge(value as KvObject, data as KvObject, {
-          arrays: "merge",
-          maps: "merge",
-          sets: "merge",
-        }) as TOutput
-    }
+    // Parse updated value
+    const parsed = this._model.__validate?.(updated) ??
+      this._model.parse(updated as any)
 
     // Set new document value
-    return await this.setDocument(
+    return await this.setDoc(
       id,
-      updated as ParseInputType<TInput, TOutput>,
+      extendKey(this._keys.id, id),
+      parsed,
       {
         ...options,
         overwrite: true,

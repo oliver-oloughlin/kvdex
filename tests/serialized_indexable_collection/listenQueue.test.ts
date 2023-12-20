@@ -1,10 +1,4 @@
-import {
-  collection,
-  kvdex,
-  model,
-  QueueMessage,
-  QueueValue,
-} from "../../mod.ts"
+import { collection, kvdex, KvValue, model, QueueMessage } from "../../mod.ts"
 import {
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
@@ -34,7 +28,8 @@ Deno.test("serialized_indexable_collection - listenQueue", async (t) => {
         sleeper.resolve()
       })
 
-      const msg: QueueMessage<QueueValue> = {
+      const msg: QueueMessage<KvValue> = {
+        __is_undefined__: false,
         __handlerId__: handlerId,
         __data__: data,
       }

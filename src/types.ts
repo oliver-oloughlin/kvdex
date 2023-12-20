@@ -1,4 +1,5 @@
 import type { Collection } from "./collection.ts"
+import type { DeepMergeOptions } from "./deps.ts"
 import type { Document } from "./document.ts"
 
 /*********************/
@@ -387,14 +388,21 @@ export type FindManyOptions = NonNullable<Parameters<Deno.Kv["getMany"]>[1]>
 
 export type UpdateOptions = Omit<SetOptions, "overwrite"> & {
   /**
-   * Strategy when merging objects.
+   * Strategy to use when updating a value.
    *
-   * @default "shallow"
+   * For primtive types and built-in objects (Date, RegExp, etc.) "replace" strategy is always used.
+   *
+   * `merge-shallow` is only applicable for plain object types.
+   *
+   * @default "merge"
    */
-  mergeType?: MergeType
+  strategy?: UpdateStrategy
+
+  /** Options to apply when deep-merging objects. */
+  mergeOptions?: DeepMergeOptions
 }
 
-export type MergeType = "shallow" | "deep"
+export type UpdateStrategy = "replace" | "merge" | "merge-shallow"
 
 export type UpdateManyOptions<T> =
   & ListOptions<T>
@@ -418,10 +426,14 @@ export type QueueListenerOptions = {
 
 export type WatchOptions = NonNullable<Parameters<Deno.Kv["watch"]>[1]>
 
-export type IdUpsertInput<TInput, TOutput extends KvValue> = {
+export type IdUpsertInput<
+  TInput,
+  TOutput extends KvValue,
+  TStrategy extends UpdateStrategy | undefined,
+> = {
   id: KvId
   set: ParseInputType<TInput, TOutput>
-  update: UpdateData<TOutput>
+  update: UpdateData<TOutput, TStrategy>
 }
 
 /********************/
@@ -434,20 +446,22 @@ export type PrimaryIndexUpsertInput<
   TInput,
   TOutput extends KvValue,
   TIndex,
+  TStrategy extends UpdateStrategy | undefined,
 > = {
   id?: KvId
   index: [TIndex, CheckKeyOf<TIndex, TOutput>]
   set: ParseInputType<TInput, TOutput>
-  update: UpdateData<TOutput>
+  update: UpdateData<TOutput, TStrategy>
 }
 
 export type UpsertInput<
   TInput,
   TOutput extends KvValue,
   TIndex,
+  TStrategy extends UpdateStrategy | undefined,
 > =
-  | IdUpsertInput<TInput, TOutput>
-  | PrimaryIndexUpsertInput<TInput, TOutput, TIndex>
+  | IdUpsertInput<TInput, TOutput, TStrategy>
+  | PrimaryIndexUpsertInput<TInput, TOutput, TIndex, TStrategy>
 
 export type UpsertOptions = UpdateOptions
 
@@ -473,28 +487,27 @@ export type Schema<T extends SchemaDefinition> = {
 /*                 */
 /*******************/
 
-export type QueueValue = Exclude<KvValue, undefined>
-
-export type QueueMessage<T extends QueueValue> = {
+export type QueueMessage<T extends KvValue> = {
+  __is_undefined__: boolean
   __handlerId__: string
   __data__: T
 }
 
-export type ParsedQueueMessage<T extends QueueValue> = {
+export type ParsedQueueMessage<T extends KvValue> = {
   ok: true
   msg: QueueMessage<T>
 } | {
   ok: false
 }
 
-export type QueueMessageHandler<T extends QueueValue> = (data: T) => unknown
+export type QueueMessageHandler<T extends KvValue> = (data: T) => unknown
 
-export type PreparedEnqueue<T extends QueueValue> = {
+export type PreparedEnqueue<T extends KvValue> = {
   msg: QueueMessage<T>
   options: KvEnqueueOptions
 }
 
-export type QueueHandlers = Map<string, QueueMessageHandler<QueueValue>[]>
+export type QueueHandlers = Map<string, QueueMessageHandler<KvValue>[]>
 
 /******************/
 /*                */
@@ -502,8 +515,10 @@ export type QueueHandlers = Map<string, QueueMessageHandler<QueueValue>[]>
 /*                */
 /******************/
 
-export type UpdateData<T extends KvValue> = T extends KvObject ? Partial<T>
-  : T
+export type UpdateData<
+  TOutput extends KvValue,
+  TStrategy extends UpdateStrategy | undefined,
+> = TStrategy extends "replace" ? TOutput : Partial<TOutput>
 
 export type FlatDocumentData<T extends KvValue> =
   & Omit<DocumentData<T>, "value">

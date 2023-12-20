@@ -326,25 +326,21 @@ if (result1.ok) {
 
 ### update()
 
-Update the value of an exisiting document in the KV store. For primitive values,
-arrays and built-in objects (Array, Date, RegExp, etc.), this method overwrites
-the exisiting data with the new value. For plain object values, this method
-performs a partial update, merging the new value with the existing data using
-deep merge by default, or optionally using shallow merge. Upon completion, a
-CommitResult object will be returned with the document id, versionstamp and ok
-flag. If no document with a matching id exists in the collection, the operation
-will fail.
+Updates the value of an exisiting document in the KV store by id. By default,
+the `merge` strategy is used when available, falling back to `replace` for
+primitive types and built-in objects (Date, RegExp, etc.). For plain objects,
+the `merge-shallow` strategy is also supported.
 
 ```ts
 // Updates the document with a new value
 const result = await db.numbers.update("num1", 42)
 
-// Partial update using shallow merge, only updates the age field
-const result = await db.users.update("user1", {
-  age: 67,
-}, {
-  mergeType: "shallow",
-})
+// Partial update using merge, only updates the age field
+const result = await db.users.update(
+  "oliver",
+  { age: 30 },
+  { strategy: "merge" },
+)
 ```
 
 ### updateByPrimaryIndex()
@@ -353,36 +349,39 @@ Update a document by a primary index.
 
 ```ts
 // Updates a user with username = "oliver" to have age = 56
-const result = await db.users.updateByPrimaryIndex("username", "oliver", {
-  age: 56,
-})
+const result = await db.users.updateByPrimaryIndex(
+  "username",
+  "oliver",
+  { age: 56 },
+)
 
 // Updates a user document using shallow merge
-const result = await db.users.updateByPrimaryIndex("username", "anders", {
-  age: 89,
-}, {
-  mergeType: "shallow",
-})
+const result = await db.users.updateByPrimaryIndex(
+  "username",
+  "anders",
+  { age: 89 },
+  { strategy: "merge-shallow" },
+)
 ```
 
 ### updateBySecondaryIndex()
 
-Update documents by a secondary index. It takes an optional options argument
-that can be used for filtering of documents to be updated, and pagination. If no
+Update documents by a secondary index. Takes an optional options argument that
+can be used for filtering of documents to be updated, and pagination. If no
 options are given, all documents by the given index value will we updated.
 
 ```ts
 // Updates all user documents with age = 24 and sets age = 67
 const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
 
-// Updates all user documents where the user's age is 24 and username starts with "o" using shallow merge
+// Updates all users where age = 24 and username starts with "o", using shallow merge
 const { result } = await db.users.updateBySecondaryIndex(
   "age",
   24,
   { age: 67 },
   {
     filter: (doc) => doc.value.username.startsWith("o"),
-    mergeType: "shallow",
+    strategy: "merge-shallow",
   },
 )
 ```
@@ -398,14 +397,14 @@ documents in the collection.
 // Updates all user documents and sets age = 67
 const { result } = await db.users.updateMany({ age: 67 })
 
-// Updates all user documents using deep shallow where the user's age is above 20
+// Updates all users where age > 20, using shallow merge
 const { result } = await db.users.updateMany({ age: 67 }, {
   filter: (doc) => doc.value.age > 20,
-  mergeType: "shallow",
+  strategy: "merge-shallow",
 })
 
-// Only updates first user document, as username is a primary index
-const { result } = await db.users.updateMany({ username: "XuserX" })
+// Only updates first user document and fails the rest when username is a primary index
+const { result } = await db.users.updateMany({ username: "oliver" })
 ```
 
 ### upsert()
@@ -417,7 +416,7 @@ document entry, otherwise an id will be generated.
 
 ```ts
 // Upsert by id
-const result1 = await db.users.upsert({
+const result = await db.users.upsert({
   id: "user_id",
   update: { username: "Chris" },
   set: {
@@ -434,7 +433,7 @@ const result1 = await db.users.upsert({
 })
 
 // Upsert by index
-const result2 = await db.users.upsert({
+const result = await db.users.upsert({
   index: ["username", "Jack"],
   update: { username: "Chris" },
   set: {

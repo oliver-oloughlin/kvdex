@@ -9,11 +9,11 @@ import type {
   KvId,
   KvKey,
   KvObject,
+  KvValue,
   ListOptions,
   ParsedQueueMessage,
   PreparedEnqueue,
   QueueMessage,
-  QueueValue,
 } from "./types.ts"
 import {
   brotliCompressSync,
@@ -354,7 +354,7 @@ export async function allFulfilled<const T>(
  * @param options - Enqueue options
  * @returns Prepared enqueue
  */
-export function prepareEnqueue<const T extends QueueValue>(
+export function prepareEnqueue<const T extends KvValue>(
   baseKey: KvKey,
   undeliveredKey: KvKey,
   data: T,
@@ -362,6 +362,7 @@ export function prepareEnqueue<const T extends QueueValue>(
 ): PreparedEnqueue<T> {
   // Create queue message
   const msg: QueueMessage<T> = {
+    __is_undefined__: data === undefined,
     __data__: data,
     __handlerId__: createHandlerId(baseKey, options?.topic),
   }
@@ -401,7 +402,7 @@ export function createHandlerId(
  * @param msg - Queue message.
  * @returns Parsed queue message.
  */
-export function parseQueueMessage<T extends QueueValue>(
+export function parseQueueMessage<T extends KvValue>(
   msg: unknown,
 ): ParsedQueueMessage<T> {
   // Check for no message
@@ -416,7 +417,8 @@ export function parseQueueMessage<T extends QueueValue>(
 
   // Check correctness of message parts
   if (
-    !_msg.__handlerId__ || _msg.__data__ === undefined
+    !_msg.__handlerId__ ||
+    (_msg.__data__ === undefined && !_msg.__is_undefined__)
   ) {
     return {
       ok: false,

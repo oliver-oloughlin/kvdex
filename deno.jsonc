@@ -2,7 +2,7 @@
   "lock": false,
   "tasks": {
     "check": "deno check --unstable mod.ts ext/zod.ts",
-    "test": "deno test -A --unstable --trace-ops",
+    "test": "deno test -A --unstable",
     "bench": "deno bench -A --unstable",
     "prep": "deno task check && deno fmt && deno lint && deno task test"
   },
