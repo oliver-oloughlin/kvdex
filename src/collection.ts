@@ -47,6 +47,7 @@ import {
   createListSelector,
   decompress,
   deleteIndices,
+  DENO_CORE,
   denoCoreDeserialize,
   denoCoreSerialize,
   extendKey,
@@ -224,8 +225,14 @@ export class Collection<
     this._isSerialized = !!opts?.serialize
 
     const isDeploy = isDeployRuntime()
-    const defaultSerialize = isDeploy ? jsonSerialize : denoCoreSerialize
-    const defaultDeserialize = isDeploy ? jsonDeserialize : denoCoreDeserialize
+
+    const defaultSerialize = isDeploy || !DENO_CORE?.serialize
+      ? jsonSerialize
+      : denoCoreSerialize ?? jsonSerialize
+
+    const defaultDeserialize = isDeploy || !DENO_CORE?.serialize
+      ? jsonDeserialize
+      : denoCoreDeserialize
 
     if (opts?.serialize === "auto") {
       this._serializer = {
