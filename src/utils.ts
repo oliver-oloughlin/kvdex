@@ -535,7 +535,7 @@ export function decompress(data: Uint8Array) {
 }
 
 // @ts-ignore ?
-const DENO_CORE: DenoCore = Deno[Deno.internal].core
+export const DENO_CORE: DenoCore = Deno[Deno.internal].core
 
 export function denoCoreSerialize(data: unknown) {
   return DENO_CORE.serialize(beforeSerialize(data))
@@ -545,52 +545,6 @@ export function denoCoreDeserialize<T>(
   serialized: Uint8Array,
 ) {
   return afterDeserialize(DENO_CORE.deserialize(serialized)) as T
-}
-
-const KVU64_KEY = "__kvu64__"
-
-export function beforeSerialize(value: unknown): unknown {
-  if (value instanceof Deno.KvU64) {
-    return { [KVU64_KEY]: value.value }
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((val) => beforeSerialize(val))
-  }
-
-  if (isKvObject(value)) {
-    return Object.fromEntries(
-      Object.entries(value as KvObject).map((
-        [key, val],
-      ) => [key, beforeSerialize(val)]),
-    )
-  }
-
-  return value
-}
-
-export function afterDeserialize(value: unknown): unknown {
-  if (isKvObject(value)) {
-    const val = value as KvObject
-
-    if (KVU64_KEY in val) {
-      return new Deno.KvU64(val[KVU64_KEY] as bigint)
-    }
-
-    return Object.fromEntries(
-      Object.entries(val).map(([k, v]) => [k, afterDeserialize(v)]),
-    )
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((v) => afterDeserialize(v))
-  }
-
-  return value
-}
-
-export function isDeployRuntime() {
-  return Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined
 }
 
 type JSONError = {
@@ -623,6 +577,50 @@ enum TypeKey {
   DataView = "__dataview__",
   Error = "__error__",
   NaN = "__nan__",
+}
+
+export function beforeSerialize(value: unknown): unknown {
+  if (value instanceof Deno.KvU64) {
+    return { [TypeKey.KvU64]: value.value }
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((val) => beforeSerialize(val))
+  }
+
+  if (isKvObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value as KvObject).map((
+        [key, val],
+      ) => [key, beforeSerialize(val)]),
+    )
+  }
+
+  return value
+}
+
+export function afterDeserialize(value: unknown): unknown {
+  if (isKvObject(value)) {
+    const val = value as KvObject
+
+    if (TypeKey.KvU64 in val) {
+      return new Deno.KvU64(val[TypeKey.KvU64] as bigint)
+    }
+
+    return Object.fromEntries(
+      Object.entries(val).map(([k, v]) => [k, afterDeserialize(v)]),
+    )
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((v) => afterDeserialize(v))
+  }
+
+  return value
+}
+
+export function isDeployRuntime() {
+  return Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined
 }
 
 /**
