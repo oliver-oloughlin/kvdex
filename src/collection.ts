@@ -993,7 +993,7 @@ export class Collection<
     )
   }
 
-  /**
+    /**
    * Adds multiple documents to the KV store with generated ids.
    *
    * @example
@@ -1149,6 +1149,33 @@ export class Collection<
       (doc) => doc,
       options,
     )
+  }
+
+  /**
+   * Retrieves one document from the KV store according to the given options.
+   *
+   * If no options are given, the first document in the collection is retreived.
+   * 
+   * @example
+   * ```ts
+   * // Get the first user
+   * const { result } = await db.users.getOne()
+   *
+   * // Get the first user with username that starts with "a"
+   * const { result } = await db.users.getOne({
+   *   filter: doc => doc.value.username.startsWith("a")
+   * })
+   * ```
+   *
+   * @param options - List options, optional.
+   * @returns A promise that resovles to the retreived document
+   */
+  async getOne(options?: ListOptions<Document<TOutput>>) {
+    const { result } = this.getMany({ ...options, limit: 1 })
+
+    if (!result.length) return null
+
+    return { result: result[0] }
   }
 
   /**
