@@ -33,6 +33,7 @@ import type {
   SetOptions,
   UpdateData,
   UpdateManyOptions,
+  UpdateOneOptions,
   UpdateOptions,
   UpdateStrategy,
   UpsertInput,
@@ -993,7 +994,58 @@ export class Collection<
     )
   }
 
-    /**
+  /**
+   * Update the value of one existing documents in the collection.
+   *
+   * @example
+   * ```ts
+   * // Updates the first user document and sets name = 67
+   * await db.users.updateMany({ age: 67 })
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Updates the first user where age > 20, using shallow merge
+   * await db.users.updateOne({ age: 67 }, {
+   *   filter: (doc) => doc.value.age > 20,
+   *   strategy: "merge-shallow"
+   * })
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Finds the first user with username `april`, and sets age to 21
+   * // Attempts to create a user with `age: 21` if it doesn't exist
+   * // (but fails if type validations require any other properties)
+   * const { result } = await db.users.updateOne({ age: 21 }, {
+   *   filter: (doc) => doc.value.username == "april",
+   *   upsert: true
+   * })
+   * ```
+   *
+   * @param value - Updated value to be inserted into documents.
+   * @param options - Update many options, optional.
+   * @returns Promise resolving to an object containining result.
+   */
+  async updateOne(value, options?: UpdateOneOptions<Document<TOutput>>) {
+    const { result: target } = this.getOne(options)
+
+    if (target?.id) {
+      const { result } = await this.update(target.id, value)
+
+      return result
+    }
+
+    if (options.upsert) {
+      const { result } = await this.addOne(value)
+
+      return result
+    }
+
+    return null
+  }
+
+  /**
    * Adds multiple documents to the KV store with generated ids.
    *
    * @example
