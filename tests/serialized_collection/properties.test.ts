@@ -28,11 +28,11 @@ Deno.test("serialized_collection - properties", async (t) => {
     await useKv((kv) => {
       const db = kvdex(kv, {
         users1: collection(model<User>(), {
-          serialize: "auto",
+          serialize: "json",
           idGenerator: () => Math.random(),
         }),
         users2: collection(model<User>(), {
-          serialize: "auto",
+          serialize: "json",
           idGenerator: (data) => data.username,
         }),
       })

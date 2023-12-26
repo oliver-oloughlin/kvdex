@@ -160,7 +160,7 @@ const kv = await Deno.openKv()
 const db = kvdex(kv, {
   numbers: collection(model<number>()),
   serializedStrings: collection(model<string>(), {
-    serialize: "auto"
+    serialize: "json"
   }),
   users: collection(UserModel, {
     history: true,
@@ -182,6 +182,9 @@ definitions. Collections can hold any type adhering to KvValue. Indexing can be
 specified for collections of objects, while a custom id generator and
 serialization can be set for all collections, in addition to enabling version
 history. The default id generator is `ulid()` from Deno's standard library.
+
+**Note:** Index values are always serialized, using JSON-serialization by
+default.
 
 ## Collection Methods
 
@@ -752,11 +755,12 @@ db.numbers.watchMany(["id1", "id2", "id3"], (docs) => {
 Serialized collections can store much larger sized data by serializaing,
 compresing and splitting the data across multiple KV entries. There is a
 tradeoff between speed and storage efficiency. Custom serialize and compress
-functions can be set through the collection options. Setting the serialize
-option to "auto" picks between the Deno core serializer and custom json
-serializer depending on being run in the standard Deno runtime or on Deploy
-(uses the slower json serializer on Deploy as Deno core is not exposed).
-Alternatively, the serialize option can be set to specify between core or json.
+functions can be set through the collection options. The serialize option can be
+set to either "core" for the Deno Core internal serializer, or to "json" for
+JSON serialization, which is slower but works on Deno Deploy as well.
+Alternatively, specific serialize, deserialize, compress and decompress
+functions can be set, which allows you to choose the serialize and compress
+strategy of your choosing.
 
 ```ts
 import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
@@ -770,13 +774,10 @@ type LargeData = {
 const kv = await Deno.openKv()
 const db = kvdex(kv, {
   users: collection(model<LargeData>(), {
-    // Picks default serialize/compress
-    serialize: "auto",
-
     // Use Deno core serializer
     serialize: "core",
 
-    // Use json serializer
+    // Use JSON serializer
     serialize: "json",
 
     // Set custom serialize/compress functions

@@ -17,7 +17,7 @@ Deno.test("db - wipe", async (t) => {
             },
           }),
           s_users: collection(model<User>(), {
-            serialize: "auto",
+            serialize: "json",
             history: true,
           }),
           u64s: collection(model<Deno.KvU64>(), {
