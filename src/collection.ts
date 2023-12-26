@@ -47,13 +47,11 @@ import {
   createListSelector,
   decompress,
   deleteIndices,
-  DENO_CORE,
   denoCoreDeserialize,
   denoCoreSerialize,
   extendKey,
   generateId,
   getDocumentId,
-  isDeployRuntime,
   isKvObject,
   jsonDeserialize,
   jsonSerialize,
@@ -94,7 +92,7 @@ import { concat, deepMerge, ulid } from "./deps.ts"
  *   numbers: collection(model<number>()),
  *   users: collection(model<User>(), {
  *     idGenerator: () => crypto.randomUUID(),
- *     serialized: true,
+ *     serialize: "json",
  *     indices: {
  *       username: "primary",
  *       age: "secondary"
@@ -224,24 +222,7 @@ export class Collection<
     // Set serialization
     this._isSerialized = !!opts?.serialize
 
-    const isDeploy = isDeployRuntime()
-
-    const defaultSerialize = isDeploy || !DENO_CORE?.serialize
-      ? jsonSerialize
-      : denoCoreSerialize ?? jsonSerialize
-
-    const defaultDeserialize = isDeploy || !DENO_CORE?.serialize
-      ? jsonDeserialize
-      : denoCoreDeserialize
-
-    if (opts?.serialize === "auto") {
-      this._serializer = {
-        serialize: defaultSerialize,
-        deserialize: defaultDeserialize,
-        compress,
-        decompress,
-      }
-    } else if (opts?.serialize === "core") {
+    if (opts?.serialize === "core") {
       this._serializer = {
         serialize: denoCoreSerialize,
         deserialize: denoCoreDeserialize,
@@ -257,8 +238,8 @@ export class Collection<
       }
     } else {
       this._serializer = {
-        serialize: defaultSerialize,
-        deserialize: defaultDeserialize,
+        serialize: jsonSerialize,
+        deserialize: jsonDeserialize,
         compress,
         decompress,
         ...opts?.serialize,

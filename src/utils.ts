@@ -535,7 +535,7 @@ export function decompress(data: Uint8Array) {
 }
 
 // @ts-ignore ?
-export const DENO_CORE: DenoCore = Deno[Deno.internal].core
+const DENO_CORE: DenoCore = Deno[Deno.internal].core
 
 export function denoCoreSerialize(data: unknown) {
   return DENO_CORE.serialize(beforeSerialize(data))
@@ -617,10 +617,6 @@ export function afterDeserialize(value: unknown): unknown {
   }
 
   return value
-}
-
-export function isDeployRuntime() {
-  return Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined
 }
 
 /**
