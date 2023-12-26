@@ -373,6 +373,10 @@ export type ListOptions<T> = Deno.KvListOptions & {
   endId?: KvId
 }
 
+export type HandleManyOptions<T> = ListOptions<T> & {
+  resultLimit?: number
+}
+
 export type AtomicBatchOptions = {
   /** Batch size of atomic operations where applicable */
   atomicBatchSize?: number

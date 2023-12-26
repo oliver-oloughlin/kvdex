@@ -7,6 +7,7 @@ import type {
   EnqueueOptions,
   FindManyOptions,
   FindOptions,
+  HandleManyOptions,
   HistoryEntry,
   IdempotentListener,
   IdGenerator,
@@ -1949,7 +1950,7 @@ export class Collection<
   protected async handleMany<const T>(
     prefixKey: KvKey,
     fn: (doc: Document<TOutput>) => T,
-    options: ListOptions<Document<TOutput>> | undefined,
+    options: HandleManyOptions<Document<TOutput>> | undefined,
   ) {
     // Create list iterator with given options
     const selector = createListSelector(prefixKey, options)
@@ -1960,6 +1961,7 @@ export class Collection<
     const docs: Document<TOutput>[] = []
     const result: Awaited<T>[] = []
     const errors: unknown[] = []
+    const resultLimit = options?.resultLimit
 
     // Loop over each document entry
     let count = 0
@@ -1970,6 +1972,11 @@ export class Collection<
 
       if (count <= offset) {
         continue
+      }
+
+      // Check if result limit reached
+      if (resultLimit && result.length >= resultLimit) {
+        break
       }
 
       // Construct document from entry
