@@ -1028,18 +1028,14 @@ export class Collection<
    * @returns Promise resolving to an object containining result.
    */
   async updateOne(value, options?: UpdateOneOptions<Document<TOutput>>) {
-    const { result: target } = this.getOne(options)
+    const target = this.getOne(options)
 
     if (target?.id) {
-      const { result } = await this.update(target.id, value)
-
-      return result
+      return await this.update(target.id, value)
     }
 
     if (options.upsert) {
-      const { result } = await this.addOne(value)
-
-      return result
+      return await this.addOne(value)
     }
 
     return null
@@ -1223,11 +1219,11 @@ export class Collection<
    * @returns A promise that resovles to the retreived document
    */
   async getOne(options?: ListOptions<Document<TOutput>>) {
-    const { result } = this.getMany({ ...options, limit: 1 })
-
-    if (!result.length) return null
-
-    return { result: result[0] }
+    return await this.handleMany({
+      ...options,
+      limit: null,
+      resultLimit: 1
+    })
   }
 
   /**
