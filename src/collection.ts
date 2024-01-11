@@ -33,7 +33,6 @@ import type {
   SetOptions,
   UpdateData,
   UpdateManyOptions,
-  UpdateOneOptions,
   UpdateOptions,
   UpdateStrategy,
   UpsertInput,
@@ -1012,34 +1011,21 @@ export class Collection<
    * })
    * ```
    *
-   * @example
-   * ```ts
-   * // Finds the first user with username `april`, and sets age to 21
-   * // Attempts to create a user with `age: 21` if it doesn't exist
-   * // (but fails if type validations require any other properties)
-   * const { result } = await db.users.updateOne({ age: 21 }, {
-   *   filter: (doc) => doc.value.username == "april",
-   *   upsert: true
-   * })
-   * ```
-   *
    * @param value - Updated value to be inserted into documents.
    * @param options - Update many options, optional.
    * @returns Promise resolving to an object containining result.
    */
 
-  async updateOne(value, options?: UpdateOneOptions<Document<TOutput>>) {
+  async updateOne(value, options?: UpdateManyOptions<Document<TOutput>>) {
     const doc = await this.getOne(options)
 
-    if (doc?.id) {
+    if (doc) {
       return await this.updateDocument(doc, value, options)
     }
 
-    if (options?.upsert) {
-      return await this.add(value)
+    return {
+      ok: false
     }
-
-    return null
   }
 
   /**
@@ -1221,11 +1207,13 @@ export class Collection<
    */
   async getOne(options?: ListOptions<Document<TOutput>>) {
     // Get and return one document
-    return await this.handleMany(
+    const { result } = await this.handleMany(
       this._keys.id,
       (doc) => doc,
       { ...options, resultLimit: 1 }
     )
+    
+    return result.at(0) ?? null
   }
 
   /**

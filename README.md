@@ -412,7 +412,7 @@ const { result } = await db.users.updateMany({ username: "oliver" })
 
 ### updateOne()
 
-Update the first matching document from the KV store. It optionally takes the same `options` argument as `updateMany()` but also allows an `upsert` option, which will create a new document containing the update contents if no existing match is found. If no options are given, `getOne()` will retrieve the first document in the collection.
+Update the first matching document from the KV store. It optionally takes the same `options` argument as `updateMany()`. If no options are given, `updateOne()` will update the first document in the collection.
 
 ```ts
 // Updates the first user document and sets name = 67
@@ -424,16 +424,6 @@ await db.users.updateOne({ age: 67 })
 await db.users.updateOne({ age: 67 }, {
   filter: (doc) => doc.value.age > 20,
   strategy: "merge-shallow"
-})
-```
-
-```ts
-// Finds the first user with username `april`, and sets age to 21
-// Attempts to create a user with `age: 21` if it doesn't exist
-// (but fails if type validations require any other properties)
-const { result } = await db.users.updateOne({ age: 21 }, {
-  filter: (doc) => doc.value.username == "april",
-  upsert: true
 })
 ```
 

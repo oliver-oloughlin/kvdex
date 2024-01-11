@@ -377,11 +377,6 @@ export type HandleManyOptions<T> = ListOptions<T> & {
   resultLimit?: number
 }
 
-export type UpdateOneOptions<T> = UpdateManyOptions<T> &
-  HandleManyOptions<T> & {
-    upsert?: boolean
-  }
-
 export type AtomicBatchOptions = {
   /** Batch size of atomic operations where applicable */
   atomicBatchSize?: number
