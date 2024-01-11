@@ -412,11 +412,11 @@ const { result } = await db.users.updateMany({ username: "oliver" })
 
 ### updateOne()
 
-Update the first matching document from the KV store. As with `getOne()`, this takes the same optional `options` argument as `getMany()`, but does not make use of `limit`. `updateOne()` also allows an `upsert` option, which will create a new document containing the update contents if no existing match is found. If no options are given, `getOne()` will retrieve the first document in the collection.
+Update the first matching document from the KV store. It optionally takes the same `options` argument as `updateMany()` but also allows an `upsert` option, which will create a new document containing the update contents if no existing match is found. If no options are given, `getOne()` will retrieve the first document in the collection.
 
 ```ts
 // Updates the first user document and sets name = 67
-await db.users.updateMany({ age: 67 })
+await db.users.updateOne({ age: 67 })
 ```
 
 ```ts
@@ -588,7 +588,7 @@ const { result } = await db.users.getMany({
 
 ### getOne()
 
-Retrieve the first matching document from the KV store. This takes the same optional `options` argument as `getMany()`, but does not make use of `limit` as it returns only a single result. If no options are given, `getOne()` will retrieve the first document in the collection.
+Retrieve the first matching document from the KV store. It optionally takes the same `options` argument as `getMany()`. If no options are given, `getOne()` will retrieve the first document in the collection.
 
 ```ts
 // Retrieves the first user document

@@ -1028,10 +1028,10 @@ export class Collection<
    * @returns Promise resolving to an object containining result.
    */
   async updateOne(value, options?: UpdateOneOptions<Document<TOutput>>) {
-    const target = this.getOne(options)
+    const doc = this.getOne(options)
 
-    if (target?.id) {
-      return await this.update(target.id, value)
+    if (doc?.id) {
+      return await this.updateDocument(doc, value, options)
     }
 
     if (options.upsert) {
@@ -1219,11 +1219,7 @@ export class Collection<
    * @returns A promise that resovles to the retreived document
    */
   async getOne(options?: ListOptions<Document<TOutput>>) {
-    return await this.handleMany({
-      ...options,
-      limit: null,
-      resultLimit: 1
-    })
+    return await this.handleMany({ ...options, resultLimit: 1 })
   }
 
   /**
