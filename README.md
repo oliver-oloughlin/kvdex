@@ -412,7 +412,9 @@ const { result } = await db.users.updateMany({ username: "oliver" })
 
 ### updateOne()
 
-Update the first matching document from the KV store. It optionally takes the same `options` argument as `updateMany()`. If no options are given, `updateOne()` will update the first document in the collection.
+Update the first matching document from the KV store. It optionally takes the
+same `options` argument as `updateMany()`. If no options are given,
+`updateOne()` will update the first document in the collection.
 
 ```ts
 // Updates the first user document and sets name = 67
@@ -423,7 +425,7 @@ await db.users.updateOne({ age: 67 })
 // Updates the first user where age > 20, using shallow merge
 await db.users.updateOne({ age: 67 }, {
   filter: (doc) => doc.value.age > 20,
-  strategy: "merge-shallow"
+  strategy: "merge-shallow",
 })
 ```
 
@@ -578,7 +580,9 @@ const { result } = await db.users.getMany({
 
 ### getOne()
 
-Retrieve the first matching document from the KV store. It optionally takes the same `options` argument as `getMany()`. If no options are given, `getOne()` will retrieve the first document in the collection.
+Retrieve the first matching document from the KV store. It optionally takes the
+same `options` argument as `getMany()`. If no options are given, `getOne()` will
+retrieve the first document in the collection.
 
 ```ts
 // Retrieves the first user document

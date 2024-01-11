@@ -1018,7 +1018,7 @@ export class Collection<
 
   async updateOne(
     value: UpdateData<TOutput, UpdateStrategy>,
-    options?: UpdateManyOptions<Document<TOutput>>
+    options?: UpdateManyOptions<Document<TOutput>>,
   ) {
     const doc = await this.getOne(options)
 
@@ -1027,7 +1027,7 @@ export class Collection<
     }
 
     return {
-      ok: false
+      ok: false,
     }
   }
 
@@ -1193,7 +1193,7 @@ export class Collection<
    * Retrieves one document from the KV store according to the given options.
    *
    * If no options are given, the first document in the collection is retreived.
-   * 
+   *
    * @example
    * ```ts
    * // Get the first user
@@ -1213,9 +1213,9 @@ export class Collection<
     const { result } = await this.handleMany(
       this._keys.id,
       (doc) => doc,
-      { ...options, resultLimit: 1 }
+      { ...options, resultLimit: 1 },
     )
-    
+
     return result.at(0) ?? null
   }
 
