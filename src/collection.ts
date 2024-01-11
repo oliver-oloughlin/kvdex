@@ -1027,15 +1027,16 @@ export class Collection<
    * @param options - Update many options, optional.
    * @returns Promise resolving to an object containining result.
    */
+
   async updateOne(value, options?: UpdateOneOptions<Document<TOutput>>) {
-    const doc = this.getOne(options)
+    const doc = await this.getOne(options)
 
     if (doc?.id) {
       return await this.updateDocument(doc, value, options)
     }
 
-    if (options.upsert) {
-      return await this.addOne(value)
+    if (options?.upsert) {
+      return await this.add(value)
     }
 
     return null
@@ -1219,7 +1220,12 @@ export class Collection<
    * @returns A promise that resovles to the retreived document
    */
   async getOne(options?: ListOptions<Document<TOutput>>) {
-    return await this.handleMany({ ...options, resultLimit: 1 })
+    // Get and return one document
+    return await this.handleMany(
+      this._keys.id,
+      (doc) => doc,
+      { ...options, resultLimit: 1 }
+    )
   }
 
   /**

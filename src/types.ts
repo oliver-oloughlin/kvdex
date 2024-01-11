@@ -377,8 +377,8 @@ export type HandleManyOptions<T> = ListOptions<T> & {
   resultLimit?: number
 }
 
-export type UpdateOneOptions<T> = UpdateManyOptions &
-  HandleManyOptions & {
+export type UpdateOneOptions<T> = UpdateManyOptions<T> &
+  HandleManyOptions<T> & {
     upsert?: boolean
   }
 
