@@ -1016,7 +1016,10 @@ export class Collection<
    * @returns Promise resolving to an object containining result.
    */
 
-  async updateOne(value, options?: UpdateManyOptions<Document<TOutput>>) {
+  async updateOne(
+    value: UpdateData<TOutput, UpdateStrategy>,
+    options?: UpdateManyOptions<Document<TOutput>>
+  ) {
     const doc = await this.getOne(options)
 
     if (doc) {
