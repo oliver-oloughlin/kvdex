@@ -994,6 +994,44 @@ export class Collection<
   }
 
   /**
+   * Update the value of one existing documents in the collection.
+   *
+   * @example
+   * ```ts
+   * // Updates the first user document and sets name = 67
+   * await db.users.updateMany({ age: 67 })
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Updates the first user where age > 20, using shallow merge
+   * await db.users.updateOne({ age: 67 }, {
+   *   filter: (doc) => doc.value.age > 20,
+   *   strategy: "merge-shallow"
+   * })
+   * ```
+   *
+   * @param value - Updated value to be inserted into documents.
+   * @param options - Update many options, optional.
+   * @returns Promise resolving to an object containining result.
+   */
+
+  async updateOne(
+    value: UpdateData<TOutput, UpdateStrategy>,
+    options?: UpdateManyOptions<Document<TOutput>>,
+  ) {
+    const doc = await this.getOne(options)
+
+    if (doc) {
+      return await this.updateDocument(doc, value, options)
+    }
+
+    return {
+      ok: false,
+    }
+  }
+
+  /**
    * Adds multiple documents to the KV store with generated ids.
    *
    * @example
@@ -1149,6 +1187,36 @@ export class Collection<
       (doc) => doc,
       options,
     )
+  }
+
+  /**
+   * Retrieves one document from the KV store according to the given options.
+   *
+   * If no options are given, the first document in the collection is retreived.
+   *
+   * @example
+   * ```ts
+   * // Get the first user
+   * const { result } = await db.users.getOne()
+   *
+   * // Get the first user with username that starts with "a"
+   * const { result } = await db.users.getOne({
+   *   filter: doc => doc.value.username.startsWith("a")
+   * })
+   * ```
+   *
+   * @param options - List options, optional.
+   * @returns A promise that resovles to the retreived document
+   */
+  async getOne(options?: ListOptions<Document<TOutput>>) {
+    // Get and return one document
+    const { result } = await this.handleMany(
+      this._keys.id,
+      (doc) => doc,
+      { ...options, resultLimit: 1 },
+    )
+
+    return result.at(0) ?? null
   }
 
   /**

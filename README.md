@@ -410,6 +410,25 @@ const { result } = await db.users.updateMany({ age: 67 }, {
 const { result } = await db.users.updateMany({ username: "oliver" })
 ```
 
+### updateOne()
+
+Update the first matching document from the KV store. It optionally takes the
+same `options` argument as `updateMany()`. If no options are given,
+`updateOne()` will update the first document in the collection.
+
+```ts
+// Updates the first user document and sets name = 67
+await db.users.updateOne({ age: 67 })
+```
+
+```ts
+// Updates the first user where age > 20, using shallow merge
+await db.users.updateOne({ age: 67 }, {
+  filter: (doc) => doc.value.age > 20,
+  strategy: "merge-shallow",
+})
+```
+
 ### upsert()
 
 Update an existing document by either id or primary index, or set a new document
@@ -533,9 +552,9 @@ await db.users.deleteUndelivered("id")
 
 ### getMany()
 
-Retrieve multiple documents from the KV store. It takes an optional options
+Retrieve multiple documents from the KV store. It takes an optional `options`
 argument that can be used for filtering of documents to be retrieved, and
-pagination. If no options are given, "getMany" will retrieve all documents in
+pagination. If no options are given, `getMany()` will retrieve all documents in
 the collection.
 
 ```ts
@@ -556,6 +575,22 @@ const { result } = await db.users.getMany({
 const { result } = await db.users.getMany({
   limit: 10,
   reverse: true,
+})
+```
+
+### getOne()
+
+Retrieve the first matching document from the KV store. It optionally takes the
+same `options` argument as `getMany()`. If no options are given, `getOne()` will
+retrieve the first document in the collection.
+
+```ts
+// Retrieves the first user document
+const { result } = await db.users.getOne()
+
+// Retrieves the first document where the user's age is above or equal to 18
+const { result } = await db.users.getOne({
+  filter: (doc) => doc.value.age > 18,
 })
 ```
 
