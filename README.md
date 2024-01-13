@@ -13,11 +13,9 @@ _Supported Deno verisons:_ **^1.38.5**
 - CRUD operations for selected and ranged documents with strong typing.
 - Primary (unique) and secondary (non-unique) indexing.
 - Extensible model strategy (Zod supported).
-- Serialized, compressed and segmented storage for large objects that exceed the
-  native size limit.
-- Real-time data watching.
+- Serialized, compressed and segmented storage for large objects.
+- Listen to real-time data updates.
 - Support for pagination and filtering.
-- Intervals and loops built on queues.
 - Message queues at database and collection level with topics.
 - Support for atomic operations.
 
@@ -45,6 +43,7 @@ _Supported Deno verisons:_ **^1.38.5**
     - [updateOne()](#updateone)
     - [updateOneBySecondaryIndex()](#updateonebysecondaryindex)
     - [upsert()](#upsert)
+    - [upsertByPrimaryIndex()](#upsertbyprimaryindex)
     - [delete()](#delete)
     - [deleteByPrimaryIndex()](#deletebyprimaryindex)
     - [deleteBySecondaryIndex()](#deletebysecondaryindex)
@@ -460,13 +459,10 @@ const result = await db.users.updateOneBySecondaryIndex(
 
 ### upsert()
 
-Update an existing document by either id or primary index, or set a new document
-entry if no document with matching id/index exists. When upserting by primary
-index, an id can be optionally specified which will be used when setting a new
-document entry, otherwise an id will be generated.
+Update an existing document by id, or set a new document entry if no matching
+document exists.
 
 ```ts
-// Upsert by id
 const result = await db.users.upsert({
   id: "user_id",
   update: { username: "Chris" },
@@ -482,9 +478,16 @@ const result = await db.users.upsert({
     }
   }
 })
+```
 
-// Upsert by index
-const result = await db.users.upsert({
+### upsertByPrimaryIndex()
+
+Update an existing document by a primary index, or set a new entry if no
+matching document exists. An id can be optionally specified which will be used
+when creating a new document entry.
+
+```ts
+const result = await db.users.upsertByPrimaryIndex({
   index: ["username", "Jack"],
   update: { username: "Chris" },
   set: {
@@ -975,44 +978,46 @@ db.listenQueue(async (data) => {
 
 ### setInterval()
 
-Create an interval built on queues that can run indefinitely or until an exit
-condition is met. Interval defaults to 1 hour if not set, while there is an
-enforced minimum start delay of 1 second to ensure the queue listener is
-registered before the first delivery.
+Create an interval built on queues that can run indefinitely or as long as a
+while condition is met. Interval time is given in milliseconds, and can be set
+by either a static number or dynamically by a function. There is an enforced
+minimum start delay of 1 second to ensure the queue listener is registered
+before the first delivery.
 
 ```ts
-// Will repeat indefinitely with 1 hour interval
-db.setInterval(() => console.log("Hello World!"))
+// Will repeat indefinitely with 1 second interval
+db.setInterval(() => console.log("Hello World!"), 1_000)
 
-// First callback is invoked after a 10 second delay, after that there is a 5 second delay between callbacks
-db.setInterval(() => console.log("I terminate after running 10 times"), {
-  // Delay before the first callback is invoked
-  startDelay: 10_000,
+// First callback starts after a 10 second delay, after that there is a random delay between 0 and 5 seconds
+db.setInterval(
+  () => console.log("I terminate after running 10 times"),
+  () => Math.random() * 5_000,
+  {
+    // Delay before the first callback is invoked
+    startDelay: 10_000,
 
-  // Fixed interval of 5 seconds
-  interval: 5_000,
-
-  // ...or set a dynamic interval
-  interval: ({ count }) => count * 500
-
-  // Count starts at 0, exitOn is run before the current callback
-  exitOn: ({ count }) => count === 10,
-})
+    // Count starts at 0, exitOn is run before the current callback
+    while: ({ count }) => count < 10,
+  },
+)
 ```
 
 ### loop()
 
-Create a loop built on queues that can run indefinitely or until an exit
+Create a loop built on queues that can run indefinitely or as long as a while
 condition is met. In contrast to `setInterval()`, the callback function in a
 loop is run sequentially, meaning the next callback is not enqueued until the
 previous task finishes. There is an enforced minimum start delay of 1 second to
 ensure the queue listener is registered before the first delivery.
 
 ```ts
-// Prints "Hello World!" 10 times, with a 3 second delay between each iteration
+// Sequentially prints "Hello World!" indefinitely with no delay between each iteration
+db.loop(() => console.log("Hello World!"))
+
+// Sequentially prints "Hello World!" 10 times, with a 3 second delay between each iteration
 db.loop(() => console.log("Hello World!"), {
   delay: 3_000,
-  exitOn: ({ count }) => count === 10,
+  while: ({ count }) => count < 10,
 })
 ```
 

@@ -14,21 +14,22 @@ Deno.test("db - setInterval", async (t) => {
         const sleeper2 = createResolver()
         const sleeper3 = createResolver()
 
-        const l1 = db.setInterval(() => count1++, {
-          interval: 10,
-          exitOn: ({ count }) => count === 2,
+        const l1 = db.setInterval(() => count1++, 10, {
+          while: ({ count }) => count < 2,
           onExit: sleeper1.resolve,
         })
 
-        const l2 = db.setInterval(() => count2++, {
-          interval: () => Math.random() * 20,
-          exitOn: ({ first }) => first,
-          onExit: sleeper2.resolve,
-        })
+        const l2 = db.setInterval(
+          () => count2++,
+          () => Math.random() * 20,
+          {
+            while: ({ first }) => !first,
+            onExit: sleeper2.resolve,
+          },
+        )
 
-        const l3 = db.setInterval(() => count3++, {
-          interval: 10,
-          exitOn: ({ interval }) => interval > 0,
+        const l3 = db.setInterval(() => count3++, 10, {
+          while: ({ interval }) => interval <= 0,
           onExit: sleeper3.resolve,
         })
 

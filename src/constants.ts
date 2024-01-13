@@ -23,8 +23,6 @@ export const GET_MANY_KEY_LIMIT = 10
 export const UINT8ARRAY_LENGTH_LIMIT = 65_536
 
 // Defaults
-export const DEFAULT_INTERVAL = 60 * 60 * 1_000 // 1 hour
-
 export const DEFAULT_INTERVAL_RETRY = 10
 
 export const DEFAULT_LOOP_RETRY = 10

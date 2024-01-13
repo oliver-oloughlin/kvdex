@@ -47,16 +47,13 @@ export type DenoCore = {
 /*                    */
 /**********************/
 
-export type SetIntervalOptions = {
-  /**
-   * Static or dynamic interval in milliseconds.
-   *
-   * @default 3_600_000 // Defaults to 1 hour
-   */
-  interval?: number | ((msg: IntervalMessage) => number | Promise<number>)
+export type IntervalSetter =
+  | number
+  | ((msg: IntervalMessage) => number | Promise<number>)
 
-  /** Exit condition used to terminate the interval. */
-  exitOn?: (msg: IntervalMessage) => boolean | Promise<boolean>
+export type SetIntervalOptions = {
+  /** Condition used to determine if the interval should continue running */
+  while?: (msg: IntervalMessage) => boolean | Promise<boolean>
 
   /** Task to be run when terminating the interval, executed after `exitOn()` returns true. */
   onExit?: (msg: IntervalMessage) => unknown
@@ -106,8 +103,8 @@ export type LoopOptions<T> = {
    */
   delay?: number | ((msg: LoopMessage<T>) => number | Promise<number>)
 
-  /** Exit condition used to terminate the loop. */
-  exitOn?: (msg: LoopMessage<T>) => boolean | Promise<boolean>
+  /** Condition used to determine if the loop should continue running */
+  while?: (msg: LoopMessage<T>) => boolean | Promise<boolean>
 
   /** Task to be run when terminating the loop, executed after `exitOn()` returns true. */
   onExit?: (msg: LoopMessage<T>) => unknown
@@ -430,7 +427,13 @@ export type QueueListenerOptions = {
 
 export type WatchOptions = NonNullable<Parameters<Deno.Kv["watch"]>[1]>
 
-export type IdUpsertInput<
+/********************/
+/*                  */
+/*   UPSERT TYPES   */
+/*                  */
+/********************/
+
+export type IdUpsert<
   TInput,
   TOutput extends KvValue,
   TStrategy extends UpdateStrategy | undefined,
@@ -440,13 +443,7 @@ export type IdUpsertInput<
   update: UpdateData<TOutput, TStrategy>
 }
 
-/********************/
-/*                  */
-/*   UPSERT TYPES   */
-/*                  */
-/********************/
-
-export type PrimaryIndexUpsertInput<
+export type PrimaryIndexUpsert<
   TInput,
   TOutput extends KvValue,
   TIndex,
@@ -457,15 +454,6 @@ export type PrimaryIndexUpsertInput<
   set: ParseInputType<TInput, TOutput>
   update: UpdateData<TOutput, TStrategy>
 }
-
-export type UpsertInput<
-  TInput,
-  TOutput extends KvValue,
-  TIndex,
-  TStrategy extends UpdateStrategy | undefined,
-> =
-  | IdUpsertInput<TInput, TOutput, TStrategy>
-  | PrimaryIndexUpsertInput<TInput, TOutput, TIndex, TStrategy>
 
 export type UpsertOptions = UpdateOptions
 

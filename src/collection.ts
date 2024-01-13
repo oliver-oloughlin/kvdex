@@ -11,7 +11,7 @@ import type {
   HistoryEntry,
   IdempotentListener,
   IdGenerator,
-  IdUpsertInput,
+  IdUpsert,
   IndexDataEntry,
   KvId,
   KvKey,
@@ -23,7 +23,7 @@ import type {
   ParseInputType,
   PossibleCollectionOptions,
   PrimaryIndexKeys,
-  PrimaryIndexUpsertInput,
+  PrimaryIndexUpsert,
   QueueHandlers,
   QueueListenerOptions,
   QueueMessageHandler,
@@ -35,7 +35,6 @@ import type {
   UpdateManyOptions,
   UpdateOptions,
   UpdateStrategy,
-  UpsertInput,
   UpsertOptions,
   WatchOptions,
 } from "./types.ts"
@@ -845,15 +844,10 @@ export class Collection<
   }
 
   /**
-   * Update an existing document by either id or primary index, or set a new document
-   * entry if no document with matching id/index exists.
-   *
-   * When upserting by primary index, an id can be optionally specified which
-   * will be used when setting a new document entry, otherwise an id will be generated.
+   * Update an existing document by id, or set a new document entry if no matching document exists.
    *
    * @example
    * ```ts
-   * // Upsert by id
    * const result = await db.users.upsert({
    *   id: "user_id",
    *   update: { username: "Chris" },
@@ -871,10 +865,37 @@ export class Collection<
    * })
    * ```
    *
+   * @param input - Upsert by id input.
+   * @param options - Upsert options.
+   * @returns A promise resolving to either CommitResult or CommitError.
+   */
+  async upsert<
+    const TUpsertOptions extends UpsertOptions,
+  >(
+    input: IdUpsert<TInput, TOutput, TUpsertOptions["strategy"]>,
+    options?: TUpsertOptions,
+  ) {
+    const updateCr = await this.update(input.id, input.update, options)
+
+    if (updateCr.ok) {
+      return updateCr
+    }
+
+    // Set new entry with given id
+    return await this.set(input.id, input.set, {
+      ...options,
+      overwrite: false,
+    })
+  }
+
+  /**
+   * Update an existing document by a primary index, or set a new entry if no matching document exists.
+   *
+   * An id can be optionally specified which will be used when creating a new document entry.
+   *
    * @example
    * ```ts
-   * // Upsert by index
-   * const result = await db.users.upsert({
+   * const result = await db.users.upsertByPrimaryIndex({
    *   index: ["username", "Jack"],
    *   update: { username: "Chris" },
    *   set: {
@@ -891,67 +912,46 @@ export class Collection<
    * })
    * ```
    *
-   * @param input - Upsert input, including id or index, update data and set data.
+   * @param input - Upsert by primary index input.
    * @param options - Upsert options.
    * @returns A promise resolving to either CommitResult or CommitError.
    */
-  async upsert<
+  async upsertByPrimaryIndex<
     const TIndex extends PrimaryIndexKeys<TOutput, TOptions>,
     const TUpsertOptions extends UpsertOptions,
   >(
-    input: UpsertInput<TInput, TOutput, TIndex, TUpsertOptions["strategy"]>,
+    input: PrimaryIndexUpsert<
+      TInput,
+      TOutput,
+      TIndex,
+      TUpsertOptions["strategy"]
+    >,
     options?: TUpsertOptions,
   ) {
-    // Check if is id or primary index upsert
-    if ((input as any).index !== undefined) {
-      const inp = input as PrimaryIndexUpsertInput<
-        TInput,
-        TOutput,
-        TIndex,
-        TUpsertOptions["strategy"]
-      >
+    // First attempt update
+    const updateCr = await this.updateByPrimaryIndex(
+      ...input.index,
+      input.update,
+      options,
+    )
 
-      // First attempt update
-      const updateCr = await this.updateByPrimaryIndex(
-        ...inp.index,
-        inp.update,
-        options,
-      )
+    if (updateCr.ok) {
+      return updateCr
+    }
 
-      if (updateCr.ok) {
-        return updateCr
-      }
-
-      // If id is present, set new entry with given id
-      if (inp.id) {
-        return await this.set(inp.id, inp.set, {
-          ...options,
-          overwrite: false,
-        })
-      }
-
-      // If no id, set new entry with generated id
-      return await this.add(inp.set, {
-        ...options,
-        overwrite: false,
-      })
-    } else {
-      // First attempt update
-      const id =
-        (input as IdUpsertInput<TInput, TOutput, TUpsertOptions["strategy"]>).id
-
-      const updateCr = await this.update(id, input.update, options)
-
-      if (updateCr.ok) {
-        return updateCr
-      }
-
-      // Set new entry with given id
-      return await this.set(id, input.set, {
+    // If id is present, set new entry with given id
+    if (input.id) {
+      return await this.set(input.id, input.set, {
         ...options,
         overwrite: false,
       })
     }
+
+    // If no id, add new entry with generated id
+    return await this.add(input.set, {
+      ...options,
+      overwrite: false,
+    })
   }
 
   /**
