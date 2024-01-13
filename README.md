@@ -42,6 +42,8 @@ _Supported Deno verisons:_ **^1.38.5**
     - [updateByPrimaryIndex()](#updatebyprimaryindex)
     - [updateBySecondaryIndex()](#updatebysecondaryindex)
     - [updateMany()](#updatemany)
+    - [updateOne()](#updateone)
+    - [updateOneBySecondaryIndex()](#updateonebysecondaryindex)
     - [upsert()](#upsert)
     - [delete()](#delete)
     - [deleteByPrimaryIndex()](#deletebyprimaryindex)
@@ -50,6 +52,8 @@ _Supported Deno verisons:_ **^1.38.5**
     - [deleteHistory()](#deletehistory)
     - [deleteUndelivered()](#deleteundelivered)
     - [getMany()](#getmany)
+    - [getOne()](#getone)
+    - [getOneBySecondaryIndex()](#getonebysecondaryindex)
     - [forEach()](#foreach)
     - [forEachBySecondaryIndex()](#foreachbysecondaryindex)
     - [map()](#map)
@@ -417,16 +421,41 @@ same `options` argument as `updateMany()`. If no options are given,
 `updateOne()` will update the first document in the collection.
 
 ```ts
-// Updates the first user document and sets name = 67
-await db.users.updateOne({ age: 67 })
+// Updates the first user document and sets age = 67
+const result = await db.users.updateOne({ age: 67 })
 ```
 
 ```ts
 // Updates the first user where age > 20, using shallow merge
-await db.users.updateOne({ age: 67 }, {
+const result = await db.users.updateOne({ age: 67 }, {
   filter: (doc) => doc.value.age > 20,
   strategy: "merge-shallow",
 })
+```
+
+### updateOneBySecondaryIndex()
+
+Update the first matching document from the KV store by a secondary index. It
+optionally takes the same `options` argument as `updateMany()`. If no options
+are given, `updateOneBySecondaryIndex()` will update the first document in the
+collection by the given index value.
+
+```ts
+// Updates the first user document where age = 20 and sets age = 67
+const result = await db.users.updateOneBySecondaryIndex("age", 20, { age: 67 })
+```
+
+```ts
+// Updates the first user where age = 20 and username starts with "a", using shallow merge
+const result = await db.users.updateOneBySecondaryIndex(
+  "age",
+  20,
+  { age: 67 },
+  {
+    filter: (doc) => doc.value.username.startsWith("a"),
+    strategy: "merge-shallow",
+  },
+)
 ```
 
 ### upsert()
@@ -586,11 +615,28 @@ retrieve the first document in the collection.
 
 ```ts
 // Retrieves the first user document
-const { result } = await db.users.getOne()
+const user = await db.users.getOne()
 
-// Retrieves the first document where the user's age is above or equal to 18
-const { result } = await db.users.getOne({
+// Retrieves the first user where the user's age is above or equal to 18
+const user = await db.users.getOne({
   filter: (doc) => doc.value.age > 18,
+})
+```
+
+### getOneBySecondaryIndex()
+
+Retrieve the first matching document from the KV store by a secondary index. It
+optionally takes the same `options` argument as `getMany()`. If no options are
+given, `getOneBySecondaryIndex()` will retrieve the first document in the
+collection by the given index value.
+
+```ts
+// Retrieves the first user document where age = 20
+const user = await db.users.getOneBySecondaryIndex("age", 20)
+
+// Retrieves the first user where age = 20 and username starts with "a"
+const user = await db.users.getOneBySecondaryIndex("age", 20, {
+  filter: (doc) => doc.value.username.startsWith("a"),
 })
 ```
 
