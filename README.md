@@ -13,9 +13,8 @@ _Supported Deno verisons:_ **^1.38.5**
 - CRUD operations for selected and ranged documents with strong typing.
 - Primary (unique) and secondary (non-unique) indexing.
 - Extensible model strategy (Zod supported).
-- Serialized, compressed and segmented storage for large objects that exceed the
-  native size limit.
-- Listen for real-time data updates.
+- Serialized, compressed and segmented storage for large objects.
+- Listen to real-time data updates.
 - Support for pagination and filtering.
 - Message queues at database and collection level with topics.
 - Support for atomic operations.
