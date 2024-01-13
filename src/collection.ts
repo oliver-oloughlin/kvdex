@@ -46,6 +46,7 @@ import {
   createHandlerId,
   createListOptions,
   createListSelector,
+  createSecondaryIndexKeyPrefix,
   decompress,
   deleteIndices,
   denoCoreDeserialize,
@@ -994,39 +995,95 @@ export class Collection<
   }
 
   /**
-   * Update the value of one existing documents in the collection.
+   * Update the value of one existing document in the collection.
    *
    * @example
    * ```ts
    * // Updates the first user document and sets name = 67
-   * await db.users.updateMany({ age: 67 })
+   * const result = await db.users.updateOne({ age: 67 })
    * ```
    *
    * @example
    * ```ts
    * // Updates the first user where age > 20, using shallow merge
-   * await db.users.updateOne({ age: 67 }, {
+   * const result = await db.users.updateOne({ age: 67 }, {
    *   filter: (doc) => doc.value.age > 20,
    *   strategy: "merge-shallow"
    * })
    * ```
    *
-   * @param value - Updated value to be inserted into documents.
+   * @param data - Updated data to be inserted into documents.
    * @param options - Update many options, optional.
-   * @returns Promise resolving to an object containining result.
+   * @returns Promise resolving to either a commit result or commit error object.
    */
-
-  async updateOne(
-    value: UpdateData<TOutput, UpdateStrategy>,
-    options?: UpdateManyOptions<Document<TOutput>>,
+  async updateOne<
+    const T extends UpdateManyOptions<Document<TOutput>>,
+  >(
+    data: UpdateData<TOutput, T["strategy"]>,
+    options?: T,
   ) {
-    const doc = await this.getOne(options)
+    // Update a single document
+    const { result } = await this.handleMany(
+      this._keys.id,
+      (doc) => this.updateDocument(doc, data, options),
+      { ...options, resultLimit: 1 },
+    )
 
-    if (doc) {
-      return await this.updateDocument(doc, value, options)
+    // Return first result, or commit error object if not present
+    return result.at(0) ?? {
+      ok: false,
     }
+  }
 
-    return {
+  /**
+   * Update the value of one existing document in the collection by a secondary index.
+   *
+   * @example
+   * ```ts
+   * // Updates the first user with age = 20 and sets age = 67
+   * const result = await db.users.updateOneBySecondaryIndex("age", 20, { age: 67 })
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Updates the first user where age = 20 and username starts with "a", using shallow merge
+   * const result = await db.users.updateOne("age", 20, { age: 67 }, {
+   *   filter: (doc) => doc.value.username.startsWith("a"),
+   *   strategy: "merge-shallow"
+   * })
+   * ```
+   *
+   * @param index - Index.
+   * @param value - Index value.
+   * @param data - Updated data to be inserted into documents.
+   * @param options - Update many options, optional.
+   * @returns Promise resolving to either a commit result or commit error object.
+   */
+  async updateOneBySecondaryIndex<
+    const T extends UpdateManyOptions<Document<TOutput>>,
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, TOutput>,
+    data: UpdateData<TOutput, T["strategy"]>,
+    options?: T,
+  ) {
+    // Create prefix key
+    const prefixKey = createSecondaryIndexKeyPrefix(
+      index,
+      value as KvValue,
+      this,
+    )
+
+    // Update a single document
+    const { result } = await this.handleMany(
+      prefixKey,
+      (doc) => this.updateDocument(doc, data, options),
+      { ...options, resultLimit: 1 },
+    )
+
+    // Return first result, or commit error object if not present
+    return result.at(0) ?? {
       ok: false,
     }
   }
@@ -1197,10 +1254,13 @@ export class Collection<
    * @example
    * ```ts
    * // Get the first user
-   * const { result } = await db.users.getOne()
+   * const user = await db.users.getOne()
+   * ```
    *
+   * @example
+   * ```ts
    * // Get the first user with username that starts with "a"
-   * const { result } = await db.users.getOne({
+   * const user = await db.users.getOne({
    *   filter: doc => doc.value.username.startsWith("a")
    * })
    * ```
@@ -1209,13 +1269,63 @@ export class Collection<
    * @returns A promise that resovles to the retreived document
    */
   async getOne(options?: ListOptions<Document<TOutput>>) {
-    // Get and return one document
+    // Get result list with limit of one item
     const { result } = await this.handleMany(
       this._keys.id,
       (doc) => doc,
       { ...options, resultLimit: 1 },
     )
 
+    // Return first result item, or null if not present
+    return result.at(0) ?? null
+  }
+
+  /**
+   * Retrieves one document from the KV store by a secondary index and according to the given options.
+   *
+   * If no options are given, the first document in the collection by the given index is retreived.
+   *
+   * @example
+   * ```ts
+   * // Get the first user with age = 69
+   * const user = await db.users.getOneBySecondaryIndex("age", 69)
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Get the first user with age = 40 and username that starts with "a"
+   * const user = await db.users.getOneBySecondaryIndex("age", 40, {
+   *   filter: doc => doc.value.username.startsWith("a")
+   * })
+   * ```
+   *
+   * @param index - Index.
+   * @param value - Index value.
+   * @param options - List options, optional.
+   * @returns A promise resolving to either a document or null.
+   */
+  async getOneBySecondaryIndex<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    index: K,
+    value: CheckKeyOf<K, TOutput>,
+    options?: ListOptions<Document<TOutput>>,
+  ) {
+    // Create prefix key
+    const prefixKey = createSecondaryIndexKeyPrefix(
+      index,
+      value as KvValue,
+      this,
+    )
+
+    // Get result list with limit of one item
+    const { result } = await this.handleMany(
+      prefixKey,
+      (doc) => doc,
+      { ...options, resultLimit: 1 },
+    )
+
+    // Return first result item, or null if not present
     return result.at(0) ?? null
   }
 
@@ -1283,15 +1393,11 @@ export class Collection<
     fn: (doc: Document<TOutput>) => unknown,
     options?: UpdateManyOptions<Document<TOutput>>,
   ) {
-    // Serialize and compress index value
-    const serialized = this._serializer.serialize(value)
-    const compressed = this._serializer.compress(serialized)
-
     // Create prefix key
-    const prefixKey = extendKey(
-      this._keys.secondaryIndex,
-      index as KvId,
-      compressed,
+    const prefixKey = createSecondaryIndexKeyPrefix(
+      index,
+      value as KvValue,
+      this,
     )
 
     // Execute callback function for each document entry
@@ -2032,25 +2138,26 @@ export class Collection<
     const resultLimit = options?.resultLimit
 
     // Loop over each document entry
-    let count = 0
+    let count = -1
     const offset = options?.offset ?? 0
     for await (const entry of iter) {
-      // Skip by offset
+      // Increment count
       count++
 
-      if (count <= offset) {
+      // Skip by offset
+      if (count < offset) {
         continue
       }
 
-      // Check if result limit reached
-      if (resultLimit && result.length >= resultLimit) {
+      // Check if result limit is reached
+      if (resultLimit && docs.length >= resultLimit) {
         break
       }
 
       // Construct document from entry
       const doc = await this.constructDocument(entry)
 
-      // Continue if document not constructed
+      // Continue if document is not constructed
       if (!doc) {
         continue
       }
@@ -2065,8 +2172,7 @@ export class Collection<
     // Execute callback function for each document
     await allFulfilled(docs.map(async (doc) => {
       try {
-        const res = await fn(doc)
-        result.push(res)
+        result.push(await fn(doc))
       } catch (e) {
         errors.push(e)
       }

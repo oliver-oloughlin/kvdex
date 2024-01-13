@@ -38,6 +38,16 @@ export function generateId() {
 }
 
 /**
+ * Get a document id from a document key.
+ *
+ * @param key - A document key.
+ * @returns A document id, or undefined if key is empty.
+ */
+export function getDocumentId(key: Deno.KvKey) {
+  return key.at(-1)
+}
+
+/**
  * Extend a kv key with key parts.
  *
  * @param key - The input key to be extended.
@@ -49,16 +59,6 @@ export function extendKey(key: KvKey, ...keyParts: KvKey) {
 }
 
 /**
- * Get a document id from a document key.
- *
- * @param key - A document key.
- * @returns A document id, or undefined if key is empty.
- */
-export function getDocumentId(key: Deno.KvKey) {
-  return key.at(-1)
-}
-
-/**
  * Compare two kv keys for equality.
  *
  * @param k1 - First kv key.
@@ -67,6 +67,31 @@ export function getDocumentId(key: Deno.KvKey) {
  */
 export function keyEq(k1: KvKey, k2: KvKey) {
   return JSON.stringify(k1) === JSON.stringify(k2)
+}
+
+/**
+ * Create a secondary index key prefix.
+ *
+ * @param index - Index.
+ * @param value - Index value.
+ * @param collection - Collection.
+ * @returns A key prefix from a secondary index.
+ */
+export function createSecondaryIndexKeyPrefix(
+  index: string | number | symbol,
+  value: KvValue,
+  collection: Collection<any, any, any>,
+) {
+  // Serialize and compress index value
+  const serialized = collection._serializer.serialize(value)
+  const compressed = collection._serializer.compress(serialized)
+
+  // Create prefix key
+  return extendKey(
+    collection._keys.secondaryIndex,
+    index as KvId,
+    compressed,
+  )
 }
 
 /**
@@ -466,6 +491,12 @@ export function createListSelector<T>(
   }
 }
 
+/**
+ * Create kv list options from given options.
+ *
+ * @param options
+ * @returns
+ */
 export function createListOptions<T>(options: ListOptions<T> | undefined) {
   const limit = options?.limit && options.limit + (options.offset ?? 0)
   return {
