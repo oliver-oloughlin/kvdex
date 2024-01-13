@@ -28,7 +28,6 @@ import {
 } from "./utils.ts"
 import { AtomicBuilder } from "./atomic_builder.ts"
 import {
-  DEFAULT_INTERVAL,
   DEFAULT_INTERVAL_RETRY,
   DEFAULT_LOOP_RETRY,
   KVDEX_KEY_PREFIX,
@@ -38,6 +37,7 @@ import {
 } from "./constants.ts"
 import { model } from "./model.ts"
 import { AtomicWrapper } from "./atomic_wrapper.ts"
+import { IntervalSetter } from "./types.ts"
 
 /**
  * Create a new database instance.
@@ -356,31 +356,28 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
   /**
    * Create an interval for a callback function to be invoked, built on queues.
    *
-   * Interval defaults to 1 hour if not set.
+   * Interval time is given in milliseconds, and can be set by either a static number or dynamically by a function.
    *
-   * Will repeat indefinitely if no exit condition is set.
+   * Will repeat indefinitely if no while condition is set.
    *
    * There is an enforced minimum start delay of 1 second to ensure
    * the queue listener is registered before the first delivery.
    *
    * @example
    * ```ts
-   * // Will repeat indeefinitely with 1 hour interval
-   * db.setInterval(() => console.log("Hello World!"))
+   * // Will repeat every 1 second indefinitely
+   * db.setInterval(() => console.log("Hello World!"), 1_000)
+   * ```
    *
-   * // First callback starts after a 10 second delay, after that there is a 5 second delay between callbacks
-   * db.setInterval(() => console.log("I terminate after the 10th run"), {
+   * @example
+   * ```ts
+   * // First callback starts after a 10 second delay, after that there is a random delay between 0 and 5 seconds
+   * db.setInterval(() => console.log("I terminate after the 10th run"), () => Math.random() * 5_000, {
    *   // 10 second delay before the first job callback invoked
    *   startDelay: 10_000,
    *
-   *   // Fixed interval of 5 seconds
-   *   interval: 5_000,
-   *
-   *   // ...or set a dynamic interval
-   *   interval: ({ count }) => count * 500,
-   *
    *   // Count starts at 0 and is given before the current callback is run
-   *   exitOn: ({ count }) => count === 10,
+   *   while: ({ count }) => count < 10,
    * })
    * ```
    *
@@ -390,6 +387,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    */
   async setInterval(
     fn: (msg: IntervalMessage) => unknown,
+    interval: IntervalSetter,
     options?: SetIntervalOptions,
   ) {
     // Set id
@@ -422,45 +420,32 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
 
     // Add interval listener
     const listener = this.listenQueue<IntervalMessage>(async (msg) => {
-      // Check if exit criteria is met, terminate interval if true
-      let exit = false
+      // Check if while condition is met, terminate interval if false
+      let shouldContinue = true
       try {
-        exit = await options?.exitOn?.(msg) ?? false
+        shouldContinue = await options?.while?.(msg) ?? false
       } catch (e) {
-        console.error(
-          `An error was caught while running exitOn task for interval {ID = ${id}}`,
-          e,
-        )
+        console.error(e)
       }
 
-      if (exit) {
+      if (!shouldContinue) {
         await options?.onExit?.(msg)
         return
       }
 
-      // Set the next interval
-      let interval = DEFAULT_INTERVAL
-      try {
-        if (typeof options?.interval === "function") {
-          interval = await options.interval(msg)
-        } else {
-          interval = options?.interval ?? DEFAULT_INTERVAL
-        }
-      } catch (e) {
-        console.error(
-          `An error was caught while setting the next callback delay for interval {ID = ${id}}`,
-          e,
-        )
-      }
+      // Determine next interval delay
+      const delay = typeof interval === "function"
+        ? await interval(msg)
+        : interval
 
       await allFulfilled([
         // Enqueue next callback
         enqueue({
           count: msg.count + 1,
-          interval,
+          interval: delay,
           timestamp: new Date(),
           first: false,
-        }, interval),
+        }, delay),
 
         // Invoke callback function
         fn(msg),
@@ -488,17 +473,23 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
   /**
    * Create a sequential loop built on queues.
    *
-   * Will repeat indefinitely if no exit condition is set.
+   * Will repeat indefinitely if no while condition is set.
    *
    * There is an enforced minimum start delay of 1 second to ensure
    * the queue listener is registered before the first delivery.
    *
    * @example
    * ```ts
+   * // Sequentially prints "Hello World!" indefinitely with no delay between each iteration
+   * db.loop(() => console.log("Hello World!"))
+   * ```
+   *
+   * @example
+   * ```ts
    * // Prints "Hello World!" 10 times, with a 3 second delay between each iteration
    * db.loop(() => console.log("Hello World!"), {
    *   delay: 3_000,
-   *   exitOn: ({ count }) => count === 10,
+   *   while: ({ count }) => count < 10,
    * })
    * ```
    *
@@ -540,18 +531,15 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
 
     // Add loop listener
     const listener = this.listenQueue<LoopMessage<Awaited<T1>>>(async (msg) => {
-      // Check if exit criteria is met, terminate loop if true
-      let exit = false
+      // Check if while condition is met, terminate loop if false
+      let shouldContinue = true
       try {
-        exit = await options?.exitOn?.(msg) ?? false
+        shouldContinue = await options?.while?.(msg) ?? false
       } catch (e) {
-        console.error(
-          `An error was caught while running exitOn task for loop {ID = ${id}}`,
-          e,
-        )
+        console.error(e)
       }
 
-      if (exit) {
+      if (!shouldContinue) {
         await options?.onExit?.(msg)
         return
       }

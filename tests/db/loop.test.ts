@@ -13,12 +13,12 @@ Deno.test("db - loop", async (t) => {
         let count2 = 0
 
         const listener1 = db.loop(() => count1++, {
-          exitOn: ({ first }) => first,
+          while: ({ first }) => !first,
           onExit: () => sleeper1.resolve(),
         })
 
         const listener2 = db.loop(() => count2++, {
-          exitOn: (msg) => msg.count < 1,
+          while: (msg) => msg.count >= 1,
           onExit: () => sleeper2.resolve(),
         })
 
@@ -47,7 +47,7 @@ Deno.test("db - loop", async (t) => {
             return first ? 1 : result + 1
           },
           {
-            exitOn: ({ result, first }) => !first && result >= 10,
+            while: ({ first, result }) => first || result < 10,
             onExit: ({ result }) => {
               assert(result === 10)
               assert(count === 10)
