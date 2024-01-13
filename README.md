@@ -44,6 +44,7 @@ _Supported Deno verisons:_ **^1.38.5**
     - [updateOne()](#updateone)
     - [updateOneBySecondaryIndex()](#updateonebysecondaryindex)
     - [upsert()](#upsert)
+    - [upsertByPrimaryIndex()](#upsertbyprimaryindex)
     - [delete()](#delete)
     - [deleteByPrimaryIndex()](#deletebyprimaryindex)
     - [deleteBySecondaryIndex()](#deletebysecondaryindex)
@@ -459,13 +460,10 @@ const result = await db.users.updateOneBySecondaryIndex(
 
 ### upsert()
 
-Update an existing document by either id or primary index, or set a new document
-entry if no document with matching id/index exists. When upserting by primary
-index, an id can be optionally specified which will be used when setting a new
-document entry, otherwise an id will be generated.
+Update an existing document by id, or set a new document entry if no matching
+document exists.
 
 ```ts
-// Upsert by id
 const result = await db.users.upsert({
   id: "user_id",
   update: { username: "Chris" },
@@ -481,9 +479,16 @@ const result = await db.users.upsert({
     }
   }
 })
+```
 
-// Upsert by index
-const result = await db.users.upsert({
+### upsertByPrimaryIndex()
+
+Update an existing document by a primary index, or set a new entry if no
+matching document exists. An id can be optionally specified which will be used
+when creating a new document entry.
+
+```ts
+const result = await db.users.upsertByPrimaryIndex({
   index: ["username", "Jack"],
   update: { username: "Chris" },
   set: {

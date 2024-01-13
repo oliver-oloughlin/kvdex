@@ -427,7 +427,13 @@ export type QueueListenerOptions = {
 
 export type WatchOptions = NonNullable<Parameters<Deno.Kv["watch"]>[1]>
 
-export type IdUpsertInput<
+/********************/
+/*                  */
+/*   UPSERT TYPES   */
+/*                  */
+/********************/
+
+export type IdUpsert<
   TInput,
   TOutput extends KvValue,
   TStrategy extends UpdateStrategy | undefined,
@@ -437,13 +443,7 @@ export type IdUpsertInput<
   update: UpdateData<TOutput, TStrategy>
 }
 
-/********************/
-/*                  */
-/*   UPSERT TYPES   */
-/*                  */
-/********************/
-
-export type PrimaryIndexUpsertInput<
+export type PrimaryIndexUpsert<
   TInput,
   TOutput extends KvValue,
   TIndex,
@@ -454,15 +454,6 @@ export type PrimaryIndexUpsertInput<
   set: ParseInputType<TInput, TOutput>
   update: UpdateData<TOutput, TStrategy>
 }
-
-export type UpsertInput<
-  TInput,
-  TOutput extends KvValue,
-  TIndex,
-  TStrategy extends UpdateStrategy | undefined,
-> =
-  | IdUpsertInput<TInput, TOutput, TStrategy>
-  | PrimaryIndexUpsertInput<TInput, TOutput, TIndex, TStrategy>
 
 export type UpsertOptions = UpdateOptions
 
