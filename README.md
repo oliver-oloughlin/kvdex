@@ -167,7 +167,6 @@ const db = kvdex(kv, {
   }),
   users: collection(UserModel, {
     history: true,
-    idGenerator: () => crypto.randomUUID(),
     indices: {
       username: "primary" // unique
       age: "secondary" // non-unique
@@ -184,10 +183,55 @@ The schema definition contains collection builders, or nested schema
 definitions. Collections can hold any type adhering to KvValue. Indexing can be
 specified for collections of objects, while a custom id generator and
 serialization can be set for all collections, in addition to enabling version
-history. The default id generator is `ulid()` from Deno's standard library.
+history.
 
 **Note:** Index values are always serialized, using JSON-serialization by
 default.
+
+### Collection's `idGenerator`
+
+`idGenerator` is a function that gets called with the created item to create an
+KvId for the item.
+
+The default `iGenerator` uses `ulid()` from Deno's standard library.
+[Link to docs](https://deno.land/std/ulid/mod.ts)
+
+Defined id based on the created value:
+
+```ts
+import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
+
+const kv = await Deno.openKv()
+
+const db = kvdex(kv, {
+  users: collection(UserModel, {
+    history: true,
+    idGenerator: (user) => user.username,
+    indices: {
+      age: "secondary", // non-unique
+    },
+  }),
+})
+```
+
+Randomized id, but using different algorithm:
+
+```ts
+import { kvdex, model, collection } from "https://deno.land/x/kvdex/mod.ts"
+
+const kv = await Deno.openKv()
+
+const db = kvdex(kv, {
+  users: collection(UserModel, {
+    history: true,
+    idGenerator: () => crypto.randomUUID(),
+    indices: {
+      username: "primary" // unique
+      age: "secondary" // non-unique
+    }
+  }),
+})
+```
 
 ## Collection Methods
 
