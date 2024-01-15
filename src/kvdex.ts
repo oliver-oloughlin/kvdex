@@ -21,8 +21,10 @@ import { Collection } from "./collection.ts"
 import { Document } from "./document.ts"
 import {
   allFulfilled,
+  compress,
   createHandlerId,
   extendKey,
+  jsonSerialize,
   parseQueueMessage,
   prepareEnqueue,
 } from "./utils.ts"
