@@ -191,16 +191,21 @@ default.
 
 ## Collection Options
 
-These are all the options available for the `collection()` method, used when defining collections of documents. All collection options are optional.
+These are all the options available for the `collection()` method, used when
+defining collections of documents. All collection options are optional.
 
 ### `idGenerator`
 
-Override the default id generator, which is used to automatically generate an id when adding a new document.
-The id generatror gets called with the data being added, which can be useful to create derived ids. The default id generator uses [`ulid()`](https://deno.land/std/ulid/mod.ts) from Deno's [standard library.](https://deno.land/std/ulid/mod.ts)
+Override the default id generator, which is used to automatically generate an id
+when adding a new document. The id generatror gets called with the data being
+added, which can be useful to create derived ids. The default id generator uses
+[`ulid()`](https://deno.land/std/ulid/mod.ts) from Deno's
+[standard library.](https://deno.land/std/ulid/mod.ts)
 
 Id created from the data being added:
+
 ```ts
-import { kvdex, collection, model } from "https://deno.land/x/kvdex/mod.ts"
+import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -214,7 +219,7 @@ const db = kvdex(kv, {
 Using randomely generated uuids:
 
 ```ts
-import { kvdex, collection, model } from "https://deno.land/x/kvdex/mod.ts"
+import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -227,12 +232,13 @@ const db = kvdex(kv, {
 
 ### `indices`
 
-Define indices for collections of objects. Used to optimize operations by querying data based on index values.
+Define indices for collections of objects. Used to optimize operations by
+querying data based on index values.
 
 **NOTE:** Index values are always serialized.
 
 ```ts
-import { kvdex, collection, model } from "https://deno.land/x/kvdex/mod.ts"
+import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
 
 const kv = await Deno.openKv()
 
@@ -241,14 +247,17 @@ const db = kvdex(kv, {
     indices: {
       username: "primary", // unique
       age: "secondary", // non-unique
-    }
+    },
   }),
 })
 ```
 
 ### `serialize`
 
-Specify serialization for the collection. This lets large objects that exceed the native size limit of 64kb to be stored, by serializing, compressing and dividing the value across multiple key/value entries. There is a tradeoff between speed and storage efficiency. 
+Specify serialization for the collection. This lets large objects that exceed
+the native size limit of 64kb to be stored, by serializing, compressing and
+dividing the value across multiple key/value entries. There is a tradeoff
+between speed and storage efficiency.
 
 ```ts
 import { kvdex, collection, model } from "https://deno.land/x/kvdex/mod.ts"
@@ -279,7 +288,7 @@ const db = kvdex(kv, {
 Set to `true` to enable version history. Default is `false`.
 
 ```ts
-import { kvdex, collection, model } from "https://deno.land/x/kvdex/mod.ts"
+import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
 
 const kv = await Deno.openKv()
 
