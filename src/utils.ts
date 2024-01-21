@@ -672,11 +672,11 @@ export function jsonDeserialize<T>(value: Uint8Array) {
   return parse<T>(str)
 }
 
-function stringify(value: unknown, space?: number | string) {
+export function stringify(value: unknown, space?: number | string) {
   return JSON.stringify(_replacer(value), replacer, space)
 }
 
-function parse<T>(value: string) {
+export function parse<T>(value: string) {
   return postReviver(JSON.parse(value, reviver)) as T
 }
 
@@ -687,7 +687,7 @@ function parse<T>(value: string) {
  * @param value
  * @returns
  */
-function replacer(_key: string, value: unknown) {
+export function replacer(_key: string, value: unknown) {
   return _replacer(value)
 }
 
@@ -698,7 +698,7 @@ function replacer(_key: string, value: unknown) {
  * @param value
  * @returns
  */
-function reviver(_key: string, value: unknown) {
+export function reviver(_key: string, value: unknown) {
   return _reviver(value)
 }
 
@@ -708,7 +708,7 @@ function reviver(_key: string, value: unknown) {
  * @param value
  * @returns
  */
-function _replacer(value: unknown): unknown {
+export function _replacer(value: unknown): unknown {
   // Return value if primitive, function or symbol
   if (
     value === null ||
@@ -908,7 +908,7 @@ function _replacer(value: unknown): unknown {
  * @param value
  * @returns
  */
-function _reviver(value: unknown): unknown {
+export function _reviver(value: unknown): unknown {
   // Return if nullish or not an object
   if (
     value === null ||
@@ -1040,7 +1040,7 @@ function _reviver(value: unknown): unknown {
  * @param value
  * @returns
  */
-function postReviver(value: unknown): unknown {
+export function postReviver(value: unknown): unknown {
   if (
     value === undefined ||
     value === null ||
@@ -1073,6 +1073,6 @@ function postReviver(value: unknown): unknown {
  * @param value - JSON value to map from.
  * @returns Mapped value.
  */
-function mapValue<T>(key: string, value: unknown) {
+export function mapValue<T>(key: string, value: unknown) {
   return (value as Record<string, T>)[key]
 }
