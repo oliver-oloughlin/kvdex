@@ -13,8 +13,8 @@ if (import.meta.main) {
 }
 
 export async function importData(filepath: string, kvpath?: string) {
-  const kv = await Deno.openKv(kvpath)
-  const file = await Deno.open(filepath, { read: true })
+  using kv = await Deno.openKv(kvpath)
+  using file = await Deno.open(filepath, { read: true })
 
   const reader = file.readable
     .pipeThrough(new TextDecoderStream())
@@ -25,13 +25,10 @@ export async function importData(filepath: string, kvpath?: string) {
   while (!eof) {
     const { value, done } = await reader.read()
     if (!done) {
-      const data = parse<{ key: KvKey, value: unknown }>(value)
+      const data = parse<{ key: KvKey; value: unknown }>(value)
       await kv.set(data.key, data.value)
     }
 
     eof = done
   }
-
-  kv.close()
-  file.close()
 }

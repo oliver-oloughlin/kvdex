@@ -8,28 +8,33 @@ if (import.meta.main) {
 
 export async function exportData(filepath = "./data", kvpath?: string) {
   const kv = await Deno.openKv(kvpath)
-  const iter = kv.list({ prefix: [KVDEX_KEY_PREFIX] })
   const file = await Deno.open(filepath, { write: true, create: true })
-  const newline = new TextEncoder().encode("\n")
+  try {
+    const iter = kv.list({ prefix: [KVDEX_KEY_PREFIX] })
+    const file = await Deno.open(filepath, { write: true, create: true })
+    const newline = new TextEncoder().encode("\n")
 
-  for await (const { key, value } of iter) {
-    let data = jsonSerialize({
-      key,
-      value
-    })
+    for await (const { key, value } of iter) {
+      let data = jsonSerialize({
+        key,
+        value,
+      })
 
-    while (true) {
-      const bytes = await file.write(data)
-      if (bytes === data.byteLength) {
-        break
+      while (true) {
+        const bytes = await file.write(data)
+        if (bytes === data.byteLength) {
+          break
+        }
+
+        data = data.subarray(bytes)
       }
 
-      data = data.subarray(bytes)
+      await file.write(newline)
     }
-
-    await file.write(newline)
+  } catch (e) {
+    console.error(e)
+  } finally {
+    file.close()
+    kv.close()
   }
-
-  file.close()
-  kv.close()
 }
