@@ -23,7 +23,7 @@ Deno.bench(
         "username",
         mockUser1.username,
         updateData,
-        { mergeType: "shallow" },
+        { strategy: "merge-shallow" },
       )
 
       b.end()
@@ -50,7 +50,7 @@ Deno.bench("serialized_collection - update (deep merge)", async (b) => {
       "username",
       mockUser1.username,
       updateData,
-      { mergeType: "deep" },
+      { strategy: "merge" },
     )
 
     b.end()

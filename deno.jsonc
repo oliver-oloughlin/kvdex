@@ -1,7 +1,7 @@
 {
   "lock": false,
   "tasks": {
-    "check": "deno check --unstable-kv mod.ts ext/zod.ts",
+    "check": "deno check mod.ts src/*.ts ext/*.ts tests/*.ts tests/**/*.ts benchmarks/**/*ts",
     "test": "deno test --unstable-kv",
     "bench": "deno bench --unstable-kv",
     "prep": "deno task check && deno fmt && deno lint && deno task test"
