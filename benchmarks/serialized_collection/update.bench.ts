@@ -30,7 +30,7 @@ Deno.bench("serialized_collection - update (shallow merge)", async (b) => {
     }
 
     b.start()
-    await db.s_users.update(id, updateData, { mergeType: "shallow" })
+    await db.s_users.update(id, updateData, { strategy: "merge-shallow" })
     b.end()
   })
 })
@@ -50,7 +50,7 @@ Deno.bench("serialized_collection - update (deep merge)", async (b) => {
     }
 
     b.start()
-    await db.s_users.update(id, updateData, { mergeType: "deep" })
+    await db.s_users.update(id, updateData, { strategy: "merge" })
     b.end()
   })
 })

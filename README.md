@@ -26,6 +26,11 @@ _Supported Deno verisons:_ **^1.38.5**
   - [Table of Contents](#table-of-contents)
   - [Models](#models)
   - [Database](#database)
+  - [Collection Options](#collection-options)
+    - [`idGenerator`](#idgenerator)
+    - [`indices`](#indices)
+    - [`serialize`](#serialize)
+    - [`history`](#history)
   - [Collection Methods](#collection-methods)
     - [find()](#find)
     - [findByPrimaryIndex()](#findbyprimaryindex)
@@ -63,7 +68,6 @@ _Supported Deno verisons:_ **^1.38.5**
     - [listenQueue()](#listenqueue)
     - [watch()](#watch)
     - [watchMany()](#watchmany)
-  - [Serialized Collections](#serialized-collections)
   - [Database Methods](#database-methods)
     - [countAll()](#countall)
     - [deleteAll()](#deleteall)
@@ -167,7 +171,6 @@ const db = kvdex(kv, {
   }),
   users: collection(UserModel, {
     history: true,
-    idGenerator: () => crypto.randomUUID(),
     indices: {
       username: "primary" // unique
       age: "secondary" // non-unique
@@ -181,13 +184,120 @@ const db = kvdex(kv, {
 ```
 
 The schema definition contains collection builders, or nested schema
-definitions. Collections can hold any type adhering to KvValue. Indexing can be
-specified for collections of objects, while a custom id generator and
-serialization can be set for all collections, in addition to enabling version
-history. The default id generator is `ulid()` from Deno's standard library.
+definitions. Collections can hold any type adhering to KvValue.
 
 **Note:** Index values are always serialized, using JSON-serialization by
 default.
+
+## Collection Options
+
+These are all the options available for the `collection()` method, used when
+defining collections of documents. All collection options are optional.
+
+### `idGenerator`
+
+Override the default id generator, which is used to automatically generate an id
+when adding a new document. The id generatror gets called with the data being
+added, which can be useful to create derived ids. The default id generator uses
+[`ulid()`](https://deno.land/std/ulid/mod.ts) from Deno's
+[standard library.](https://deno.land/std/ulid/mod.ts)
+
+Id created from the data being added:
+
+```ts
+import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
+
+const kv = await Deno.openKv()
+
+const db = kvdex(kv, {
+  users: collection(model<User>(), {
+    idGenerator: (user) => user.username,
+  }),
+})
+```
+
+Using randomely generated uuids:
+
+```ts
+import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
+
+const kv = await Deno.openKv()
+
+const db = kvdex(kv, {
+  users: collection(model<User>(), {
+    idGenerator: () => crypto.randomUUID(),
+  }),
+})
+```
+
+### `indices`
+
+Define indices for collections of objects. Used to optimize operations by
+querying data based on index values.
+
+**NOTE:** Index values are always serialized.
+
+```ts
+import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
+
+const kv = await Deno.openKv()
+
+const db = kvdex(kv, {
+  users: collection(model<User>(), {
+    indices: {
+      username: "primary", // unique
+      age: "secondary", // non-unique
+    },
+  }),
+})
+```
+
+### `serialize`
+
+Specify serialization for the collection. This lets large objects that exceed
+the native size limit of 64kb to be stored, by serializing, compressing and
+dividing the value across multiple key/value entries. There is a tradeoff
+between speed and storage efficiency.
+
+```ts
+import { kvdex, collection, model } from "https://deno.land/x/kvdex/mod.ts"
+
+const kv = await Deno.openKv()
+
+const db = kvdex(kv, {
+  users: collection(model<User>(), {
+    // Use the custom json-serializer, compatible with Deno Deploy
+    serialize: "json",
+
+    // Use the faster Deno Core serializer, unstable and not compatible with Deno Deploy
+    serialize: "core",
+
+    // Set custom serialize, deserialize, compress and decompress functions
+    serialize: {
+      serialize: ...,
+      deserialize: ...,
+      compress: ...,
+      decompress: ...,
+    }
+  }),
+})
+```
+
+### `history`
+
+Set to `true` to enable version history. Default is `false`.
+
+```ts
+import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
+
+const kv = await Deno.openKv()
+
+const db = kvdex(kv, {
+  users: collection(model<User>(), {
+    history: true,
+  }),
+})
+```
 
 ## Collection Methods
 
@@ -831,47 +941,6 @@ db.numbers.watchMany(["id1", "id2", "id3"], (docs) => {
   console.log(docs[0]?.value) // 10, 10, 10
   console.log(docs[1]?.value) // null, 20, 20
   console.log(docs[2]?.value) // null, null, 30
-})
-```
-
-## Serialized Collections
-
-Serialized collections can store much larger sized data by serializaing,
-compresing and splitting the data across multiple KV entries. There is a
-tradeoff between speed and storage efficiency. Custom serialize and compress
-functions can be set through the collection options. The serialize option can be
-set to either "core" for the Deno Core internal serializer, or to "json" for
-JSON serialization, which is slower but works on Deno Deploy as well.
-Alternatively, specific serialize, deserialize, compress and decompress
-functions can be set, which allows you to choose the serialize and compress
-strategy of your choosing.
-
-```ts
-import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
-
-type LargeData = {
-  location: string
-  timestamp: Date
-  ...
-}
-
-const kv = await Deno.openKv()
-const db = kvdex(kv, {
-  users: collection(model<LargeData>(), {
-    // Use Deno core serializer
-    serialize: "core",
-
-    // Use JSON serializer
-    serialize: "json",
-
-    // Set custom serialize/compress functions
-    serialize: {
-      serialize: ...,
-      deserialize: ...,
-      compress: ...,
-      decompress: ...,
-    }
-  })
 })
 ```
 
