@@ -566,26 +566,38 @@ export function decompress(data: Uint8Array) {
 }
 
 // @ts-ignore ?
-const DENO_CORE: DenoCore = Deno[Deno.internal].core
+export const DENO_CORE: DenoCore = Deno[Deno.internal].core
 
+/**
+ * Extended deno core serialize.
+ *
+ * @param data
+ * @returns
+ */
 export function denoCoreSerialize(data: unknown) {
-  return DENO_CORE.serialize(beforeSerialize(data))
+  return DENO_CORE.serialize(beforeDenoCoreSerialize(data))
 }
 
+/**
+ * Extended deno core deserialize.
+ *
+ * @param serialized
+ * @returns
+ */
 export function denoCoreDeserialize<T>(
   serialized: Uint8Array,
 ) {
-  return afterDeserialize(DENO_CORE.deserialize(serialized)) as T
+  return afterDenoCoreDeserialize(DENO_CORE.deserialize(serialized)) as T
 }
 
-type JSONError = {
+export type JSONError = {
   message: string
   name: string
   cause?: string
   stack?: string
 }
 
-enum TypeKey {
+export enum TypeKey {
   Undefined = "__undefined__",
   BigInt = "__bigint__",
   KvU64 = "__kvu64__",
@@ -611,38 +623,59 @@ enum TypeKey {
   Infinity = "__infinity__",
 }
 
-export function beforeSerialize(value: unknown): unknown {
+/**
+ * Additional steps to perform before deno core serialize.
+ *
+ * @param value
+ * @returns
+ */
+export function beforeDenoCoreSerialize(value: unknown): unknown {
+  // KvU64
   if (value instanceof Deno.KvU64) {
     return { [TypeKey.KvU64]: value.value }
   }
 
+  // KvObject
   if (isKvObject(value)) {
     return Object.fromEntries(
       Object.entries(value as KvObject).map((
         [key, val],
-      ) => [key, beforeSerialize(val)]),
+      ) => [key, beforeDenoCoreSerialize(val)]),
     )
   }
 
+  // Array
   if (Array.isArray(value)) {
-    return value.map((val) => beforeSerialize(val))
+    return value.map((val) => beforeDenoCoreSerialize(val))
   }
 
+  // Set
   if (value instanceof Set) {
-    return new Set(Array.from(value.values()).map((v) => beforeSerialize(v)))
+    return new Set(
+      Array.from(value.values()).map((v) => beforeDenoCoreSerialize(v)),
+    )
   }
 
+  // Map
   if (value instanceof Map) {
     return new Map(
-      Array.from(value.entries()).map(([k, v]) => [k, beforeSerialize(v)]),
+      Array.from(value.entries()).map((
+        [k, v],
+      ) => [k, beforeDenoCoreSerialize(v)]),
     )
   }
 
   return value
 }
 
-export function afterDeserialize(value: unknown): unknown {
-  // Return value not an object
+/**
+ * Additional steps to perform after deno core deserialize.
+ *
+ * @param value
+ * @returns
+ */
+export function afterDenoCoreDeserialize(value: unknown): unknown {
+  // Return value if not an object
   if (
     value === undefined ||
     value === null ||
@@ -651,29 +684,36 @@ export function afterDeserialize(value: unknown): unknown {
     return value
   }
 
+  // KvU64
   if (TypeKey.KvU64 in value) {
     return new Deno.KvU64(BigInt(mapValue(TypeKey.KvU64, value)))
   }
 
+  // KvObject
   if (isKvObject(value)) {
     return Object.fromEntries(
-      Object.entries(value).map(([k, v]) => [k, afterDeserialize(v)]),
+      Object.entries(value).map(([k, v]) => [k, afterDenoCoreDeserialize(v)]),
     )
   }
 
+  // Array
   if (Array.isArray(value)) {
-    return value.map((v) => afterDeserialize(v))
+    return value.map((v) => afterDenoCoreDeserialize(v))
   }
 
+  // Set
   if (value instanceof Set) {
     return new Set(
-      Array.from(value.values()).map((v) => afterDeserialize(v)),
+      Array.from(value.values()).map((v) => afterDenoCoreDeserialize(v)),
     )
   }
 
+  // Map
   if (value instanceof Map) {
     return new Map(
-      Array.from(value.entries()).map(([k, v]) => [k, afterDeserialize(v)]),
+      Array.from(value.entries()).map((
+        [k, v],
+      ) => [k, afterDenoCoreDeserialize(v)]),
     )
   }
 
@@ -702,10 +742,23 @@ export function jsonDeserialize<T>(value: Uint8Array) {
   return parse<T>(str)
 }
 
+/**
+ * Stringify a JSON-like object.
+ *
+ * @param value
+ * @param space
+ * @returns
+ */
 export function stringify(value: unknown, space?: number | string) {
   return JSON.stringify(_replacer(value), replacer, space)
 }
 
+/**
+ * Parse a stringified JSON-like object.
+ *
+ * @param value
+ * @returns
+ */
 export function parse<T>(value: string) {
   return postReviver(JSON.parse(value, reviver)) as T
 }
@@ -1078,8 +1131,14 @@ export function _reviver(value: unknown): unknown {
   return value
 }
 
+/**
+ * Additional revival steps to perform after initial parse.
+ *
+ * @param value
+ * @returns
+ */
 export function postReviver<T>(value: T): T {
-  // Return value not an object
+  // Return value if not an object
   if (
     value === undefined ||
     value === null ||
@@ -1088,26 +1147,31 @@ export function postReviver<T>(value: T): T {
     return value
   }
 
+  // undefined
   if (TypeKey.Undefined in value) {
     return undefined as T
   }
 
+  // Array
   if (Array.isArray(value)) {
     return value.map(postReviver) as T
   }
 
+  // Set
   if (value instanceof Set) {
     return new Set(
       Array.from(value.values()).map(postReviver),
     ) as T
   }
 
+  // Map
   if (value instanceof Map) {
     return new Map(
       Array.from(value.entries()).map(([k, v]) => [k, postReviver(v)]),
     ) as T
   }
 
+  // KvObject
   if (isKvObject(value)) {
     return Object.fromEntries(
       Object.entries(value).map(([k, v]) => [k, postReviver(v)]),
