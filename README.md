@@ -366,6 +366,12 @@ if the type is "write".
 const { result } = await db.users.findHistory("user_id")
 ```
 
+```ts
+const { result } = await db.users.findHistory("user_id", {
+  filter: (entry) => entry.type === "write",
+})
+```
+
 ### findUndelivered()
 
 Retrieve a document entry that was not delivered during an enqueue() operation
