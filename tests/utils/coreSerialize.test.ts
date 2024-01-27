@@ -1,4 +1,4 @@
-import { jsonSerialize } from "../../src/utils.ts"
+import { denoCoreSerialize as serialize } from "../../src/utils.ts"
 import { assert } from "../deps.ts"
 import {
   val1,
@@ -32,39 +32,39 @@ import {
   val9,
 } from "../values.ts"
 
-Deno.test("utils - jsonSerialize", async (t) => {
+Deno.test("utils - denoCoreSerialize", async (t) => {
   await t.step(
     "Should successfully serialize all KvValue type values",
     () => {
-      const s1 = jsonSerialize(val1)
-      const s2 = jsonSerialize(val2)
-      const s3 = jsonSerialize(val3)
-      const s4 = jsonSerialize(val4)
-      const s5 = jsonSerialize(val5)
-      const s6 = jsonSerialize(val6)
-      const s7 = jsonSerialize(val7)
-      const s8 = jsonSerialize(val8)
-      const s9 = jsonSerialize(val9)
-      const s10 = jsonSerialize(val10)
-      const s11 = jsonSerialize(val11)
-      const s12 = jsonSerialize(val12)
-      const s13 = jsonSerialize(val13)
-      const s14 = jsonSerialize(val14)
-      const s15 = jsonSerialize(val15)
-      const s16 = jsonSerialize(val16)
-      const s17 = jsonSerialize(val17)
-      const s18 = jsonSerialize(val18)
-      const s19 = jsonSerialize(val19)
-      const s20 = jsonSerialize(val20)
-      const s21 = jsonSerialize(val21)
-      const s22 = jsonSerialize(val22)
-      const s23 = jsonSerialize(val23)
-      const s24 = jsonSerialize(val24)
-      const s25 = jsonSerialize(val25)
-      const s26 = jsonSerialize(val26)
-      const s27 = jsonSerialize(val27)
-      const s28 = jsonSerialize(val28)
-      const s29 = jsonSerialize(val29)
+      const s1 = serialize(val1)
+      const s2 = serialize(val2)
+      const s3 = serialize(val3)
+      const s4 = serialize(val4)
+      const s5 = serialize(val5)
+      const s6 = serialize(val6)
+      const s7 = serialize(val7)
+      const s8 = serialize(val8)
+      const s9 = serialize(val9)
+      const s10 = serialize(val10)
+      const s11 = serialize(val11)
+      const s12 = serialize(val12)
+      const s13 = serialize(val13)
+      const s14 = serialize(val14)
+      const s15 = serialize(val15)
+      const s16 = serialize(val16)
+      const s17 = serialize(val17)
+      const s18 = serialize(val18)
+      const s19 = serialize(val19)
+      const s20 = serialize(val20)
+      const s21 = serialize(val21)
+      const s22 = serialize(val22)
+      const s23 = serialize(val23)
+      const s24 = serialize(val24)
+      const s25 = serialize(val25)
+      const s26 = serialize(val26)
+      const s27 = serialize(val27)
+      const s28 = serialize(val28)
+      const s29 = serialize(val29)
 
       assert(s1 instanceof Uint8Array)
       assert(s2 instanceof Uint8Array)

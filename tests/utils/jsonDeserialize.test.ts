@@ -1,39 +1,7 @@
 import { jsonDeserialize, jsonSerialize } from "../../src/utils.ts"
-import { assert } from "../deps.ts"
-import { KvValue } from "../../mod.ts"
-
-const val1 = undefined
-const val2 = null
-const val3 = 10
-const val4 = "string"
-const val5 = 10n
-const val6 = true
-const val7 = new Int8Array([10, 20, 30])
-const val8 = new Int16Array([10, 20, 30])
-const val9 = new Int32Array([10, 20, 30])
-const val10 = new BigInt64Array([10n, 20n, 30n])
-const val11 = new Uint8Array([10, 20, 30])
-const val12 = new Uint16Array([10, 20, 30])
-const val13 = new Uint32Array([10, 20, 30])
-const val14 = new BigUint64Array([10n, 20n, 30n])
-const val15 = new Uint8ClampedArray([10, 20, 30])
-const val16 = new Float32Array([10.203423878293472837429384])
-const val17 = new Float64Array([10.203423878293472837429384])
-const val18 = new Uint8Array([10, 20, 30]).buffer
-const val19 = new Date()
-const val20 = new RegExp("[0-9]")
-const val21 = new DataView(new Uint8Array([10, 20, 30]).buffer)
-const val22 = new Error("error")
-const val23 = [
+import { assertEquals } from "../deps.ts"
+import {
   val1,
-  val2,
-  val3,
-  val4,
-  val5,
-  val6,
-  val7,
-  val8,
-  val9,
   val10,
   val11,
   val12,
@@ -44,60 +12,25 @@ const val23 = [
   val17,
   val18,
   val19,
-  val20,
-  val21,
-  val22,
-]
-const val24 = {
-  val1,
   val2,
-  val3,
-  val4,
-  val5,
-  val6,
-  val7,
-  val8,
-  val9,
-  val10,
-  val11,
-  val12,
-  val13,
-  val14,
-  val15,
-  val16,
-  val17,
-  val18,
-  val19,
   val20,
   val21,
   val22,
   val23,
-}
-const val25 = new Set<KvValue>(val23)
-const val26 = new Map<KvValue, KvValue>([
-  ["val1", val1],
-  ["val2", val2],
-  ["val3", val3],
-  ["val4", val4],
-  ["val5", val5],
-  ["val6", val6],
-  ["val7", val7],
-  ["val8", val8],
-  ["val9", val9],
-  ["val10", val10],
-  ["val11", val11],
-  ["val12", val12],
-  ["val13", val13],
-  ["val14", val14],
-  ["val15", val15],
-  ["val16", val16],
-  ["val17", val17],
-  ["val18", val18],
-  ["val19", val19],
-  ["val20", val20],
-  ["val21", val21],
-  ["val22", val22],
-])
+  val24,
+  val25,
+  val26,
+  val27,
+  val28,
+  val29,
+  val3,
+  val4,
+  val5,
+  val6,
+  val7,
+  val8,
+  val9,
+} from "../values.ts"
 
 Deno.test("utils - jsonDeserialize", async (t) => {
   await t.step(
@@ -129,6 +62,9 @@ Deno.test("utils - jsonDeserialize", async (t) => {
       const s24 = jsonSerialize(val24)
       const s25 = jsonSerialize(val25)
       const s26 = jsonSerialize(val26)
+      const s27 = jsonSerialize(val27)
+      const s28 = jsonSerialize(val28)
+      const s29 = jsonSerialize(val29)
 
       const d1 = jsonDeserialize(s1)
       const d2 = jsonDeserialize(s2)
@@ -156,45 +92,39 @@ Deno.test("utils - jsonDeserialize", async (t) => {
       const d24 = jsonDeserialize(s24)
       const d25 = jsonDeserialize(s25)
       const d26 = jsonDeserialize(s26)
+      const d27 = jsonDeserialize(s27)
+      const d28 = jsonDeserialize(s28)
+      const d29 = jsonDeserialize(s29)
 
-      assert(d1 === val1)
-      assert(d2 === val2)
-      assert(d3 === val3)
-      assert(d4 === val4)
-      assert(d5 === val5)
-      assert(d6 === val6)
-      assert(d7 instanceof Int8Array && d7.byteLength === val7.byteLength)
-      assert(d8 instanceof Int16Array && d8.byteLength === val8.byteLength)
-      assert(d9 instanceof Int32Array && d9.byteLength === val9.byteLength)
-      assert(
-        d10 instanceof BigInt64Array && d10.byteLength === val10.byteLength,
-      )
-      assert(d11 instanceof Uint8Array && d11.byteLength === val11.byteLength)
-      assert(d12 instanceof Uint16Array && d12.byteLength === val12.byteLength)
-      assert(d13 instanceof Uint32Array && d13.byteLength === val13.byteLength)
-      assert(
-        d14 instanceof BigUint64Array && d14.byteLength === val14.byteLength,
-      )
-      assert(
-        d15 instanceof Uint8ClampedArray && d15.byteLength === val15.byteLength,
-      )
-      assert(d16 instanceof Float32Array && d16.byteLength === val16.byteLength)
-      assert(d17 instanceof Float64Array && d17.byteLength === val17.byteLength)
-      assert(d18 instanceof ArrayBuffer && d18.byteLength === val18.byteLength)
-      assert(d19 instanceof Date && d19.valueOf() === val19.valueOf())
-      assert(d20 instanceof RegExp && d20.source === val20.source)
-      assert(d21 instanceof DataView && d21.byteLength === val21.byteLength)
-      assert(
-        d22 instanceof Error && d22.stack === val22.stack &&
-          d22.message === d22.message,
-      )
-      assert(Array.isArray(d23))
-      assert(
-        typeof d24 === "object" &&
-          Object.values(d24 as object).length === Object.values(val24).length,
-      )
-      assert(d25 instanceof Set && d25.size === val25.size)
-      assert(d26 instanceof Map && d26.size === val26.size)
+      assertEquals(d1, val1)
+      assertEquals(d2, val2)
+      assertEquals(d3, val3)
+      assertEquals(d4, val4)
+      assertEquals(d5, val5)
+      assertEquals(d6, val6)
+      assertEquals(d7, val7)
+      assertEquals(d8, val8)
+      assertEquals(d9, val9)
+      assertEquals(d10, val10)
+      assertEquals(d11, val11)
+      assertEquals(d12, val12)
+      assertEquals(d13, val13)
+      assertEquals(d14, val14)
+      assertEquals(d15, val15)
+      assertEquals(d16, val16)
+      assertEquals(d17, val17)
+      assertEquals(d18, val18)
+      assertEquals(d19, val19)
+      assertEquals(d20, val20)
+      assertEquals(d21, val21)
+      assertEquals(d22, val22)
+      assertEquals(d23, val23)
+      assertEquals(d24, val24)
+      assertEquals(d25, val25)
+      assertEquals(d26, val26)
+      assertEquals(d27, val27)
+      assertEquals(d28, val28)
+      assertEquals(d29, val29)
     },
   )
 })

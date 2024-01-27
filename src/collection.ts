@@ -375,9 +375,12 @@ export class Collection<
    *
    * @example
    * ```ts
-   * const userDocs1 = await db.users.findMany(["user1", "user2", "user3"])
+   * const users = await db.users.findMany(["user1", "user2", "user3"])
+   * ```
    *
-   * const userDocs2 = await db.users.findMany(["user1", "user2", "user3"], {
+   * @example
+   * ```ts
+   * const users = await db.users.findMany(["user1", "user2", "user3"], {
    *   consistency: "eventual" // "strong" by default
    * })
    * ```
@@ -418,6 +421,13 @@ export class Collection<
    * @example
    * ```ts
    * const { result } = await db.users.findHistory("user_id")
+   * ```
+   *
+   * @example
+   * ```ts
+   * const { result } = await db.users.findHistory("user_id", {
+   *   filter: (entry) => entry.type === "write",
+   * })
    * ```
    *
    * @param id - Document id.
@@ -498,8 +508,6 @@ export class Collection<
 
   /**
    * Adds a new document to the KV store with a generated id.
-   *
-   * Does not overwrite existing documents with coliiding id.
    *
    * @example
    * ```ts
@@ -2070,12 +2078,11 @@ export class Collection<
   private async constructDocument(
     { key, value, versionstamp }: Deno.KvEntryMaybe<any>,
   ) {
-    if (!value || !versionstamp) {
+    if (!versionstamp) {
       return null
     }
 
-    const { __id__ } = value as IndexDataEntry<any>
-    const docId = __id__ ?? getDocumentId(key)
+    const docId = (value as IndexDataEntry<any>)?.__id__ ?? getDocumentId(key)
 
     if (!docId) {
       return null
