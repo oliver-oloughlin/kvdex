@@ -581,7 +581,7 @@ export function denoCoreDeserialize<T>(
 type JSONError = {
   message: string
   name: string
-  cause?: unknown
+  cause?: string
   stack?: string
 }
 
@@ -608,15 +608,12 @@ enum TypeKey {
   DataView = "__dataview__",
   Error = "__error__",
   NaN = "__nan__",
+  Infinity = "__infinity__",
 }
 
 export function beforeSerialize(value: unknown): unknown {
   if (value instanceof Deno.KvU64) {
     return { [TypeKey.KvU64]: value.value }
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((val) => beforeSerialize(val))
   }
 
   if (isKvObject(value)) {
@@ -627,24 +624,57 @@ export function beforeSerialize(value: unknown): unknown {
     )
   }
 
+  if (Array.isArray(value)) {
+    return value.map((val) => beforeSerialize(val))
+  }
+
+  if (value instanceof Set) {
+    return new Set(Array.from(value.values()).map((v) => beforeSerialize(v)))
+  }
+
+  if (value instanceof Map) {
+    return new Map(
+      Array.from(value.entries()).map(([k, v]) => [k, beforeSerialize(v)]),
+    )
+  }
+
   return value
 }
 
 export function afterDeserialize(value: unknown): unknown {
+  // Return value not an object
+  if (
+    value === undefined ||
+    value === null ||
+    typeof value !== "object"
+  ) {
+    return value
+  }
+
+  if (TypeKey.KvU64 in value) {
+    return new Deno.KvU64(BigInt(mapValue(TypeKey.KvU64, value)))
+  }
+
   if (isKvObject(value)) {
-    const val = value as KvObject
-
-    if (TypeKey.KvU64 in val) {
-      return new Deno.KvU64(val[TypeKey.KvU64] as bigint)
-    }
-
     return Object.fromEntries(
-      Object.entries(val).map(([k, v]) => [k, afterDeserialize(v)]),
+      Object.entries(value).map(([k, v]) => [k, afterDeserialize(v)]),
     )
   }
 
   if (Array.isArray(value)) {
     return value.map((v) => afterDeserialize(v))
+  }
+
+  if (value instanceof Set) {
+    return new Set(
+      Array.from(value.values()).map((v) => afterDeserialize(v)),
+    )
+  }
+
+  if (value instanceof Map) {
+    return new Map(
+      Array.from(value.entries()).map(([k, v]) => [k, afterDeserialize(v)]),
+    )
   }
 
   return value
@@ -709,18 +739,7 @@ export function reviver(_key: string, value: unknown) {
  * @returns
  */
 export function _replacer(value: unknown): unknown {
-  // Return value if primitive, function or symbol
-  if (
-    value === null ||
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "function" ||
-    typeof value === "symbol"
-  ) {
-    return value
-  }
-
-  // Undefined
+  // undefined
   if (value === undefined) {
     return {
       [TypeKey.Undefined]: false,
@@ -731,6 +750,13 @@ export function _replacer(value: unknown): unknown {
   if (Number.isNaN(value)) {
     return {
       [TypeKey.NaN]: false,
+    }
+  }
+
+  // Infinity
+  if (value === Infinity) {
+    return {
+      [TypeKey.Infinity]: false,
     }
   }
 
@@ -755,23 +781,24 @@ export function _replacer(value: unknown): unknown {
     }
   }
 
+  // Array
+  if (Array.isArray(value)) {
+    return value.map(_replacer)
+  }
+
   // Set
   if (value instanceof Set) {
-    const mappedValues: unknown[] = []
-    value.forEach((v) => mappedValues.push(_replacer(v)))
     return {
-      [TypeKey.Set]: mappedValues,
+      [TypeKey.Set]: Array.from(value.values()).map(_replacer),
     }
   }
 
   // Map
   if (value instanceof Map) {
-    const mappedEntries = []
-    for (const [k, v] of value.entries()) {
-      mappedEntries.push([k, _replacer(v)])
-    }
     return {
-      [TypeKey.Map]: mappedEntries,
+      [TypeKey.Map]: Array.from(value.entries()).map((
+        [k, v],
+      ) => [k, _replacer(v)]),
     }
   }
 
@@ -788,7 +815,7 @@ export function _replacer(value: unknown): unknown {
       message: value.message,
       name: value.name,
       stack: value.stack,
-      cause: value.cause,
+      cause: stringify(value.cause),
     }
     return {
       [TypeKey.Error]: jsonError,
@@ -886,20 +913,14 @@ export function _replacer(value: unknown): unknown {
     }
   }
 
-  // Clone value to handle special cases
-  const clone = structuredClone(value) as Record<string, unknown>
-  for (const [k, v] of Object.entries(value)) {
-    if (v instanceof Date) {
-      clone[k] = _replacer(v)
-    }
-
-    if (v instanceof Deno.KvU64) {
-      clone[k] = _replacer(v)
-    }
+  // KvObject
+  if (isKvObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value as KvObject).map(([k, v]) => [k, _replacer(v)]),
+    )
   }
 
-  // Return clone
-  return clone
+  return value
 }
 
 /**
@@ -918,11 +939,6 @@ export function _reviver(value: unknown): unknown {
     return value
   }
 
-  // NaN
-  if (TypeKey.NaN in value) {
-    return NaN
-  }
-
   // bigint
   if (TypeKey.BigInt in value) {
     return BigInt(mapValue(TypeKey.BigInt, value))
@@ -938,16 +954,14 @@ export function _reviver(value: unknown): unknown {
     return new Date(mapValue<string>(TypeKey.Date, value))
   }
 
-  // Set
-  if (TypeKey.Set in value) {
-    const mappedValues = mapValue<unknown[]>(TypeKey.Set, value)
-    return new Set(mappedValues.map((v) => _reviver(v)))
+  // NaN
+  if (TypeKey.NaN in value) {
+    return NaN
   }
 
-  // Map
-  if (TypeKey.Map in value) {
-    const mappedEntries = mapValue<[string, unknown][]>(TypeKey.Map, value)
-    return new Map(mappedEntries.map(([k, v]) => [k, _reviver(v)]))
+  // Infnity
+  if (TypeKey.Infinity in value) {
+    return Infinity
   }
 
   // RegExp
@@ -957,9 +971,17 @@ export function _reviver(value: unknown): unknown {
 
   // Error
   if (TypeKey.Error in value) {
-    const jsonError = mapValue<JSONError>(TypeKey.Error, value)
-    const error = new Error(jsonError.message, { ...jsonError })
-    error.stack = jsonError.stack
+    const { message, stack, cause, ...rest } = mapValue<JSONError>(
+      TypeKey.Error,
+      value,
+    )
+
+    const error = new Error(message, {
+      cause: cause ? parse(cause) : undefined,
+      ...rest,
+    })
+
+    error.stack = stack
     return error
   }
 
@@ -1030,17 +1052,34 @@ export function _reviver(value: unknown): unknown {
     return new DataView(uint8array.buffer)
   }
 
+  // Set
+  if (TypeKey.Set in value) {
+    return new Set(mapValue<Array<KvValue>>(TypeKey.Set, value))
+  }
+
+  // Map
+  if (TypeKey.Map in value) {
+    return new Map(mapValue<Array<[KvValue, KvValue]>>(TypeKey.Map, value))
+  }
+
+  // Array
+  if (Array.isArray(value)) {
+    return value.map(_reviver)
+  }
+
+  // KvObject
+  if (isKvObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, _reviver(v)]),
+    )
+  }
+
   // Return value
   return value
 }
 
-/**
- * Reviver post-parse.
- *
- * @param value
- * @returns
- */
-export function postReviver(value: unknown): unknown {
+export function postReviver<T>(value: T): T {
+  // Return value not an object
   if (
     value === undefined ||
     value === null ||
@@ -1050,17 +1089,29 @@ export function postReviver(value: unknown): unknown {
   }
 
   if (TypeKey.Undefined in value) {
-    return undefined
+    return undefined as T
   }
 
   if (Array.isArray(value)) {
-    return value.map((v) => postReviver(v))
+    return value.map(postReviver) as T
+  }
+
+  if (value instanceof Set) {
+    return new Set(
+      Array.from(value.values()).map(postReviver),
+    ) as T
+  }
+
+  if (value instanceof Map) {
+    return new Map(
+      Array.from(value.entries()).map(([k, v]) => [k, postReviver(v)]),
+    ) as T
   }
 
   if (isKvObject(value)) {
     return Object.fromEntries(
       Object.entries(value).map(([k, v]) => [k, postReviver(v)]),
-    )
+    ) as T
   }
 
   return value

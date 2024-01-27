@@ -2070,12 +2070,11 @@ export class Collection<
   private async constructDocument(
     { key, value, versionstamp }: Deno.KvEntryMaybe<any>,
   ) {
-    if (!value || !versionstamp) {
+    if (!versionstamp) {
       return null
     }
 
-    const { __id__ } = value as IndexDataEntry<any>
-    const docId = __id__ ?? getDocumentId(key)
+    const docId = (value as IndexDataEntry<any>)?.__id__ ?? getDocumentId(key)
 
     if (!docId) {
       return null
