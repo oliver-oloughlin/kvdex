@@ -1,12 +1,4 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-# This workflow will install Deno then run `deno lint` and `deno test`.
-# For more information see: https://github.com/denoland/setup-deno
-
-name: Deno
+name: Test
 
 on:
   push:
@@ -16,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write # The OIDC ID token is used for authentication with JSR.
 
 jobs:
   test:
@@ -38,6 +31,9 @@ jobs:
 
       - name: Run linter
         run: deno lint
+
+      - name: "Test publish"
+        run: deno publish --dry-run
 
       - name: Run tests
         run: deno task test
