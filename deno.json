@@ -1,4 +1,10 @@
 {
+  "name": "@olli/kvdex",
+  "version": "0.32.0",
+  "exports": {
+    ".": "./mod.ts",
+    "./ext/zod": "./ext/zod.ts"
+  },
   "lock": false,
   "tasks": {
     "check": "deno check mod.ts src/*.ts ext/*.ts tests/*.ts tests/**/*.ts benchmarks/**/*ts",

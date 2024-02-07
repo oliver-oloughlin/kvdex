@@ -8,9 +8,18 @@ import type { Document } from "./document.ts"
 /*                   */
 /*********************/
 
-export type BuilderFn = (
-  ...args: any
-) => any
+export type BuilderFn<
+  TInput,
+  TOutput extends KvValue,
+  TOptions extends CollectionOptions<TOutput>,
+> = (
+  kv: Deno.Kv,
+  key: KvKey,
+  queueHandlers: QueueHandlers,
+  idempotentListener: IdempotentListener,
+) => Collection<TInput, TOutput, TOptions>
+
+export type BuilderFnAny = (...args: any[]) => any
 
 export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
 
@@ -30,6 +39,14 @@ export type CommitResult<T1 extends KvValue> = {
 
 export type ManyCommitResult = {
   ok: true
+}
+
+export type Pagination = {
+  cursor: string | undefined
+}
+
+export type PaginationResult<T> = Pagination & {
+  result: T[]
 }
 
 export type IdGenerator<T extends KvValue> = (data: T) => KvId
@@ -464,12 +481,14 @@ export type UpsertOptions = UpdateOptions
 /********************/
 
 export type SchemaDefinition = {
-  [key: string]: SchemaDefinition | BuilderFn
+  [key: string]:
+    | SchemaDefinition
+    | BuilderFnAny
 }
 
 export type Schema<T extends SchemaDefinition> = {
   [K in keyof T]: T[K] extends SchemaDefinition ? Schema<T[K]>
-    : T[K] extends BuilderFn ? ReturnType<T[K]>
+    : T[K] extends BuilderFnAny ? ReturnType<T[K]>
     : never
 }
 

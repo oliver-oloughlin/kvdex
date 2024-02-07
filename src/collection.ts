@@ -20,6 +20,8 @@ import type {
   ListOptions,
   ManyCommitResult,
   Model,
+  Pagination,
+  PaginationResult,
   ParseInputType,
   PossibleCollectionOptions,
   PrimaryIndexKeys,
@@ -76,6 +78,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
 import { Document } from "./document.ts"
 import { model } from "./model.ts"
 import { concat, deepMerge, ulid } from "./deps.ts"
+import { BuilderFn } from "./types.ts"
 
 /**
  * Create a new collection within a database context.
@@ -113,7 +116,7 @@ export function collection<
 >(
   model: Model<TInput, TOutput>,
   options?: TOptions,
-) {
+): BuilderFn<TInput, TOutput, TOptions> {
   return (
     kv: Deno.Kv,
     key: KvKey,
@@ -277,7 +280,10 @@ export class Collection<
    * @param options - Find options, optional.
    * @returns A promise that resolves to the found document, or null if not found.
    */
-  async find(id: KvId, options?: FindOptions) {
+  async find(
+    id: KvId,
+    options?: FindOptions,
+  ): Promise<Document<TOutput> | null> {
     // Create document key, get document entry
     const key = extendKey(this._keys.id, id)
     const entry = await this.kv.get(key, options)
@@ -304,7 +310,7 @@ export class Collection<
     index: K,
     value: CheckKeyOf<K, TOutput>,
     options?: FindOptions,
-  ) {
+  ): Promise<Document<TOutput> | null> {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
     const compressed = this._serializer.compress(serialized)
@@ -350,7 +356,7 @@ export class Collection<
     index: K,
     value: CheckKeyOf<K, TOutput>,
     options?: ListOptions<Document<TOutput>>,
-  ) {
+  ): Promise<PaginationResult<Document<TOutput>>> {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
     const compressed = this._serializer.compress(serialized)
@@ -389,7 +395,10 @@ export class Collection<
    * @param options - Find many options, optional.
    * @returns A promise that resolves to an array of documents.
    */
-  async findMany(ids: KvId[], options?: FindManyOptions) {
+  async findMany(
+    ids: KvId[],
+    options?: FindManyOptions,
+  ): Promise<Document<TOutput>[]> {
     // Create document keys, get document entries
     const keys = ids.map((id) => extendKey(this._keys.id, id))
     const entries = await kvGetMany(keys, this.kv, options)
@@ -433,7 +442,10 @@ export class Collection<
    * @param id - Document id.
    * @returns A promise resolving to a list of history entries.
    */
-  async findHistory(id: KvId, options?: ListOptions<HistoryEntry<TOutput>>) {
+  async findHistory(
+    id: KvId,
+    options?: ListOptions<HistoryEntry<TOutput>>,
+  ): Promise<PaginationResult<HistoryEntry<TOutput>>> {
     // Initialize result list and create history key prefix
     const result: HistoryEntry<TOutput>[] = []
     const keyPrefix = extendKey(this._keys.history, id)
@@ -521,7 +533,10 @@ export class Collection<
    * @param options - Set options, optional.
    * @returns Promise resolving to a CommitResult or CommitError.
    */
-  async add(value: ParseInputType<TInput, TOutput>, options?: SetOptions) {
+  async add(
+    value: ParseInputType<TInput, TOutput>,
+    options?: SetOptions,
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Set document value with generated id
     return await this.setDocument(null, value, options)
   }
@@ -548,7 +563,7 @@ export class Collection<
     id: KvId,
     data: ParseInputType<TInput, TOutput>,
     options?: SetOptions,
-  ) {
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     return await this.setDocument(id, data, options)
   }
 
@@ -581,7 +596,7 @@ export class Collection<
     id: KvId,
     value: ParseInputType<TInput, TOutput>,
     options?: SetOptions,
-  ) {
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     return await this.setDocument(id, value, { ...options, overwrite: true })
   }
 
@@ -597,7 +612,7 @@ export class Collection<
    * @param ids - IDs of documents to be deleted.
    * @returns A promise that resovles to void.
    */
-  async delete(...ids: KvId[]) {
+  async delete(...ids: KvId[]): Promise<void> {
     await this.deleteDocuments(ids, this._keepsHistory)
   }
 
@@ -621,7 +636,7 @@ export class Collection<
     index: K,
     value: CheckKeyOf<K, TOutput>,
     options?: FindOptions,
-  ) {
+  ): Promise<void> {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
     const compressed = this._serializer.compress(serialized)
@@ -675,7 +690,7 @@ export class Collection<
     index: K,
     value: CheckKeyOf<K, TOutput>,
     options?: ListOptions<Document<TOutput>>,
-  ) {
+  ): Promise<Pagination> {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
     const compressed = this._serializer.compress(serialized)
@@ -831,7 +846,7 @@ export class Collection<
     value: CheckKeyOf<K, TOutput>,
     data: UpdateData<TOutput, T["strategy"]>,
     options?: T,
-  ) {
+  ): Promise<PaginationResult<CommitResult<TOutput> | Deno.KvCommitError>> {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
     const compressed = this._serializer.compress(serialized)
@@ -882,7 +897,7 @@ export class Collection<
   >(
     input: IdUpsert<TInput, TOutput, TUpsertOptions["strategy"]>,
     options?: TUpsertOptions,
-  ) {
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     const updateCr = await this.update(input.id, input.update, options)
 
     if (updateCr.ok) {
@@ -935,7 +950,7 @@ export class Collection<
       TUpsertOptions["strategy"]
     >,
     options?: TUpsertOptions,
-  ) {
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // First attempt update
     const updateCr = await this.updateByPrimaryIndex(
       ...input.index,
@@ -993,7 +1008,7 @@ export class Collection<
   async updateMany<const T extends UpdateManyOptions<Document<TOutput>>>(
     value: UpdateData<TOutput, T["strategy"]>,
     options?: T,
-  ) {
+  ): Promise<PaginationResult<CommitResult<TOutput> | Deno.KvCommitError>> {
     // Update each document, add commit result to result list
     return await this.handleMany(
       this._keys.id,
@@ -1029,7 +1044,7 @@ export class Collection<
   >(
     data: UpdateData<TOutput, T["strategy"]>,
     options?: T,
-  ) {
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Update a single document
     const { result } = await this.handleMany(
       this._keys.id,
@@ -1075,7 +1090,7 @@ export class Collection<
     value: CheckKeyOf<K, TOutput>,
     data: UpdateData<TOutput, T["strategy"]>,
     options?: T,
-  ) {
+  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Create prefix key
     const prefixKey = createSecondaryIndexKeyPrefix(
       index,
@@ -1176,7 +1191,9 @@ export class Collection<
    * @param options - List options, optional.
    * @returns A promise that resovles to an object containing the iterator cursor
    */
-  async deleteMany(options?: AtomicListOptions<Document<TOutput>>) {
+  async deleteMany(
+    options?: AtomicListOptions<Document<TOutput>>,
+  ): Promise<Pagination> {
     // Perform quick delete if all documents are to be deleted
     if (selectsAll(options)) {
       // Create list iterator and empty keys list, init atomic operation
@@ -1245,7 +1262,9 @@ export class Collection<
    * @param options - List options, optional.
    * @returns A promise that resovles to an object containing a list of the retrieved documents and the iterator cursor
    */
-  async getMany(options?: ListOptions<Document<TOutput>>) {
+  async getMany(
+    options?: ListOptions<Document<TOutput>>,
+  ): Promise<PaginationResult<Document<TOutput>>> {
     // Get each document, return result list and current iterator cursor
     return await this.handleMany(
       this._keys.id,
@@ -1276,7 +1295,9 @@ export class Collection<
    * @param options - List options, optional.
    * @returns A promise that resovles to the retreived document
    */
-  async getOne(options?: ListOptions<Document<TOutput>>) {
+  async getOne(
+    options?: ListOptions<Document<TOutput>>,
+  ): Promise<Document<TOutput> | null> {
     // Get result list with limit of one item
     const { result } = await this.handleMany(
       this._keys.id,
@@ -1318,7 +1339,7 @@ export class Collection<
     index: K,
     value: CheckKeyOf<K, TOutput>,
     options?: ListOptions<Document<TOutput>>,
-  ) {
+  ): Promise<Document<TOutput> | null> {
     // Create prefix key
     const prefixKey = createSecondaryIndexKeyPrefix(
       index,
@@ -1360,7 +1381,7 @@ export class Collection<
   async forEach(
     fn: (doc: Document<TOutput>) => unknown,
     options?: ListOptions<Document<TOutput>>,
-  ) {
+  ): Promise<Pagination> {
     // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
       this._keys.id,
@@ -1400,7 +1421,7 @@ export class Collection<
     value: CheckKeyOf<K, TOutput>,
     fn: (doc: Document<TOutput>) => unknown,
     options?: UpdateManyOptions<Document<TOutput>>,
-  ) {
+  ): Promise<Pagination> {
     // Create prefix key
     const prefixKey = createSecondaryIndexKeyPrefix(
       index,
@@ -1444,7 +1465,7 @@ export class Collection<
   async map<const T>(
     fn: (doc: Document<TOutput>) => T,
     options?: ListOptions<Document<TOutput>>,
-  ) {
+  ): Promise<PaginationResult<Awaited<T>>> {
     // Execute callback function for each document entry, return result and cursor
     return await this.handleMany(
       this._keys.id,
@@ -1484,7 +1505,7 @@ export class Collection<
     value: CheckKeyOf<K, TOutput>,
     fn: (doc: Document<TOutput>) => T,
     options?: UpdateManyOptions<Document<TOutput>>,
-  ) {
+  ): Promise<PaginationResult<Awaited<T>>> {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
     const compressed = this._serializer.compress(serialized)
@@ -1521,7 +1542,7 @@ export class Collection<
    * @param options - Count options, optional.
    * @returns A promise that resolves to a number representing the count.
    */
-  async count(options?: ListOptions<Document<TOutput>>) {
+  async count(options?: ListOptions<Document<TOutput>>): Promise<number> {
     // Initiate count result
     let result = 0
 
@@ -1560,7 +1581,7 @@ export class Collection<
     index: K,
     value: CheckKeyOf<K, TOutput>,
     options?: ListOptions<Document<TOutput>>,
-  ) {
+  ): Promise<number> {
     // Serialize and compress index value
     const serialized = this._serializer.serialize(value)
     const compressed = this._serializer.compress(serialized)
@@ -1608,7 +1629,10 @@ export class Collection<
    * @param options - Enqueue options, optional.
    * @returns A promise resolving to Deno.KvCommitResult.
    */
-  async enqueue<T extends KvValue>(data: T, options?: EnqueueOptions) {
+  async enqueue<T extends KvValue>(
+    data: T,
+    options?: EnqueueOptions,
+  ): Promise<Deno.KvCommitResult> {
     // Prepare message and options for enqueue
     const prep = prepareEnqueue(
       this._keys.base,
@@ -1651,7 +1675,7 @@ export class Collection<
   async listenQueue<T extends KvValue = KvValue>(
     handler: QueueMessageHandler<T>,
     options?: QueueListenerOptions,
-  ) {
+  ): Promise<void> {
     // Create handler id
     const handlerId = createHandlerId(this._keys.base, options?.topic)
 
@@ -1683,7 +1707,7 @@ export class Collection<
   async findUndelivered<T extends KvValue = KvValue>(
     id: KvId,
     options?: FindOptions,
-  ) {
+  ): Promise<Document<T> | null> {
     // Create document key, get document entry
     const key = extendKey(this._keys.undelivered, id)
     const result = await this.kv.get<T>(key, options)
@@ -1711,7 +1735,7 @@ export class Collection<
    *
    * @param id - Document id.
    */
-  async deleteHistory(id: KvId) {
+  async deleteHistory(id: KvId): Promise<void> {
     // Initialize atomic operation and create iterators
     const atomic = new AtomicWrapper(this.kv)
     const historyKeyPrefix = extendKey(this._keys.history, id)
@@ -1743,7 +1767,7 @@ export class Collection<
    *
    * @param id - Id of undelivered document.
    */
-  async deleteUndelivered(id: KvId) {
+  async deleteUndelivered(id: KvId): Promise<void> {
     const key = extendKey(this._keys.undelivered, id)
     await this.kv.delete(key)
   }
@@ -1771,7 +1795,7 @@ export class Collection<
     id: KvId,
     fn: (doc: Document<TOutput> | null) => unknown,
     options?: WatchOptions,
-  ) {
+  ): Promise<void> {
     // Create watch stream
     const key = extendKey(this._keys.id, id)
     const stream = this.kv.watch([key], options)
@@ -1820,7 +1844,7 @@ export class Collection<
     ids: KvId[],
     fn: (doc: (Document<TOutput> | null)[]) => unknown,
     options?: WatchOptions,
-  ) {
+  ): Promise<void> {
     // Create watch stream
     const keys = ids.map((id) => extendKey(this._keys.id, id))
     const stream = this.kv.watch(keys, options)
@@ -1874,7 +1898,7 @@ export class Collection<
    * @param overwrite
    * @returns
    */
-  async setDoc(
+  private async setDoc(
     docId: KvId,
     idKey: KvKey,
     value: TOutput,
@@ -2128,7 +2152,7 @@ export class Collection<
    * @param options - List options, optional.
    * @returns Promise that resolves to object with iterator cursor.
    */
-  protected async handleMany<const T>(
+  private async handleMany<const T>(
     prefixKey: KvKey,
     fn: (doc: Document<TOutput>) => T,
     options: HandleManyOptions<Document<TOutput>> | undefined,
