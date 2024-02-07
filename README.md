@@ -6,7 +6,7 @@ through additional features such as indexing, strongly typed collections and
 serialization/compression, while maintaining as much of the native functionality
 as possible, like atomic operations, real-time data updates and queue listeners.
 
-_Supported Deno verisons:_ **^1.38.5**
+_Supported Deno verisons:_ **^1.40.0**
 
 ## Highlights
 
@@ -109,7 +109,7 @@ type.
 Using the standard model strategy:
 
 ```ts
-import { model } from "https://deno.land/x/kvdex/mod.ts"
+import { model } from "jsr:@olli/kvdex"
 
 type User = {
   username: string
@@ -137,7 +137,7 @@ const AsymmetricUserModel = model((user: User) => ({
 Using Zod instead:
 
 ```ts
-import { z } from "https://deno.land/x/zod/mod.ts"
+import { z } from "npm:zod"
 
 type User = z.infer<typeof UserModel>
 
@@ -160,7 +160,7 @@ const UserModel = z.object({
 instance and a schema definition as arguments.
 
 ```ts
-import { kvdex, model, collection } from "https://deno.land/x/kvdex/mod.ts"
+import { kvdex, model, collection } from "jsr:@olli/kvdex"
 
 const kv = await Deno.openKv()
 
@@ -205,7 +205,7 @@ added, which can be useful to create derived ids. The default id generator uses
 Id created from the data being added:
 
 ```ts
-import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
+import { collection, kvdex, model } from "jsr:@olli/kvdex"
 
 const kv = await Deno.openKv()
 
@@ -219,7 +219,7 @@ const db = kvdex(kv, {
 Using randomely generated uuids:
 
 ```ts
-import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
+import { collection, kvdex, model } from "jsr:@olli/kvdex"
 
 const kv = await Deno.openKv()
 
@@ -238,7 +238,7 @@ querying data based on index values.
 **NOTE:** Index values are always serialized.
 
 ```ts
-import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
+import { collection, kvdex, model } from "jsr:@olli/kvdex"
 
 const kv = await Deno.openKv()
 
@@ -260,7 +260,7 @@ dividing the value across multiple key/value entries. There is a tradeoff
 between speed and storage efficiency.
 
 ```ts
-import { kvdex, collection, model } from "https://deno.land/x/kvdex/mod.ts"
+import { kvdex, collection, model } from "jsr:@olli/kvdex"
 
 const kv = await Deno.openKv()
 
@@ -288,7 +288,7 @@ const db = kvdex(kv, {
 Set to `true` to enable version history. Default is `false`.
 
 ```ts
-import { collection, kvdex, model } from "https://deno.land/x/kvdex/mod.ts"
+import { collection, kvdex, model } from "jsr:@olli/kvdex"
 
 const kv = await Deno.openKv()
 
@@ -1245,9 +1245,9 @@ schemas can be used as models directly, `zodModel()` properly parses a model
 from a zod schema, recognizing default fields as optional.
 
 ```ts
-import { z } from "https://deno.land/x/zod/mod.ts"
-import { zodModel } from "https://deno.land/x/kvdex/ext/zod.ts"
-import { collection, kvdex } from "https://deno.land/x/kvdex/mod.ts"
+import { z } from "npm:zod"
+import { zodModel } from "jsr:@olli/kvdex/ext/zod"
+import { collection, kvdex } from "jsr:@olli/kvdex"
 
 const UserSchema = z.object({
   username: z.string(),
@@ -1279,8 +1279,8 @@ KvValue, KvObject and Kvarray. This makes it easier to properly build your
 schemas.
 
 ```ts
-import { z } from "https://deno.land/x/zod/mod.ts"
-import { KvIdSchema } from "https://deno.land/x/kvdex/ext/zod.ts"
+import { z } from "npm:zod"
+import { KvIdSchema } from "jsr:@olli/kvdex/ext/zod"
 
 const UserSchema = z.object({
   username: z.string(),

@@ -70,12 +70,12 @@ import { IntervalSetter } from "./types.ts"
  *
  * @param kv - The Deno KV instance to be used for storing and retrieving data.
  * @param schemaDefinition - The schema definition used to build collections and create the database schema.
- * @returns A KvDex instance with attached schema.
+ * @returns A Kvdex instance with attached schema.
  */
 export function kvdex<const T extends SchemaDefinition>(
   kv: Deno.Kv,
   schemaDefinition: T,
-) {
+): Kvdex<Schema<T>> & Schema<T> {
   // Set listener activated flag and queue handlers map
   let listener: Promise<void>
   const queueHandlers = new Map<string, QueueMessageHandler<KvValue>[]>()
@@ -114,13 +114,13 @@ export function kvdex<const T extends SchemaDefinition>(
   ) as Schema<T>
 
   // Create KvDex object
-  const db = new KvDex(kv, schema, queueHandlers, idempotentListener)
+  const db = new Kvdex(kv, schema, queueHandlers, idempotentListener)
 
   // Return schema and db combination
   return Object.assign(db, schema)
 }
 
-export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
+export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   private kv: Deno.Kv
   private schema: TSchema
   private queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>
@@ -153,7 +153,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    */
   atomic<const TInput, const TOutput extends KvValue>(
     selector: CollectionSelector<TSchema, TInput, TOutput>,
-  ) {
+  ): AtomicBuilder<TSchema, TInput, TOutput> {
     return new AtomicBuilder(this.kv, this.schema, selector(this.schema))
   }
 
@@ -173,7 +173,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    * @param options - Count all options, optional.
    * @returns Promise resolving to a number representing the total count of documents in the KV store.
    */
-  async countAll(options?: CountAllOptions) {
+  async countAll(options?: CountAllOptions): Promise<number> {
     return await _countAll(this.kv, this.schema, options)
   }
 
@@ -193,7 +193,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    * @param options - Atomic batch options.
    * @returns Promise resolving to void.
    */
-  async deleteAll(options?: AtomicBatchOptions) {
+  async deleteAll(options?: AtomicBatchOptions): Promise<void> {
     await _deleteAll(this.kv, this.schema, options)
   }
 
@@ -212,7 +212,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    *
    * @param options - Atomic batch options.
    */
-  async wipe(options?: AtomicBatchOptions) {
+  async wipe(options?: AtomicBatchOptions): Promise<void> {
     // Create iterator
     const iter = this.kv.list({ prefix: [KVDEX_KEY_PREFIX] })
 
@@ -249,7 +249,10 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    * @param data - Data to be added to the database queue.
    * @param options - Enqueue options, optional.
    */
-  async enqueue<T extends KvValue>(data: T, options?: EnqueueOptions) {
+  async enqueue<T extends KvValue>(
+    data: T,
+    options?: EnqueueOptions,
+  ): Promise<Deno.KvCommitResult> {
     // Prepare and perform enqueue operation
     const prep = prepareEnqueue(
       [KVDEX_KEY_PREFIX],
@@ -288,7 +291,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
   listenQueue<const T extends KvValue>(
     handler: QueueMessageHandler<T>,
     options?: QueueListenerOptions,
-  ) {
+  ): Promise<void> {
     // Create handler id
     const handlerId = createHandlerId([KVDEX_KEY_PREFIX], options?.topic)
 
@@ -320,7 +323,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
   async findUndelivered<const T extends KvValue>(
     id: KvId,
     options?: FindOptions,
-  ) {
+  ): Promise<Document<T> | null> {
     // Create document key, get document entry
     const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id)
     const result = await this.kv.get<T>(key, options)
@@ -348,7 +351,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
    *
    * @param id - Id of undelivered document.
    */
-  async deleteUndelivered(id: KvId) {
+  async deleteUndelivered(id: KvId): Promise<void> {
     const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id)
     await this.kv.delete(key)
   }
@@ -389,7 +392,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
     fn: (msg: IntervalMessage) => unknown,
     interval: IntervalSetter,
     options?: SetIntervalOptions,
-  ) {
+  ): Promise<void> {
     // Set id
     const id = crypto.randomUUID()
 
@@ -500,7 +503,7 @@ export class KvDex<const TSchema extends Schema<SchemaDefinition>> {
   async loop<const T1 extends KvValue>(
     fn: (msg: LoopMessage<Awaited<T1>>) => T1 | Promise<T1>,
     options?: LoopOptions<Awaited<T1>>,
-  ) {
+  ): Promise<void> {
     // Set id
     const id = crypto.randomUUID()
 

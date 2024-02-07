@@ -1,5 +1,5 @@
-import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts"
-import type { KvArray, KvObject, KvValue, Model } from "../mod.ts"
+import { z } from "npm:zod@3.22.4"
+import type { KvArray, KvId, KvObject, KvValue, Model } from "../mod.ts"
 
 /*******************/
 /*                 */
@@ -12,7 +12,7 @@ const LazyKvArraySchema = z.lazy(() => KvArraySchema)
 
 const LazyKvObjectSchema = z.lazy(() => KvObjectSchema)
 
-export const KvIdSchema = z.string()
+export const KvIdSchema: z.ZodType<KvId> = z.string()
   .or(z.number())
   .or(z.bigint())
   .or(z.boolean())

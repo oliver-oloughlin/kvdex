@@ -93,7 +93,7 @@ export class AtomicBuilder<
    */
   select<const Input, const Output extends KvValue>(
     selector: CollectionSelector<TSchema, Input, Output>,
-  ) {
+  ): AtomicBuilder<TSchema, Input, Output> {
     return new AtomicBuilder(
       this.kv,
       this.schema,
@@ -119,7 +119,10 @@ export class AtomicBuilder<
    * @param options - Set options, optional.
    * @returns Current AtomicBuilder instance.
    */
-  add(value: ParseInputType<TInput, TOutput>, options?: AtomicSetOptions) {
+  add(
+    value: ParseInputType<TInput, TOutput>,
+    options?: AtomicSetOptions,
+  ): this {
     return this.setDocument(null, value, options)
   }
 
@@ -145,7 +148,7 @@ export class AtomicBuilder<
     id: KvId,
     value: ParseInputType<TInput, TOutput>,
     options?: AtomicSetOptions,
-  ) {
+  ): this {
     return this.setDocument(id, value, options)
   }
 
@@ -162,7 +165,7 @@ export class AtomicBuilder<
    * @param id - Id of document to be deleted.
    * @returns Current AtomicBuilder instance.
    */
-  delete(id: KvId) {
+  delete(id: KvId): this {
     // Create id key from id and collection id key
     const collection = this.collection
     const idKey = extendKey(collection._keys.id, id)
@@ -218,7 +221,7 @@ export class AtomicBuilder<
    * @param atomicChecks - AtomicCheck objects containing a document id and versionstamp.
    * @returns Current AtomicBuilder instance.
    */
-  check(...atomicChecks: AtomicCheck<TOutput>[]) {
+  check(...atomicChecks: AtomicCheck<TOutput>[]): this {
     // Create Deno atomic checks from atomci checks input list
     const checks: Deno.AtomicCheck[] = atomicChecks.map(
       ({ id, versionstamp }) => {
@@ -252,7 +255,7 @@ export class AtomicBuilder<
    * @param value - The value to add to the document value.
    * @returns Current AtomicBuilder instance.
    */
-  sum(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never) {
+  sum(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never): this {
     const idKey = extendKey(this.collection._keys.id, id)
     this.operations.atomic.sum(idKey, value)
     return this
@@ -274,7 +277,7 @@ export class AtomicBuilder<
    * @param value - The value to compare with the existing value.
    * @returns Current AtomicBuilder instance.
    */
-  min(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never) {
+  min(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never): this {
     const idKey = extendKey(this.collection._keys.id, id)
     this.operations.atomic.min(idKey, value)
     return this
@@ -296,7 +299,7 @@ export class AtomicBuilder<
    * @param value - The value to compare with the existing value.
    * @returns Current AtomicBuilder instance.
    */
-  max(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never) {
+  max(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never): this {
     const idKey = extendKey(this.collection._keys.id, id)
     this.operations.atomic.max(idKey, value)
     return this
@@ -325,7 +328,9 @@ export class AtomicBuilder<
    * @param mutations - Atomic mutations to be performed.
    * @returns Current AtomicBuilder instance.
    */
-  mutate(...mutations: AtomicMutation<ParseInputType<TInput, TOutput>>[]) {
+  mutate(
+    ...mutations: AtomicMutation<ParseInputType<TInput, TOutput>>[]
+  ): this {
     // Add each atomic mutation by case
     mutations.forEach(({ id, ...rest }) => {
       switch (rest.type) {
@@ -382,7 +387,7 @@ export class AtomicBuilder<
    * @param options - Enqueue options, optional.
    * @returns A promise resolving to Deno.KvCommitResult.
    */
-  enqueue(data: KvValue, options?: EnqueueOptions) {
+  enqueue(data: KvValue, options?: EnqueueOptions): this {
     // Prepare and add enqueue operation
     const prep = prepareEnqueue(
       this.collection._keys.base,
