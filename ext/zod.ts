@@ -66,9 +66,9 @@ export const KvObjectSchema: z.ZodType<KvObject> = z.record(
  *
  * @example
  * ```ts
- * import { z } from "https://deno.land/x/zod/mod.ts"
- * import { zodModel } from "https://deno.land/x/kvdex/ext/zod.ts"
- * import { collection, kvdex } from "https://deno.land/x/kvdex/mod.ts"
+ * import { z } from "npm:zod"
+ * import { zodModel } from "jsr:@olli/kvdex/ext/zod"
+ * import { collection, kvdex } from "jsr:@olli/kvdex"
  *
  * const UserSchema = z.object({
  *   username: z.string(),

@@ -46,7 +46,7 @@ import { IntervalSetter } from "./types.ts"
  *
  * @example
  * ```ts
- * import { kvdex, model, collection } from "https://deno.land/x/kvdex/mod.ts"
+ * import { kvdex, model, collection } from "jsr:@olli/kvdex"
  *
  * type User = {
  *   username: string

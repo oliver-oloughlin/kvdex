@@ -85,7 +85,7 @@ import { BuilderFn } from "./types.ts"
  *
  * @example
  * ```ts
- * import { model, collection, kvdex } from "https://deno.land/x/kvdex/mod.ts"
+ * import { model, collection, kvdex } from "jsr:@olli/kvdex"
  *
  * type User = {
  *   username: string
