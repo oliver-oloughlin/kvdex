@@ -1,5 +1,5 @@
 import { ATOMIC_OPERATION_MUTATION_LIMIT } from "./constants.ts"
-import type { SetOptions } from "./types.ts"
+import type { AtomicSetOptions } from "./types.ts"
 import { clamp } from "./utils.ts"
 
 export class AtomicWrapper implements Deno.AtomicOperation {
@@ -24,7 +24,7 @@ export class AtomicWrapper implements Deno.AtomicOperation {
     )
   }
 
-  set(key: Deno.KvKey, value: unknown, options?: SetOptions) {
+  set(key: Deno.KvKey, value: unknown, options?: AtomicSetOptions) {
     this.addMutation((op) => op.set(key, value, options))
     return this
   }

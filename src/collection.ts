@@ -43,6 +43,7 @@ import type {
 import {
   allFulfilled,
   checkIndices,
+  clamp,
   compress,
   createHandlerId,
   createListOptions,
@@ -64,6 +65,7 @@ import {
   setIndices,
 } from "./utils.ts"
 import {
+  ATOMIC_OPERATION_MUTATION_LIMIT,
   DEFAULT_UPDATE_STRATEGY,
   HISTORY_KEY_PREFIX,
   ID_KEY_PREFIX,
@@ -75,6 +77,7 @@ import {
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts"
 import { AtomicWrapper } from "./atomic_wrapper.ts"
+import { AtomicPool } from "./atomic_pool.ts"
 import { Document } from "./document.ts"
 import { model } from "./model.ts"
 import { concat, deepMerge, ulid } from "./deps.ts"
@@ -1905,15 +1908,20 @@ export class Collection<
     options: SetOptions | undefined,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Initialize atomic operation and keys list
-    const atomic = this.kv.atomic()
     const ids: KvId[] = []
     let docValue: any = value
     const isUint8Array = value instanceof Uint8Array
     const timeId = ulid()
 
+    const atomicBatchSize = options?.atomicBatchSize &&
+      clamp(1, options?.atomicBatchSize, ATOMIC_OPERATION_MUTATION_LIMIT)
+
+    const operationPool = new AtomicPool()
+    const indexOperationPool = new AtomicPool()
+
     // Check for id collision
     if (!options?.overwrite) {
-      atomic.check({
+      operationPool.check({
         key: idKey,
         versionstamp: null,
       })
@@ -1932,7 +1940,8 @@ export class Collection<
         const part = compressed.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT)
         const key = extendKey(this._keys.segment, docId, index)
         ids.push(index)
-        atomic.set(key, part, options)
+
+        operationPool.set(key, part, options)
 
         // Set history segments if keeps history
         if (this._keepsHistory) {
@@ -1943,7 +1952,7 @@ export class Collection<
             index,
           )
 
-          atomic.set(historySegmentKey, part)
+          operationPool.set(historySegmentKey, part)
         }
 
         index++
@@ -1959,7 +1968,7 @@ export class Collection<
     }
 
     // Set document entry
-    atomic.set(idKey, docValue, options)
+    operationPool.set(idKey, docValue, options)
 
     // Set history entry if keeps history
     if (this._keepsHistory) {
@@ -1971,7 +1980,7 @@ export class Collection<
         value: docValue,
       }
 
-      atomic.set(historyKey, historyEntry)
+      operationPool.set(historyKey, historyEntry)
     }
 
     // Set indices if is indexable
@@ -1980,17 +1989,69 @@ export class Collection<
         docId,
         value as KvObject,
         docValue,
-        atomic,
+        indexOperationPool,
         this,
         options,
       )
     }
 
-    // Commit atomic operation
-    const cr = await atomic.commit()
+    // Initialize index check, commit result and atomic operation
+    let indexCheck = false
+    let cr: Deno.KvCommitResult | Deno.KvCommitError = { ok: false }
+
+    const atomic = atomicBatchSize
+      ? new AtomicWrapper(this.kv, atomicBatchSize)
+      : this.kv.atomic()
+
+    // Perform index mutations first if operation is batched, else bind all mutations to main operation
+    if (atomicBatchSize) {
+      const indexAtomic = this.kv.atomic()
+      indexOperationPool.bindTo(indexAtomic)
+      const indexCr = await indexAtomic.commit()
+      indexCheck = indexCr.ok
+    } else {
+      indexOperationPool.bindTo(atomic)
+    }
+
+    // Bind remaining mutations to main operation
+    operationPool.bindTo(atomic)
+
+    // Commit operation if not batched or if index setters completed successfully
+    if (!atomicBatchSize || indexCheck) {
+      cr = await atomic.commit()
+    }
 
     // Handle failed operation
     if (!cr.ok) {
+      // Delete any entries upon failed batched operation
+      if (atomicBatchSize && indexCheck) {
+        const failedAtomic = new AtomicWrapper(this.kv, atomicBatchSize)
+
+        if (this._keepsHistory) {
+          const historyKey = extendKey(this._keys.history, docId, timeId)
+          failedAtomic.delete(historyKey)
+        }
+
+        if (this._isSerialized) {
+          const { ids } = docValue as SerializedEntry
+          ids.forEach((id) =>
+            failedAtomic.delete(extendKey(this._keys.segment, docId, id))
+          )
+        }
+
+        if (this._isIndexable) {
+          deleteIndices(
+            docId,
+            value as KvObject,
+            failedAtomic,
+            this,
+          )
+        }
+
+        await failedAtomic.commit()
+      }
+
+      // Return commit error if no remaining retry attempts
       const retry = options?.retry ?? 0
       if (!retry) {
         return {
@@ -1998,6 +2059,7 @@ export class Collection<
         }
       }
 
+      // Retry operation and decrement retry count
       return await this.setDoc(docId, idKey, value, {
         ...options,
         retry: retry - 1,
