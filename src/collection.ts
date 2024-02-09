@@ -1995,7 +1995,7 @@ export class Collection<
       )
     }
 
-    // Commit atomic operation
+    // Initialize index check, commit result and atomic operation
     let indexCheck = false
     let cr: Deno.KvCommitResult | Deno.KvCommitError = { ok: false }
 
@@ -2003,6 +2003,7 @@ export class Collection<
       ? new AtomicWrapper(this.kv, atomicBatchSize)
       : this.kv.atomic()
 
+    // Perform index mutations first if operation is batched, else bind all mutations to main operation
     if (atomicBatchSize) {
       const indexAtomic = this.kv.atomic()
       indexOperationPool.bindTo(indexAtomic)
@@ -2012,14 +2013,17 @@ export class Collection<
       indexOperationPool.bindTo(atomic)
     }
 
+    // Bind remaining mutations to main operation
     operationPool.bindTo(atomic)
 
+    // Commit operation if not batched or if index setters completed successfully
     if (!atomicBatchSize || indexCheck) {
       cr = await atomic.commit()
     }
 
     // Handle failed operation
     if (!cr.ok) {
+      // Delete any entries upon failed batched operation
       if (atomicBatchSize && indexCheck) {
         const failedAtomic = new AtomicWrapper(this.kv, atomicBatchSize)
 
@@ -2047,6 +2051,7 @@ export class Collection<
         await failedAtomic.commit()
       }
 
+      // Return commit error if no remaining retry attempts
       const retry = options?.retry ?? 0
       if (!retry) {
         return {
@@ -2054,6 +2059,7 @@ export class Collection<
         }
       }
 
+      // Retry operation and decrement retry count
       return await this.setDoc(docId, idKey, value, {
         ...options,
         retry: retry - 1,

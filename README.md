@@ -88,6 +88,7 @@ _Supported Deno verisons:_ **^1.40.0**
     - [Zod](#zod)
       - [zodModel()](#zodmodel)
       - [Kv-Schemas](#kv-schemas)
+  - [Blob Storage](#blob-storage)
   - [Development](#development)
   - [License](#license)
 
@@ -1291,6 +1292,25 @@ const PostSchema = z.object({
   text: z.string(),
   userId: KvIdSchema,
 })
+```
+
+## Blob Storage
+
+To store large blob sizes, and bypass the data limit of a single atomic
+operation, a combination of serialized collections and the `atomicBatchSize`
+option for write operations can be used.
+
+```ts
+import { collection, kvdex, model } from "jsr:@olli/kvdex"
+
+const kv = await Deno.openKv()
+const db = kvdex(kv, {
+  blobs: collection(model<Uint8Array>(), { serialize: "json" }),
+})
+
+const blob = // read from disk, etc.
+
+const result = await db.blobs.add(blob, { atomicBatchSize: 10 })
 ```
 
 ## Development
