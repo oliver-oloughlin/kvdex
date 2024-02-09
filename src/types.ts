@@ -341,6 +341,7 @@ export type Serializer = {
 }
 
 export type SerializedEntry = {
+  isUint8Array: boolean
   ids: KvId[]
 }
 

@@ -1908,6 +1908,7 @@ export class Collection<
     const atomic = this.kv.atomic()
     const ids: KvId[] = []
     let docValue: any = value
+    const isUint8Array = value instanceof Uint8Array
     const timeId = ulid()
 
     // Check for id collision
@@ -1920,7 +1921,9 @@ export class Collection<
 
     // Serialize if enabled
     if (this._isSerialized) {
-      const serialized = this._serializer.serialize(value)
+      const serialized = isUint8Array
+        ? value
+        : this._serializer.serialize(value)
       const compressed = this._serializer.compress(serialized)
 
       // Set segmented entries
@@ -1947,9 +1950,12 @@ export class Collection<
       }
 
       // Set serialized document value
-      docValue = {
+      const serializedEntry: SerializedEntry = {
         ids,
+        isUint8Array,
       }
+
+      docValue = serializedEntry
     }
 
     // Set document entry
@@ -2114,7 +2120,7 @@ export class Collection<
 
     if (this._isSerialized) {
       // Get document parts
-      const { ids } = value as SerializedEntry
+      const { ids, isUint8Array } = value as SerializedEntry
 
       const keys = ids.map((segId) =>
         extendKey(this._keys.segment, docId, segId)
@@ -2127,7 +2133,9 @@ export class Collection<
 
       // Decompress and deserialize
       const serialized = this._serializer.decompress(data)
-      const deserialized = this._serializer.deserialize<TOutput>(serialized)
+      const deserialized = isUint8Array
+        ? serialized as TOutput
+        : this._serializer.deserialize<TOutput>(serialized)
 
       // Return parsed document
       return new Document<TOutput>(this._model, {
