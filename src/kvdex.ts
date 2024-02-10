@@ -1,5 +1,4 @@
 import type {
-  AtomicBatchOptions,
   CollectionOptions,
   CollectionSelector,
   CountAllOptions,
@@ -185,16 +184,10 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    * await db.deleteAll()
    * ```
    *
-   * @example
-   * ```ts
-   * await db.deleteAll({ atomicBatchSize: 500 })
-   * ```
-   *
-   * @param options - Atomic batch options.
    * @returns Promise resolving to void.
    */
-  async deleteAll(options?: AtomicBatchOptions): Promise<void> {
-    await _deleteAll(this.kv, this.schema, options)
+  async deleteAll(): Promise<void> {
+    await _deleteAll(this.kv, this.schema)
   }
 
   /**
@@ -205,14 +198,9 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    * await db.wipe()
    * ```
    *
-   * @example
-   * ```ts
-   * await db.wipe({ atomicBatchSize: 500 })
-   * ```
-   *
-   * @param options - Atomic batch options.
+   * @returns Promise resolving to void.
    */
-  async wipe(options?: AtomicBatchOptions): Promise<void> {
+  async wipe(): Promise<void> {
     // Create iterator
     const iter = this.kv.list({ prefix: [KVDEX_KEY_PREFIX] })
 
@@ -223,7 +211,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     }
 
     // Delete all entries
-    const atomic = new AtomicWrapper(this.kv, options?.atomicBatchSize)
+    const atomic = new AtomicWrapper(this.kv)
     keys.forEach((key) => atomic.delete(key))
     await atomic.commit()
   }
@@ -677,7 +665,6 @@ async function _countAll(
  *
  * @param kv - Deno KV instance.
  * @param schemaOrCollection - Schema or Collection object.
- * @param options - DeleteAll options.
  * @returns Promise resolving to void.
  */
 async function _deleteAll(
@@ -685,18 +672,15 @@ async function _deleteAll(
   schemaOrCollection:
     | Schema<SchemaDefinition>
     | Collection<KvValue, KvValue, CollectionOptions<KvValue>>,
-  options?: AtomicBatchOptions,
 ): Promise<void> {
   // If input is a collection, perform deleteMany
   if (schemaOrCollection instanceof Collection) {
-    await schemaOrCollection.deleteMany(options)
+    await schemaOrCollection.deleteMany()
     return
   }
 
   // Recursively perform delete for all schemas/collections
   await allFulfilled(
-    Object.values(schemaOrCollection).map((val) =>
-      _deleteAll(kv, val, options)
-    ),
+    Object.values(schemaOrCollection).map((val) => _deleteAll(kv, val)),
   )
 }

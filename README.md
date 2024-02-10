@@ -972,9 +972,6 @@ Delete all documents across all collections.
 
 ```ts
 await db.deleteAll()
-
-// Excplicity set the atomic batch size between 1-1000
-await db.deleteAll({ atomicBatchSize: 500 })
 ```
 
 ### wipe()
@@ -983,9 +980,6 @@ Delete all kvdex entries, including undelivered and history entries.
 
 ```ts
 await db.wipe()
-
-// Excplicity set the atomic batch size between 1-1000
-await db.wipe({ atomicBatchSize: 500 })
 ```
 
 ### deleteUndelivered()
@@ -1297,8 +1291,9 @@ const PostSchema = z.object({
 ## Blob Storage
 
 To store large blob sizes, and bypass the data limit of a single atomic
-operation, a combination of serialized collections and the `atomicBatchSize`
-option for write operations can be used.
+operation, a combination of serialized collections and batching atomic
+operations can be used. By default, batching is disabled to ensure consistency
+and improve performance.
 
 ```ts
 import { collection, kvdex, model } from "jsr:@olli/kvdex"
@@ -1310,7 +1305,7 @@ const db = kvdex(kv, {
 
 const blob = // read from disk, etc.
 
-const result = await db.blobs.add(blob, { atomicBatchSize: 10 })
+const result = await db.blobs.add(blob, { batching: true })
 ```
 
 ## Development

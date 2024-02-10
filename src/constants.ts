@@ -18,6 +18,10 @@ export const HISTORY_KEY_PREFIX = "__history__"
 // Fixed limits
 export const ATOMIC_OPERATION_MUTATION_LIMIT = 1_000
 
+export const ATOMIC_OPERATION_SIZE_LIMIT = 800
+
+export const ATOMIC_OPERTION_CHECK_LIMIT = 10
+
 export const GET_MANY_KEY_LIMIT = 10
 
 export const UINT8ARRAY_LENGTH_LIMIT = 65_536

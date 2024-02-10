@@ -43,7 +43,6 @@ import type {
 import {
   allFulfilled,
   checkIndices,
-  clamp,
   compress,
   createHandlerId,
   createListOptions,
@@ -65,7 +64,6 @@ import {
   setIndices,
 } from "./utils.ts"
 import {
-  ATOMIC_OPERATION_MUTATION_LIMIT,
   DEFAULT_UPDATE_STRATEGY,
   HISTORY_KEY_PREFIX,
   ID_KEY_PREFIX,
@@ -1203,7 +1201,7 @@ export class Collection<
       const iter = this.kv.list({ prefix: this._keys.base }, options)
 
       const keys: Deno.KvKey[] = []
-      const atomic = new AtomicWrapper(this.kv, options?.atomicBatchSize)
+      const atomic = new AtomicWrapper(this.kv)
 
       // Collect all collection entry keys
       for await (const { key } of iter) {
@@ -1912,10 +1910,6 @@ export class Collection<
     let docValue: any = value
     const isUint8Array = value instanceof Uint8Array
     const timeId = ulid()
-
-    const atomicBatchSize = options?.atomicBatchSize &&
-      clamp(1, options?.atomicBatchSize, ATOMIC_OPERATION_MUTATION_LIMIT)
-
     const operationPool = new AtomicPool()
     const indexOperationPool = new AtomicPool()
 
@@ -1999,12 +1993,12 @@ export class Collection<
     let indexCheck = false
     let cr: Deno.KvCommitResult | Deno.KvCommitError = { ok: false }
 
-    const atomic = atomicBatchSize
-      ? new AtomicWrapper(this.kv, atomicBatchSize)
+    const atomic = options?.batched
+      ? new AtomicWrapper(this.kv)
       : this.kv.atomic()
 
     // Perform index mutations first if operation is batched, else bind all mutations to main operation
-    if (atomicBatchSize) {
+    if (options?.batched) {
       const indexAtomic = this.kv.atomic()
       indexOperationPool.bindTo(indexAtomic)
       const indexCr = await indexAtomic.commit()
@@ -2017,15 +2011,15 @@ export class Collection<
     operationPool.bindTo(atomic)
 
     // Commit operation if not batched or if index setters completed successfully
-    if (!atomicBatchSize || indexCheck) {
+    if (!options?.batched || indexCheck) {
       cr = await atomic.commit()
     }
 
     // Handle failed operation
     if (!cr.ok) {
       // Delete any entries upon failed batched operation
-      if (atomicBatchSize && indexCheck) {
-        const failedAtomic = new AtomicWrapper(this.kv, atomicBatchSize)
+      if (options?.batched && indexCheck) {
+        const failedAtomic = new AtomicWrapper(this.kv)
 
         if (this._keepsHistory) {
           const historyKey = extendKey(this._keys.history, docId, timeId)
