@@ -365,11 +365,14 @@ export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
   overwrite?: boolean
 
   /**
-   * The max number of mutations to be batched in a single atomic operation.
+   * Enable or disable atomic operation batching.
    *
-   * If not set, the operation will not be batched, and will pool all mutations into a single atomic operation.
+   * This allows for storing larger sized data by writing in batched operations
+   * as opposed to poling all mutations into a single atomic operation.
+   *
+   * @default false
    */
-  atomicBatchSize?: number
+  batched?: boolean
 }
 
 export type ListOptions<T> = Deno.KvListOptions & {
@@ -399,14 +402,7 @@ export type HandleManyOptions<T> = ListOptions<T> & {
   resultLimit?: number
 }
 
-export type AtomicBatchOptions = {
-  /** Max number of mutations to be batched in a single atomic operation */
-  atomicBatchSize?: number
-}
-
-export type AtomicListOptions<T> =
-  & ListOptions<T>
-  & AtomicBatchOptions
+export type AtomicListOptions<T> = ListOptions<T>
 
 export type FindOptions = NonNullable<Parameters<Deno.Kv["get"]>[1]>
 
