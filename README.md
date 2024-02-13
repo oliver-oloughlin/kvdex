@@ -1,10 +1,11 @@
 # kvdex
 
 `kvdex` is a high-level abstraction layer for Deno KV with zero third-party
-dependencies. It's purpose is to enhance the experience of using Deno's KV store
-through additional features such as indexing, strongly typed collections and
-serialization/compression, while maintaining as much of the native functionality
-as possible, like atomic operations, real-time data updates and queue listeners.
+dependencies by default. It's purpose is to enhance the experience of using
+Deno's KV store through additional features such as indexing, strongly typed
+collections and serialization/compression, while maintaining as much of the
+native functionality as possible, like atomic operations, real-time data updates
+and queue listeners.
 
 _Supported Deno verisons:_ **^1.40.0**
 
