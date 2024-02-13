@@ -1,0 +1,48 @@
+{
+  "version": "3",
+  "packages": {
+    "specifiers": {
+      "jsr:@std/assert@0.214.0": "jsr:@std/assert@0.214.0",
+      "jsr:@std/bytes@0.214.0": "jsr:@std/bytes@0.214.0",
+      "jsr:@std/collections@0.214.0": "jsr:@std/collections@0.214.0",
+      "jsr:@std/fmt@^0.214.0": "jsr:@std/fmt@0.214.0",
+      "jsr:@std/ulid@0.214.0": "jsr:@std/ulid@0.214.0",
+      "npm:zod@3.22.4": "npm:zod@3.22.4"
+    },
+    "jsr": {
+      "@std/assert@0.214.0": {
+        "dependencies": [
+          "jsr:@std/fmt@^0.214.0"
+        ]
+      },
+      "@std/bytes@0.214.0": {},
+      "@std/collections@0.214.0": {},
+      "@std/fmt@0.214.0": {},
+      "@std/ulid@0.214.0": {}
+    },
+    "npm": {
+      "zod@3.22.4": {
+        "integrity": "sha512-iC+8Io04lddc+mVqQ9AZ7OQ2MrUKGN+oIQyq1vemgt46jwCwLfhq7/pwnBnNXXXZb8VTVLKwp9EDkx+ryxIWmg==",
+        "dependencies": {}
+      }
+    }
+  },
+  "remote": {
+    "https://jsr.io/@std/assert/0.214.0/_constants.ts": "a271e8ef5a573f1df8e822a6eb9d09df064ad66a4390f21b3e31f820a38e0975",
+    "https://jsr.io/@std/assert/0.214.0/_diff.ts": "dbacca10c0e1acb3da9b6a90bec50c7d1add05deb5abe9614a3784c9d5a0b887",
+    "https://jsr.io/@std/assert/0.214.0/_format.ts": "0ba808961bf678437fb486b56405b6fefad2cf87b5809667c781ddee8c32aff4",
+    "https://jsr.io/@std/assert/0.214.0/assert.ts": "501b416473ec27c71885aaf819e363c8df617f89ce68ae57fec7acf9d62743b2",
+    "https://jsr.io/@std/assert/0.214.0/assert_equals.ts": "9c0bacb975b890237b7515583685b5dcd056f86ffe096891e00e052e2ceced06",
+    "https://jsr.io/@std/assert/0.214.0/assert_is_error.ts": "670ede152be91756cf1012dd07ea3965d7c4f780fba6e88ed088cf4f88f5b91e",
+    "https://jsr.io/@std/assert/0.214.0/assert_not_equals.ts": "b08ac1034e4b9aedff0bad798df7880c8f977019a90e98a5e0e4f88c7dfa6353",
+    "https://jsr.io/@std/assert/0.214.0/assert_throws.ts": "4209628c4fa3e569bb2924b289fad486f9e5feb0912bca6f60b484ddbfad7136",
+    "https://jsr.io/@std/assert/0.214.0/assertion_error.ts": "dd027fb33707dbff22cd2ef9b55fdb70e2095876caf3c68ecfbb811505ecc022",
+    "https://jsr.io/@std/assert/0.214.0/equal.ts": "166d9377ce8df4d53f676d9a568a13914c2323d9d3b2fd1096aafeb59f3c1edf",
+    "https://jsr.io/@std/bytes/0.214.0/concat.ts": "8142a1734fd445582be0d209d0def43c2a3c27370a0fd4b327187dd34b98d6eb",
+    "https://jsr.io/@std/collections/0.214.0/_utils.ts": "fc59674548a4dd9f5c3cc4f99f9c264aa521a52c1a4ff56b0263713e57e79206",
+    "https://jsr.io/@std/collections/0.214.0/deep_merge.ts": "23863106aa1ac392347204fc4d234addee9788d54c89174cf1d841541a320895",
+    "https://jsr.io/@std/fmt/0.214.0/colors.ts": "59b5de7c07cdc0322ed61b2d98da1ca4fbc9f576d45c2beee577a27556e52d63",
+    "https://jsr.io/@std/ulid/0.214.0/_util.ts": "27b0b5d69ab6e98406c75e85381e2dfd0b0c128b891f122a37ff2adda782e35b",
+    "https://jsr.io/@std/ulid/0.214.0/mod.ts": "35bb29e54c711911f7cf984117373b0fdb2ba77d32561eea2530462138a6bb4d"
+  }
+}
