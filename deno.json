@@ -1,9 +1,10 @@
 {
   "name": "@olli/kvdex",
-  "version": "0.34.1",
+  "version": "0.34.2",
   "exports": {
     ".": "./mod.ts",
-    "./ext/zod": "./ext/zod.ts"
+    "./ext/zod": "./ext/zod.ts",
+    "./ext/migrate": "./ext/migrate.ts"
   },
   "imports": {
     "assert": "jsr:@std/assert@0.215/assert",
@@ -13,6 +14,7 @@
     "ulid": "jsr:@std/ulid@0.215",
     "concat": "jsr:@std/bytes@0.215/concat",
     "deep_merge": "jsr:@std/collections@0.215/deep_merge",
+    "parse_args": "jsr:@std/cli@0.215/parse_args",
     "zlib": "node:zlib",
     "zod": "npm:zod@3"
   },
