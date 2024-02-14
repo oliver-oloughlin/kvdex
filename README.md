@@ -89,6 +89,9 @@ _Supported Deno verisons:_ **^1.40.0**
     - [Zod](#zod)
       - [zodModel()](#zodmodel)
       - [Kv-Schemas](#kv-schemas)
+  - [Migrate](#migrate)
+    - [Script](#script)
+    - [Function](#function)
   - [Blob Storage](#blob-storage)
   - [Development](#development)
   - [License](#license)
@@ -1286,6 +1289,38 @@ const UserSchema = z.object({
 const PostSchema = z.object({
   text: z.string(),
   userId: KvIdSchema,
+})
+```
+
+## Migrate
+
+A helper script and function for migrating entries from a source KV instance to
+a target KV instance. Only migrates `kvdex` entries by default, but optionally
+allows for migrating all entries.
+
+### Script
+
+Run the migrate script and provide --source and --target arguments. Optionally
+pass --all to migrate all entries.
+
+```console
+deno run -A --unstable-kv jsr:@olli/kvdex/ext/migrate --source=./source.sqlite3 --target=./target.sqlite3
+```
+
+### Function
+
+Use the migrate function and pass a source KV instance and a target KV instance.
+Optionally pass `all: true` to migrate all entries.
+
+```ts
+import { migrate } from "jsr:@olli/kvdex/ext/migrate"
+
+const source = await Deno.openKv("./source.sqlite3")
+const target = await Deno.openKv("./target.sqlite3")
+
+await migrate({
+  source,
+  target,
 })
 ```
 

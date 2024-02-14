@@ -3,7 +3,9 @@
   "packages": {
     "specifiers": {
       "jsr:@std/assert@0.215": "jsr:@std/assert@0.215.0",
+      "jsr:@std/assert@^0.215.0": "jsr:@std/assert@0.215.0",
       "jsr:@std/bytes@0.215": "jsr:@std/bytes@0.215.0",
+      "jsr:@std/cli@0.215": "jsr:@std/cli@0.215.0",
       "jsr:@std/collections@0.215": "jsr:@std/collections@0.215.0",
       "jsr:@std/fmt@^0.215.0": "jsr:@std/fmt@0.215.0",
       "jsr:@std/ulid@0.215": "jsr:@std/ulid@0.215.0",
@@ -18,6 +20,11 @@
         ]
       },
       "@std/bytes@0.215.0": {},
+      "@std/cli@0.215.0": {
+        "dependencies": [
+          "jsr:@std/assert@^0.215.0"
+        ]
+      },
       "@std/collections@0.215.0": {},
       "@std/fmt@0.215.0": {},
       "@std/ulid@0.215.0": {}
@@ -84,6 +91,7 @@
     "https://jsr.io/@std/assert/0.215.0/unimplemented.ts": "ed3115f6fb271277e0522f3b18f020259900c385e3fa986f109a519a1cf25763",
     "https://jsr.io/@std/assert/0.215.0/unreachable.ts": "1e748f69f73c57f4de9ba1dba39306b86e0ad2c0915975608519a2bcf42c262f",
     "https://jsr.io/@std/bytes/0.215.0/concat.ts": "8142a1734fd445582be0d209d0def43c2a3c27370a0fd4b327187dd34b98d6eb",
+    "https://jsr.io/@std/cli/0.215.0/parse_args.ts": "909c47399d2bc60c0007540e15f90ca3f985642dcd1f4127f817924f704e7b08",
     "https://jsr.io/@std/collections/0.215.0/_utils.ts": "fc59674548a4dd9f5c3cc4f99f9c264aa521a52c1a4ff56b0263713e57e79206",
     "https://jsr.io/@std/collections/0.215.0/deep_merge.ts": "23863106aa1ac392347204fc4d234addee9788d54c89174cf1d841541a320895",
     "https://jsr.io/@std/fmt/0.215.0/colors.ts": "59b5de7c07cdc0322ed61b2d98da1ca4fbc9f576d45c2beee577a27556e52d63",
@@ -94,6 +102,7 @@
     "dependencies": [
       "jsr:@std/assert@0.215",
       "jsr:@std/bytes@0.215",
+      "jsr:@std/cli@0.215",
       "jsr:@std/collections@0.215",
       "jsr:@std/ulid@0.215",
       "npm:zod@3"
