@@ -6,7 +6,7 @@
     "./ext/zod": "./ext/zod.ts"
   },
   "imports": {
-    "assert": "jsr:@std/assert@0.215",
+    "assert": "jsr:@std/assert@0.215/assert",
     "assert_equals": "jsr:@std/assert@0.215/assert_equals",
     "assert_not_equals": "jsr:@std/assert@0.215/assert_not_equals",
     "assert_throws": "jsr:@std/assert@0.215/assert_throws",
