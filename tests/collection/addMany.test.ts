@@ -1,4 +1,4 @@
-import { assert } from "../deps.ts"
+import { assert } from "jsr:@std/assert@0.215/assert"
 import { generateInvalidUsers, generateUsers, useDb } from "../utils.ts"
 
 Deno.test("collection - addMany", async (t) => {

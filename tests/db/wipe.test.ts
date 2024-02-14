@@ -1,5 +1,5 @@
 import { collection, kvdex, model } from "../../mod.ts"
-import { assert } from "../deps.ts"
+import { assert } from "jsr:@std/assert@0.215/assert"
 import { User } from "../models.ts"
 import { generateLargeUsers, generateUsers, useKv } from "../utils.ts"
 

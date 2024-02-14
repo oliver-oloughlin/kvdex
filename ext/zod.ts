@@ -1,5 +1,5 @@
-import { z } from "npm:zod@3.22.4"
-import type { KvArray, KvId, KvObject, KvValue, Model } from "../mod.ts"
+import { z } from "zod"
+import type { KvArray, KvId, KvObject, KvValue, Model } from "../src/types.ts"
 
 /*******************/
 /*                 */

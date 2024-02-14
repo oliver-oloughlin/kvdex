@@ -1,6 +1,6 @@
 import { collection, kvdex, KvValue, model, QueueMessage } from "../../mod.ts"
 import { createHandlerId } from "../../src/utils.ts"
-import { assert } from "../deps.ts"
+import { assert } from "jsr:@std/assert@0.215/assert"
 import { User } from "../models.ts"
 import { createResolver, useDb, useKv } from "../utils.ts"
 

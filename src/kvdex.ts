@@ -5,6 +5,7 @@ import type {
   EnqueueOptions,
   FindOptions,
   IntervalMessage,
+  IntervalSetter,
   KvId,
   KvKey,
   KvValue,
@@ -36,7 +37,6 @@ import {
 } from "./constants.ts"
 import { model } from "./model.ts"
 import { AtomicWrapper } from "./atomic_wrapper.ts"
-import { IntervalSetter } from "./types.ts"
 
 /**
  * Create a new database instance.

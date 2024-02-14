@@ -1,5 +1,5 @@
 import type { Collection } from "./collection.ts"
-import { ulid } from "./deps.ts"
+import { ulid } from "ulid"
 import { InvalidCollectionError } from "./errors.ts"
 import type {
   AtomicCheck,

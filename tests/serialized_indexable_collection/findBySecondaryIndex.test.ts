@@ -1,4 +1,4 @@
-import { assert } from "../deps.ts"
+import { assert } from "jsr:@std/assert@0.215/assert"
 import { mockUser1, mockUser2 } from "../mocks.ts"
 import { TransformUserModel } from "../models.ts"
 import { useDb } from "../utils.ts"

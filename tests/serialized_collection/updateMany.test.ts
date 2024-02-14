@@ -1,5 +1,6 @@
 import { collection, kvdex, model } from "../../mod.ts"
-import { assert, assertEquals } from "../deps.ts"
+import { assertEquals } from "assert_equals"
+import { assert } from "jsr:@std/assert@0.215/assert"
 import { mockUser1, mockUserInvalid } from "../mocks.ts"
 import { generateNumbers, generateUsers, useDb, useKv } from "../utils.ts"
 

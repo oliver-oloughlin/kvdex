@@ -1,4 +1,4 @@
-import { assert } from "../deps.ts"
+import { assert } from "jsr:@std/assert@0.215/assert"
 import { mockUser1, mockUserInvalid } from "../mocks.ts"
 import { useDb } from "../utils.ts"
 
@@ -22,6 +22,7 @@ Deno.test("collection - add", async (t) => {
         assert(cr.ok)
 
         const doc = await db.z_users.find(cr.id)
+
         assert(doc !== null)
         assert(doc.value.username === mockUser1.username)
       })
