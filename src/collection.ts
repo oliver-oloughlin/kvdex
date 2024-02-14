@@ -1,5 +1,6 @@
 import type {
   AtomicListOptions,
+  BuilderFn,
   CheckKeyOf,
   CollectionKeys,
   CollectionOptions,
@@ -78,8 +79,9 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
 import { AtomicPool } from "./atomic_pool.ts"
 import { Document } from "./document.ts"
 import { model } from "./model.ts"
-import { concat, deepMerge, ulid } from "./deps.ts"
-import { BuilderFn } from "./types.ts"
+import { concat } from "concat"
+import { deepMerge } from "deep_merge"
+import { ulid } from "ulid"
 
 /**
  * Create a new collection within a database context.

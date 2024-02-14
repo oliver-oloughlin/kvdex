@@ -1,4 +1,4 @@
-import { assert } from "../deps.ts"
+import { assert } from "jsr:@std/assert@0.215/assert"
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts"
 import { sleep, useDb } from "../utils.ts"
 
@@ -17,7 +17,7 @@ Deno.test({
 
         await db.s_users.set(id3, mockUser1)
 
-        db.s_users.watchMany([id1, id2, id3], (docs) => {
+        const watcher = db.s_users.watchMany([id1, id2, id3], (docs) => {
           count++
           lastDocs = docs
         })
@@ -35,6 +35,8 @@ Deno.test({
         assert(lastDocs[0] === null)
         assert(lastDocs[1]?.value.username === mockUser2.username)
         assert(lastDocs[2]?.value.username === mockUser3.username)
+
+        return async () => await watcher
       })
     })
 
@@ -47,7 +49,7 @@ Deno.test({
         let count = 0
         let lastDocs: any[] = []
 
-        db.s_users.watchMany([id1, id2, id3], (docs) => {
+        const watcher = db.s_users.watchMany([id1, id2, id3], (docs) => {
           count++
           lastDocs = docs
         })
@@ -65,6 +67,8 @@ Deno.test({
         assert(lastDocs[0] === null)
         assert(lastDocs[1] === null)
         assert(lastDocs[2] === null)
+
+        return async () => await watcher
       })
     })
   },

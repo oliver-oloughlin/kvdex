@@ -1,4 +1,5 @@
-import { assert, z } from "../deps.ts"
+import { z } from "zod"
+import { assert } from "jsr:@std/assert@0.215/assert"
 import {
   KvArraySchema,
   KvIdSchema,

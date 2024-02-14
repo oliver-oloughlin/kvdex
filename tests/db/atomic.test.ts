@@ -1,6 +1,6 @@
 import { collection, kvdex, KvValue, model, QueueMessage } from "../../mod.ts"
 import { createHandlerId } from "../../src/utils.ts"
-import { assert } from "../deps.ts"
+import { assert } from "jsr:@std/assert@0.215/assert"
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts"
 import { sleep, useDb, useKv } from "../utils.ts"
 

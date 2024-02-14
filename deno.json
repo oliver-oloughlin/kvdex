@@ -5,6 +5,17 @@
     ".": "./mod.ts",
     "./ext/zod": "./ext/zod.ts"
   },
+  "imports": {
+    "assert": "jsr:@std/assert@0.215/assert",
+    "assert_equals": "jsr:@std/assert@0.215/assert_equals",
+    "assert_not_equals": "jsr:@std/assert@0.215/assert_not_equals",
+    "assert_throws": "jsr:@std/assert@0.215/assert_throws",
+    "ulid": "jsr:@std/ulid@0.215",
+    "concat": "jsr:@std/bytes@0.215/concat",
+    "deep_merge": "jsr:@std/collections@0.215/deep_merge",
+    "zlib": "node:zlib",
+    "zod": "npm:zod@3"
+  },
   "tasks": {
     "check": "deno check mod.ts src/*.ts ext/*.ts tests/*.ts tests/**/*.ts benchmarks/**/*ts",
     "test": "deno test --allow-write --allow-read --unstable-kv --trace-ops",

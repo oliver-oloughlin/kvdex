@@ -1,4 +1,4 @@
-import { assert } from "../deps.ts"
+import { assert } from "jsr:@std/assert@0.215/assert"
 import { generateLargeUsers, useDb } from "../utils.ts"
 
 const [user] = generateLargeUsers(1)

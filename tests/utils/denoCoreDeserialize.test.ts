@@ -2,7 +2,7 @@ import {
   denoCoreDeserialize as deserialize,
   denoCoreSerialize as serialize,
 } from "../../src/utils.ts"
-import { assertEquals } from "../deps.ts"
+import { assertEquals } from "assert_equals"
 import {
   val1,
   val10,

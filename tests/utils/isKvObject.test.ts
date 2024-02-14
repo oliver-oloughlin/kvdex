@@ -1,4 +1,4 @@
-import { assert } from "../deps.ts"
+import { assert } from "jsr:@std/assert@0.215/assert"
 import {
   val1,
   val10,
