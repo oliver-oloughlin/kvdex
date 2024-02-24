@@ -1,4 +1,4 @@
-import { parseArgs } from "parse_args"
+import { parseArgs } from "https://deno.land/std@0.216.0/cli/parse_args.ts"
 import { KVDEX_KEY_PREFIX } from "../src/constants.ts"
 
 if (import.meta.main) {

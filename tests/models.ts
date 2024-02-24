@@ -1,5 +1,5 @@
 import { model } from "../mod.ts"
-import { z } from "zod"
+import { z } from "./test.deps.ts"
 
 export type Address = z.infer<typeof AddressSchema>
 

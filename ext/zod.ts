@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from "npm:zod@3"
 import type { KvArray, KvId, KvObject, KvValue, Model } from "../src/types.ts"
 
 /*******************/
