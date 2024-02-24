@@ -1,5 +1,5 @@
 import { jsonSerialize } from "../../src/utils.ts"
-import { assert } from "jsr:@std/assert@0.215/assert"
+import { assert } from "../test.deps.ts"
 import {
   val1,
   val10,

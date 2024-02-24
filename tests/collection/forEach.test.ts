@@ -1,5 +1,5 @@
 import { Document } from "../../mod.ts"
-import { assert } from "jsr:@std/assert@0.215/assert"
+import { assert } from "../test.deps.ts"
 import { User } from "../models.ts"
 import { generateUsers } from "../utils.ts"
 import { useDb } from "../utils.ts"

@@ -1,6 +1,5 @@
-import { assert } from "jsr:@std/assert@0.215/assert"
-import { generateLargeUsers } from "../utils.ts"
-import { useDb } from "../utils.ts"
+import { assert } from "../test.deps.ts"
+import { generateLargeUsers, useDb } from "../utils.ts"
 
 Deno.test("serialized_indexable_collection - getMany", async (t) => {
   await t.step("Should get all documents", async () => {

@@ -15,8 +15,12 @@ import type {
   PreparedEnqueue,
   QueueMessage,
 } from "./types.ts"
-import { brotliCompressSync, brotliDecompressSync, constants } from "zlib"
-import { ulid } from "ulid"
+import {
+  brotliCompressSync,
+  brotliDecompressSync,
+  constants,
+  ulid,
+} from "./deps.ts"
 
 /*************************/
 /*                       */

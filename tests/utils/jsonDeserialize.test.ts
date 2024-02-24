@@ -1,5 +1,5 @@
 import { jsonDeserialize, jsonSerialize } from "../../src/utils.ts"
-import { assertEquals } from "assert_equals"
+import { assertEquals } from "../test.deps.ts"
 import {
   val1,
   val10,

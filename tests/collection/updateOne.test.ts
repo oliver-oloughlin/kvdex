@@ -1,12 +1,13 @@
 import { collection, kvdex, model } from "../../mod.ts"
-import { assertEquals } from "assert_equals"
-import { assertNotEquals } from "assert_not_equals"
-import { assert } from "jsr:@std/assert@0.215/assert"
-import { mockUser3 } from "../mocks.ts"
-import { mockUser2 } from "../mocks.ts"
-import { mockUser1, mockUserInvalid } from "../mocks.ts"
-import { sleep } from "../utils.ts"
-import { generateNumbers, generateUsers, useDb, useKv } from "../utils.ts"
+import { assert, assertEquals, assertNotEquals } from "../test.deps.ts"
+import { mockUser1, mockUser2, mockUser3, mockUserInvalid } from "../mocks.ts"
+import {
+  generateNumbers,
+  generateUsers,
+  sleep,
+  useDb,
+  useKv,
+} from "../utils.ts"
 
 Deno.test("collection - updateOne", async (t) => {
   await t.step(

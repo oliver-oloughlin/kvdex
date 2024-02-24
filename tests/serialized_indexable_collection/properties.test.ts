@@ -6,7 +6,7 @@ import {
   SECONDARY_INDEX_KEY_PREFIX,
 } from "../../src/constants.ts"
 import { extendKey, keyEq } from "../../src/utils.ts"
-import { assert } from "jsr:@std/assert@0.215/assert"
+import { assert } from "../test.deps.ts"
 import { User } from "../models.ts"
 import { generateLargeUsers, useDb, useKv } from "../utils.ts"
 

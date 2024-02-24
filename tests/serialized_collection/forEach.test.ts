@@ -1,8 +1,7 @@
 import { Document } from "../../mod.ts"
-import { assert } from "jsr:@std/assert@0.215/assert"
+import { assert } from "../test.deps.ts"
 import { User } from "../models.ts"
-import { generateLargeUsers } from "../utils.ts"
-import { useDb } from "../utils.ts"
+import { generateLargeUsers, useDb } from "../utils.ts"
 
 Deno.test("serialized_collection - forEach", async (t) => {
   await t.step(

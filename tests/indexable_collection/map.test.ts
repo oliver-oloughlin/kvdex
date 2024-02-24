@@ -1,6 +1,5 @@
-import { assert } from "jsr:@std/assert@0.215/assert"
-import { generateUsers } from "../utils.ts"
-import { useDb } from "../utils.ts"
+import { assert } from "../test.deps.ts"
+import { generateUsers, useDb } from "../utils.ts"
 
 Deno.test("indexable_collection - map", async (t) => {
   await t.step(

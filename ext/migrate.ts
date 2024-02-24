@@ -1,4 +1,4 @@
-import { parseArgs } from "parse_args"
+import { parseArgs } from "jsr:@std/cli@0.217/parse_args"
 import { KVDEX_KEY_PREFIX } from "../src/constants.ts"
 
 if (import.meta.main) {

@@ -1,7 +1,7 @@
 import { collection, kvdex, KvValue, model, QueueMessage } from "../../mod.ts"
 import { KVDEX_KEY_PREFIX } from "../../src/constants.ts"
 import { createHandlerId } from "../../src/utils.ts"
-import { assert } from "jsr:@std/assert@0.215/assert"
+import { assert } from "../test.deps.ts"
 import { createResolver, sleep, useKv } from "../utils.ts"
 
 Deno.test("db - listenQueue", async (t) => {
