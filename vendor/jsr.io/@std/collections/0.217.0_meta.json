@@ -1,0 +1,1873 @@
+{
+  "manifest": {
+    "/mod.ts": {
+      "size": 1766,
+      "checksum": "sha256-f498e896cea2898577430cdee944a77b4a062028074464441cddebfe51670454"
+    },
+    "/intersect.ts": {
+      "size": 993,
+      "checksum": "sha256-58d8ae4602f119e465a3084cc982f1b91ea7cb864d519fe9b86f3ca6872f6962"
+    },
+    "/join_to_string.ts": {
+      "size": 1811,
+      "checksum": "sha256-49a8de56496bc9bba1707e4a815414693faabdb3b7af7c23bfd3cbdd0924709f"
+    },
+    "/union_test.ts": {
+      "size": 2972,
+      "checksum": "sha256-60d2f55d0bdf11a36b7d5580e58ff7f702d3975a9b508262953c3d6934cb700f"
+    },
+    "/distinct_by.ts": {
+      "size": 1006,
+      "checksum": "sha256-3c26483be58282ef3ad79fa386ce296a99798b7eb1d50acec1cbe68bf2995b7a"
+    },
+    "/max_by_test.ts": {
+      "size": 3019,
+      "checksum": "sha256-f8ebbc138ed2c66a90692e4b79b9936dba1a38cf1d32a8d83f23c813d4b3004c"
+    },
+    "/aggregate_groups_test.ts": {
+      "size": 1799,
+      "checksum": "sha256-323794d9d7ffc39b038824dfb970f6304c47f64dff8d3f930f5b88d5280bad25"
+    },
+    "/filter_values.ts": {
+      "size": 981,
+      "checksum": "sha256-e425e08ed6bb2b9633f644178459d706eef8d84d3eebde669ed0091587d808f7"
+    },
+    "/reduce_groups.ts": {
+      "size": 1096,
+      "checksum": "sha256-15cc6bbd55ba4d6407d93fca0bc7dfdf23c57fb6b5b5ce6e9fbfe92f57a7a8ce"
+    },
+    "/partition_entries_test.ts": {
+      "size": 2245,
+      "checksum": "sha256-d0fe3a15e77612e070edeb6d8219fa141e041bbb6c13ff3aa3a426c642908379"
+    },
+    "/running_reduce_test.ts": {
+      "size": 3888,
+      "checksum": "sha256-4dc3b263aa7efbc8c667fe3e9d800111b91ee7b50225cc7663b0333b860e02f2"
+    },
+    "/map_not_nullish_test.ts": {
+      "size": 1957,
+      "checksum": "sha256-1a5a668c6edc6339102ff22a29c33a1e9c2729480f5f7e4df93fa13c705a25ab"
+    },
+    "/max_of.ts": {
+      "size": 1972,
+      "checksum": "sha256-969f1464b638fa01b39801bfcdb80775a39500e9de8ca841e5e11972d4fde534"
+    },
+    "/associate_with_test.ts": {
+      "size": 1996,
+      "checksum": "sha256-875de7df5a3c5fce722f90c0f320be8c48dfeaf5f55fbacd658bae23f5d009a7"
+    },
+    "/without_all_test.ts": {
+      "size": 1394,
+      "checksum": "sha256-f92e2959725051c4e0536a816fadfb5f55eb142509b8671e395f10715ab1a086"
+    },
+    "/without_all.ts": {
+      "size": 592,
+      "checksum": "sha256-94c83d7b4ff6fb909284e6577cba3af9b0ba47a8ae47a74f5239f1b4ad416f5c"
+    },
+    "/filter_entries_test.ts": {
+      "size": 1924,
+      "checksum": "sha256-463d7fabeb79abe075f9db149e96433bfbfcaf3653b056b757c204cf404d2902"
+    },
+    "/map_entries_test.ts": {
+      "size": 2771,
+      "checksum": "sha256-fb33564d672138025807f8b7c4a96249ff8514f4e2e2977680c9203cdf555eaf"
+    },
+    "/sum_of_test.ts": {
+      "size": 2753,
+      "checksum": "sha256-5f61d865b1dedefa9e4fb089cb6e394211188f44ca61edc899081cd8cfe27270"
+    },
+    "/sort_by_test.ts": {
+      "size": 4657,
+      "checksum": "sha256-ef8f4b4f9a5adbfd7abfe4e0dbc61a66e8cbc8c45e06f6e9b60254741616ed14"
+    },
+    "/drop_while.ts": {
+      "size": 833,
+      "checksum": "sha256-d9025b814d868908958dec62816c279e9f62024e6a594e2fd3b6a10d40697a0a"
+    },
+    "/max_with.ts": {
+      "size": 1119,
+      "checksum": "sha256-693ef328e7ebac2e5ab1ac876535144895515dd460034dbe3efceaf8d9f49b32"
+    },
+    "/includes_value.ts": {
+      "size": 881,
+      "checksum": "sha256-12521ed45dd6a07a622d99307e935d99b4e8fc532aacaa09bc55a15b6b3f9912"
+    },
+    "/sample.ts": {
+      "size": 635,
+      "checksum": "sha256-411d1decc1d33703815ecb456aa311e66a79b4a1740013533a666025409e3d11"
+    },
+    "/includes_value_test.ts": {
+      "size": 2467,
+      "checksum": "sha256-ccdf8f194ab327d8da5f230181e3d060df7d7c39493f3ebd46170c86b5581c6c"
+    },
+    "/reduce_groups_test.ts": {
+      "size": 2162,
+      "checksum": "sha256-1a4b758b501056b0c69e36797427d30f8abec525805c9e72255735217dd207ce"
+    },
+    "/filter_values_test.ts": {
+      "size": 1781,
+      "checksum": "sha256-81ad9d8c411eef4cd219465cb3398cb75eba5291d2a173cca478f460ac076f90"
+    },
+    "/max_with_test.ts": {
+      "size": 1968,
+      "checksum": "sha256-c951d3a0563a69557e29c46550ccfe42eadf59717fefebb998631517db012f59"
+    },
+    "/unzip.ts": {
+      "size": 1003,
+      "checksum": "sha256-bf798b148adc53644effcacd6692a20482747a89053b86a73187cdc32486fc62"
+    },
+    "/find_single_test.ts": {
+      "size": 2076,
+      "checksum": "sha256-1a6a52b122d45aa6ddb80257ad1fc0e93dc40b1a09716ab0d85edc482da8d893"
+    },
+    "/map_values_test.ts": {
+      "size": 3036,
+      "checksum": "sha256-d1b50a61e2035fe70fc452a618af74670d824aef6a3105c0ffaeafb184b152df"
+    },
+    "/distinct.ts": {
+      "size": 612,
+      "checksum": "sha256-2e1bdf658bbc1991ae62de09c776f7f12d37c64b7a5ae897f1407eae47786a29"
+    },
+    "/map_keys_test.ts": {
+      "size": 2898,
+      "checksum": "sha256-7c5400f7bcf1cb2e93565832792929d689e3415b25df92bee0d1796a1d454c8b"
+    },
+    "/take_last_while_test.ts": {
+      "size": 1623,
+      "checksum": "sha256-539c8309a2cf26a76135286bdd49ddd4acd10011489cf9855c2a60c18b83d9f7"
+    },
+    "/take_last_while.ts": {
+      "size": 752,
+      "checksum": "sha256-ba3324a5b5807c705c6a50b84f2aa2fcd1facbb5ea8ecb0ec2e2d81a935604b8"
+    },
+    "/zip.ts": {
+      "size": 1070,
+      "checksum": "sha256-b6a8f9a021cb88f0d0b85261eb18d35699ee1dc9ba5032f47dbdc45ef72f1552"
+    },
+    "/take_while_test.ts": {
+      "size": 1586,
+      "checksum": "sha256-32a20644e32c5ec770f576c9e9f3e02eb6769830b46e9c2791cd5ed9b82cd155"
+    },
+    "/join_to_string_test.ts": {
+      "size": 3145,
+      "checksum": "sha256-82994c18e48e08c937e65aa8798e02303f69993a105b3365b49b86b8452748b2"
+    },
+    "/sum_of.ts": {
+      "size": 764,
+      "checksum": "sha256-ea9fca23657b531fb57ea69050f821614121be28bd08cd3f49355b8d67585833"
+    },
+    "/filter_keys_test.ts": {
+      "size": 1572,
+      "checksum": "sha256-4092a10c4471b2ca03a41995d5ca6251c841a3d1802b6bf1fb6685d2359680b8"
+    },
+    "/sample_test.ts": {
+      "size": 977,
+      "checksum": "sha256-3a88e8908398f617e9c25017996a663271469df751940828bcb0b30f8d0af7a7"
+    },
+    "/min_by.ts": {
+      "size": 2905,
+      "checksum": "sha256-324c0601fc39c1427d94a4400cbe5bb0d094718312c26fc69f8a2058d063fd00"
+    },
+    "/distinct_by_test.ts": {
+      "size": 2328,
+      "checksum": "sha256-2cff2ee0188a93253006f2bfecd5a29185debaa60e24e9f046c03f4b251a512b"
+    },
+    "/chunk_test.ts": {
+      "size": 1846,
+      "checksum": "sha256-ab37057db06d470cce3a1b687df85c49c66520e79d90f917469e78d8ac8df1a9"
+    },
+    "/intersect_test.ts": {
+      "size": 2864,
+      "checksum": "sha256-cf6eac54963726b7f1921f7f91f0f3d876190fa21eac1261f41a8c0d1c87003b"
+    },
+    "/first_not_nullish_of.ts": {
+      "size": 1084,
+      "checksum": "sha256-0999dd26d71c4c5676c68556389dacb7fc8abf539ef3096e00ad00d5eed5f6b1"
+    },
+    "/drop_last_while_test.ts": {
+      "size": 1426,
+      "checksum": "sha256-cbdf28f2e2239ffda677a37c01ad3af8fc4833ce5141e3452ae43f6db09d131e"
+    },
+    "/map_not_nullish.ts": {
+      "size": 1137,
+      "checksum": "sha256-6fbf75cdfa23e6c95573bd0d40e8a6f12f28354a7e70a56510929a709833699c"
+    },
+    "/unzip_test.ts": {
+      "size": 1452,
+      "checksum": "sha256-121fd263a12c2c3b61e29aefcd4236348f5f386c5d8b55b436df7405e4db28f8"
+    },
+    "/deno.json": {
+      "size": 1773,
+      "checksum": "sha256-942d9ae997f1181031fff67d1397853e617a0844da507262c1f945de4fcf3001"
+    },
+    "/min_of_test.ts": {
+      "size": 2447,
+      "checksum": "sha256-8f0d57ce26ceee83c985f5114e4795b3a65bbaac5df151ab4fa1e4accdfa95a4"
+    },
+    "/find_single.ts": {
+      "size": 1193,
+      "checksum": "sha256-04a5ab8491d99ce7528c6a4e28bc745faeee05f14479e03e504de67b9d5beaac"
+    },
+    "/map_values.ts": {
+      "size": 2021,
+      "checksum": "sha256-47c20663bf04fc6791fac95777eca5825dd6efb200539b1c4d91e0b8298d89fa"
+    },
+    "/associate_with.ts": {
+      "size": 1004,
+      "checksum": "sha256-e9ac9371a34bf33529a24754228e3c57ad7d2e4df8524e6c2fd5facbc24c2db4"
+    },
+    "/associate_by_test.ts": {
+      "size": 2468,
+      "checksum": "sha256-504cd1a45698ebf45e319fefd4f12346ed7285a4212ba63b8d71e9e84fba5811"
+    },
+    "/map_entries.ts": {
+      "size": 1124,
+      "checksum": "sha256-f5053f4696e41d4dcdfe5157c6343532bfdab0ac26f590babbf7be1cfb5bf8b8"
+    },
+    "/zip_test.ts": {
+      "size": 2768,
+      "checksum": "sha256-572576c7829b6de68d914d0ea706f10f4a00f8c34c348cce5312964db4d7a0b2"
+    },
+    "/min_by_test.ts": {
+      "size": 3029,
+      "checksum": "sha256-ade41fc3f0d4d33424b9c97790160b65588fa082083a5e40c402a70adba3ea3e"
+    },
+    "/first_not_nullish_of_test.ts": {
+      "size": 2125,
+      "checksum": "sha256-9225f98eff67cc3defba286afc4454b5293b2e503ed6fb085ec396cedf3aa07b"
+    },
+    "/associate_by.ts": {
+      "size": 1166,
+      "checksum": "sha256-e8ca710dfba265e4ef1226969be678b7e3cae16aa543ca49f294b5d39124c837"
+    },
+    "/sliding_windows.ts": {
+      "size": 2130,
+      "checksum": "sha256-6c96b233337ebb1e184e95d409ce23efedd76d5231c79a32881bcb62e219aab9"
+    },
+    "/max_by.ts": {
+      "size": 2904,
+      "checksum": "sha256-76ca659dca5c2c5a66e3373c6d07d633345f173140282e22454fb521d39556ed"
+    },
+    "/partition.ts": {
+      "size": 1723,
+      "checksum": "sha256-68192a3060f08a48e78f8e928798ed79c5e76e96987152ef895744ff212d73a0"
+    },
+    "/map_keys.ts": {
+      "size": 1019,
+      "checksum": "sha256-de0e3e1d9383e86b50d0d6410f31196abb943508aed86d680af45cab56dbbaa6"
+    },
+    "/min_of.ts": {
+      "size": 1960,
+      "checksum": "sha256-2e06faec9d4ce00c1f74d392d4eaf5bc7c142ff7a11d9d450058093f1d54b8fa"
+    },
+    "/filter_keys.ts": {
+      "size": 966,
+      "checksum": "sha256-b3b8d9ccd3617065063938ccbc257b8ee13ef2d8d39f5ad420bd949d35e7a389"
+    },
+    "/running_reduce.ts": {
+      "size": 976,
+      "checksum": "sha256-9a7b99b9d681fafad5c4c5b0dfe948f8795e2195dccf9f2ae790c848c455734e"
+    },
+    "/take_while.ts": {
+      "size": 767,
+      "checksum": "sha256-3adc8fb42551a9e55fbad17b3c3ecc984e652bc1f1abaa9a94144ead1a5f4f05"
+    },
+    "/aggregate_groups.ts": {
+      "size": 1682,
+      "checksum": "sha256-dea773f27701b8d36536f8a8589463710dfce0879ee5191814ca9b70f2f0a916"
+    },
+    "/drop_while_test.ts": {
+      "size": 1538,
+      "checksum": "sha256-ceabfa5297b5b824c6348959b5831133fb2a9f6de9678006ab374024e58f3d05"
+    },
+    "/_utils.ts": {
+      "size": 790,
+      "checksum": "sha256-fc59674548a4dd9f5c3cc4f99f9c264aa521a52c1a4ff56b0263713e57e79206"
+    },
+    "/sliding_windows_test.ts": {
+      "size": 6944,
+      "checksum": "sha256-8701b067848c72ccb352beedf94696e500bdcc0e2766af1396ed121a875cf50e"
+    },
+    "/deep_merge.ts": {
+      "size": 11997,
+      "checksum": "sha256-23863106aa1ac392347204fc4d234addee9788d54c89174cf1d841541a320895"
+    },
+    "/drop_last_while.ts": {
+      "size": 817,
+      "checksum": "sha256-df979f30d32169c319de71adf927b08b494934e177fccb4418de66f65d6af389"
+    },
+    "/min_with_test.ts": {
+      "size": 1904,
+      "checksum": "sha256-7562596c9502c548a8b65a12a10f4425281735b352066a6a161f254c2b69664f"
+    },
+    "/deep_merge_test.ts": {
+      "size": 8129,
+      "checksum": "sha256-bb87247b52b46aa97ddea5c6c4c3143f7ec175445fc7497ffa4c3b58183133d0"
+    },
+    "/distinct_test.ts": {
+      "size": 1285,
+      "checksum": "sha256-9a17e86ef66eec8673318ba75046656b7930bb83720905cbcdc056684d735544"
+    },
+    "/partition_test.ts": {
+      "size": 1526,
+      "checksum": "sha256-24592667691364266d005b6c56c3a0c46d4955cdd969c9469c200c574d5c6424"
+    },
+    "/permutations_test.ts": {
+      "size": 1600,
+      "checksum": "sha256-fa8d810dbb16a744f2ce8a12c347abba5606bc73afc52c7a4c3ec9992e81d2c7"
+    },
+    "/min_with.ts": {
+      "size": 889,
+      "checksum": "sha256-3f646a12e3cc4fc8c3a656aeb2dac2f3cda1c03145c3f5b47b4f255ecb8dc6ab"
+    },
+    "/union.ts": {
+      "size": 824,
+      "checksum": "sha256-d5e049dd2b67217a371429cbb7b80a51b1663f78fd5e45f8a8464033d807e2d2"
+    },
+    "/partition_entries.ts": {
+      "size": 1259,
+      "checksum": "sha256-8ecfc49cb03e8123712f870727e728aa1be8fe7209ed1a2cf2581e36ad9eff51"
+    },
+    "/chunk.ts": {
+      "size": 1213,
+      "checksum": "sha256-3a507f58991fa6521256128573b1fdc5c33668afd2debced6ec2228f2b080baa"
+    },
+    "/filter_entries.ts": {
+      "size": 1021,
+      "checksum": "sha256-4386e69c360778f3eeb0258bab2aae44028c42b8f7f5b85d6c4c2291e16c5654"
+    },
+    "/sort_by.ts": {
+      "size": 4094,
+      "checksum": "sha256-b7dfbe5fcb6d78028db56e63577884ab2961baad7582611b9f23657de6a72a1f"
+    },
+    "/permutations.ts": {
+      "size": 1260,
+      "checksum": "sha256-b38c33f0530a78a1ee84787e3c04ff9636a4074ca91905bcbf8e7130a5f6340c"
+    },
+    "/max_of_test.ts": {
+      "size": 2440,
+      "checksum": "sha256-2276ebdf01f937ce377992ecd930776f91a25223704ff3de840b1831909438f0"
+    }
+  },
+  "moduleGraph1": {
+    "/drop_while.ts": {},
+    "/partition.ts": {},
+    "/union.ts": {},
+    "/map_values.ts": {},
+    "/sort_by.ts": {},
+    "/map_keys.ts": {},
+    "/permutations.ts": {},
+    "/drop_last_while.ts": {},
+    "/filter_entries.ts": {},
+    "/running_reduce.ts": {},
+    "/associate_with.ts": {},
+    "/_utils.ts": {},
+    "/without_all.ts": {},
+    "/sliding_windows.ts": {},
+    "/filter_values.ts": {},
+    "/unzip.ts": {},
+    "/take_last_while.ts": {},
+    "/distinct_by.ts": {},
+    "/intersect.ts": {
+      "dependencies": [
+        {
+          "type": "static",
+          "kind": "import",
+          "leadingComments": [
+            {
+              "text": " Copyright 2018-2024 the Deno authors. All rights reserved. MIT license.",
+              "range": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  74
+                ]
+              ]
+            },
+            {
+              "text": " This module is browser compatible.",
+              "range": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  37
+                ]
+              ]
+            }
+          ],
+          "range": [
+            [
+              3,
+              0
+            ],
+            [
+              3,
+              44
+            ]
+          ],
+          "specifier": "./_utils.ts",
+          "specifierRange": [
+            [
+              3,
+              30
+            ],
+            [
+              3,
+              43
+            ]
+          ]
+        }
+      ]
+    },
+    "/find_single.ts": {},
+    "/map_not_nullish.ts": {},
+    "/max_with.ts": {},
+    "/chunk.ts": {},
+    "/associate_by.ts": {},
+    "/zip.ts": {
+      "dependencies": [
+        {
+          "type": "static",
+          "kind": "import",
+          "leadingComments": [
+            {
+              "text": " Copyright 2018-2024 the Deno authors. All rights reserved. MIT license.",
+              "range": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  74
+                ]
+              ]
+            },
+            {
+              "text": " This module is browser compatible.",
+              "range": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  37
+                ]
+              ]
+            }
+          ],
+          "range": [
+            [
+              3,
+              0
+            ],
+            [
+              3,
+              36
+            ]
+          ],
+          "specifier": "./min_of.ts",
+          "specifierRange": [
+            [
+              3,
+              22
+            ],
+            [
+              3,
+              35
+            ]
+          ]
+        }
+      ]
+    },
+    "/filter_keys.ts": {},
+    "/sum_of.ts": {},
+    "/mod.ts": {
+      "dependencies": [
+        {
+          "type": "static",
+          "kind": "export",
+          "leadingComments": [
+            {
+              "text": " Copyright 2018-2024 the Deno authors. All rights reserved. MIT license.",
+              "range": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  74
+                ]
+              ]
+            },
+            {
+              "text": " This module is browser compatible.",
+              "range": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  37
+                ]
+              ]
+            },
+            {
+              "text": "*\n * Pure functions for common tasks around collection types like arrays and\n * objects.\n *\n * Heavily inspired by\n * {@link https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/ | Kotlin's Collections}\n * package.\n *\n * @module\n ",
+              "range": [
+                [
+                  3,
+                  0
+                ],
+                [
+                  12,
+                  3
+                ]
+              ]
+            }
+          ],
+          "range": [
+            [
+              14,
+              0
+            ],
+            [
+              14,
+              38
+            ]
+          ],
+          "specifier": "./aggregate_groups.ts",
+          "specifierRange": [
+            [
+              14,
+              14
+            ],
+            [
+              14,
+              37
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              15,
+              0
+            ],
+            [
+              15,
+              34
+            ]
+          ],
+          "specifier": "./associate_by.ts",
+          "specifierRange": [
+            [
+              15,
+              14
+            ],
+            [
+              15,
+              33
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              16,
+              0
+            ],
+            [
+              16,
+              36
+            ]
+          ],
+          "specifier": "./associate_with.ts",
+          "specifierRange": [
+            [
+              16,
+              14
+            ],
+            [
+              16,
+              35
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              17,
+              0
+            ],
+            [
+              17,
+              27
+            ]
+          ],
+          "specifier": "./chunk.ts",
+          "specifierRange": [
+            [
+              17,
+              14
+            ],
+            [
+              17,
+              26
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              18,
+              0
+            ],
+            [
+              18,
+              32
+            ]
+          ],
+          "specifier": "./deep_merge.ts",
+          "specifierRange": [
+            [
+              18,
+              14
+            ],
+            [
+              18,
+              31
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              19,
+              0
+            ],
+            [
+              19,
+              30
+            ]
+          ],
+          "specifier": "./distinct.ts",
+          "specifierRange": [
+            [
+              19,
+              14
+            ],
+            [
+              19,
+              29
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              20,
+              0
+            ],
+            [
+              20,
+              33
+            ]
+          ],
+          "specifier": "./distinct_by.ts",
+          "specifierRange": [
+            [
+              20,
+              14
+            ],
+            [
+              20,
+              32
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              21,
+              0
+            ],
+            [
+              21,
+              32
+            ]
+          ],
+          "specifier": "./drop_while.ts",
+          "specifierRange": [
+            [
+              21,
+              14
+            ],
+            [
+              21,
+              31
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              22,
+              0
+            ],
+            [
+              22,
+              36
+            ]
+          ],
+          "specifier": "./filter_entries.ts",
+          "specifierRange": [
+            [
+              22,
+              14
+            ],
+            [
+              22,
+              35
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              23,
+              0
+            ],
+            [
+              23,
+              33
+            ]
+          ],
+          "specifier": "./filter_keys.ts",
+          "specifierRange": [
+            [
+              23,
+              14
+            ],
+            [
+              23,
+              32
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              24,
+              0
+            ],
+            [
+              24,
+              35
+            ]
+          ],
+          "specifier": "./filter_values.ts",
+          "specifierRange": [
+            [
+              24,
+              14
+            ],
+            [
+              24,
+              34
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              25,
+              0
+            ],
+            [
+              25,
+              31
+            ]
+          ],
+          "specifier": "./intersect.ts",
+          "specifierRange": [
+            [
+              25,
+              14
+            ],
+            [
+              25,
+              30
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              26,
+              0
+            ],
+            [
+              26,
+              33
+            ]
+          ],
+          "specifier": "./map_entries.ts",
+          "specifierRange": [
+            [
+              26,
+              14
+            ],
+            [
+              26,
+              32
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              27,
+              0
+            ],
+            [
+              27,
+              30
+            ]
+          ],
+          "specifier": "./map_keys.ts",
+          "specifierRange": [
+            [
+              27,
+              14
+            ],
+            [
+              27,
+              29
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              28,
+              0
+            ],
+            [
+              28,
+              37
+            ]
+          ],
+          "specifier": "./map_not_nullish.ts",
+          "specifierRange": [
+            [
+              28,
+              14
+            ],
+            [
+              28,
+              36
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              29,
+              0
+            ],
+            [
+              29,
+              32
+            ]
+          ],
+          "specifier": "./map_values.ts",
+          "specifierRange": [
+            [
+              29,
+              14
+            ],
+            [
+              29,
+              31
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              30,
+              0
+            ],
+            [
+              30,
+              31
+            ]
+          ],
+          "specifier": "./partition.ts",
+          "specifierRange": [
+            [
+              30,
+              14
+            ],
+            [
+              30,
+              30
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              31,
+              0
+            ],
+            [
+              31,
+              39
+            ]
+          ],
+          "specifier": "./partition_entries.ts",
+          "specifierRange": [
+            [
+              31,
+              14
+            ],
+            [
+              31,
+              38
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              32,
+              0
+            ],
+            [
+              32,
+              34
+            ]
+          ],
+          "specifier": "./permutations.ts",
+          "specifierRange": [
+            [
+              32,
+              14
+            ],
+            [
+              32,
+              33
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              33,
+              0
+            ],
+            [
+              33,
+              33
+            ]
+          ],
+          "specifier": "./find_single.ts",
+          "specifierRange": [
+            [
+              33,
+              14
+            ],
+            [
+              33,
+              32
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              34,
+              0
+            ],
+            [
+              34,
+              37
+            ]
+          ],
+          "specifier": "./sliding_windows.ts",
+          "specifierRange": [
+            [
+              34,
+              14
+            ],
+            [
+              34,
+              36
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              35,
+              0
+            ],
+            [
+              35,
+              28
+            ]
+          ],
+          "specifier": "./sum_of.ts",
+          "specifierRange": [
+            [
+              35,
+              14
+            ],
+            [
+              35,
+              27
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              36,
+              0
+            ],
+            [
+              36,
+              28
+            ]
+          ],
+          "specifier": "./max_by.ts",
+          "specifierRange": [
+            [
+              36,
+              14
+            ],
+            [
+              36,
+              27
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              37,
+              0
+            ],
+            [
+              37,
+              28
+            ]
+          ],
+          "specifier": "./max_of.ts",
+          "specifierRange": [
+            [
+              37,
+              14
+            ],
+            [
+              37,
+              27
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              38,
+              0
+            ],
+            [
+              38,
+              28
+            ]
+          ],
+          "specifier": "./min_by.ts",
+          "specifierRange": [
+            [
+              38,
+              14
+            ],
+            [
+              38,
+              27
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              39,
+              0
+            ],
+            [
+              39,
+              28
+            ]
+          ],
+          "specifier": "./min_of.ts",
+          "specifierRange": [
+            [
+              39,
+              14
+            ],
+            [
+              39,
+              27
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              40,
+              0
+            ],
+            [
+              40,
+              29
+            ]
+          ],
+          "specifier": "./sort_by.ts",
+          "specifierRange": [
+            [
+              40,
+              14
+            ],
+            [
+              40,
+              28
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              41,
+              0
+            ],
+            [
+              41,
+              27
+            ]
+          ],
+          "specifier": "./union.ts",
+          "specifierRange": [
+            [
+              41,
+              14
+            ],
+            [
+              41,
+              26
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              42,
+              0
+            ],
+            [
+              42,
+              33
+            ]
+          ],
+          "specifier": "./without_all.ts",
+          "specifierRange": [
+            [
+              42,
+              14
+            ],
+            [
+              42,
+              32
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              43,
+              0
+            ],
+            [
+              43,
+              27
+            ]
+          ],
+          "specifier": "./unzip.ts",
+          "specifierRange": [
+            [
+              43,
+              14
+            ],
+            [
+              43,
+              26
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              44,
+              0
+            ],
+            [
+              44,
+              25
+            ]
+          ],
+          "specifier": "./zip.ts",
+          "specifierRange": [
+            [
+              44,
+              14
+            ],
+            [
+              44,
+              24
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              45,
+              0
+            ],
+            [
+              45,
+              36
+            ]
+          ],
+          "specifier": "./join_to_string.ts",
+          "specifierRange": [
+            [
+              45,
+              14
+            ],
+            [
+              45,
+              35
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              46,
+              0
+            ],
+            [
+              46,
+              30
+            ]
+          ],
+          "specifier": "./max_with.ts",
+          "specifierRange": [
+            [
+              46,
+              14
+            ],
+            [
+              46,
+              29
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              47,
+              0
+            ],
+            [
+              47,
+              30
+            ]
+          ],
+          "specifier": "./min_with.ts",
+          "specifierRange": [
+            [
+              47,
+              14
+            ],
+            [
+              47,
+              29
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              48,
+              0
+            ],
+            [
+              48,
+              36
+            ]
+          ],
+          "specifier": "./includes_value.ts",
+          "specifierRange": [
+            [
+              48,
+              14
+            ],
+            [
+              48,
+              35
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              49,
+              0
+            ],
+            [
+              49,
+              37
+            ]
+          ],
+          "specifier": "./take_last_while.ts",
+          "specifierRange": [
+            [
+              49,
+              14
+            ],
+            [
+              49,
+              36
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              50,
+              0
+            ],
+            [
+              50,
+              32
+            ]
+          ],
+          "specifier": "./take_while.ts",
+          "specifierRange": [
+            [
+              50,
+              14
+            ],
+            [
+              50,
+              31
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              51,
+              0
+            ],
+            [
+              51,
+              42
+            ]
+          ],
+          "specifier": "./first_not_nullish_of.ts",
+          "specifierRange": [
+            [
+              51,
+              14
+            ],
+            [
+              51,
+              41
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              52,
+              0
+            ],
+            [
+              52,
+              37
+            ]
+          ],
+          "specifier": "./drop_last_while.ts",
+          "specifierRange": [
+            [
+              52,
+              14
+            ],
+            [
+              52,
+              36
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              53,
+              0
+            ],
+            [
+              53,
+              35
+            ]
+          ],
+          "specifier": "./reduce_groups.ts",
+          "specifierRange": [
+            [
+              53,
+              14
+            ],
+            [
+              53,
+              34
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              54,
+              0
+            ],
+            [
+              54,
+              28
+            ]
+          ],
+          "specifier": "./sample.ts",
+          "specifierRange": [
+            [
+              54,
+              14
+            ],
+            [
+              54,
+              27
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              55,
+              0
+            ],
+            [
+              55,
+              36
+            ]
+          ],
+          "specifier": "./running_reduce.ts",
+          "specifierRange": [
+            [
+              55,
+              14
+            ],
+            [
+              55,
+              35
+            ]
+          ]
+        }
+      ]
+    },
+    "/distinct.ts": {},
+    "/max_of.ts": {},
+    "/includes_value.ts": {},
+    "/sample.ts": {
+      "dependencies": [
+        {
+          "type": "static",
+          "kind": "import",
+          "leadingComments": [
+            {
+              "text": " Copyright 2018-2024 the Deno authors. All rights reserved. MIT license.",
+              "range": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  74
+                ]
+              ]
+            },
+            {
+              "text": " This module is browser compatible.",
+              "range": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  37
+                ]
+              ]
+            }
+          ],
+          "range": [
+            [
+              3,
+              0
+            ],
+            [
+              3,
+              44
+            ]
+          ],
+          "specifier": "./_utils.ts",
+          "specifierRange": [
+            [
+              3,
+              30
+            ],
+            [
+              3,
+              43
+            ]
+          ]
+        }
+      ]
+    },
+    "/aggregate_groups.ts": {
+      "dependencies": [
+        {
+          "type": "static",
+          "kind": "import",
+          "leadingComments": [
+            {
+              "text": " Copyright 2018-2024 the Deno authors. All rights reserved. MIT license.",
+              "range": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  74
+                ]
+              ]
+            },
+            {
+              "text": " This module is browser compatible.",
+              "range": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  37
+                ]
+              ]
+            }
+          ],
+          "range": [
+            [
+              3,
+              0
+            ],
+            [
+              3,
+              46
+            ]
+          ],
+          "specifier": "./map_entries.ts",
+          "specifierRange": [
+            [
+              3,
+              27
+            ],
+            [
+              3,
+              45
+            ]
+          ]
+        }
+      ]
+    },
+    "/take_while.ts": {},
+    "/min_with.ts": {},
+    "/join_to_string.ts": {},
+    "/min_by.ts": {},
+    "/deep_merge.ts": {
+      "dependencies": [
+        {
+          "type": "static",
+          "kind": "import",
+          "leadingComments": [
+            {
+              "text": " Copyright 2018-2024 the Deno authors. All rights reserved. MIT license.",
+              "range": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  74
+                ]
+              ]
+            },
+            {
+              "text": " This module is browser compatible.",
+              "range": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  37
+                ]
+              ]
+            }
+          ],
+          "range": [
+            [
+              3,
+              0
+            ],
+            [
+              3,
+              44
+            ]
+          ],
+          "specifier": "./_utils.ts",
+          "specifierRange": [
+            [
+              3,
+              30
+            ],
+            [
+              3,
+              43
+            ]
+          ]
+        }
+      ]
+    },
+    "/min_of.ts": {},
+    "/partition_entries.ts": {},
+    "/first_not_nullish_of.ts": {},
+    "/reduce_groups.ts": {
+      "dependencies": [
+        {
+          "type": "static",
+          "kind": "import",
+          "leadingComments": [
+            {
+              "text": " Copyright 2018-2024 the Deno authors. All rights reserved. MIT license.",
+              "range": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  74
+                ]
+              ]
+            },
+            {
+              "text": " This module is browser compatible.",
+              "range": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  37
+                ]
+              ]
+            }
+          ],
+          "range": [
+            [
+              3,
+              0
+            ],
+            [
+              3,
+              44
+            ]
+          ],
+          "specifier": "./map_values.ts",
+          "specifierRange": [
+            [
+              3,
+              26
+            ],
+            [
+              3,
+              43
+            ]
+          ]
+        }
+      ]
+    },
+    "/max_by.ts": {},
+    "/map_entries.ts": {}
+  },
+  "exports": {
+    ".": "./mod.ts",
+    "./aggregate_groups": "./aggregate_groups.ts",
+    "./associate_by": "./associate_by.ts",
+    "./associate_with": "./associate_with.ts",
+    "./chunk": "./chunk.ts",
+    "./deep_merge": "./deep_merge.ts",
+    "./distinct": "./distinct.ts",
+    "./distinct_by": "./distinct_by.ts",
+    "./drop_last_while": "./drop_last_while.ts",
+    "./drop_while": "./drop_while.ts",
+    "./filter_entries": "./filter_entries.ts",
+    "./filter_keys": "./filter_keys.ts",
+    "./filter_values": "./filter_values.ts",
+    "./find_single": "./find_single.ts",
+    "./first_not_nullish_of": "./first_not_nullish_of.ts",
+    "./includes_value": "./includes_value.ts",
+    "./intersect": "./intersect.ts",
+    "./join_to_string": "./join_to_string.ts",
+    "./map_entries": "./map_entries.ts",
+    "./map_keys": "./map_keys.ts",
+    "./map_not_nullish": "./map_not_nullish.ts",
+    "./map_values": "./map_values.ts",
+    "./max_by": "./max_by.ts",
+    "./max_of": "./max_of.ts",
+    "./max_with": "./max_with.ts",
+    "./min_by": "./min_by.ts",
+    "./min_of": "./min_of.ts",
+    "./min_with": "./min_with.ts",
+    "./partition": "./partition.ts",
+    "./partition_entries": "./partition_entries.ts",
+    "./permutations": "./permutations.ts",
+    "./reduce_groups": "./reduce_groups.ts",
+    "./running_reduce": "./running_reduce.ts",
+    "./sample": "./sample.ts",
+    "./sliding_windows": "./sliding_windows.ts",
+    "./sort_by": "./sort_by.ts",
+    "./sum_of": "./sum_of.ts",
+    "./take_last_while": "./take_last_while.ts",
+    "./take_while": "./take_while.ts",
+    "./union": "./union.ts",
+    "./unzip": "./unzip.ts",
+    "./without_all": "./without_all.ts",
+    "./zip": "./zip.ts"
+  }
+}

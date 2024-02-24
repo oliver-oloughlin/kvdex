@@ -1,0 +1,489 @@
+{
+  "manifest": {
+    "/ends_with_test.ts": {
+      "size": 477,
+      "checksum": "sha256-8e89020946cbb43b30bd58e056ba683046353383dd214d88de132f8e82743743"
+    },
+    "/concat_test.ts": {
+      "size": 1503,
+      "checksum": "sha256-d61ab22cbd420a9ef8d4c9e2d61aab4fd9f7b6daaca0496f9d879f5b02acea83"
+    },
+    "/copy.ts": {
+      "size": 1307,
+      "checksum": "sha256-e3331dc8b9175f1016b9ef6c1890f1b80770762e017b6ca08b9b764954d26def"
+    },
+    "/copy_test.ts": {
+      "size": 968,
+      "checksum": "sha256-63addeea2e4fd7bdd1fc06d92b4a85378061a7fdd81b37e14f8bae2e88ff14ab"
+    },
+    "/repeat.ts": {
+      "size": 1048,
+      "checksum": "sha256-e5adcef788b51327d00894edebcd194a1a65ce64fc7c37161646c4d24cf04747"
+    },
+    "/starts_with_test.ts": {
+      "size": 501,
+      "checksum": "sha256-56feae9cfed6978228f4b9241905d352aef45a6ed2333dc5890c616638dcba7d"
+    },
+    "/ends_with.ts": {
+      "size": 758,
+      "checksum": "sha256-987127f22fdb33128f98f5fda7851deacfc4441e28217cc26773122f2b8f695a"
+    },
+    "/equals_test.ts": {
+      "size": 1439,
+      "checksum": "sha256-4784d7310fd483ccd9a800736d0cb31dca88c68734afeb66780f7d27f012ca98"
+    },
+    "/index_of_needle.ts": {
+      "size": 1361,
+      "checksum": "sha256-983375018d379565b65f652ff766bff3f59d4de2e994eaffcd9251a70e87e1a6"
+    },
+    "/index_of_needle_test.ts": {
+      "size": 1694,
+      "checksum": "sha256-a3e47903e7c7b5d595e3b4d0e46fd709d9b1f6858dc587ab28280b6bcd2b95b2"
+    },
+    "/last_index_of_needle.ts": {
+      "size": 1433,
+      "checksum": "sha256-349b0c6ff1b1c2ca6b169c384534ecfdb2400621f9e8be5903f2c80479cfe8de"
+    },
+    "/concat.ts": {
+      "size": 675,
+      "checksum": "sha256-8142a1734fd445582be0d209d0def43c2a3c27370a0fd4b327187dd34b98d6eb"
+    },
+    "/equals.ts": {
+      "size": 1450,
+      "checksum": "sha256-2a407bf9256800235c7bf9d923a1cf9a66f4dbd0ef8e7501c2f018e97a345a73"
+    },
+    "/starts_with.ts": {
+      "size": 709,
+      "checksum": "sha256-083acc787044a5d687de68d53431f90c99b9826f296977defba7c7d47c4e9f62"
+    },
+    "/last_index_of_needle_test.ts": {
+      "size": 1648,
+      "checksum": "sha256-efb251329070d37db435a1dc7b0b97db0eedf9ae0502d481fbd5085175c18e35"
+    },
+    "/repeat_test.ts": {
+      "size": 1018,
+      "checksum": "sha256-36649afc4844e8fdfb96b8b1838373f2de185b0340697c21485d819fccbf4081"
+    },
+    "/mod.ts": {
+      "size": 560,
+      "checksum": "sha256-15cfea60a44d8141780d24aa65c204af6bd74ac3542ebf26d3c4c151adc62623"
+    },
+    "/deno.json": {
+      "size": 446,
+      "checksum": "sha256-398460d70d95c29858940ee5138d04f96d5169aa0a685772f2664c0abcd756dd"
+    },
+    "/includes_needle.ts": {
+      "size": 950,
+      "checksum": "sha256-96a9fc7a1926fbb5efa4fddaac139c98ff512dff63ed72dd4081d9a5598393ad"
+    },
+    "/includes_needle_test.ts": {
+      "size": 570,
+      "checksum": "sha256-c769e7bf6b705bd83067390b68ca32f61855cd3bd0b6ece173ce9be02281501a"
+    }
+  },
+  "moduleGraph1": {
+    "/ends_with.ts": {},
+    "/starts_with.ts": {},
+    "/concat.ts": {},
+    "/index_of_needle.ts": {},
+    "/includes_needle.ts": {
+      "dependencies": [
+        {
+          "type": "static",
+          "kind": "import",
+          "leadingComments": [
+            {
+              "text": " Copyright 2018-2024 the Deno authors. All rights reserved. MIT license.",
+              "range": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  74
+                ]
+              ]
+            },
+            {
+              "text": " This module is browser compatible.",
+              "range": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  37
+                ]
+              ]
+            }
+          ],
+          "range": [
+            [
+              3,
+              0
+            ],
+            [
+              3,
+              53
+            ]
+          ],
+          "specifier": "./index_of_needle.ts",
+          "specifierRange": [
+            [
+              3,
+              30
+            ],
+            [
+              3,
+              52
+            ]
+          ]
+        }
+      ]
+    },
+    "/last_index_of_needle.ts": {},
+    "/mod.ts": {
+      "dependencies": [
+        {
+          "type": "static",
+          "kind": "export",
+          "leadingComments": [
+            {
+              "text": " Copyright 2018-2024 the Deno authors. All rights reserved. MIT license.",
+              "range": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  74
+                ]
+              ]
+            },
+            {
+              "text": " This module is browser compatible.",
+              "range": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  37
+                ]
+              ]
+            },
+            {
+              "text": "*\n * Provides helper functions to manipulate `Uint8Array` byte slices that are not\n * included on the `Uint8Array` prototype.\n *\n * @module\n ",
+              "range": [
+                [
+                  3,
+                  0
+                ],
+                [
+                  8,
+                  3
+                ]
+              ]
+            }
+          ],
+          "range": [
+            [
+              10,
+              0
+            ],
+            [
+              10,
+              28
+            ]
+          ],
+          "specifier": "./concat.ts",
+          "specifierRange": [
+            [
+              10,
+              14
+            ],
+            [
+              10,
+              27
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              11,
+              0
+            ],
+            [
+              11,
+              26
+            ]
+          ],
+          "specifier": "./copy.ts",
+          "specifierRange": [
+            [
+              11,
+              14
+            ],
+            [
+              11,
+              25
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              12,
+              0
+            ],
+            [
+              12,
+              31
+            ]
+          ],
+          "specifier": "./ends_with.ts",
+          "specifierRange": [
+            [
+              12,
+              14
+            ],
+            [
+              12,
+              30
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              13,
+              0
+            ],
+            [
+              13,
+              28
+            ]
+          ],
+          "specifier": "./equals.ts",
+          "specifierRange": [
+            [
+              13,
+              14
+            ],
+            [
+              13,
+              27
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              14,
+              0
+            ],
+            [
+              14,
+              37
+            ]
+          ],
+          "specifier": "./includes_needle.ts",
+          "specifierRange": [
+            [
+              14,
+              14
+            ],
+            [
+              14,
+              36
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              15,
+              0
+            ],
+            [
+              15,
+              37
+            ]
+          ],
+          "specifier": "./index_of_needle.ts",
+          "specifierRange": [
+            [
+              15,
+              14
+            ],
+            [
+              15,
+              36
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              16,
+              0
+            ],
+            [
+              16,
+              42
+            ]
+          ],
+          "specifier": "./last_index_of_needle.ts",
+          "specifierRange": [
+            [
+              16,
+              14
+            ],
+            [
+              16,
+              41
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              17,
+              0
+            ],
+            [
+              17,
+              28
+            ]
+          ],
+          "specifier": "./repeat.ts",
+          "specifierRange": [
+            [
+              17,
+              14
+            ],
+            [
+              17,
+              27
+            ]
+          ]
+        },
+        {
+          "type": "static",
+          "kind": "export",
+          "range": [
+            [
+              18,
+              0
+            ],
+            [
+              18,
+              33
+            ]
+          ],
+          "specifier": "./starts_with.ts",
+          "specifierRange": [
+            [
+              18,
+              14
+            ],
+            [
+              18,
+              32
+            ]
+          ]
+        }
+      ]
+    },
+    "/repeat.ts": {
+      "dependencies": [
+        {
+          "type": "static",
+          "kind": "import",
+          "leadingComments": [
+            {
+              "text": " Copyright 2018-2024 the Deno authors. All rights reserved. MIT license.",
+              "range": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  74
+                ]
+              ]
+            },
+            {
+              "text": " This module is browser compatible.",
+              "range": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  37
+                ]
+              ]
+            }
+          ],
+          "range": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              33
+            ]
+          ],
+          "specifier": "./copy.ts",
+          "specifierRange": [
+            [
+              2,
+              21
+            ],
+            [
+              2,
+              32
+            ]
+          ]
+        }
+      ]
+    },
+    "/equals.ts": {},
+    "/copy.ts": {}
+  },
+  "exports": {
+    ".": "./mod.ts",
+    "./concat": "./concat.ts",
+    "./copy": "./copy.ts",
+    "./ends_with": "./ends_with.ts",
+    "./equals": "./equals.ts",
+    "./includes_needle": "./includes_needle.ts",
+    "./index_of_needle": "./index_of_needle.ts",
+    "./last_index_of_needle": "./last_index_of_needle.ts",
+    "./repeat": "./repeat.ts",
+    "./starts_with": "./starts_with.ts"
+  }
+}
