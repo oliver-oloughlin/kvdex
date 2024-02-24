@@ -13,7 +13,6 @@
     "prep": "deno task check && deno fmt && deno lint && deno publish --dry-run && deno task test"
   },
   "lock": false,
-  "vendor": true,
   "fmt": {
     "semiColons": false
   },

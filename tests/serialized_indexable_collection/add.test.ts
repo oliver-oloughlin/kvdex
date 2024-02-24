@@ -1,4 +1,4 @@
-import { assert } from "jsr:@std/assert@0.215/assert"
+import { assert } from "../test.deps.ts"
 import { mockUserInvalid } from "../mocks.ts"
 import { generateLargeUsers, useDb } from "../utils.ts"
 

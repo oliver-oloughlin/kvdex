@@ -1,9 +1,6 @@
-import { assert } from "jsr:@std/assert@0.215/assert"
-import { mockUser3 } from "../mocks.ts"
-import { mockUser2 } from "../mocks.ts"
-import { mockUser1, mockUserInvalid } from "../mocks.ts"
-import { sleep } from "../utils.ts"
-import { useDb } from "../utils.ts"
+import { assert } from "../test.deps.ts"
+import { mockUser1, mockUser2, mockUser3, mockUserInvalid } from "../mocks.ts"
+import { sleep, useDb } from "../utils.ts"
 
 Deno.test("serialized_indexable_collection - updateOne", async (t) => {
   await t.step(

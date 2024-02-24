@@ -1,5 +1,5 @@
 import { kvdex } from "../../mod.ts"
-import { assert } from "jsr:@std/assert@0.215/assert"
+import { assert } from "../test.deps.ts"
 import { createResolver, useDb, useKv } from "../utils.ts"
 
 Deno.test("db - loop", async (t) => {

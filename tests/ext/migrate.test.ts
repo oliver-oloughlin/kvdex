@@ -2,8 +2,7 @@ import { migrate } from "../../ext/migrate.ts"
 import { collection } from "../../src/collection.ts"
 import { kvdex } from "../../src/kvdex.ts"
 import { model } from "../../src/model.ts"
-import { assert } from "jsr:@std/assert@0.215/assert"
-import { assertEquals } from "assert_equals"
+import { assert, assertEquals } from "../test.deps.ts"
 import {
   val1,
   val10,

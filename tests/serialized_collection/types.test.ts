@@ -1,5 +1,5 @@
 import { collection, kvdex, model } from "../../mod.ts"
-import { assert } from "jsr:@std/assert@0.215/assert"
+import { assert } from "../test.deps.ts"
 import { useKv } from "../utils.ts"
 
 Deno.test("serialized_collection - types", async (t) => {

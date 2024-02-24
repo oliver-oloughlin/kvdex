@@ -4,7 +4,7 @@ import {
   UNDELIVERED_KEY_PREFIX,
 } from "../../src/constants.ts"
 import { createHandlerId, extendKey } from "../../src/utils.ts"
-import { assert } from "jsr:@std/assert@0.215/assert"
+import { assert } from "../test.deps.ts"
 import { createResolver, sleep, useKv } from "../utils.ts"
 
 Deno.test("collection - listenQueue", async (t) => {
