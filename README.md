@@ -1,5 +1,9 @@
 # kvdex
 
+[![Releases](https://img.shields.io/github/release/oliver-oloughlin/kvdex)](https://github.com/oliver-oloughlin/kvdex/releases)
+[![Tests](https://img.shields.io/github/actions/workflow/status/oliver-oloughlin/kvdex/test.yml?label=tests)](https://github.com/oliver-oloughlin/kvdex/actions/workflows/test.yml)
+[![License](https://img.shields.io/github/license/oliver-oloughlin/kvdex)](https://github.com/oliver-oloughlin/kvdex/blob/main/LICENSE)
+
 `kvdex` is a high-level abstraction layer for Deno KV with zero third-party
 dependencies by default. It's purpose is to enhance the experience of using
 Deno's KV store through additional features such as indexing, strongly typed
