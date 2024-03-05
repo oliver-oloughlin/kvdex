@@ -92,7 +92,7 @@ _Supported Deno verisons:_ **^1.40.0**
   - [Extensions](#extensions)
     - [Zod](#zod)
       - [zodModel()](#zodmodel)
-      - [Kv-Schemas](#kv-schemas)
+      - [Schemas](#schemas)
     - [Migrate](#migrate)
       - [Script](#script)
       - [Function](#function)
@@ -1275,7 +1275,7 @@ const result = await db.users_zod.add({
 })
 ```
 
-#### Kv-Schemas
+#### Schemas
 
 The zod extension provides schemas for some of the Kv-types, such as KvId,
 KvValue, KvObject and Kvarray. This makes it easier to properly build your

@@ -1,6 +1,40 @@
 import { parseArgs } from "jsr:@std/cli@0.217/parse_args"
 import { KVDEX_KEY_PREFIX } from "../src/constants.ts"
 
+/**
+ * @module Migrate
+ *
+ * A helper script and function for migrating entries from a source KV instance to
+ * a target KV instance. Only migrates `kvdex` entries by default, but optionally
+ * allows for migrating all entries.
+ *
+ * ## Script
+ *
+ * Run the migrate script and provide --source and --target arguments. Optionally
+ * pass --all to migrate all entries.
+ *
+ * ```console
+ * deno run -A --unstable-kv jsr:@olli/kvdex/ext/migrate --source=./source.sqlite3 --target=./target.sqlite3
+ * ```
+ *
+ * ## Function
+ *
+ * Use the migrate function and pass a source KV instance and a target KV instance.
+ * Optionally pass `all: true` to migrate all entries.
+ *
+ * ```ts
+ * import { migrate } from "jsr:@olli/kvdex/ext/migrate"
+ *
+ * const source = await Deno.openKv("./source.sqlite3")
+ * const target = await Deno.openKv("./target.sqlite3")
+ *
+ * await migrate({
+ *   source,
+ *   target,
+ * })
+ * ```
+ */
+
 if (import.meta.main) {
   const { source, target, all } = parseArgs(Deno.args, {
     string: ["source", "target"],
