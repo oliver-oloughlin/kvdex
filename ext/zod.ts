@@ -1,6 +1,3 @@
-import { z } from "npm:zod@^3.22"
-import type { KvArray, KvId, KvObject, KvValue, Model } from "../src/types.ts"
-
 /**
  * @module # Zod
  *
@@ -61,6 +58,9 @@ import type { KvArray, KvId, KvObject, KvValue, Model } from "../src/types.ts"
  * })
  * ```
  */
+
+import { z } from "npm:zod@^3.22"
+import type { KvArray, KvId, KvObject, KvValue, Model } from "../src/types.ts"
 
 /*******************/
 /*                 */

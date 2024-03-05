@@ -1,6 +1,3 @@
-import { parseArgs } from "jsr:@std/cli@^0.217/parse_args"
-import { KVDEX_KEY_PREFIX } from "../src/constants.ts"
-
 /**
  * @module # Migrate
  *
@@ -34,6 +31,9 @@ import { KVDEX_KEY_PREFIX } from "../src/constants.ts"
  * })
  * ```
  */
+
+import { parseArgs } from "jsr:@std/cli@^0.217/parse_args"
+import { KVDEX_KEY_PREFIX } from "../src/constants.ts"
 
 if (import.meta.main) {
   const { source, target, all } = parseArgs(Deno.args, {
