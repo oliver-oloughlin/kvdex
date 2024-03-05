@@ -1,5 +1,4 @@
 import type {
-  AtomicListOptions,
   BuilderFn,
   CheckKeyOf,
   CollectionKeys,
@@ -8,7 +7,7 @@ import type {
   EnqueueOptions,
   FindManyOptions,
   FindOptions,
-  HandleManyOptions,
+  HandleOneOptions,
   HistoryEntry,
   IdempotentListener,
   IdGenerator,
@@ -36,6 +35,7 @@ import type {
   SetOptions,
   UpdateData,
   UpdateManyOptions,
+  UpdateOneOptions,
   UpdateOptions,
   UpdateStrategy,
   UpsertOptions,
@@ -569,39 +569,6 @@ export class Collection<
   }
 
   /**
-   * Write a document to the KV store.
-   *
-   * Sets a new document entry if no matching id already exists, overwrites the exisiting entry if it exists.
-   *
-   * Does not overwrite existing entries if there is a primary index collision.
-   *
-   * @deprecated
-   * This method is deprecated and will be removed in a future release.
-   *
-   * Please use `set()` with the option `overwrite: true` instead.
-   *
-   * @example
-   * ```ts
-   * const result = await db.users.write("anders", {
-   *   username: "andy",
-   *   age: 24
-   * })
-   * ```
-   *
-   * @param id - Document id.
-   * @param value - Document value.
-   * @param options - Set options, optional.
-   * @returns Promise resolving to a CommitResult or CommitError.
-   */
-  async write(
-    id: KvId,
-    value: ParseInputType<TInput, TOutput>,
-    options?: SetOptions,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
-    return await this.setDocument(id, value, { ...options, overwrite: true })
-  }
-
-  /**
    * Deletes one or more documents with the given ids from the KV store.
    *
    * @example
@@ -1041,7 +1008,7 @@ export class Collection<
    * @returns Promise resolving to either a commit result or commit error object.
    */
   async updateOne<
-    const T extends UpdateManyOptions<Document<TOutput>>,
+    const T extends UpdateOneOptions<Document<TOutput>>,
   >(
     data: UpdateData<TOutput, T["strategy"]>,
     options?: T,
@@ -1084,7 +1051,7 @@ export class Collection<
    * @returns Promise resolving to either a commit result or commit error object.
    */
   async updateOneBySecondaryIndex<
-    const T extends UpdateManyOptions<Document<TOutput>>,
+    const T extends UpdateOneOptions<Document<TOutput>>,
     const K extends SecondaryIndexKeys<TOutput, TOptions>,
   >(
     index: K,
@@ -1193,7 +1160,7 @@ export class Collection<
    * @returns A promise that resovles to an object containing the iterator cursor
    */
   async deleteMany(
-    options?: AtomicListOptions<Document<TOutput>>,
+    options?: ListOptions<Document<TOutput>>,
   ): Promise<Pagination> {
     // Perform quick delete if all documents are to be deleted
     if (selectsAll(options)) {
@@ -1297,7 +1264,7 @@ export class Collection<
    * @returns A promise that resovles to the retreived document
    */
   async getOne(
-    options?: ListOptions<Document<TOutput>>,
+    options?: HandleOneOptions<Document<TOutput>>,
   ): Promise<Document<TOutput> | null> {
     // Get result list with limit of one item
     const { result } = await this.handleMany(
@@ -1339,7 +1306,7 @@ export class Collection<
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
-    options?: ListOptions<Document<TOutput>>,
+    options?: HandleOneOptions<Document<TOutput>>,
   ): Promise<Document<TOutput> | null> {
     // Create prefix key
     const prefixKey = createSecondaryIndexKeyPrefix(
@@ -2219,7 +2186,7 @@ export class Collection<
   private async handleMany<const T>(
     prefixKey: KvKey,
     fn: (doc: Document<TOutput>) => T,
-    options: HandleManyOptions<Document<TOutput>> | undefined,
+    options: ListOptions<Document<TOutput>> | undefined,
   ) {
     // Create list iterator with given options
     const selector = createListSelector(prefixKey, options)
