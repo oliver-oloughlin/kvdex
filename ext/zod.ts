@@ -1,9 +1,12 @@
-import { z } from "npm:zod@3"
+import { z } from "npm:zod@^3.22"
 import type { KvArray, KvId, KvObject, KvValue, Model } from "../src/types.ts"
 
 /**
- * @module Zod
- * ## zodModel()
+ * @module # Zod
+ *
+ * Extended support for Zod. Includes a model parser and schemas for some KV-types.
+ *
+ * ## `zodModel()`
  *
  * Provides additional compatibility when using zod schemas as models. While zod
  * schemas can be used as models directly, `zodModel()` properly parses a model
@@ -40,7 +43,7 @@ import type { KvArray, KvId, KvObject, KvValue, Model } from "../src/types.ts"
  * ## Schemas
  *
  * The zod extension provides schemas for some of the Kv-types, such as KvId,
- * KvValue, KvObject and Kvarray. This makes it easier to properly build your
+ * KvValue, KvObject and KvArray. This makes it easier to properly build your
  * schemas.
  *
  * ```ts

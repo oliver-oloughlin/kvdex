@@ -1,10 +1,10 @@
-import { parseArgs } from "jsr:@std/cli@0.217/parse_args"
+import { parseArgs } from "jsr:@std/cli@^0.217/parse_args"
 import { KVDEX_KEY_PREFIX } from "../src/constants.ts"
 
 /**
- * @module Migrate
+ * @module # Migrate
  *
- * A helper script and function for migrating entries from a source KV instance to
+ * A utility script and function for migrating entries from a source KV instance to
  * a target KV instance. Only migrates `kvdex` entries by default, but optionally
  * allows for migrating all entries.
  *
@@ -30,7 +30,7 @@ import { KVDEX_KEY_PREFIX } from "../src/constants.ts"
  *
  * await migrate({
  *   source,
- *   target,
+ *   target
  * })
  * ```
  */
