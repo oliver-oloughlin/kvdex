@@ -315,7 +315,14 @@ export type ParseInputType<TInput, TOutput extends KvValue> = TInput extends
  * Contains a parse function, and optionally a __validate function used instead of parse upon reading data.
  */
 export type Model<TInput, TOutput extends KvValue> = {
+  /** A parse function that takes an input type and returns an output type */
   parse: (data: TInput) => TOutput
+
+  /**
+   * An optional validate function that takes any input value and returns an output type.
+   *
+   * Is used instead of `parse()` upon reading a document.
+   */
   __validate?: (data: unknown) => TOutput
 }
 

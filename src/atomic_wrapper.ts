@@ -5,6 +5,10 @@ import {
 } from "./constants.ts"
 import type { AtomicSetOptions } from "./types.ts"
 
+/**
+ * Implements the AtomicOperation interface and automatically executes
+ * batched operations using a dynamic attributes such as count and size.
+ */
 export class AtomicWrapper implements Deno.AtomicOperation {
   private kv: Deno.Kv
   private atomics: Deno.AtomicOperation[]

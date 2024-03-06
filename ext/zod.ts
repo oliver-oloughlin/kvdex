@@ -3,7 +3,7 @@
  *
  * Extended support for Zod. Includes a model parser and schemas for some KV-types.
  *
- * ## `zodModel()`
+ * ## zodModel()
  *
  * Provides additional compatibility when using zod schemas as models. While zod
  * schemas can be used as models directly, `zodModel()` properly parses a model
