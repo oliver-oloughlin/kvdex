@@ -1,6 +1,7 @@
 # kvdex
 
 [![Release](https://img.shields.io/github/release/oliver-oloughlin/kvdex)](https://github.com/oliver-oloughlin/kvdex/releases)
+[![Score](https://jsr.io/badges/@olli/kvdex/score)](https://jsr.io/@olli/kvdex/score)
 [![Tests](https://img.shields.io/github/actions/workflow/status/oliver-oloughlin/kvdex/test.yml?label=tests)](https://github.com/oliver-oloughlin/kvdex/actions/workflows/test.yml)
 [![License](https://img.shields.io/github/license/oliver-oloughlin/kvdex)](https://github.com/oliver-oloughlin/kvdex/blob/main/LICENSE)
 
