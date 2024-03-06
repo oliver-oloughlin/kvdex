@@ -91,7 +91,7 @@ _Supported Deno verisons:_ **^1.40.0**
     - [flat()](#flat)
   - [Extensions](#extensions)
     - [Zod](#zod)
-      - [`zodModel()`](#zodmodel)
+      - [zodModel()](#zodmodel)
       - [Schemas](#schemas)
     - [Migrate](#migrate)
       - [Script](#script)
@@ -1241,7 +1241,9 @@ some dependenices to enhance integration. All extensions are found in the
 
 ### Zod
 
-#### `zodModel()`
+Extended support for Zod. Includes a model parser and schemas for some KV-types.
+
+#### zodModel()
 
 Provides additional compatibility when using zod schemas as models. While zod
 schemas can be used as models directly, `zodModel()` properly parses a model

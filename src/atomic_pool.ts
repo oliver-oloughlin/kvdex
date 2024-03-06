@@ -1,5 +1,6 @@
 import type { AtomicSetOptions } from "./types.ts"
 
+/** Holds atomic mutations in a pool until bound to an actual atomic operation */
 export class AtomicPool implements Deno.AtomicOperation {
   private pool: Array<(op: Deno.AtomicOperation) => Deno.AtomicOperation>
 

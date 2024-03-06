@@ -119,6 +119,7 @@ export function kvdex<const T extends SchemaDefinition>(
   return Object.assign(db, schema)
 }
 
+/** Represents a database instance and contains methods for working on all documents and top-level queues. */
 export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   private kv: Deno.Kv
   private schema: TSchema

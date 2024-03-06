@@ -134,6 +134,7 @@ export function collection<
     )
 }
 
+/** Represents a collection of documents and provides methods for handling them, alongside queues. */
 export class Collection<
   const TInput,
   const TOutput extends KvValue,
