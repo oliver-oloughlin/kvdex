@@ -38,7 +38,6 @@ import type {
   UpdateOneOptions,
   UpdateOptions,
   UpdateStrategy,
-  UpsertOptions,
   WatchOptions,
 } from "./types.ts"
 import {
@@ -862,7 +861,7 @@ export class Collection<
    * @returns A promise resolving to either CommitResult or CommitError.
    */
   async upsert<
-    const TUpsertOptions extends UpsertOptions,
+    const TUpsertOptions extends UpdateOptions,
   >(
     input: IdUpsert<TInput, TOutput, TUpsertOptions["strategy"]>,
     options?: TUpsertOptions,
@@ -910,7 +909,7 @@ export class Collection<
    */
   async upsertByPrimaryIndex<
     const TIndex extends PrimaryIndexKeys<TOutput, TOptions>,
-    const TUpsertOptions extends UpsertOptions,
+    const TUpsertOptions extends UpdateOptions,
   >(
     input: PrimaryIndexUpsert<
       TInput,
