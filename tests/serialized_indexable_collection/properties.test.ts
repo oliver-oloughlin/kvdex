@@ -9,6 +9,10 @@ import { extendKey, keyEq } from "../../src/utils.ts"
 import { assert } from "../test.deps.ts"
 import { User } from "../models.ts"
 import { generateLargeUsers, useDb, useKv } from "../utils.ts"
+import { mockUser1 } from "../mocks.ts"
+import { mockUser2 } from "../mocks.ts"
+import { mockUser3 } from "../mocks.ts"
+import { sleep } from "../utils.ts"
 
 const [user] = generateLargeUsers(1)
 
@@ -307,6 +311,50 @@ Deno.test("serialized_indexable_collection - properties", async (t) => {
       assert(byOptSecondary4.result.length === 2)
       assert(byOptSecondary4.result.some((i) => i.id === cr2.id))
       assert(byOptSecondary4.result.some((i) => i.id === cr4.id))
+    })
+  })
+
+  await t.step("Should select limited by database reads", async () => {
+    await useDb(async (db) => {
+      const cr1 = await db.is_users.add(mockUser1)
+      await sleep(10)
+      const cr2 = await db.is_users.add(mockUser2)
+      await sleep(10)
+      const cr3 = await db.is_users.add(mockUser3)
+
+      assert(cr1.ok)
+      assert(cr2.ok)
+      assert(cr3.ok)
+
+      const { result } = await db.is_users.getMany({
+        limit: 2,
+        filter: (doc) => doc.value.username !== mockUser1.username,
+      })
+
+      assert(result.every((doc) => doc.value.username === mockUser2.username))
+    })
+  })
+
+  await t.step("Should select limited by result count", async () => {
+    await useDb(async (db) => {
+      const cr1 = await db.is_users.add(mockUser1)
+      await sleep(10)
+      const cr2 = await db.is_users.add(mockUser2)
+      await sleep(10)
+      const cr3 = await db.is_users.add(mockUser3)
+
+      assert(cr1.ok)
+      assert(cr2.ok)
+      assert(cr3.ok)
+
+      const { result } = await db.is_users.getMany({
+        resultLimit: 2,
+        filter: (doc) => doc.value.username !== mockUser1.username,
+      })
+
+      assert(result.length === 2)
+      assert(result.some((doc) => doc.value.username === mockUser2.username))
+      assert(result.some((doc) => doc.value.username === mockUser3.username))
     })
   })
 

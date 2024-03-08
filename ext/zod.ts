@@ -73,12 +73,14 @@ const LazyKvArraySchema = z.lazy(() => KvArraySchema)
 
 const LazyKvObjectSchema = z.lazy(() => KvObjectSchema)
 
+/** Zod schema for KvId type */
 export const KvIdSchema: z.ZodType<KvId> = z.string()
   .or(z.number())
   .or(z.bigint())
   .or(z.boolean())
   .or(z.instanceof(Uint8Array))
 
+/** Zod schema for KvValue type */
 export const KvValueSchema: z.ZodType<KvValue> = z.undefined()
   .or(z.null())
   .or(z.string())
@@ -107,8 +109,10 @@ export const KvValueSchema: z.ZodType<KvValue> = z.undefined()
   .or(z.instanceof(DataView))
   .or(z.instanceof(Error))
 
+/** Zod schema for KvArray type */
 export const KvArraySchema: z.ZodType<KvArray> = z.array(KvValueSchema)
 
+/** Zod schema for KvObject type */
 export const KvObjectSchema: z.ZodType<KvObject> = z.record(
   z.string().or(z.number()),
   KvValueSchema,

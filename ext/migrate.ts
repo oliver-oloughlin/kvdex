@@ -65,6 +65,7 @@ if (import.meta.main) {
   })
 }
 
+/** Options for migrating entries from a source KV instance to a target KV instance */
 export type MigrateOptions = {
   /** Source KV. */
   source: Deno.Kv
@@ -82,6 +83,19 @@ export type MigrateOptions = {
 
 /**
  * Migrate entries from a source KV instance to a target KV instance.
+ *
+ * @example
+ * ```ts
+ * import { migrate } from "jsr:@olli/kvdex/ext/migrate"
+ *
+ * const source = await Deno.openKv("./source.sqlite3")
+ * const target = await Deno.openKv("./target.sqlite3")
+ *
+ * await migrate({
+ *   source,
+ *   target,
+ * })
+ * ```
  *
  * @param options - Migrate options
  */

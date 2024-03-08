@@ -312,7 +312,7 @@ export type ParseInputType<TInput, TOutput extends KvValue> = TInput extends
 
 /**
  * Model describing the input and output type of data.
- * Contains a parse function, and optionally a __validate function used instead of parse upon reading data.
+ * Contains a parse function, and optionally a `__validate()` function used instead of parse upon reading data.
  */
 export type Model<TInput, TOutput extends KvValue> = {
   /** A parse function that takes an input type and returns an output type */
@@ -580,9 +580,6 @@ export type PrimaryIndexUpsert<
   update: UpdateData<TOutput, TStrategy>
 }
 
-/** Options to upserting */
-export type UpsertOptions = UpdateOptions
-
 /********************/
 /*                  */
 /*   SCHEMA TYPES   */
@@ -678,21 +675,21 @@ export type KvEnqueueOptions = NonNullable<
 /** Type of versionstamp */
 export type KvVersionstamp<T extends KvValue> = Deno.KvEntry<T>["versionstamp"]
 
-/** Entry key */
+/** An entry or collection key */
 export type KvKey = [Deno.KvKeyPart, ...Deno.KvKey]
 
-/** Document id */
+/** An entry ID */
 export type KvId = Exclude<Deno.KvKeyPart, Exclude<Deno.KvKeyPart, KvValue>>
 
-/** KV Object */
+/** An object containing only KV values, and is itself a KV value. */
 export type KvObject = {
   [K: string | number]: KvValue
 }
 
-/** KV Array */
+/** An array containing only KV values, and is itself a KV value. */
 export type KvArray = KvValue[]
 
-/** KV Value */
+/** Defines all valid KV value types */
 export type KvValue =
   | undefined
   | null

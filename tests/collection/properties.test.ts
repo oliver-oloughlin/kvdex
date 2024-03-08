@@ -2,9 +2,10 @@ import { collection, Document, kvdex, model } from "../../mod.ts"
 import { ID_KEY_PREFIX, KVDEX_KEY_PREFIX } from "../../src/constants.ts"
 import { extendKey, keyEq } from "../../src/utils.ts"
 import { assert } from "../test.deps.ts"
-import { mockUser1 } from "../mocks.ts"
+import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts"
 import { User } from "../models.ts"
 import { generateUsers, useDb, useKv } from "../utils.ts"
+import { sleep } from "../utils.ts"
 
 Deno.test("collection - properties", async (t) => {
   await t.step("Keys should have the correct prefixes", async () => {
@@ -207,6 +208,50 @@ Deno.test("collection - properties", async (t) => {
           )
         ),
       )
+    })
+  })
+
+  await t.step("Should select limited by database reads", async () => {
+    await useDb(async (db) => {
+      const cr1 = await db.users.add(mockUser1)
+      await sleep(10)
+      const cr2 = await db.users.add(mockUser2)
+      await sleep(10)
+      const cr3 = await db.users.add(mockUser3)
+
+      assert(cr1.ok)
+      assert(cr2.ok)
+      assert(cr3.ok)
+
+      const { result } = await db.users.getMany({
+        limit: 2,
+        filter: (doc) => doc.value.username !== mockUser1.username,
+      })
+
+      assert(result.every((doc) => doc.value.username === mockUser2.username))
+    })
+  })
+
+  await t.step("Should select limited by result count", async () => {
+    await useDb(async (db) => {
+      const cr1 = await db.users.add(mockUser1)
+      await sleep(10)
+      const cr2 = await db.users.add(mockUser2)
+      await sleep(10)
+      const cr3 = await db.users.add(mockUser3)
+
+      assert(cr1.ok)
+      assert(cr2.ok)
+      assert(cr3.ok)
+
+      const { result } = await db.users.getMany({
+        resultLimit: 2,
+        filter: (doc) => doc.value.username !== mockUser1.username,
+      })
+
+      assert(result.length === 2)
+      assert(result.some((doc) => doc.value.username === mockUser2.username))
+      assert(result.some((doc) => doc.value.username === mockUser3.username))
     })
   })
 
