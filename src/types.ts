@@ -386,10 +386,10 @@ export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
 
 /** Record of serializer functions */
 export type Serializer = {
-  serialize: <T>(data: T) => Uint8Array
-  deserialize: <T>(data: Uint8Array) => T
-  compress: (data: Uint8Array) => Uint8Array
-  decompress: (data: Uint8Array) => Uint8Array
+  serialize: <T>(data: T) => Uint8Array | Promise<Uint8Array>
+  deserialize: <T>(data: Uint8Array) => T | Promise<T>
+  compress: (data: Uint8Array) => Uint8Array | Promise<Uint8Array>
+  decompress: (data: Uint8Array) => Uint8Array | Promise<Uint8Array>
 }
 
 /** Serialized value entry */

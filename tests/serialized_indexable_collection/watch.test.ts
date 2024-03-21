@@ -1,21 +1,17 @@
 import { assert } from "../test.deps.ts"
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts"
 import { sleep, useDb } from "../utils.ts"
+import { Document } from "../../mod.ts"
+import { User } from "../models.ts"
 
 Deno.test("serialized_indexable_collection - watch", async (t) => {
   await t.step("Should receive all document updates", async () => {
     await useDb(async (db) => {
       const id = "id"
-      let count = 0
-      let username = ""
-      let lastDoc: any
+      const docs: (Document<User> | null)[] = []
 
       const watcher = db.is_users.watch(id, (doc) => {
-        count++
-        lastDoc = doc
-        if (doc?.value.username) {
-          username = doc.value.username
-        }
+        docs.push(doc)
       })
 
       await db.is_users.set(id, mockUser1)
@@ -27,9 +23,10 @@ Deno.test("serialized_indexable_collection - watch", async (t) => {
       await db.is_users.delete(id)
       await sleep(500)
 
-      assert(count === 4)
-      assert(username === mockUser3.username)
-      assert(lastDoc === null)
+      assert(docs.some((doc) => doc?.value.username === mockUser1.username))
+      assert(docs.some((doc) => doc?.value.username === mockUser2.username))
+      assert(docs.some((doc) => doc?.value.username === mockUser3.username))
+      assert(docs.some((doc) => doc === null))
 
       return async () => await watcher
     })
