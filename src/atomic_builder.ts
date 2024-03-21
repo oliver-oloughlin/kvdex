@@ -71,6 +71,7 @@ export class AtomicBuilder<
     // Initiate operations or set from given operations
     this.operations = operations ?? {
       atomic: kv.atomic(),
+      asyncMutations: [],
       prepareDeleteFns: [],
       indexDeleteCollectionKeys: [],
       indexAddCollectionKeys: [],
@@ -409,6 +410,11 @@ export class AtomicBuilder<
    * @returns A promise that resolves to a Deno.KvCommitResult if the operation is successful, or Deno.KvCommitError if not.
    */
   async commit(): Promise<Deno.KvCommitResult | Deno.KvCommitError> {
+    // Perform async mutations
+    for (const mut of this.operations.asyncMutations) {
+      await mut()
+    }
+
     // Check for key collisions between add/delete
     if (
       this.operations.indexAddCollectionKeys.some((addKey) =>
@@ -481,44 +487,50 @@ export class AtomicBuilder<
     value: ParseInputType<TInput, TOutput>,
     options?: AtomicSetOptions,
   ) {
-    // Create id key from collection id key and id
-    const collection = this.collection
-    const parsed = collection._model.parse(value as TInput)
-    const docId = id ?? collection._idGenerator(parsed)
-    const idKey = extendKey(collection._keys.id, docId)
+    this.operations.asyncMutations.push(async () => {
+      // Create id key from collection id key and id
+      const collection = this.collection
+      const parsed = collection._model.parse(value as TInput)
+      const docId = id ?? await collection._idGenerator(parsed)
+      const idKey = extendKey(collection._keys.id, docId)
 
-    // Add set operation
-    this.operations.atomic
-      .check({ key: idKey, versionstamp: null })
-      .set(idKey, parsed, options)
+      // Add set operation
+      this.operations.atomic
+        .check({ key: idKey, versionstamp: null })
+        .set(idKey, parsed, options)
 
-    if (collection._isIndexable) {
-      // Add collection id key for collision detection
-      this.operations.indexAddCollectionKeys.push(collection._keys.base)
+      if (collection._isIndexable) {
+        // Add collection id key for collision detection
+        this.operations.indexAddCollectionKeys.push(collection._keys.base)
 
-      // Add indexing operations
-      setIndices(
-        docId,
-        parsed as KvObject,
-        parsed as KvObject,
-        this.operations.atomic,
-        this.collection,
-        options,
-      )
-    }
-
-    // Set history entry if keeps history
-    if (this.collection._keepsHistory) {
-      const historyKey = extendKey(this.collection._keys.history, docId, ulid())
-
-      const historyEntry: HistoryEntry<TOutput> = {
-        type: "write",
-        timestamp: new Date(),
-        value: parsed,
+        // Add indexing operations
+        setIndices(
+          docId,
+          parsed as KvObject,
+          parsed as KvObject,
+          this.operations.atomic,
+          this.collection,
+          options,
+        )
       }
 
-      this.operations.atomic.set(historyKey, historyEntry)
-    }
+      // Set history entry if keeps history
+      if (this.collection._keepsHistory) {
+        const historyKey = extendKey(
+          this.collection._keys.history,
+          docId,
+          ulid(),
+        )
+
+        const historyEntry: HistoryEntry<TOutput> = {
+          type: "write",
+          timestamp: new Date(),
+          value: parsed,
+        }
+
+        this.operations.atomic.set(historyKey, historyEntry)
+      }
+    })
 
     // Return current AtomicBuilder
     return this

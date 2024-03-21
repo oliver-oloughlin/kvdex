@@ -140,11 +140,15 @@ Deno.test("serialized_indexable_collection - updateBySecondaryIndex", async (t) 
           mockUser1.username,
         )
 
-        const { result: [bySecondary] } = await db.is_users
+        const { result: bySecondaryDocs } = await db.is_users
           .findBySecondaryIndex(
             "age",
             mockUser1.age,
           )
+
+        const bySecondary = bySecondaryDocs.find((doc) =>
+          doc.value.username === mockUser1.username
+        ) ?? null
 
         assert(byPrimary !== null)
         assert(byPrimary.value.username === mockUser1.username)

@@ -323,35 +323,38 @@ Deno.test("db - atomic", async (t) => {
   })
 
   await t.step("Should fail to parse and adding documents", async () => {
-    await useDb((db) => {
+    await useDb(async (db) => {
       let assertion1 = false
       let assertion2 = false
       let assertion3 = false
 
       try {
-        db
+        await db
           .atomic((schema) => schema.z_users)
           .add(mockUserInvalid)
+          .commit()
       } catch (_) {
         assertion1 = true
       }
 
       try {
-        db
+        await db
           .atomic((schema) => schema.z_users)
           .set("id2", mockUserInvalid)
+          .commit()
       } catch (_) {
         assertion2 = true
       }
 
       try {
-        db
+        await db
           .atomic((schema) => schema.z_users)
           .mutate({
             type: "set",
             id: "id3",
             value: mockUserInvalid,
           })
+          .commit()
       } catch (_) {
         assertion3 = true
       }

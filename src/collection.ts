@@ -1851,7 +1851,7 @@ export class Collection<
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Create id, document key and parse document value
     const parsed = this._model.parse(value as TInput)
-    const docId = id ?? this._idGenerator(parsed)
+    const docId = id ?? await this._idGenerator(parsed)
     const idKey = extendKey(this._keys.id, docId)
     return await this.setDoc(docId, idKey, parsed, options)
   }
