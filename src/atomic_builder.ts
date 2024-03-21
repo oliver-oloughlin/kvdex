@@ -423,7 +423,7 @@ export class AtomicBuilder<
         )
       )
     ) {
-      // Ff collisions are detected, return commit error
+      // If collisions are detected, return commit error
       return {
         ok: false,
       }
