@@ -90,6 +90,11 @@ _Supported Deno verisons:_ **^1.40.0**
     - [With checking](#with-checking)
   - [Document Methods](#document-methods)
     - [flat()](#flat)
+  - [Utility Functions](#utility-functions)
+    - [jsonSerialize()](#jsonserialize)
+    - [jsonDeserialize()](#jsondeserialize)
+    - [jsonStringify()](#jsonstringify)
+    - [jsonParse()](#jsonparse)
   - [Extensions](#extensions)
     - [Zod](#zod)
       - [zodModel()](#zodmodel)
@@ -1231,6 +1236,71 @@ const flattened = doc.flat()
 //   versionstamp,
 //   ...value
 // }
+```
+
+## Utility Functions
+
+These are additional utility functions that are exposed and can be used outside
+of `kvdex`.
+
+### jsonSerialize()
+
+Serialize a JSON-like value to a Uint8Array.
+
+```ts
+import { jsonSerialize } from "@olli/kvdex"
+
+const serialized = jsonSerialize({
+  foo: "foo",
+  bar: "bar",
+  bigint: 10n,
+})
+```
+
+### jsonDeserialize()
+
+Deserialize a value that was serialized using `jsonSerialize()`.
+
+```ts
+import { jsonDeserialize, jsonSerialize } from "@olli/kvdex"
+
+const serialized = jsonSerialize({
+  foo: "foo",
+  bar: "bar",
+  bigint: 10n,
+})
+
+const value = jsonDeserialize(serialized)
+```
+
+### jsonStringify()
+
+Stringify a JSON-like value.
+
+```ts
+import { jsonStringify } from "@olli/kvdex"
+
+const str = jsonStringify({
+  foo: "foo",
+  bar: "bar",
+  bigint: 10n,
+})
+```
+
+### jsonParse()
+
+Parse a value that was stringified using `jsonStringify()`
+
+```ts
+import { jsonParse, jsonStringify } from "@olli/kvdex"
+
+const str = jsonStringify({
+  foo: "foo",
+  bar: "bar",
+  bigint: 10n,
+})
+
+const value = jsonParse(str)
 ```
 
 ## Extensions
