@@ -62,7 +62,7 @@ export type PaginationResult<T> = Pagination & {
 }
 
 /** Id generator function */
-export type IdGenerator<T extends KvValue> = (data: T) => KvId
+export type IdGenerator<T extends KvValue> = (data: T) => KvId | Promise<KvId>
 
 /** Deno core utility type */
 export type DenoCore = {
@@ -217,6 +217,7 @@ export type PreparedIndexDelete = {
 /** Atomic builder operations */
 export type Operations = {
   atomic: Deno.AtomicOperation
+  asyncMutations: Array<() => Promise<void>>
   prepareDeleteFns: PrepareDeleteFn[]
   indexDeleteCollectionKeys: KvKey[]
   indexAddCollectionKeys: KvKey[]
