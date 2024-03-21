@@ -700,45 +700,93 @@ export function afterDenoCoreDeserialize(value: unknown): unknown {
 }
 
 /**
- * Serialize a value to Uint8Array.
+ * Serialize a JSON-like value to a Uint8Array.
  *
- * @param value . Value to be serialized.
+ * @example
+ * ```ts
+ * import { jsonSerialize } from "@olli/kvdex"
+ *
+ * const serialized = jsonSerialize({
+ *   foo: "foo",
+ *   bar: "bar",
+ *   bigint: 10n
+ * })
+ * ```
+ *
+ * @param value - Value to be serialized.
  * @returns Serialized value.
  */
-export function jsonSerialize(value: unknown) {
-  const str = stringify(value)
+export function jsonSerialize(value: unknown): Uint8Array {
+  const str = jsonStringify(value)
   return new TextEncoder().encode(str)
 }
 
 /**
- * Deserialize a value encoded as Uint8Array.
+ * Deserialize a value that was serialized using `jsonSerialize()`.
+ *
+ * @example
+ * ```ts
+ * import { jsonSerialize, jsonDeserialize } from "@olli/kvdex"
+ *
+ * const serialized = jsonSerialize({
+ *   foo: "foo",
+ *   bar: "bar",
+ *   bigint: 10n
+ * })
+ *
+ * const value = jsonDeserialize(serialized)
+ * ```
  *
  * @param value - Value to be deserialize.
  * @returns Deserialized value.
  */
-export function jsonDeserialize<T>(value: Uint8Array) {
+export function jsonDeserialize<T>(value: Uint8Array): T {
   const str = new TextDecoder().decode(value)
-  return parse<T>(str)
+  return jsonParse<T>(str)
 }
 
 /**
- * Stringify a JSON-like object.
+ * Stringify a JSON-like value.
+ *
+ * @example
+ * ```ts
+ * import { jsonStringify } from "@olli/kvdex"
+ *
+ * const str = jsonStringify({
+ *   foo: "foo",
+ *   bar: "bar",
+ *   bigint: 10n
+ * })
+ * ```
  *
  * @param value
  * @param space
  * @returns
  */
-export function stringify(value: unknown, space?: number | string) {
+export function jsonStringify(value: unknown, space?: number | string): string {
   return JSON.stringify(_replacer(value), replacer, space)
 }
 
 /**
- * Parse a stringified JSON-like object.
+ * Parse a value that was stringified using `jsonStringify()`
+ *
+ * @example
+ * ```ts
+ * import { jsonStringify, jsonParse } from "@olli/kvdex"
+ *
+ * const str = jsonStringify({
+ *   foo: "foo",
+ *   bar: "bar",
+ *   bigint: 10n
+ * })
+ *
+ * const value = jsonParse(str)
+ * ```
  *
  * @param value
  * @returns
  */
-export function parse<T>(value: string) {
+export function jsonParse<T>(value: string): T {
   return postReviver(JSON.parse(value, reviver)) as T
 }
 
@@ -847,7 +895,7 @@ export function _replacer(value: unknown): unknown {
       message: value.message,
       name: value.name,
       stack: value.stack,
-      cause: stringify(value.cause),
+      cause: jsonStringify(value.cause),
     }
     return {
       [TypeKey.Error]: jsonError,
@@ -1009,7 +1057,7 @@ export function _reviver(value: unknown): unknown {
     )
 
     const error = new Error(message, {
-      cause: cause ? parse(cause) : undefined,
+      cause: cause ? jsonParse(cause) : undefined,
       ...rest,
     })
 
