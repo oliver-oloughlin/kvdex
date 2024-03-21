@@ -285,4 +285,26 @@ Deno.test("serialized_collection - properties", async (t) => {
       })
     },
   )
+
+  await t.step("Should successfully generate id asynchronously", async () => {
+    await useKv(async (kv) => {
+      const db = kvdex(kv, {
+        test: collection(model<User>(), {
+          serialize: "json",
+          idGenerator: async (user) => {
+            const buffer = await crypto.subtle.digest(
+              "SHA-256",
+              new ArrayBuffer(user.age),
+            )
+            return Math.random() * buffer.byteLength
+          },
+        }),
+      })
+
+      const cr1 = await db.test.add(mockUser1)
+
+      assert(cr1.ok)
+      assert(typeof cr1.id === "number")
+    })
+  })
 })

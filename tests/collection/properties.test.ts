@@ -279,4 +279,32 @@ Deno.test("collection - properties", async (t) => {
       })
     },
   )
+
+  await t.step("Should successfully generate id asynchronously", async () => {
+    await useKv(async (kv) => {
+      const db = kvdex(kv, {
+        test: collection(model<User>(), {
+          idGenerator: async (user) => {
+            const buffer = await crypto.subtle.digest(
+              "SHA-256",
+              new ArrayBuffer(user.age),
+            )
+            return Math.random() * buffer.byteLength
+          },
+        }),
+      })
+
+      const cr1 = await db.test.add(mockUser1)
+      const cr2 = await db.atomic((s) => s.test).add(mockUser2).commit()
+      const doc2 = await db.test.getOne({
+        filter: (doc) => doc.value.username === mockUser2.username,
+      })
+
+      assert(cr1.ok)
+      assert(typeof cr1.id === "number")
+      assert(cr2.ok)
+      assert(doc2 !== null)
+      assert(typeof doc2.id === "number")
+    })
+  })
 })
