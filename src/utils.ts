@@ -77,14 +77,14 @@ export function keyEq(k1: KvKey, k2: KvKey) {
  * @param collection - Collection.
  * @returns A key prefix from a secondary index.
  */
-export function createSecondaryIndexKeyPrefix(
+export async function createSecondaryIndexKeyPrefix(
   index: string | number | symbol,
   value: KvValue,
   collection: Collection<any, any, any>,
 ) {
   // Serialize and compress index value
-  const serialized = collection._serializer.serialize(value)
-  const compressed = collection._serializer.compress(serialized)
+  const serialized = await collection._serializer.serialize(value)
+  const compressed = await collection._serializer.compress(serialized)
 
   // Create prefix key
   return extendKey(
@@ -151,7 +151,7 @@ export function isKvObject(value: unknown) {
  * @param options - Set options or undefined.
  * @returns The atomic operation with added mutations.
  */
-export function setIndices(
+export async function setIndices(
   id: KvId,
   data: KvObject,
   value: KvObject,
@@ -160,14 +160,14 @@ export function setIndices(
   options: AtomicSetOptions | undefined,
 ) {
   // Set primary indices using primary index list
-  collection._primaryIndexList.forEach((index) => {
+  for (const index of collection._primaryIndexList) {
     // Get the index value from data, if undefined continue to next index
     const indexValue = data[index] as KvId | undefined
-    if (typeof indexValue === "undefined") return
+    if (typeof indexValue === "undefined") continue
 
     // Serialize and compress
-    const serialized = collection._serializer.serialize(indexValue)
-    const compressed = collection._serializer.compress(serialized)
+    const serialized = await collection._serializer.serialize(indexValue)
+    const compressed = await collection._serializer.compress(serialized)
 
     // Create the index key
     const indexKey = extendKey(
@@ -187,17 +187,17 @@ export function setIndices(
       key: indexKey,
       versionstamp: null,
     })
-  })
+  }
 
   // Set secondary indices using secondary index list
-  collection._secondaryIndexList.forEach((index) => {
+  for (const index of collection._secondaryIndexList) {
     // Get the index value from data, if undefined continue to next index
     const indexValue = data[index] as KvId | undefined
-    if (typeof indexValue === "undefined") return
+    if (typeof indexValue === "undefined") continue
 
     // Serialize and compress
-    const serialized = collection._serializer.serialize(indexValue)
-    const compressed = collection._serializer.compress(serialized)
+    const serialized = await collection._serializer.serialize(indexValue)
+    const compressed = await collection._serializer.compress(serialized)
 
     // Create the index key
     const indexKey = extendKey(
@@ -209,10 +209,7 @@ export function setIndices(
 
     // Add index insertion to atomic operation, check for exisitng indices
     atomic.set(indexKey, value, options)
-  })
-
-  // Return the mutated atomic operation
-  return atomic
+  }
 }
 
 /**
@@ -223,22 +220,22 @@ export function setIndices(
  * @param collection - Collection context.
  * @returns The atomic operation with added checks.
  */
-export function checkIndices(
+export async function checkIndices(
   data: KvObject,
   atomic: Deno.AtomicOperation,
   collection: Collection<any, any, any>,
 ) {
   // Check primary indices using primary index list
-  collection._primaryIndexList.forEach((index) => {
+  for (const index of collection._primaryIndexList) {
     // Get the index value from data, if undefined continue to next index
     const indexValue = data[index] as KvId | undefined
     if (typeof indexValue === "undefined") {
-      return
+      continue
     }
 
     // Serialize and compress
-    const serialized = collection._serializer.serialize(indexValue)
-    const compressed = collection._serializer.compress(serialized)
+    const serialized = await collection._serializer.serialize(indexValue)
+    const compressed = await collection._serializer.compress(serialized)
 
     // Create the index key
     const indexKey = extendKey(
@@ -252,10 +249,7 @@ export function checkIndices(
       key: indexKey,
       versionstamp: null,
     })
-  })
-
-  // Return the mutated atomic operation
-  return atomic
+  }
 }
 
 /**
@@ -267,21 +261,21 @@ export function checkIndices(
  * @param collection - The collection context.
  * @returns The atomic operation with added mutations.
  */
-export function deleteIndices(
+export async function deleteIndices(
   id: KvId,
   data: KvObject,
   atomic: Deno.AtomicOperation,
   collection: Collection<any, any, any>,
 ) {
   // Delete primary indices using primary index list
-  collection._primaryIndexList.forEach((index) => {
+  for (const index of collection._primaryIndexList) {
     // Get the index value from data, if undefined continue to next index
     const indexValue = data[index] as KvId | undefined
-    if (typeof indexValue === "undefined") return
+    if (typeof indexValue === "undefined") continue
 
     // Serialize and compress
-    const serialized = collection._serializer.serialize(indexValue)
-    const compressed = collection._serializer.compress(serialized)
+    const serialized = await collection._serializer.serialize(indexValue)
+    const compressed = await collection._serializer.compress(serialized)
 
     // Create the index key
     const indexKey = extendKey(
@@ -292,17 +286,17 @@ export function deleteIndices(
 
     // Add index deletion to atomic operation
     atomic.delete(indexKey)
-  })
+  }
 
   // Delete seocndary indices using secondary index list
-  collection._secondaryIndexList.forEach((index) => {
+  for (const index of collection._secondaryIndexList) {
     // Get the index value from data, if undefined continue to next index
     const indexValue = data[index] as KvId | undefined
-    if (typeof indexValue === "undefined") return
+    if (typeof indexValue === "undefined") continue
 
     // Serialize and compress
-    const serialized = collection._serializer.serialize(indexValue)
-    const compressed = collection._serializer.compress(serialized)
+    const serialized = await collection._serializer.serialize(indexValue)
+    const compressed = await collection._serializer.compress(serialized)
 
     // Create the index key
     const indexKey = extendKey(
@@ -314,10 +308,7 @@ export function deleteIndices(
 
     // Add index deletion to atomic operation
     atomic.delete(indexKey)
-  })
-
-  // Return the mutated atomic operation
-  return atomic
+  }
 }
 
 /**

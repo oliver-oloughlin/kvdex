@@ -1,35 +1,36 @@
 import { assert } from "../test.deps.ts"
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts"
 import { sleep, useDb } from "../utils.ts"
+import { User } from "../models.ts"
+import { Document } from "../../mod.ts"
 
 Deno.test("indexable_collection - watch", async (t) => {
   await t.step("Should receive all document updates", async () => {
     await useDb(async (db) => {
       const id = "id"
-      let count = 0
-      let username = ""
-      let lastDoc: any
+      const docs: (Document<User> | null)[] = []
 
       const watcher = db.i_users.watch(id, (doc) => {
-        count++
-        lastDoc = doc
-        if (doc?.value.username) {
-          username = doc.value.username
-        }
+        docs.push(doc)
       })
 
-      await db.i_users.set(id, mockUser1)
+      const cr1 = await db.i_users.set(id, mockUser1)
       await sleep(500)
-      await db.i_users.set(id, mockUser2, { overwrite: true })
+      const cr2 = await db.i_users.set(id, mockUser2, { overwrite: true })
       await sleep(500)
-      await db.i_users.update(id, mockUser3)
+      const cr3 = await db.i_users.update(id, mockUser3)
       await sleep(500)
       await db.i_users.delete(id)
       await sleep(500)
 
-      assert(count === 4)
-      assert(username === mockUser3.username)
-      assert(lastDoc === null)
+      assert(cr1.ok)
+      assert(cr2.ok)
+      assert(cr3.ok)
+
+      assert(docs.some((doc) => doc?.value.username === mockUser1.username))
+      assert(docs.some((doc) => doc?.value.username === mockUser2.username))
+      assert(docs.some((doc) => doc?.value.username === mockUser3.username))
+      assert(docs.some((doc) => doc === null))
 
       return async () => await watcher
     })

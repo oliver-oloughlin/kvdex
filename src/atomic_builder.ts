@@ -451,7 +451,7 @@ export class AtomicBuilder<
           const atomic = this.kv.atomic()
 
           // Set index delete operations using atomic operation
-          deleteIndices(
+          await deleteIndices(
             id,
             data,
             atomic,
@@ -504,7 +504,7 @@ export class AtomicBuilder<
         this.operations.indexAddCollectionKeys.push(collection._keys.base)
 
         // Add indexing operations
-        setIndices(
+        await setIndices(
           docId,
           parsed as KvObject,
           parsed as KvObject,

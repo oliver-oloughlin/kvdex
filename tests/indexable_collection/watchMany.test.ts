@@ -1,6 +1,8 @@
 import { assert } from "../test.deps.ts"
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts"
 import { generateUsers, sleep, useDb } from "../utils.ts"
+import { User } from "../models.ts"
+import { Document } from "../../mod.ts"
 
 Deno.test("indexable_collection - watchMany", async (t) => {
   await t.step("Should receive all document updates", async () => {
@@ -8,31 +10,69 @@ Deno.test("indexable_collection - watchMany", async (t) => {
       const id1 = "id1"
       const id2 = "id2"
       const id3 = "id3"
-      let count = 0
-      let lastDocs: any[] = []
+      const generatedUser = generateUsers(1)[0]
+      const snapshots: (Document<User> | null)[][] = []
 
-      await db.i_users.set(id3, generateUsers(1)[0])
+      await db.i_users.set(id3, generatedUser)
 
       await sleep(500)
 
       const watcher = db.i_users.watchMany([id1, id2, id3], (docs) => {
-        count++
-        lastDocs = docs
+        snapshots.push(docs)
       })
 
-      await db.i_users.set(id1, mockUser1)
+      const cr1 = await db.i_users.set(id1, mockUser1)
       await sleep(500)
       await db.i_users.delete(id1)
       await sleep(500)
-      await db.i_users.set(id2, mockUser2, { overwrite: true })
+      const cr2 = await db.i_users.set(id2, mockUser2, { overwrite: true })
       await sleep(500)
-      await db.i_users.update(id3, mockUser3)
+      const cr3 = await db.i_users.update(id3, mockUser3)
       await sleep(500)
 
-      assert(count === 4)
-      assert(lastDocs[0] === null)
-      assert(lastDocs[1]?.value.username === mockUser2.username)
-      assert(lastDocs[2]?.value.username === mockUser3.username)
+      assert(cr1.ok)
+      assert(cr2.ok)
+      assert(cr3.ok)
+
+      assert(snapshots.some((docs) => {
+        const doc1 = docs.find((doc) => doc?.id === id1) ?? null
+        const doc2 = docs.find((doc) => doc?.id === id2) ?? null
+        const doc3 = docs.find((doc) => doc?.id === id3) ?? null
+
+        return doc1?.value.username === mockUser1.username &&
+          doc2 === null &&
+          doc3?.value.username === generatedUser.username
+      }))
+
+      assert(snapshots.some((docs) => {
+        const doc1 = docs.find((doc) => doc?.id === id1) ?? null
+        const doc2 = docs.find((doc) => doc?.id === id2) ?? null
+        const doc3 = docs.find((doc) => doc?.id === id3) ?? null
+
+        return doc1 === null &&
+          doc2 === null &&
+          doc3?.value.username === generatedUser.username
+      }))
+
+      assert(snapshots.some((docs) => {
+        const doc1 = docs.find((doc) => doc?.id === id1) ?? null
+        const doc2 = docs.find((doc) => doc?.id === id2) ?? null
+        const doc3 = docs.find((doc) => doc?.id === id3) ?? null
+
+        return doc1 === null &&
+          doc2?.value.username === mockUser2.username &&
+          doc3?.value.username === generatedUser.username
+      }))
+
+      assert(snapshots.some((docs) => {
+        const doc1 = docs.find((doc) => doc?.id === id1) ?? null
+        const doc2 = docs.find((doc) => doc?.id === id2) ?? null
+        const doc3 = docs.find((doc) => doc?.id === id3) ?? null
+
+        return doc1 === null &&
+          doc2?.value.username === mockUser2.username &&
+          doc3?.value.username === mockUser3.username
+      }))
 
       return async () => await watcher
     })

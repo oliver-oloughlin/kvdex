@@ -313,8 +313,8 @@ export class Collection<
     options?: FindOptions,
   ): Promise<Document<TOutput> | null> {
     // Serialize and compress index value
-    const serialized = this._serializer.serialize(value)
-    const compressed = this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value)
+    const compressed = await this._serializer.compress(serialized)
 
     // Create the index key
     const key = extendKey(
@@ -359,8 +359,8 @@ export class Collection<
     options?: ListOptions<Document<TOutput>>,
   ): Promise<PaginationResult<Document<TOutput>>> {
     // Serialize and compress index value
-    const serialized = this._serializer.serialize(value)
-    const compressed = this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value)
+    const compressed = await this._serializer.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -485,8 +485,10 @@ export class Collection<
         const data = concat(entries.map((entry) => entry.value!))
 
         // Decompress and deserialize
-        const serialized = this._serializer.decompress(data)
-        const deserialized = this._serializer.deserialize<TOutput>(serialized)
+        const serialized = await this._serializer.decompress(data)
+        const deserialized = await this._serializer.deserialize<TOutput>(
+          serialized,
+        )
 
         // Set history entry
         historyEntry = {
@@ -606,8 +608,8 @@ export class Collection<
     options?: FindOptions,
   ): Promise<void> {
     // Serialize and compress index value
-    const serialized = this._serializer.serialize(value)
-    const compressed = this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value)
+    const compressed = await this._serializer.compress(serialized)
 
     // Create index key
     const key = extendKey(
@@ -660,8 +662,8 @@ export class Collection<
     options?: ListOptions<Document<TOutput>>,
   ): Promise<Pagination> {
     // Serialize and compress index value
-    const serialized = this._serializer.serialize(value)
-    const compressed = this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value)
+    const compressed = await this._serializer.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -816,8 +818,8 @@ export class Collection<
     options?: T,
   ): Promise<PaginationResult<CommitResult<TOutput> | Deno.KvCommitError>> {
     // Serialize and compress index value
-    const serialized = this._serializer.serialize(value)
-    const compressed = this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value)
+    const compressed = await this._serializer.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1060,7 +1062,7 @@ export class Collection<
     options?: T,
   ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
     // Create prefix key
-    const prefixKey = createSecondaryIndexKeyPrefix(
+    const prefixKey = await createSecondaryIndexKeyPrefix(
       index,
       value as KvValue,
       this,
@@ -1309,7 +1311,7 @@ export class Collection<
     options?: HandleOneOptions<Document<TOutput>>,
   ): Promise<Document<TOutput> | null> {
     // Create prefix key
-    const prefixKey = createSecondaryIndexKeyPrefix(
+    const prefixKey = await createSecondaryIndexKeyPrefix(
       index,
       value as KvValue,
       this,
@@ -1391,7 +1393,7 @@ export class Collection<
     options?: UpdateManyOptions<Document<TOutput>>,
   ): Promise<Pagination> {
     // Create prefix key
-    const prefixKey = createSecondaryIndexKeyPrefix(
+    const prefixKey = await createSecondaryIndexKeyPrefix(
       index,
       value as KvValue,
       this,
@@ -1475,8 +1477,8 @@ export class Collection<
     options?: UpdateManyOptions<Document<TOutput>>,
   ): Promise<PaginationResult<Awaited<T>>> {
     // Serialize and compress index value
-    const serialized = this._serializer.serialize(value)
-    const compressed = this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value)
+    const compressed = await this._serializer.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1551,8 +1553,8 @@ export class Collection<
     options?: ListOptions<Document<TOutput>>,
   ): Promise<number> {
     // Serialize and compress index value
-    const serialized = this._serializer.serialize(value)
-    const compressed = this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value)
+    const compressed = await this._serializer.compress(serialized)
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1892,8 +1894,8 @@ export class Collection<
     if (this._isSerialized) {
       const serialized = isUint8Array
         ? value
-        : this._serializer.serialize(value)
-      const compressed = this._serializer.compress(serialized)
+        : await this._serializer.serialize(value)
+      const compressed = await this._serializer.compress(serialized)
 
       // Set segmented entries
       let index = 0
@@ -1946,7 +1948,7 @@ export class Collection<
 
     // Set indices if is indexable
     if (this._isIndexable) {
-      setIndices(
+      await setIndices(
         docId,
         value as KvObject,
         docValue,
@@ -2001,7 +2003,7 @@ export class Collection<
         }
 
         if (this._isIndexable) {
-          deleteIndices(
+          await deleteIndices(
             docId,
             value as KvObject,
             failedAtomic,
@@ -2052,9 +2054,11 @@ export class Collection<
 
     // If indexable, check for index collisions and delete exisitng index entries
     if (this._isIndexable) {
-      const atomic = checkIndices(
+      const atomic = this.kv.atomic()
+
+      await checkIndices(
         data as KvObject,
-        this.kv.atomic(),
+        atomic,
         this,
       )
 
@@ -2070,12 +2074,16 @@ export class Collection<
       // Delete existing indices
       const doc = await this.find(id)
       if (doc) {
+        const atomic = this.kv.atomic()
+
         await deleteIndices(
           id,
           doc.value as KvObject,
-          this.kv.atomic(),
+          atomic,
           this,
-        ).commit()
+        )
+
+        await atomic.commit()
       }
     }
 
@@ -2155,10 +2163,10 @@ export class Collection<
       const data = concat(docEntries.map((entry) => entry.value!))
 
       // Decompress and deserialize
-      const serialized = this._serializer.decompress(data)
+      const serialized = await this._serializer.decompress(data)
       const deserialized = isUint8Array
         ? serialized as TOutput
-        : this._serializer.deserialize<TOutput>(serialized)
+        : await this._serializer.deserialize<TOutput>(serialized)
 
       // Return parsed document
       return new Document<TOutput>(this._model, {
@@ -2297,7 +2305,7 @@ export class Collection<
         }
 
         if (doc) {
-          deleteIndices(id, doc.value as KvObject, atomic, this)
+          await deleteIndices(id, doc.value as KvObject, atomic, this)
         }
       }))
 
@@ -2320,7 +2328,7 @@ export class Collection<
 
         // Delete document entries
         atomic.delete(idKey)
-        deleteIndices(id, value, atomic, this)
+        await deleteIndices(id, value, atomic, this)
       }))
 
       // Commit the operation
