@@ -1,6 +1,6 @@
-import { Document } from "../../mod.ts"
+import type { Document } from "../../mod.ts"
 import { assert } from "../test.deps.ts"
-import { User } from "../models.ts"
+import type { User } from "../models.ts"
 import { generateUsers } from "../utils.ts"
 import { useDb } from "../utils.ts"
 

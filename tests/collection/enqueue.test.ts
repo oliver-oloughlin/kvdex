@@ -1,4 +1,10 @@
-import { collection, kvdex, KvValue, model, QueueMessage } from "../../mod.ts"
+import {
+  collection,
+  kvdex,
+  type KvValue,
+  model,
+  type QueueMessage,
+} from "../../mod.ts"
 import { createHandlerId } from "../../src/utils.ts"
 import { assert } from "../test.deps.ts"
 import { createResolver, useDb, useKv } from "../utils.ts"

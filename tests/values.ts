@@ -1,4 +1,4 @@
-import { KvValue } from "../mod.ts"
+import type { KvValue } from "../mod.ts"
 
 export const val1 = undefined
 export const val2 = null

@@ -1,6 +1,6 @@
 import { assert } from "../test.deps.ts"
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts"
-import { User } from "../models.ts"
+import type { User } from "../models.ts"
 import { useDb } from "../utils.ts"
 
 Deno.test("serialized_indexable_collection - upsert", async (t) => {

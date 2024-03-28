@@ -1,6 +1,6 @@
 import { collection, kvdex, model } from "../../mod.ts"
 import { assert } from "../test.deps.ts"
-import { User } from "../models.ts"
+import type { User } from "../models.ts"
 import { generateLargeUsers, generateUsers, useKv } from "../utils.ts"
 
 Deno.test("db - wipe", async (t) => {

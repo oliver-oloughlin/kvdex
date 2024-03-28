@@ -1,11 +1,17 @@
-import { collection, kvdex, KvValue, model, QueueMessage } from "../../mod.ts"
+import {
+  collection,
+  kvdex,
+  type KvValue,
+  model,
+  type QueueMessage,
+} from "../../mod.ts"
 import {
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "../../src/constants.ts"
 import { createHandlerId, extendKey } from "../../src/utils.ts"
 import { assert } from "../test.deps.ts"
-import { User } from "../models.ts"
+import type { User } from "../models.ts"
 import { createResolver, sleep, useKv } from "../utils.ts"
 
 Deno.test("indexable_collection - listenQueue", async (t) => {
