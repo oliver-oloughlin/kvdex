@@ -64,14 +64,6 @@ export type PaginationResult<T> = Pagination & {
 /** Id generator function */
 export type IdGenerator<T extends KvValue> = (data: T) => KvId | Promise<KvId>
 
-/** Deno core utility type */
-export type DenoCore = {
-  deserialize<T>(data: Uint8Array): T
-  serialize<T>(data: T): Uint8Array
-  decode(data: Uint8Array): string
-  encode(data: string): Uint8Array
-}
-
 /**********************/
 /*                    */
 /*   INTERVAL TYPES   */
@@ -401,13 +393,15 @@ export type SerializedEntry = {
 /**
  * Serialize options.
  *
- * "core" = unstable Deno core serializer. Only works on Deno (not on Deno Deploy).
+ * "v8" = built-in v8 serializer.
  *
  * "json" = custom JSON serializer, works on every runtime.
  *
- * If custom serialize and decompress functions are set, "json" serializer is used by default for the functions that are not set.
+ * If custom serialize and decompress functions are set, "json"
+ * serializer is used by default for any unset serialize functions,
+ * while brotli compression is used for any unset compress functions.
  */
-export type SerializeOptions = "core" | "json" | Partial<Serializer>
+export type SerializeOptions = "v8" | "json" | Partial<Serializer>
 
 /***************************/
 /*                         */

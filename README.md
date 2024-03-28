@@ -284,8 +284,8 @@ const db = kvdex(kv, {
     // Use the custom json-serializer, compatible with Deno Deploy
     serialize: "json",
 
-    // Use the faster Deno Core serializer, unstable and not compatible with Deno Deploy
-    serialize: "core",
+    // Use the faster built-in V8 serializer
+    serialize: "v8",
 
     // Set custom serialize, deserialize, compress and decompress functions
     serialize: {
