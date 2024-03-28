@@ -548,23 +548,23 @@ export function decompress(data: Uint8Array) {
 /**
  * Extended V8 serialize.
  *
- * @param data
- * @returns
+ * @param value - Value to be serialized.
+ * @returns A serialized value.
  */
-export function v8Serialize(data: unknown): Uint8Array {
-  return _v8Serialize(beforeV8Serialize(data))
+export function v8Serialize(value: unknown): Uint8Array {
+  return _v8Serialize(beforeV8Serialize(value))
 }
 
 /**
  * Extended V8 deserialize.
  *
- * @param serialized
- * @returns
+ * @param value - Value to be deserialized.
+ * @returns Deserialized value.
  */
 export function v8Deserialize<T>(
-  serialized: Uint8Array,
+  value: Uint8Array,
 ): T {
-  return afterV8Serialize(_v8Deserialize(serialized)) as T
+  return afterV8Serialize(_v8Deserialize(value)) as T
 }
 
 export type JSONError = {
