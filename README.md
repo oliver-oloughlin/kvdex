@@ -12,11 +12,11 @@ collections and serialization/compression, while maintaining as much of the
 native functionality as possible, like atomic operations, real-time data updates
 and queue listeners.
 
-_Supported Deno verisons:_ **^1.40.0**
+_Supported Deno verisons:_ **^1.42.0**
 
 ## Highlights
 
-- CRUD operations for selected and ranged documents with strong typing.
+- Strongly typed CRUD operations for selected and ranged documents.
 - Primary (unique) and secondary (non-unique) indexing.
 - Extensible model strategy (Zod supported).
 - Serialized, compressed and segmented storage for large objects.
@@ -142,7 +142,7 @@ type User = {
 const UserModel = model<User>()
 
 // Asymmetric model (mapped output)
-const AsymmetricUserModel = model((user: User) => ({
+const UserModel = model((user: User) => ({
   upperCaseUsername: user.username.toUpperCase(),
   ageInDecades: user.age / 10,
   createdAt: new Date(),
