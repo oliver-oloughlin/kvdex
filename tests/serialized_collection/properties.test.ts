@@ -1,4 +1,4 @@
-import { collection, Document, kvdex, model } from "../../mod.ts"
+import { collection, type Document, kvdex, model } from "../../mod.ts"
 import {
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
@@ -7,7 +7,7 @@ import {
 import { extendKey, keyEq } from "../../src/utils.ts"
 import { assert } from "../test.deps.ts"
 import { mockUser1, mockUser2 } from "../mocks.ts"
-import { User } from "../models.ts"
+import type { User } from "../models.ts"
 import { generateLargeUsers, useDb, useKv } from "../utils.ts"
 import { mockUser3 } from "../mocks.ts"
 import { sleep } from "../utils.ts"

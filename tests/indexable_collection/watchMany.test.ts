@@ -1,8 +1,8 @@
 import { assert } from "../test.deps.ts"
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts"
 import { generateUsers, sleep, useDb } from "../utils.ts"
-import { User } from "../models.ts"
-import { Document } from "../../mod.ts"
+import type { User } from "../models.ts"
+import type { Document } from "../../mod.ts"
 
 Deno.test("indexable_collection - watchMany", async (t) => {
   await t.step("Should receive all document updates", async () => {

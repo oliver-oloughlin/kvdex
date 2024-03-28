@@ -1,7 +1,7 @@
 import { Document, model } from "../../mod.ts"
 import { assert } from "../test.deps.ts"
 import { mockUser1 } from "../mocks.ts"
-import { User } from "../models.ts"
+import type { User } from "../models.ts"
 
 Deno.test("document - flat", async (t) => {
   await t.step("Should flatten document of Model type", () => {

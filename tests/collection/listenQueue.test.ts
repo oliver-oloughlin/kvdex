@@ -1,4 +1,10 @@
-import { collection, kvdex, KvValue, model, QueueMessage } from "../../mod.ts"
+import {
+  collection,
+  kvdex,
+  type KvValue,
+  model,
+  type QueueMessage,
+} from "../../mod.ts"
 import {
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,

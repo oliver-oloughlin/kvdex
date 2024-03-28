@@ -1,7 +1,7 @@
-import { Document } from "../../mod.ts"
+import type { Document } from "../../mod.ts"
 import { assert } from "../test.deps.ts"
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts"
-import { User } from "../models.ts"
+import type { User } from "../models.ts"
 import { useDb } from "../utils.ts"
 
 Deno.test("serialized_indexable_collection - update", async (t) => {

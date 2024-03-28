@@ -2143,7 +2143,8 @@ export class Collection<
       return null
     }
 
-    const docId = (value as IndexDataEntry<any>)?.__id__ ?? getDocumentId(key)
+    const indexedDocId = (value as IndexDataEntry<any>)?.__id__
+    const docId = indexedDocId ?? getDocumentId(key)
 
     if (!docId) {
       return null
@@ -2176,6 +2177,12 @@ export class Collection<
       })
     }
 
+    // Remove id from value if indexed entry
+    if (typeof indexedDocId !== "undefined") {
+      delete value.__id__
+    }
+
+    // Return parsed document
     return new Document<TOutput>(this._model, {
       id: docId,
       value: value as TOutput,

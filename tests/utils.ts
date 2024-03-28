@@ -1,6 +1,6 @@
 import { collection, kvdex } from "../mod.ts"
 import { model } from "../src/model.ts"
-import { TransformUserModel, User, UserSchema } from "./models.ts"
+import { TransformUserModel, type User, UserSchema } from "./models.ts"
 
 // Create test db
 export function createDb(kv: Deno.Kv) {
