@@ -281,11 +281,12 @@ const kv = await Deno.openKv()
 
 const db = kvdex(kv, {
   users: collection(model<User>(), {
-    // Use the custom json-serializer, compatible with Deno Deploy
+    // Use the custom json-serializer, compatible with every runtime
     serialize: "json",
 
-    // Use the faster Deno Core serializer, unstable and not compatible with Deno Deploy
-    serialize: "core",
+    // Use the faster built-in V8 serializer,
+    // only works in runtimes that implement the v8 node module
+    serialize: "v8",
 
     // Set custom serialize, deserialize, compress and decompress functions
     serialize: {

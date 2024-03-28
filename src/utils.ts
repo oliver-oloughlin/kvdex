@@ -2,7 +2,6 @@ import { COMPRESSION_QUALITY_LEVEL, GET_MANY_KEY_LIMIT } from "./constants.ts"
 import type { Collection } from "./collection.ts"
 import type {
   AtomicSetOptions,
-  DenoCore,
   EnqueueOptions,
   FindManyOptions,
   IndexDataEntry,
@@ -19,6 +18,8 @@ import {
   brotliCompressSync,
   brotliDecompressSync,
   constants,
+  deserialize as _v8Deserialize,
+  serialize as _v8Serialize,
   ulid,
 } from "./deps.ts"
 
@@ -544,29 +545,26 @@ export function decompress(data: Uint8Array) {
   return new Uint8Array(buffer)
 }
 
-// @ts-ignore ?
-export const DENO_CORE: DenoCore = Deno[Deno.internal].core
-
 /**
- * Extended deno core serialize.
+ * Extended V8 serialize.
  *
- * @param data
- * @returns
+ * @param value - Value to be serialized.
+ * @returns A serialized value.
  */
-export function denoCoreSerialize(data: unknown) {
-  return DENO_CORE.serialize(beforeDenoCoreSerialize(data))
+export function v8Serialize(value: unknown): Uint8Array {
+  return _v8Serialize(beforeV8Serialize(value))
 }
 
 /**
- * Extended deno core deserialize.
+ * Extended V8 deserialize.
  *
- * @param serialized
- * @returns
+ * @param value - Value to be deserialized.
+ * @returns Deserialized value.
  */
-export function denoCoreDeserialize<T>(
-  serialized: Uint8Array,
-) {
-  return afterDenoCoreDeserialize(DENO_CORE.deserialize(serialized)) as T
+export function v8Deserialize<T>(
+  value: Uint8Array,
+): T {
+  return afterV8Serialize(_v8Deserialize(value)) as T
 }
 
 export type JSONError = {
@@ -603,12 +601,12 @@ export enum TypeKey {
 }
 
 /**
- * Additional steps to perform before deno core serialize.
+ * Additional steps to perform before V8 serialize.
  *
  * @param value
  * @returns
  */
-export function beforeDenoCoreSerialize(value: unknown): unknown {
+export function beforeV8Serialize(value: unknown): unknown {
   // KvU64
   if (value instanceof Deno.KvU64) {
     return { [TypeKey.KvU64]: value.value }
@@ -619,19 +617,19 @@ export function beforeDenoCoreSerialize(value: unknown): unknown {
     return Object.fromEntries(
       Object.entries(value as KvObject).map((
         [key, val],
-      ) => [key, beforeDenoCoreSerialize(val)]),
+      ) => [key, beforeV8Serialize(val)]),
     )
   }
 
   // Array
   if (Array.isArray(value)) {
-    return value.map((val) => beforeDenoCoreSerialize(val))
+    return value.map((val) => beforeV8Serialize(val))
   }
 
   // Set
   if (value instanceof Set) {
     return new Set(
-      Array.from(value.values()).map((v) => beforeDenoCoreSerialize(v)),
+      Array.from(value.values()).map((v) => beforeV8Serialize(v)),
     )
   }
 
@@ -640,7 +638,7 @@ export function beforeDenoCoreSerialize(value: unknown): unknown {
     return new Map(
       Array.from(value.entries()).map((
         [k, v],
-      ) => [k, beforeDenoCoreSerialize(v)]),
+      ) => [k, beforeV8Serialize(v)]),
     )
   }
 
@@ -648,12 +646,12 @@ export function beforeDenoCoreSerialize(value: unknown): unknown {
 }
 
 /**
- * Additional steps to perform after deno core deserialize.
+ * Additional steps to perform after V8 deserialize.
  *
  * @param value
  * @returns
  */
-export function afterDenoCoreDeserialize(value: unknown): unknown {
+export function afterV8Serialize(value: unknown): unknown {
   // Return value if not an object
   if (
     value === undefined ||
@@ -671,19 +669,19 @@ export function afterDenoCoreDeserialize(value: unknown): unknown {
   // KvObject
   if (isKvObject(value)) {
     return Object.fromEntries(
-      Object.entries(value).map(([k, v]) => [k, afterDenoCoreDeserialize(v)]),
+      Object.entries(value).map(([k, v]) => [k, afterV8Serialize(v)]),
     )
   }
 
   // Array
   if (Array.isArray(value)) {
-    return value.map((v) => afterDenoCoreDeserialize(v))
+    return value.map((v) => afterV8Serialize(v))
   }
 
   // Set
   if (value instanceof Set) {
     return new Set(
-      Array.from(value.values()).map((v) => afterDenoCoreDeserialize(v)),
+      Array.from(value.values()).map((v) => afterV8Serialize(v)),
     )
   }
 
@@ -692,7 +690,7 @@ export function afterDenoCoreDeserialize(value: unknown): unknown {
     return new Map(
       Array.from(value.entries()).map((
         [k, v],
-      ) => [k, afterDenoCoreDeserialize(v)]),
+      ) => [k, afterV8Serialize(v)]),
     )
   }
 

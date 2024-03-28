@@ -1,4 +1,4 @@
-import { denoCoreSerialize as serialize } from "../../src/utils.ts"
+import { v8Serialize as serialize } from "../../src/utils.ts"
 import { assert } from "../test.deps.ts"
 import {
   val1,
@@ -32,7 +32,7 @@ import {
   val9,
 } from "../values.ts"
 
-Deno.test("utils - denoCoreSerialize", async (t) => {
+Deno.test("utils - v8Serialize", async (t) => {
   await t.step(
     "Should successfully serialize all KvValue type values",
     () => {

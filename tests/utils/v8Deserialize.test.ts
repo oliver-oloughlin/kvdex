@@ -1,6 +1,6 @@
 import {
-  denoCoreDeserialize as deserialize,
-  denoCoreSerialize as serialize,
+  v8Deserialize as deserialize,
+  v8Serialize as serialize,
 } from "../../src/utils.ts"
 import { assertEquals } from "../test.deps.ts"
 import {
@@ -35,7 +35,7 @@ import {
   val9,
 } from "../values.ts"
 
-Deno.test("utils - denoCoreDeserialize", async (t) => {
+Deno.test("utils - v8Deserialize", async (t) => {
   await t.step(
     "Should successfully deserialize all KvValue type values from Uint8Array",
     () => {

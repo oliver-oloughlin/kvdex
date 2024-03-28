@@ -50,8 +50,6 @@ import {
   createSecondaryIndexKeyPrefix,
   decompress,
   deleteIndices,
-  denoCoreDeserialize,
-  denoCoreSerialize,
   extendKey,
   generateId,
   getDocumentId,
@@ -79,6 +77,8 @@ import { AtomicPool } from "./atomic_pool.ts"
 import { Document } from "./document.ts"
 import { model } from "./model.ts"
 import { concat, deepMerge, ulid } from "./deps.ts"
+import { v8Serialize } from "./utils.ts"
+import { v8Deserialize } from "./utils.ts"
 
 /**
  * Create a new collection within a database context.
@@ -227,10 +227,10 @@ export class Collection<
     // Set serialization
     this._isSerialized = !!opts?.serialize
 
-    if (opts?.serialize === "core") {
+    if (opts?.serialize === "v8") {
       this._serializer = {
-        serialize: denoCoreSerialize,
-        deserialize: denoCoreDeserialize,
+        serialize: v8Serialize,
+        deserialize: v8Deserialize,
         compress,
         decompress,
       }
