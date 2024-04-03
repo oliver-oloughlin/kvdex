@@ -2,33 +2,36 @@ import { mockUser1 } from "../../tests/mocks.ts"
 import type { User } from "../../tests/models.ts"
 import { useDb } from "../../tests/utils.ts"
 
-Deno.bench("indexable_collection - update (shallow merge)", async (b) => {
-  await useDb(async (db) => {
-    await db.i_users.add(mockUser1)
+Deno.bench(
+  "indexable_collection - updateByPrimaryIndex (shallow merge)",
+  async (b) => {
+    await useDb(async (db) => {
+      await db.i_users.add(mockUser1)
 
-    const updateData: Partial<User> = {
-      address: {
-        country: "USA",
-        city: "Los Angeles",
-        street: "Sesame Street",
-        houseNr: null,
-      },
-    }
+      const updateData: Partial<User> = {
+        address: {
+          country: "USA",
+          city: "Los Angeles",
+          street: "Sesame Street",
+          houseNr: null,
+        },
+      }
 
-    b.start()
+      b.start()
 
-    await db.i_users.updateByPrimaryIndex(
-      "username",
-      mockUser1.username,
-      updateData,
-      { strategy: "merge-shallow" },
-    )
+      await db.i_users.updateByPrimaryIndex(
+        "username",
+        mockUser1.username,
+        updateData,
+        { strategy: "merge-shallow" },
+      )
 
-    b.end()
-  })
-})
+      b.end()
+    })
+  },
+)
 
-Deno.bench("collection - update (deep merge)", async (b) => {
+Deno.bench("collection - updateByPrimaryIndex (deep merge)", async (b) => {
   await useDb(async (db) => {
     await db.i_users.add(mockUser1)
 
