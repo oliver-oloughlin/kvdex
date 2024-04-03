@@ -1,6 +1,6 @@
 import { generateUsers, useDb } from "../../tests/utils.ts"
 
-Deno.bench("collection - findMany", async (b) => {
+Deno.bench("collection - findMany [1_000]", async (b) => {
   await useDb(async (db) => {
     const users = generateUsers(1_000)
     const ids: string[] = []
