@@ -1,44 +1,46 @@
-import type { AtomicSetOptions } from "./types.ts"
+import type {
+  AtomicSetOptions,
+  DenoAtomicCheck,
+  DenoAtomicOperation,
+  DenoKvCommitError,
+  DenoKvCommitResult,
+  DenoKvStrictKey,
+} from "./types.ts"
 
 /** Holds atomic mutations in a pool until bound to an actual atomic operation */
-export class AtomicPool implements Deno.AtomicOperation {
-  private pool: Array<(op: Deno.AtomicOperation) => Deno.AtomicOperation>
+export class AtomicPool implements DenoAtomicOperation {
+  private pool: Array<(op: DenoAtomicOperation) => DenoAtomicOperation>
 
   constructor() {
     this.pool = []
   }
 
-  set(key: Deno.KvKey, value: unknown, options?: AtomicSetOptions) {
+  set(key: DenoKvStrictKey, value: unknown, options?: AtomicSetOptions) {
     this.pool.push((op) => op.set(key, value, options))
     return this
   }
 
-  delete(key: Deno.KvKey) {
+  delete(key: DenoKvStrictKey) {
     this.pool.push((op) => op.delete(key))
     return this
   }
 
-  mutate(...mutations: Deno.KvMutation[]) {
-    this.pool.push((op) => op.mutate(...mutations))
-    return this
-  }
-
-  check(...checks: Deno.AtomicCheck[]) {
+  check(...checks: DenoAtomicCheck[]) {
     this.pool.push((op) => op.check(...checks))
     return this
   }
 
-  sum(key: Deno.KvKey, n: bigint) {
+  sum(key: DenoKvStrictKey, n: bigint) {
     this.pool.push((op) => op.sum(key, n))
     return this
   }
 
-  max(key: Deno.KvKey, n: bigint) {
+  max(key: DenoKvStrictKey, n: bigint) {
     this.pool.push((op) => op.max(key, n))
     return this
   }
 
-  min(key: Deno.KvKey, n: bigint): this {
+  min(key: DenoKvStrictKey, n: bigint): this {
     this.pool.push((op) => op.min(key, n))
     return this
   }
@@ -47,18 +49,18 @@ export class AtomicPool implements Deno.AtomicOperation {
     value: unknown,
     options?: {
       delay?: number | undefined
-      keysIfUndelivered?: Deno.KvKey[] | undefined
-    } | undefined,
+      keysIfUndelivered?: DenoKvStrictKey[]
+    },
   ) {
     this.pool.push((op) => op.enqueue(value, options))
     return this
   }
 
-  commit(): Promise<Deno.KvCommitResult | Deno.KvCommitError> {
+  commit(): Promise<DenoKvCommitResult | DenoKvCommitError> {
     throw Error("Not Implemented")
   }
 
-  bindTo(atomic: Deno.AtomicOperation) {
+  bindTo(atomic: DenoAtomicOperation) {
     this.pool.forEach((mutation) => mutation(atomic))
   }
 }

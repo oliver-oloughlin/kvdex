@@ -14,7 +14,7 @@ export type BuilderFn<
   TOutput extends KvValue,
   TOptions extends CollectionOptions<TOutput>,
 > = (
-  kv: Deno.Kv,
+  kv: DenoKv,
   key: KvKey,
   queueHandlers: QueueHandlers,
   idempotentListener: IdempotentListener,
@@ -198,7 +198,7 @@ export type CollectionSelector<
 ) => Collection<TInput, TOutput, CollectionOptions<TOutput>>
 
 /** Prepared value delete function */
-export type PrepareDeleteFn = (kv: Deno.Kv) => Promise<PreparedIndexDelete>
+export type PrepareDeleteFn = (kv: DenoKv) => Promise<PreparedIndexDelete>
 
 /** Prepared index delete function */
 export type PreparedIndexDelete = {
@@ -208,7 +208,7 @@ export type PreparedIndexDelete = {
 
 /** Atomic builder operations */
 export type Operations = {
-  atomic: Deno.AtomicOperation
+  atomic: DenoAtomicOperation
   asyncMutations: Array<() => Promise<void>>
   prepareDeleteFns: PrepareDeleteFn[]
   indexDeleteCollectionKeys: KvKey[]
@@ -242,15 +242,15 @@ export type AtomicMutation<T> =
     }
     | {
       type: "sum"
-      value: T extends Deno.KvU64 ? bigint : never
+      value: T extends DenoKvU64 ? bigint : never
     }
     | {
       type: "min"
-      value: T extends Deno.KvU64 ? bigint : never
+      value: T extends DenoKvU64 ? bigint : never
     }
     | {
       type: "max"
-      value: T extends Deno.KvU64 ? bigint : never
+      value: T extends DenoKvU64 ? bigint : never
     }
     | {
       type: "delete"
@@ -259,7 +259,7 @@ export type AtomicMutation<T> =
 
 /** Options for atomic set operation */
 export type AtomicSetOptions = NonNullable<
-  Parameters<ReturnType<Deno.Kv["atomic"]>["set"]>["2"]
+  Parameters<ReturnType<DenoKv["atomic"]>["set"]>["2"]
 >
 
 /************************/
@@ -410,7 +410,7 @@ export type SerializeOptions = "v8" | "json" | Partial<Serializer>
 /***************************/
 
 /** Options for setting new document entry */
-export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
+export type SetOptions = NonNullable<Parameters<DenoKv["set"]>["2"]> & {
   /** Number of retry attempts before returning failed operation */
   retry?: number
 
@@ -433,7 +433,7 @@ export type SetOptions = NonNullable<Parameters<Deno.Kv["set"]>["2"]> & {
 }
 
 /** Options for listing documents */
-export type ListOptions<T> = Omit<Deno.KvListOptions, "limit"> & {
+export type ListOptions<T> = Omit<DenoKvListOptions, "limit"> & {
   /**
    * Filter result based on predicate.
    *
@@ -466,10 +466,10 @@ export type ListOptions<T> = Omit<Deno.KvListOptions, "limit"> & {
 export type HandleOneOptions<T> = Omit<ListOptions<T>, "resultLimit">
 
 /** Options for finding a single document */
-export type FindOptions = NonNullable<Parameters<Deno.Kv["get"]>[1]>
+export type FindOptions = NonNullable<Parameters<DenoKv["get"]>[1]>
 
 /** Options for finding many documents */
-export type FindManyOptions = NonNullable<Parameters<Deno.Kv["getMany"]>[1]>
+export type FindManyOptions = NonNullable<Parameters<DenoKv["getMany"]>[1]>
 
 /** Options for updating a single document */
 export type UpdateOptions = Omit<SetOptions, "overwrite"> & {
@@ -531,7 +531,7 @@ export type QueueListenerOptions = {
 }
 
 /** Options for watching for live data updates */
-export type WatchOptions = NonNullable<Parameters<Deno.Kv["watch"]>[1]>
+export type WatchOptions = NonNullable<Parameters<DenoKv["watch"]>[1]>
 
 /********************/
 /*                  */
@@ -652,7 +652,7 @@ export type FlatDocumentData<T extends KvValue> =
 /** Document data */
 export type DocumentData<T> = {
   readonly id: KvId
-  readonly versionstamp: KvVersionstamp<KvValue>
+  readonly versionstamp: string
   readonly value: T
 }
 
@@ -664,17 +664,14 @@ export type DocumentData<T> = {
 
 /** Kv enqueue options */
 export type KvEnqueueOptions = NonNullable<
-  Parameters<Deno.Kv["enqueue"]>[1]
+  Parameters<DenoKv["enqueue"]>[1]
 >
 
-/** Type of versionstamp */
-export type KvVersionstamp<T extends KvValue> = Deno.KvEntry<T>["versionstamp"]
-
 /** An entry or collection key */
-export type KvKey = [Deno.KvKeyPart, ...Deno.KvKey]
+export type KvKey = [DenoKvStrictKeyPart, ...DenoKvStrictKey]
 
 /** An entry ID */
-export type KvId = Exclude<Deno.KvKeyPart, Exclude<Deno.KvKeyPart, KvValue>>
+export type KvId = DenoKvStrictKeyPart
 
 /** An object containing only KV values, and is itself a KV value. */
 export type KvObject = {
@@ -692,7 +689,7 @@ export type KvValue =
   | number
   | boolean
   | bigint
-  | Deno.KvU64
+  | DenoKvU64
   | KvObject
   | KvArray
   | Int8Array
@@ -713,3 +710,162 @@ export type KvValue =
   | RegExp
   | DataView
   | Error
+
+/********************/
+/*                  */
+/*  DenoKV TYPES   */
+/*                  */
+/********************/
+
+export type DenoKvStrictKeyPart =
+  | boolean
+  | string
+  | number
+  | bigint
+  | Uint8Array
+
+export type DenoKvLaxKeyPart = DenoKvStrictKeyPart | symbol
+
+export type DenoKvStrictKey = DenoKvStrictKeyPart[]
+
+export type DenoKvLaxKey = DenoKvLaxKeyPart[]
+
+export type DenoKvU64 = {
+  value: bigint
+}
+
+export type DenoKvCommitError = {
+  ok: false
+}
+
+export type DenoKvCommitResult = {
+  ok: true
+  versionstamp: string
+}
+
+export type DenoAtomicCheck = {
+  key: DenoKvStrictKey
+  versionstamp: string | null
+}
+
+export type DenoKvEnqueueOptions = {
+  delay?: number
+  keysIfUndelivered?: DenoKvStrictKey[]
+  backoffSchedule?: number[]
+}
+
+export type DenoKvEntry = {
+  key: Readonly<DenoKvLaxKey>
+  value: unknown
+  versionstamp: string
+}
+
+export type DenoKvEntryNull = {
+  key: Readonly<DenoKvLaxKey>
+  value: null
+  versionstamp: null
+}
+
+export type DenoKvEntryMaybe = DenoKvEntry | DenoKvEntryNull
+
+export type DenoKvConsistency = "strong" | "eventual"
+
+export type DenoKvGetOptions = {
+  consistency?: DenoKvConsistency
+}
+
+export type DenoKvSetOptions = {
+  expireIn?: number
+}
+
+export type DenoKvWatchOptions = {
+  raw?: boolean
+}
+
+export type DenoKvListSelector =
+  | { prefix: DenoKvStrictKey }
+  | { prefix: DenoKvStrictKey; start: DenoKvStrictKey }
+  | { prefix: DenoKvStrictKey; end: DenoKvStrictKey }
+  | { start: DenoKvStrictKey; end: DenoKvStrictKey }
+
+export type DenoKvListOptions = {
+  limit?: number
+  cursor?: string
+  reverse?: boolean
+  consistency?: DenoKvConsistency
+  batchSize?: number
+}
+
+export type DenoKvListIterator = AsyncIterableIterator<DenoKvEntryMaybe> & {
+  cursor: string
+}
+
+export type DenoAtomicOperation = {
+  set(
+    key: DenoKvStrictKey,
+    value: unknown,
+    options?: DenoKvSetOptions,
+  ): DenoAtomicOperation
+
+  delete(key: DenoKvStrictKey): DenoAtomicOperation
+
+  min(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation
+
+  max(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation
+
+  sum(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation
+
+  check(...checks: DenoAtomicCheck[]): DenoAtomicOperation
+
+  enqueue(value: unknown, options?: DenoKvEnqueueOptions): DenoAtomicOperation
+
+  commit(): Promise<DenoKvCommitError | DenoKvCommitResult>
+}
+
+export type DenoKv = {
+  atomic(): DenoAtomicOperation
+
+  close(): void
+
+  delete(key: DenoKvStrictKey): Promise<void>
+
+  enqueue(
+    value: unknown,
+    options?: DenoKvEnqueueOptions,
+  ): Promise<DenoKvCommitResult>
+
+  get(
+    key: DenoKvStrictKey,
+    options?: DenoKvGetOptions,
+  ): Promise<DenoKvEntryMaybe>
+
+  getMany(
+    keys: DenoKvStrictKey[],
+    options?: DenoKvGetOptions,
+  ): Promise<DenoKvEntryMaybe[]>
+
+  list(
+    selector: DenoKvListSelector,
+    options?: DenoKvListOptions,
+  ): DenoKvListIterator
+
+  listenQueue(handler: (value: unknown) => unknown): Promise<void>
+
+  set(
+    key: DenoKvStrictKey,
+    value: unknown,
+    options?: DenoKvSetOptions,
+  ): Promise<DenoKvCommitError | DenoKvCommitResult>
+
+  watch(
+    keys: DenoKvStrictKey[],
+    options?: DenoKvWatchOptions,
+  ): ReadableStream<DenoKvEntryMaybe[]>
+}
+
+function check(_: DenoKv) {}
+
+import type { Kv } from "npm:@deno/kv"
+
+check(null as unknown as Deno.Kv)
+check(null as unknown as Kv)

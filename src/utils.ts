@@ -2,6 +2,10 @@ import { COMPRESSION_QUALITY_LEVEL, GET_MANY_KEY_LIMIT } from "./constants.ts"
 import type { Collection } from "./collection.ts"
 import type {
   AtomicSetOptions,
+  DenoAtomicOperation,
+  DenoKv,
+  DenoKvListSelector,
+  DenoKvStrictKey,
   EnqueueOptions,
   FindManyOptions,
   IndexDataEntry,
@@ -44,7 +48,7 @@ export function generateId() {
  * @param key - A document key.
  * @returns A document id, or undefined if key is empty.
  */
-export function getDocumentId(key: Deno.KvKey) {
+export function getDocumentId(key: DenoKvStrictKey) {
   return key.at(-1)
 }
 
@@ -114,7 +118,6 @@ export function isKvObject(value: unknown) {
 
   // If value is an instance of other KvValue objects, return false
   if (
-    value instanceof Deno.KvU64 ||
     value instanceof Array ||
     value instanceof Int8Array ||
     value instanceof Int16Array ||
@@ -156,7 +159,7 @@ export async function setIndices(
   id: KvId,
   data: KvObject,
   value: KvObject,
-  atomic: Deno.AtomicOperation,
+  atomic: DenoAtomicOperation,
   collection: Collection<any, any, any>,
   options: AtomicSetOptions | undefined,
 ) {
@@ -223,7 +226,7 @@ export async function setIndices(
  */
 export async function checkIndices(
   data: KvObject,
-  atomic: Deno.AtomicOperation,
+  atomic: DenoAtomicOperation,
   collection: Collection<any, any, any>,
 ) {
   // Check primary indices using primary index list
@@ -265,7 +268,7 @@ export async function checkIndices(
 export async function deleteIndices(
   id: KvId,
   data: KvObject,
-  atomic: Deno.AtomicOperation,
+  atomic: DenoAtomicOperation,
   collection: Collection<any, any, any>,
 ) {
   // Delete primary indices using primary index list
@@ -316,17 +319,17 @@ export async function deleteIndices(
  * Perform kv.getMany with sliced executions to allow for more keys than internal limit.
  *
  * @param keys - List of keys.
- * @param kv - Deno KV instance.
+ * @param kv - DenoKV instance.
  * @param options - Find many options.
  * @returns List of entries.
  */
-export async function kvGetMany<const T>(
-  keys: Deno.KvKey[],
-  kv: Deno.Kv,
+export async function kvGetMany(
+  keys: DenoKvStrictKey[],
+  kv: DenoKv,
   options?: FindManyOptions,
 ) {
   // Initialize sliced keys list
-  const slicedKeys: Deno.KvKey[][] = []
+  const slicedKeys: DenoKvStrictKey[][] = []
 
   // Slice keys based on getMany keys limit
   for (let i = 0; i < keys.length; i += GET_MANY_KEY_LIMIT) {
@@ -335,7 +338,7 @@ export async function kvGetMany<const T>(
 
   // Execute getMany for each sliced keys entry
   const slicedEntries = await allFulfilled(slicedKeys.map((keys) => {
-    return kv.getMany<T[]>(keys, options)
+    return kv.getMany(keys, options)
   }))
 
   // Return accumulated result
@@ -459,7 +462,7 @@ export function parseQueueMessage<T extends KvValue>(
 export function createListSelector<T>(
   prefixKey: KvKey,
   options: ListOptions<T> | undefined,
-): Deno.KvListSelector {
+): DenoKvListSelector {
   // Create start key
   const start = typeof options?.startId !== "undefined"
     ? [...prefixKey, options.startId!]
@@ -607,11 +610,6 @@ export enum TypeKey {
  * @returns
  */
 export function beforeV8Serialize(value: unknown): unknown {
-  // KvU64
-  if (value instanceof Deno.KvU64) {
-    return { [TypeKey.KvU64]: value.value }
-  }
-
   // KvObject
   if (isKvObject(value)) {
     return Object.fromEntries(
@@ -659,11 +657,6 @@ export function afterV8Serialize(value: unknown): unknown {
     typeof value !== "object"
   ) {
     return value
-  }
-
-  // KvU64
-  if (TypeKey.KvU64 in value) {
-    return new Deno.KvU64(BigInt(mapValue(TypeKey.KvU64, value)))
   }
 
   // KvObject
@@ -845,13 +838,6 @@ export function _replacer(value: unknown): unknown {
     }
   }
 
-  // KvU64
-  if (value instanceof Deno.KvU64) {
-    return {
-      [TypeKey.KvU64]: value.value.toString(),
-    }
-  }
-
   // Date
   if (value instanceof Date) {
     return {
@@ -1020,11 +1006,6 @@ export function _reviver(value: unknown): unknown {
   // bigint
   if (TypeKey.BigInt in value) {
     return BigInt(mapValue(TypeKey.BigInt, value))
-  }
-
-  // KvU64
-  if (TypeKey.KvU64 in value) {
-    return new Deno.KvU64(BigInt(mapValue(TypeKey.KvU64, value)))
   }
 
   // Date

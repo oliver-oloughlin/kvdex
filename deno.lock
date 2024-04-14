@@ -12,6 +12,7 @@
       "jsr:@std/fmt@^0.217.0": "jsr:@std/fmt@0.217.0",
       "jsr:@std/ulid@^0.217": "jsr:@std/ulid@0.217.0",
       "jsr:@std/ulid@^0.220.0": "jsr:@std/ulid@0.220.1",
+      "npm:@deno/kv": "npm:@deno/kv@0.7.0",
       "npm:@types/node": "npm:@types/node@18.16.19",
       "npm:superjson@1.13.3": "npm:superjson@1.13.3",
       "npm:zod@^3.22": "npm:zod@3.22.4"
@@ -52,6 +53,31 @@
       }
     },
     "npm": {
+      "@deno/kv-darwin-arm64@0.7.0": {
+        "integrity": "sha512-PaTriht31Rb08TwWdAkmODrLNnGnl9l8nlF/0aae/v7dzJ5FeaoX+0RgxTD+m90quG3ynsdLsY8iCa+st+MkiA==",
+        "dependencies": {}
+      },
+      "@deno/kv-darwin-x64@0.7.0": {
+        "integrity": "sha512-Yw4Gmn6opUJ6ZVuztNaGS4yt11KyJI/juTAyzNiY5H3VhHD7xVm+peG4SGkr6Hq/vXVGcQM3Lldw5b3aJJQYSg==",
+        "dependencies": {}
+      },
+      "@deno/kv-linux-x64-gnu@0.7.0": {
+        "integrity": "sha512-D6xJcx4HSUbgomxGV2lGUgKrRmwHNMmCbu8XRxBjIgpsKrFK1W6w+KitI92wMCgEIOAFAnfeyrYxtMzh2ZdYTw==",
+        "dependencies": {}
+      },
+      "@deno/kv-win32-x64-msvc@0.7.0": {
+        "integrity": "sha512-0UWf6a+T7e/1uOcUgUKTrMupIQSnCI02856ecu9JwutajSvvbSgoi+jpmaUnYW6QqcXjY8ECI/28CQi1DvYYhw==",
+        "dependencies": {}
+      },
+      "@deno/kv@0.7.0": {
+        "integrity": "sha512-+vYCIWDQq+03RKwh85WDBVplwT7gimcLyLezj6C3OuMwaTWfPy9NVmA5y4Mwpoht0+H4CjknEUE7LrfZJAcQ7w==",
+        "dependencies": {
+          "@deno/kv-darwin-arm64": "@deno/kv-darwin-arm64@0.7.0",
+          "@deno/kv-darwin-x64": "@deno/kv-darwin-x64@0.7.0",
+          "@deno/kv-linux-x64-gnu": "@deno/kv-linux-x64-gnu@0.7.0",
+          "@deno/kv-win32-x64-msvc": "@deno/kv-win32-x64-msvc@0.7.0"
+        }
+      },
       "@types/node@18.16.19": {
         "integrity": "sha512-IXl7o+R9iti9eBW4Wg2hx1xQDig183jj7YLn8F7udNceyfkbn1ZxmzZXuak20gR40D7pIkIY1kYGx5VIGbaHKA==",
         "dependencies": {}
