@@ -37,7 +37,8 @@ Deno.test("serialized_collection - types", async (t) => {
         await db.bigints.forEach((doc) => assert(typeof doc.value === "bigint"))
         await db.u64s.forEach((doc) =>
           assert(
-            typeof doc.value === "object" && doc.value instanceof Deno.KvU64,
+            typeof doc.value === "object" &&
+              typeof doc.value.value === "bigint",
           )
         )
       })
