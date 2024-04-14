@@ -393,15 +393,26 @@ export type SerializedEntry = {
 /**
  * Serialize options.
  *
- * "v8" = built-in v8 serializer.
+ * "v8" = built-in v8 serializer + brotli compression.
  *
- * "json" = custom JSON serializer, works on every runtime.
+ * "v8-uncompressed" = built-in v8 serializer and no compression.
  *
- * If custom serialize and decompress functions are set, "json"
- * serializer is used by default for any unset serialize functions,
- * while brotli compression is used for any unset compress functions.
+ * "json" = custom JSON serializer + brotli compression.
+ *
+ * "json-uncompressed" = custom JSON serializer and no compression (best runtime compatibility).
+ *
+ * If the serialize option is not set, or if a custom serialize configuration is used,
+ * then JSON serialization is used by default for any unset serialize functions,
+ * while brotli compression is used for any unset compress functions. V8 serialization and
+ * Brotli compression rely on runtime implementations, and are therefore only
+ * compatible with runtimes that implement them (Deno, Node.js).
  */
-export type SerializeOptions = "v8" | "json" | Partial<Serializer>
+export type SerializeOptions =
+  | "v8"
+  | "v8-uncompressed"
+  | "json"
+  | "json-uncompressed"
+  | Partial<Serializer>
 
 /***************************/
 /*                         */
@@ -424,8 +435,8 @@ export type SetOptions = NonNullable<Parameters<DenoKv["set"]>["2"]> & {
   /**
    * Enable or disable atomic operation batching.
    *
-   * This allows for storing larger sized data by writing in batched operations
-   * as opposed to poling all mutations into a single atomic operation.
+   * This allows for storing larger sized data by writing using batched operations
+   * as opposed to pooling all mutations into a single atomic operation.
    *
    * @default false
    */

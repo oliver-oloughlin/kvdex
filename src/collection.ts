@@ -239,12 +239,26 @@ export class Collection<
         compress,
         decompress,
       }
-    } else if (opts?.serialize == "json") {
+    } else if (opts?.serialize === "v8-uncompressed") {
+      this._serializer = {
+        serialize: v8Serialize,
+        deserialize: v8Deserialize,
+        compress: (v) => v,
+        decompress: (v) => v,
+      }
+    } else if (opts?.serialize === "json") {
       this._serializer = {
         serialize: jsonSerialize,
         deserialize: jsonDeserialize,
         compress,
         decompress,
+      }
+    } else if (opts?.serialize === "json-uncompressed") {
+      this._serializer = {
+        serialize: jsonSerialize,
+        deserialize: jsonDeserialize,
+        compress: (v) => v,
+        decompress: (v) => v,
       }
     } else {
       this._serializer = {

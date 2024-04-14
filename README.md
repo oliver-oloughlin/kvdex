@@ -10,7 +10,7 @@ dependencies by default. It's purpose is to enhance the experience of using
 Deno's KV store through additional features such as indexing, strongly typed
 collections and serialization/compression, while maintaining as much of the
 native functionality as possible, like atomic operations, real-time data updates
-and queue listeners.
+and queue listeners. Also works with other runtimes such as Node.js and Bun.
 
 _Supported Deno verisons:_ **^1.42.0**
 
@@ -271,8 +271,13 @@ const db = kvdex(kv, {
 
 Specify serialization for the collection. This lets large objects that exceed
 the native size limit of 64kb to be stored, by serializing, compressing and
-dividing the value across multiple key/value entries. There is a tradeoff
-between speed and storage efficiency.
+dividing the value across multiple key/value entries. When serialization is
+used, there is a tradeoff between speed and storage efficiency. If the serialize
+option is not set, or if a custom serialize configuration is used, then JSON
+serialization is used by default for any unset serialize functions, while Brotli
+compression is used for any unset compress functions. V8 serialization and
+Brotli compression rely on runtime implementations, and are therefore only
+compatible with runtimes that implement them (Deno, Node.js).
 
 ```ts
 import { kvdex, collection, model } from "jsr:@olli/kvdex"
@@ -281,12 +286,17 @@ const kv = await Deno.openKv()
 
 const db = kvdex(kv, {
   users: collection(model<User>(), {
-    // Use the custom json-serializer, compatible with every runtime
+    // Custom JSON serializer + Brotli compression
     serialize: "json",
 
-    // Use the faster built-in V8 serializer,
-    // only works in runtimes that implement the v8 node module
+    // Custom JSON serializer and no compression (best runtime compatibility)
+    serialize: "json-uncompressed",
+
+    // Built-in V8 serializer + Brotli compression,
     serialize: "v8",
+
+    // Built-in V8 serializer and no compression
+    serialize: "v8-uncompressed",
 
     // Set custom serialize, deserialize, compress and decompress functions
     serialize: {
@@ -1405,9 +1415,9 @@ await migrate({
 ## Blob Storage
 
 To store large blob sizes, and bypass the data limit of a single atomic
-operation, a combination of serialized collections and batching atomic
-operations can be used. By default, batching is disabled to ensure consistency
-and improve performance.
+operation, a combination of serialized collections and batched atomic operations
+can be used. By default, batching is disabled to ensure consistency and improve
+performance.
 
 ```ts
 import { collection, kvdex, model } from "jsr:@olli/kvdex"
@@ -1419,7 +1429,7 @@ const db = kvdex(kv, {
 
 const blob = // read from disk, etc.
 
-const result = await db.blobs.add(blob, { batching: true })
+const result = await db.blobs.add(blob, { batched: true })
 ```
 
 ## Development
