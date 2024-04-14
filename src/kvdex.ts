@@ -2,6 +2,9 @@ import type {
   CollectionOptions,
   CollectionSelector,
   CountAllOptions,
+  DenoKv,
+  DenoKvCommitResult,
+  DenoKvStrictKey,
   EnqueueOptions,
   FindOptions,
   IntervalMessage,
@@ -72,7 +75,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts"
  * @returns A Kvdex instance with attached schema.
  */
 export function kvdex<const T extends SchemaDefinition>(
-  kv: Deno.Kv,
+  kv: DenoKv,
   schemaDefinition: T,
 ): Kvdex<Schema<T>> & Schema<T> {
   // Set listener activated flag and queue handlers map
@@ -121,13 +124,13 @@ export function kvdex<const T extends SchemaDefinition>(
 
 /** Represents a database instance and contains methods for working on all documents and top-level queues. */
 export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
-  private kv: Deno.Kv
+  private kv: DenoKv
   private schema: TSchema
   private queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>
   private idempotentListener: () => Promise<void>
 
   constructor(
-    kv: Deno.Kv,
+    kv: DenoKv,
     schema: TSchema,
     queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>,
     idempotentListener: () => Promise<void>,
@@ -206,9 +209,9 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     const iter = this.kv.list({ prefix: [KVDEX_KEY_PREFIX] })
 
     // Collect all kvdex keys
-    const keys: Deno.KvKey[] = []
+    const keys: DenoKvStrictKey[] = []
     for await (const { key } of iter) {
-      keys.push(key)
+      keys.push(key as DenoKvStrictKey)
     }
 
     // Delete all entries
@@ -241,7 +244,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   async enqueue<T extends KvValue>(
     data: T,
     options?: EnqueueOptions,
-  ): Promise<Deno.KvCommitResult> {
+  ): Promise<DenoKvCommitResult> {
     // Prepare and perform enqueue operation
     const prep = prepareEnqueue(
       [KVDEX_KEY_PREFIX],
@@ -315,7 +318,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   ): Promise<Document<T> | null> {
     // Create document key, get document entry
     const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id)
-    const result = await this.kv.get<T>(key, options)
+    const result = await this.kv.get(key, options)
 
     // If no entry exists, return null
     if (result.value === null || result.versionstamp === null) {
@@ -326,7 +329,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     return new Document(model<T, T>(), {
       id,
       versionstamp: result.versionstamp,
-      value: result.value,
+      value: result.value as T,
     })
   }
 
@@ -594,13 +597,13 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
  * Create a database schema from schema definition.
  *
  * @param def - Schema definition.
- * @param kv - Deno KV instance.
+ * @param kv - DenoKV instance.
  * @param treeKey - The current tree key.
  * @returns
  */
 function _createSchema<const T extends SchemaDefinition>(
   def: T,
-  kv: Deno.Kv,
+  kv: DenoKv,
   queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>,
   idempotentListener: () => Promise<void>,
   treeKey?: KvKey,
@@ -635,13 +638,13 @@ function _createSchema<const T extends SchemaDefinition>(
 /**
  * Count all documents in the KV store.
  *
- * @param kv - Deno KV instance.
+ * @param kv - DenoKV instance.
  * @param schemaOrCollection - Schema or Collection object.
  * @param options - CountAll options.
  * @returns Promise resolving to the total count of documents in schema collections or collection.
  */
 async function _countAll(
-  kv: Deno.Kv,
+  kv: DenoKv,
   schemaOrCollection:
     | Schema<SchemaDefinition>
     | Collection<KvValue, KvValue, CollectionOptions<KvValue>>,
@@ -664,12 +667,12 @@ async function _countAll(
 /**
  * Delete all documents in the KV store.
  *
- * @param kv - Deno KV instance.
+ * @param kv - DenoKV instance.
  * @param schemaOrCollection - Schema or Collection object.
  * @returns Promise resolving to void.
  */
 async function _deleteAll(
-  kv: Deno.Kv,
+  kv: DenoKv,
   schemaOrCollection:
     | Schema<SchemaDefinition>
     | Collection<KvValue, KvValue, CollectionOptions<KvValue>>,

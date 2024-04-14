@@ -4,7 +4,6 @@ import type {
   KvId,
   KvObject,
   KvValue,
-  KvVersionstamp,
   Model,
 } from "./types.ts"
 import { isKvObject } from "./utils.ts"
@@ -12,7 +11,7 @@ import { isKvObject } from "./utils.ts"
 /** Represents a database entry with id, versionstamp and value. */
 export class Document<const TOutput extends KvValue> {
   readonly id: KvId
-  readonly versionstamp: KvVersionstamp<TOutput>
+  readonly versionstamp: string
   readonly value: TOutput
 
   constructor(

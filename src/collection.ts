@@ -4,6 +4,11 @@ import type {
   CollectionKeys,
   CollectionOptions,
   CommitResult,
+  DenoKv,
+  DenoKvCommitError,
+  DenoKvCommitResult,
+  DenoKvEntryMaybe,
+  DenoKvStrictKey,
   EnqueueOptions,
   FindManyOptions,
   FindOptions,
@@ -118,7 +123,7 @@ export function collection<
   options?: TOptions,
 ): BuilderFn<TInput, TOutput, TOptions> {
   return (
-    kv: Deno.Kv,
+    kv: DenoKv,
     key: KvKey,
     queueHandlers: QueueHandlers,
     idempotentListener: IdempotentListener,
@@ -139,7 +144,7 @@ export class Collection<
   const TOutput extends KvValue,
   const TOptions extends CollectionOptions<TOutput>,
 > {
-  private kv: Deno.Kv
+  private kv: DenoKv
   private queueHandlers: QueueHandlers
   private idempotentListener: IdempotentListener
 
@@ -154,7 +159,7 @@ export class Collection<
   readonly _keepsHistory: boolean
 
   constructor(
-    kv: Deno.Kv,
+    kv: DenoKv,
     key: KvKey,
     queueHandlers: QueueHandlers,
     idempotentListener: IdempotentListener,
@@ -234,12 +239,26 @@ export class Collection<
         compress,
         decompress,
       }
-    } else if (opts?.serialize == "json") {
+    } else if (opts?.serialize === "v8-uncompressed") {
+      this._serializer = {
+        serialize: v8Serialize,
+        deserialize: v8Deserialize,
+        compress: (v) => v,
+        decompress: (v) => v,
+      }
+    } else if (opts?.serialize === "json") {
       this._serializer = {
         serialize: jsonSerialize,
         deserialize: jsonDeserialize,
         compress,
         decompress,
+      }
+    } else if (opts?.serialize === "json-uncompressed") {
+      this._serializer = {
+        serialize: jsonSerialize,
+        deserialize: jsonDeserialize,
+        compress: (v) => v,
+        decompress: (v) => v,
       }
     } else {
       this._serializer = {
@@ -454,7 +473,7 @@ export class Collection<
 
     // Create hsitory entries iterator
     const listOptions = createListOptions(options)
-    const iter = this.kv.list<HistoryEntry<TOutput>>(selector, listOptions)
+    const iter = this.kv.list(selector, listOptions)
 
     // Collect history entries
     let count = 0
@@ -468,21 +487,21 @@ export class Collection<
       }
 
       // Cast history entry
-      let historyEntry: HistoryEntry<TOutput> = value
+      let historyEntry = value as HistoryEntry<TOutput>
 
       // Handle serialized entries
-      if (value.type === "write" && this._isSerialized) {
-        const { ids } = value.value as SerializedEntry
-        const timeId = getDocumentId(key)!
+      if (historyEntry.type === "write" && this._isSerialized) {
+        const { ids } = historyEntry.value as SerializedEntry
+        const timeId = getDocumentId(key as DenoKvStrictKey)!
 
         const keys = ids.map((segmentId) =>
           extendKey(this._keys.historySegment, id, timeId, segmentId)
         )
 
-        const entries = await kvGetMany<Uint8Array>(keys, this.kv)
+        const entries = await kvGetMany(keys, this.kv)
 
         // Concatenate chunks
-        const data = concat(entries.map((entry) => entry.value!))
+        const data = concat(entries.map((entry) => entry.value as Uint8Array))
 
         // Decompress and deserialize
         const serialized = await this._serializer.decompress(data)
@@ -492,18 +511,16 @@ export class Collection<
 
         // Set history entry
         historyEntry = {
-          type: value.type,
-          timestamp: value.timestamp,
+          ...historyEntry,
           value: this._model.__validate?.(deserialized) ??
             this._model.parse(deserialized as any),
         }
-      } else if (value.type === "write") {
+      } else if (historyEntry.type === "write") {
         // Set history entry
         historyEntry = {
-          type: value.type,
-          timestamp: value.timestamp,
-          value: this._model.__validate?.(value.value) ??
-            this._model.parse(value.value as any),
+          ...historyEntry,
+          value: this._model.__validate?.(historyEntry.value) ??
+            this._model.parse(historyEntry.value as any),
         }
       }
 
@@ -539,7 +556,7 @@ export class Collection<
   async add(
     value: ParseInputType<TInput, TOutput>,
     options?: SetOptions,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     // Set document value with generated id
     return await this.setDocument(null, value, options)
   }
@@ -566,7 +583,7 @@ export class Collection<
     id: KvId,
     data: ParseInputType<TInput, TOutput>,
     options?: SetOptions,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     return await this.setDocument(id, data, options)
   }
 
@@ -619,9 +636,7 @@ export class Collection<
     )
 
     // Get index entry
-    const result = await this.kv.get<
-      unknown & Pick<IndexDataEntry<KvObject>, "__id__">
-    >(key, options)
+    const result = await this.kv.get(key, options)
 
     // If no value, abort delete
     if (result.value === null || result.versionstamp === null) {
@@ -629,7 +644,9 @@ export class Collection<
     }
 
     // Extract document id from index entry
-    const { __id__ } = result.value
+    const { __id__ } = result.value as
+      & unknown
+      & Pick<IndexDataEntry<KvObject>, "__id__">
 
     // Delete document by id
     await this.deleteDocuments([__id__], this._keepsHistory)
@@ -715,7 +732,7 @@ export class Collection<
     id: KvId,
     data: UpdateData<TOutput, T["strategy"]>,
     options?: T,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     // Get document
     const doc = await this.find(id)
 
@@ -764,7 +781,7 @@ export class Collection<
     value: CheckKeyOf<K, TOutput>,
     data: UpdateData<TOutput, T["strategy"]>,
     options?: T,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     // Find document by primary index
     const doc = await this.findByPrimaryIndex(index, value)
 
@@ -816,7 +833,7 @@ export class Collection<
     value: CheckKeyOf<K, TOutput>,
     data: UpdateData<TOutput, T["strategy"]>,
     options?: T,
-  ): Promise<PaginationResult<CommitResult<TOutput> | Deno.KvCommitError>> {
+  ): Promise<PaginationResult<CommitResult<TOutput> | DenoKvCommitError>> {
     // Serialize and compress index value
     const serialized = await this._serializer.serialize(value)
     const compressed = await this._serializer.compress(serialized)
@@ -867,7 +884,7 @@ export class Collection<
   >(
     input: IdUpsert<TInput, TOutput, TUpsertOptions["strategy"]>,
     options?: TUpsertOptions,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     const updateCr = await this.update(input.id, input.update, options)
 
     if (updateCr.ok) {
@@ -920,7 +937,7 @@ export class Collection<
       TUpsertOptions["strategy"]
     >,
     options?: TUpsertOptions,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     // First attempt update
     const updateCr = await this.updateByPrimaryIndex(
       ...input.index,
@@ -978,7 +995,7 @@ export class Collection<
   async updateMany<const T extends UpdateManyOptions<Document<TOutput>>>(
     value: UpdateData<TOutput, T["strategy"]>,
     options?: T,
-  ): Promise<PaginationResult<CommitResult<TOutput> | Deno.KvCommitError>> {
+  ): Promise<PaginationResult<CommitResult<TOutput> | DenoKvCommitError>> {
     // Update each document, add commit result to result list
     return await this.handleMany(
       this._keys.id,
@@ -1014,7 +1031,7 @@ export class Collection<
   >(
     data: UpdateData<TOutput, T["strategy"]>,
     options?: T,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     // Update a single document
     const { result } = await this.handleMany(
       this._keys.id,
@@ -1060,7 +1077,7 @@ export class Collection<
     value: CheckKeyOf<K, TOutput>,
     data: UpdateData<TOutput, T["strategy"]>,
     options?: T,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     // Create prefix key
     const prefixKey = await createSecondaryIndexKeyPrefix(
       index,
@@ -1109,9 +1126,9 @@ export class Collection<
   async addMany(
     values: ParseInputType<TInput, TOutput>[],
     options?: SetOptions,
-  ): Promise<ManyCommitResult | Deno.KvCommitError> {
+  ): Promise<ManyCommitResult | DenoKvCommitError> {
     // Initiate result and error lists
-    const results: (CommitResult<TOutput> | Deno.KvCommitError)[] = []
+    const results: (CommitResult<TOutput> | DenoKvCommitError)[] = []
     const errors: unknown[] = []
 
     // Add each value
@@ -1169,18 +1186,18 @@ export class Collection<
       // Create list iterator and empty keys list, init atomic operation
       const iter = this.kv.list({ prefix: this._keys.base }, options)
 
-      const keys: Deno.KvKey[] = []
+      const keys: DenoKvStrictKey[] = []
       const atomic = new AtomicWrapper(this.kv)
 
       // Collect all collection entry keys
       for await (const { key } of iter) {
-        keys.push(key)
+        keys.push(key as DenoKvStrictKey)
       }
 
       // Set history entries if keeps history
       if (this._keepsHistory) {
         for await (const { key } of this.kv.list({ prefix: this._keys.id })) {
-          const id = getDocumentId(key)
+          const id = getDocumentId(key as DenoKvStrictKey)
 
           if (!id) {
             continue
@@ -1597,12 +1614,12 @@ export class Collection<
    *
    * @param data - Data to be added to the collection queue.
    * @param options - Enqueue options, optional.
-   * @returns A promise resolving to Deno.KvCommitResult.
+   * @returns A promise resolving to DenoKvCommitResult.
    */
   async enqueue<T extends KvValue>(
     data: T,
     options?: EnqueueOptions,
-  ): Promise<Deno.KvCommitResult> {
+  ): Promise<DenoKvCommitResult> {
     // Prepare message and options for enqueue
     const prep = prepareEnqueue(
       this._keys.base,
@@ -1680,7 +1697,7 @@ export class Collection<
   ): Promise<Document<T> | null> {
     // Create document key, get document entry
     const key = extendKey(this._keys.undelivered, id)
-    const result = await this.kv.get<T>(key, options)
+    const result = await this.kv.get(key, options)
 
     // If no entry exists, return null
     if (result.value === null || result.versionstamp === null) {
@@ -1691,7 +1708,7 @@ export class Collection<
     return new Document(model<T, T>(), {
       id,
       versionstamp: result.versionstamp,
-      value: result.value,
+      value: result.value as T,
     })
   }
 
@@ -1715,12 +1732,12 @@ export class Collection<
 
     // Delete history entries
     for await (const { key } of historyIter) {
-      atomic.delete(key)
+      atomic.delete(key as DenoKvStrictKey)
     }
 
     // Delete any history segment entries
     for await (const { key } of historySegmentIter) {
-      atomic.delete(key)
+      atomic.delete(key as DenoKvStrictKey)
     }
 
     // Commit atomic operation
@@ -1850,7 +1867,7 @@ export class Collection<
     id: KvId | null,
     value: ParseInputType<TInput, TOutput>,
     options: SetOptions | undefined,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     // Create id, document key and parse document value
     const parsed = this._model.parse(value as TInput)
     const docId = id ?? await this._idGenerator(parsed)
@@ -1873,7 +1890,7 @@ export class Collection<
     idKey: KvKey,
     value: TOutput,
     options: SetOptions | undefined,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     // Initialize atomic operation and keys list
     const ids: KvId[] = []
     let docValue: any = value
@@ -1960,7 +1977,7 @@ export class Collection<
 
     // Initialize index check, commit result and atomic operation
     let indexCheck = false
-    let cr: Deno.KvCommitResult | Deno.KvCommitError = { ok: false }
+    let cr: DenoKvCommitResult | DenoKvCommitError = { ok: false }
 
     const atomic = options?.batched
       ? new AtomicWrapper(this.kv)
@@ -2048,7 +2065,7 @@ export class Collection<
     doc: Document<TOutput>,
     data: UpdateData<TOutput, UpdateStrategy>,
     options: UpdateOptions | undefined,
-  ): Promise<CommitResult<TOutput> | Deno.KvCommitError> {
+  ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     // Get document value, delete document entry
     const { value, id } = doc
 
@@ -2094,7 +2111,7 @@ export class Collection<
       const iter = this.kv.list({ prefix: keyPrefix })
 
       for await (const { key } of iter) {
-        atomic.delete(key)
+        atomic.delete(key as DenoKvStrictKey)
       }
 
       await atomic.commit()
@@ -2137,14 +2154,14 @@ export class Collection<
    * @returns
    */
   private async constructDocument(
-    { key, value, versionstamp }: Deno.KvEntryMaybe<any>,
+    { key, value, versionstamp }: DenoKvEntryMaybe,
   ) {
     if (!versionstamp) {
       return null
     }
 
     const indexedDocId = (value as IndexDataEntry<any>)?.__id__
-    const docId = indexedDocId ?? getDocumentId(key)
+    const docId = indexedDocId ?? getDocumentId(key as DenoKvStrictKey)
 
     if (!docId) {
       return null
@@ -2158,10 +2175,10 @@ export class Collection<
         extendKey(this._keys.segment, docId, segId)
       )
 
-      const docEntries = await kvGetMany<Uint8Array>(keys, this.kv)
+      const docEntries = await kvGetMany(keys, this.kv)
 
       // Concatenate chunks
-      const data = concat(docEntries.map((entry) => entry.value!))
+      const data = concat(docEntries.map((entry) => entry.value as Uint8Array))
 
       // Decompress and deserialize
       const serialized = await this._serializer.decompress(data)
@@ -2179,7 +2196,7 @@ export class Collection<
 
     // Remove id from value if indexed entry
     if (typeof indexedDocId !== "undefined") {
-      delete value.__id__
+      delete (value as any).__id__
     }
 
     // Return parsed document
@@ -2206,7 +2223,7 @@ export class Collection<
     // Create list iterator with given options
     const selector = createListSelector(prefixKey, options)
     const listOptions = createListOptions(options)
-    const iter = this.kv.list<KvValue>(selector, listOptions)
+    const iter = this.kv.list(selector, listOptions)
 
     // Initiate lists
     const docs: Document<TOutput>[] = []
@@ -2297,14 +2314,14 @@ export class Collection<
       await allFulfilled(ids.map(async (id) => {
         // Create document id key, get entry and construct document
         const idKey = extendKey(this._keys.id, id)
-        const entry = await this.kv.get<SerializedEntry>(idKey)
+        const entry = await this.kv.get(idKey)
         const doc = await this.constructDocument(entry)
 
         // Delete document entries
         atomic.delete(idKey)
 
         if (entry.value) {
-          const keys = entry.value.ids.map((segId) =>
+          const keys = (entry.value as SerializedEntry).ids.map((segId) =>
             extendKey(this._keys.segment, id, segId)
           )
 
@@ -2326,7 +2343,7 @@ export class Collection<
       await allFulfilled(ids.map(async (id) => {
         // Create idKey, get document value
         const idKey = extendKey(this._keys.id, id)
-        const { value } = await this.kv.get<KvObject>(idKey)
+        const { value } = await this.kv.get(idKey)
 
         // If no value, abort delete
         if (!value) {
@@ -2335,7 +2352,7 @@ export class Collection<
 
         // Delete document entries
         atomic.delete(idKey)
-        await deleteIndices(id, value, atomic, this)
+        await deleteIndices(id, value as KvObject, atomic, this)
       }))
 
       // Commit the operation
@@ -2348,7 +2365,7 @@ export class Collection<
       await allFulfilled(ids.map(async (id) => {
         // Create document id key, get document value
         const idKey = extendKey(this._keys.id, id)
-        const { value } = await this.kv.get<SerializedEntry>(idKey)
+        const { value } = await this.kv.get(idKey)
 
         // If no value, abort delete
         if (!value) {
@@ -2358,7 +2375,7 @@ export class Collection<
         // Delete document entries
         atomic.delete(idKey)
 
-        const keys = value.ids.map((segId) =>
+        const keys = (value as SerializedEntry).ids.map((segId) =>
           extendKey(this._keys.segment, id, segId)
         )
 

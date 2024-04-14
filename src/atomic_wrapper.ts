@@ -1,89 +1,71 @@
 import {
+  ATOMIC_OPERATION_KEY_SIZE_LIMIT,
   ATOMIC_OPERATION_MUTATION_LIMIT,
   ATOMIC_OPERATION_SIZE_LIMIT,
   ATOMIC_OPERTION_CHECK_LIMIT,
 } from "./constants.ts"
-import type { AtomicSetOptions } from "./types.ts"
+import type {
+  AtomicSetOptions,
+  DenoAtomicCheck,
+  DenoAtomicOperation,
+  DenoKv,
+  DenoKvCommitError,
+  DenoKvCommitResult,
+  DenoKvStrictKey,
+} from "./types.ts"
 
 /**
  * Implements the AtomicOperation interface and automatically executes
  * batched operations using a dynamic attributes such as count and size.
  */
-export class AtomicWrapper implements Deno.AtomicOperation {
-  private kv: Deno.Kv
-  private atomics: Deno.AtomicOperation[]
-  private currentAtomic: Deno.AtomicOperation
+export class AtomicWrapper implements DenoAtomicOperation {
+  private kv: DenoKv
+  private atomics: DenoAtomicOperation[]
+  private currentAtomic: DenoAtomicOperation
   private currentCount: number
   private currentCheckCount: number
   private currentSize: number
+  private currentKeySize: number
 
-  constructor(kv: Deno.Kv) {
+  constructor(kv: DenoKv) {
     this.kv = kv
     this.atomics = []
     this.currentAtomic = kv.atomic()
     this.currentCount = 0
     this.currentCheckCount = 0
     this.currentSize = 0
+    this.currentKeySize = 0
   }
 
-  set(key: Deno.KvKey, value: unknown, options?: AtomicSetOptions) {
-    this.addMutation((op) => op.set(key, value, options), 67, false)
+  set(key: DenoKvStrictKey, value: unknown, options?: AtomicSetOptions) {
+    this.addMutation((op) => op.set(key, value, options), 67, 2, false)
     return this
   }
 
-  delete(key: Deno.KvKey) {
-    this.addMutation((op) => op.delete(key), 3, false)
+  delete(key: DenoKvStrictKey) {
+    this.addMutation((op) => op.delete(key), 3, 2, false)
     return this
   }
 
-  mutate(...mutations: Deno.KvMutation[]) {
-    mutations.forEach((mut) => {
-      switch (mut.type) {
-        case "delete": {
-          this.delete(mut.key)
-          break
-        }
-        case "max": {
-          this.max(mut.key, mut.value.value)
-          break
-        }
-        case "min": {
-          this.min(mut.key, mut.value.value)
-          break
-        }
-        case "sum": {
-          this.sum(mut.key, mut.value.value)
-          break
-        }
-        case "set": {
-          this.set(mut.key, mut.value)
-          break
-        }
-      }
-    })
-
-    return this
-  }
-
-  check(...checks: Deno.AtomicCheck[]) {
+  check(...checks: DenoAtomicCheck[]) {
     checks.forEach((check) =>
-      this.addMutation((op) => op.check(check), 3, true)
+      this.addMutation((op) => op.check(check), 3, 2, true)
     )
     return this
   }
 
-  sum(key: Deno.KvKey, n: bigint) {
-    this.addMutation((op) => op.sum(key, n), 3, false)
+  sum(key: DenoKvStrictKey, n: bigint) {
+    this.addMutation((op) => op.sum(key, n), 3, 2, false)
     return this
   }
 
-  max(key: Deno.KvKey, n: bigint) {
-    this.addMutation((op) => op.max(key, n), 3, false)
+  max(key: DenoKvStrictKey, n: bigint) {
+    this.addMutation((op) => op.max(key, n), 3, 2, false)
     return this
   }
 
-  min(key: Deno.KvKey, n: bigint): this {
-    this.addMutation((op) => op.min(key, n), 3, false)
+  min(key: DenoKvStrictKey, n: bigint): this {
+    this.addMutation((op) => op.min(key, n), 3, 2, false)
     return this
   }
 
@@ -91,14 +73,20 @@ export class AtomicWrapper implements Deno.AtomicOperation {
     value: unknown,
     options?: {
       delay?: number | undefined
-      keysIfUndelivered?: Deno.KvKey[] | undefined
+      keysIfUndelivered?: DenoKvStrictKey[] | undefined
     } | undefined,
   ) {
-    this.addMutation((op) => op.enqueue(value, options), 96, false)
+    this.addMutation(
+      (op) => op.enqueue(value, options),
+      96,
+      2 + ((options?.keysIfUndelivered?.length ?? 0) * 2),
+      false,
+    )
+
     return this
   }
 
-  async commit(): Promise<Deno.KvCommitResult | Deno.KvCommitError> {
+  async commit(): Promise<DenoKvCommitResult | DenoKvCommitError> {
     // Add curent operation to atomics list
     if (this.currentCount > 0) {
       this.atomics.push(this.currentAtomic)
@@ -134,11 +122,13 @@ export class AtomicWrapper implements Deno.AtomicOperation {
    * @param mutation - Atomic mutation.
    */
   private addMutation(
-    mutation: (op: Deno.AtomicOperation) => Deno.AtomicOperation,
+    mutation: (op: DenoAtomicOperation) => DenoAtomicOperation,
     size: number,
+    keySize: number,
     isCheck: boolean,
   ) {
     this.currentSize += size
+    this.currentKeySize += keySize
     this.currentCount++
 
     if (isCheck) {
@@ -148,6 +138,7 @@ export class AtomicWrapper implements Deno.AtomicOperation {
     if (
       this.currentCount > ATOMIC_OPERATION_MUTATION_LIMIT ||
       this.currentSize > ATOMIC_OPERATION_SIZE_LIMIT ||
+      this.currentKeySize > ATOMIC_OPERATION_KEY_SIZE_LIMIT ||
       this.currentCheckCount > ATOMIC_OPERTION_CHECK_LIMIT
     ) {
       this.atomics.push(this.currentAtomic)
@@ -155,6 +146,7 @@ export class AtomicWrapper implements Deno.AtomicOperation {
       this.currentCount = 0
       this.currentCheckCount = 0
       this.currentSize = 0
+      this.currentKeySize = 0
     }
 
     mutation(this.currentAtomic)

@@ -7,6 +7,11 @@ import type {
   AtomicSetOptions,
   CollectionOptions,
   CollectionSelector,
+  DenoAtomicCheck,
+  DenoKv,
+  DenoKvCommitError,
+  DenoKvCommitResult,
+  DenoKvU64,
   EnqueueOptions,
   HistoryEntry,
   KvId,
@@ -37,7 +42,7 @@ export class AtomicBuilder<
   const TInput,
   const TOutput extends KvValue,
 > {
-  private kv: Deno.Kv
+  private kv: DenoKv
   private schema: TSchema
   private operations: Operations
   private collection: Collection<TInput, TOutput, CollectionOptions<TOutput>>
@@ -45,13 +50,13 @@ export class AtomicBuilder<
   /**
    * Create a new AtomicBuilder for building and executing atomic operations in the KV store.
    *
-   * @param kv - The Deno KV instance to be used.
+   * @param kv - The DenoKV instance to be used.
    * @param schema - The database schema containing all accessible collections.
    * @param collection - The collection currently in context for building atomic operations.
    * @param operations - List of prepared operations from previous instance.
    */
   constructor(
-    kv: Deno.Kv,
+    kv: DenoKv,
     schema: TSchema,
     collection: Collection<TInput, TOutput, CollectionOptions<TOutput>>,
     operations?: Operations,
@@ -181,11 +186,11 @@ export class AtomicBuilder<
 
       // Add delete preperation function to prepeare delete functions list
       this.operations.prepareDeleteFns.push(async (kv) => {
-        const doc = await kv.get<KvObject>(idKey)
+        const doc = await kv.get(idKey)
 
         return {
           id,
-          data: doc.value ?? {},
+          data: doc.value as KvObject ?? {},
         }
       })
     }
@@ -223,8 +228,8 @@ export class AtomicBuilder<
    * @returns Current AtomicBuilder instance.
    */
   check(...atomicChecks: AtomicCheck<TOutput>[]): this {
-    // Create Deno atomic checks from atomci checks input list
-    const checks: Deno.AtomicCheck[] = atomicChecks.map(
+    // Create Denoatomic checks from atomci checks input list
+    const checks: DenoAtomicCheck[] = atomicChecks.map(
       ({ id, versionstamp }) => {
         const key = extendKey(this.collection._keys.id, id)
         return {
@@ -243,12 +248,12 @@ export class AtomicBuilder<
 
   /**
    * Adds the given value to the value of the document with the given id.
-   * Sum only works for documents of type Deno.KvU64 and will throw an error for documents of any other type.
+   * Sum only works for documents of type DenoKvU64 and will throw an error for documents of any other type.
    *
    * @example
    * ```ts
    * db
-   *  .atomic(schema => schema.u64s) // Select collection of Deno.KvU64 values
+   *  .atomic(schema => schema.u64s) // Select collection of DenoKvU64 values
    *  .sum("num1", 100n)
    * ```
    *
@@ -256,7 +261,7 @@ export class AtomicBuilder<
    * @param value - The value to add to the document value.
    * @returns Current AtomicBuilder instance.
    */
-  sum(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never): this {
+  sum(id: KvId, value: TOutput extends DenoKvU64 ? bigint : never): this {
     const idKey = extendKey(this.collection._keys.id, id)
     this.operations.atomic.sum(idKey, value)
     return this
@@ -265,12 +270,12 @@ export class AtomicBuilder<
   /**
    * Sets the document value to the minimum of the existing and the given value.
    *
-   * min only works for documents of type Deno.KvU64 and will throw an error for documents of any other type.
+   * min only works for documents of type DenoKvU64 and will throw an error for documents of any other type.
    *
    * @example
    * ```ts
    * db
-   *  .atomic(schema => schema.u64s) // Select collection of Deno.KvU64 values
+   *  .atomic(schema => schema.u64s) // Select collection of DenoKvU64 values
    *  .min("num1", 100n)
    * ```
    *
@@ -278,7 +283,7 @@ export class AtomicBuilder<
    * @param value - The value to compare with the existing value.
    * @returns Current AtomicBuilder instance.
    */
-  min(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never): this {
+  min(id: KvId, value: TOutput extends DenoKvU64 ? bigint : never): this {
     const idKey = extendKey(this.collection._keys.id, id)
     this.operations.atomic.min(idKey, value)
     return this
@@ -287,12 +292,12 @@ export class AtomicBuilder<
   /**
    * Sets the document value to the maximum of the existing and the given value.
    *
-   * max only works for documents of type Deno.KvU64 and will throw an error for documents of any other type.
+   * max only works for documents of type DenoKvU64 and will throw an error for documents of any other type.
    *
    * @example
    * ```ts
    * db
-   *  .atomic(schema => schema.u64s) // Select collection of Deno.KvU64 values
+   *  .atomic(schema => schema.u64s) // Select collection of DenoKvU64 values
    *  .max("num1", 100n)
    * ```
    *
@@ -300,7 +305,7 @@ export class AtomicBuilder<
    * @param value - The value to compare with the existing value.
    * @returns Current AtomicBuilder instance.
    */
-  max(id: KvId, value: TOutput extends Deno.KvU64 ? bigint : never): this {
+  max(id: KvId, value: TOutput extends DenoKvU64 ? bigint : never): this {
     const idKey = extendKey(this.collection._keys.id, id)
     this.operations.atomic.max(idKey, value)
     return this
@@ -321,7 +326,7 @@ export class AtomicBuilder<
    *    {
    *      type: "set",
    *      id: "num2",
-   *      value: new Deno.KvU64(200n)
+   *      value: new DenoKvU64(200n)
    *    }
    *  )
    * ```
@@ -386,7 +391,7 @@ export class AtomicBuilder<
    *
    * @param data - Data to be added to the collection queue.
    * @param options - Enqueue options, optional.
-   * @returns A promise resolving to Deno.KvCommitResult.
+   * @returns A promise resolving to DenoKvCommitResult.
    */
   enqueue(data: KvValue, options?: EnqueueOptions): this {
     // Prepare and add enqueue operation
@@ -407,9 +412,9 @@ export class AtomicBuilder<
    * Executes the built atomic operation.
    * Will always fail if trying to delete and add/set to the same indexable collection in the same operation.
    *
-   * @returns A promise that resolves to a Deno.KvCommitResult if the operation is successful, or Deno.KvCommitError if not.
+   * @returns A promise that resolves to a DenoKvCommitResult if the operation is successful, or DenoKvCommitError if not.
    */
-  async commit(): Promise<Deno.KvCommitResult | Deno.KvCommitError> {
+  async commit(): Promise<DenoKvCommitResult | DenoKvCommitError> {
     // Perform async mutations
     for (const mut of this.operations.asyncMutations) {
       await mut()
