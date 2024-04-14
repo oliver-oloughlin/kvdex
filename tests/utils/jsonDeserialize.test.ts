@@ -8,7 +8,7 @@ Deno.test("utils - jsonDeserialize", async (t) => {
     () => {
       const serialized = VALUES.map(jsonSerialize)
       const deserialized = serialized.map(jsonDeserialize)
-      assertEquals(serialized, deserialized)
+      assertEquals(VALUES, deserialized)
     },
   )
 })
