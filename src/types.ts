@@ -713,10 +713,11 @@ export type KvValue =
 
 /********************/
 /*                  */
-/*  DenoKV TYPES   */
+/*  DenoKV TYPES    */
 /*                  */
 /********************/
 
+/** Deno [KvKeyPart](https://deno.land/api?s=Deno.KvKeyPart&unstable=) (strict) substitute type */
 export type DenoKvStrictKeyPart =
   | boolean
   | string
@@ -724,82 +725,184 @@ export type DenoKvStrictKeyPart =
   | bigint
   | Uint8Array
 
+/** Deno [KvKeyPart](https://deno.land/api?s=Deno.KvKeyPart&unstable=) (relaxed) substitute type */
 export type DenoKvLaxKeyPart = DenoKvStrictKeyPart | symbol
 
+/** Deno [KvKey](https://deno.land/api?s=Deno.KvKey&unstable=) (strict) substitute type */
 export type DenoKvStrictKey = DenoKvStrictKeyPart[]
 
+/** Deno [KvKey](https://deno.land/api?s=Deno.KvKey&unstable=) (relaxed) substitute type */
 export type DenoKvLaxKey = DenoKvLaxKeyPart[]
 
+/** Deno [KvU64](https://deno.land/api?s=Deno.KvU64&unstable=) substitute type */
 export type DenoKvU64 = {
+  /** The value of this unsigned 64-bit integer, represented as a bigint.  */
   value: bigint
 }
 
+/** Deno [KvCommitError](https://deno.land/api?s=Deno.KvCommitError&unstable=) substitute type */
 export type DenoKvCommitError = {
   ok: false
 }
 
+/** Deno [KvCommitResult](https://deno.land/api?s=Deno.KvCommitResult&unstable=) substitute type */
 export type DenoKvCommitResult = {
   ok: true
+
+  /** The versionstamp of the value committed to KV. */
   versionstamp: string
 }
 
+/** Deno [AtomicCheck](https://deno.land/api?s=Deno.AtomicCheck&unstable=) substitute type */
 export type DenoAtomicCheck = {
   key: DenoKvStrictKey
   versionstamp: string | null
 }
 
+/** Deno [KvEnqueueOptions](https://deno.land/api?s=Deno.Kv&unstable=&p=prototype.enqueue) substitute type */
 export type DenoKvEnqueueOptions = {
+  /**
+   * The delay option can be used to specify the delay (in milliseconds) of the value delivery.
+   * The default delay is 0, which means immediate delivery.
+   *
+   * @default 0
+   */
   delay?: number
+
+  /**
+   * Can be used to specify the keys to be set if the value is not successfully delivered to the queue listener after several attempts.
+   * The values are set to the value of the queued message.
+   */
   keysIfUndelivered?: DenoKvStrictKey[]
+
+  /**
+   * Can be used to specify the retry policy for failed message delivery.
+   * Each element in the array represents the number of milliseconds to wait before retrying the delivery.
+   * For example, [1000, 5000, 10000] means that a failed delivery will be retried at most 3 times, with 1 second, 5 seconds, and 10 seconds delay between each retry.
+   */
   backoffSchedule?: number[]
 }
 
+/** Deno [KvEntry](https://deno.land/api?s=Deno.KvEntry&unstable=) substitute type */
 export type DenoKvEntry = {
   key: Readonly<DenoKvLaxKey>
   value: unknown
   versionstamp: string
 }
 
+/** Deno [KvEntryNull](https://deno.land/api?s=Deno.KvEntryMaybe&unstable=) substitute type */
 export type DenoKvEntryNull = {
   key: Readonly<DenoKvLaxKey>
   value: null
   versionstamp: null
 }
 
+/** Deno [KvEntryMaybe](https://deno.land/api?s=Deno.KvEntryMaybe&unstable=) substitute type */
 export type DenoKvEntryMaybe = DenoKvEntry | DenoKvEntryNull
 
-export type DenoKvConsistency = "strong" | "eventual"
+/** Deno [KvConsistencyLevel](https://deno.land/api?s=Deno.KvConsistencyLevel&unstable=) substitute type */
+export type DenoKvConsistencyLevel = "strong" | "eventual"
 
+/** Deno [KvGetOptions](https://deno.land/api?s=Deno.Kv&unstable=&p=prototype.get) substitute type */
 export type DenoKvGetOptions = {
-  consistency?: DenoKvConsistency
+  /**
+   * The consistency option can be used to specify the consistency level for the read operation.
+   * The default consistency level is "strong". Some use cases can benefit from using a weaker consistency level.
+   * For more information on consistency levels, see the documentation for [Deno.KvConsistencyLevel](https://deno.land/api?s=Deno.KvConsistencyLevel&unstable=).
+   *
+   * @default "strong"
+   */
+  consistency?: DenoKvConsistencyLevel
 }
 
+/** Deno [KvSetOptions](https://deno.land/api?s=Deno.Kv&unstable=&p=prototype.set) substitute type */
 export type DenoKvSetOptions = {
+  /**
+   * Optionally set a time-to-live (TTL) for the key.
+   * The TTL is specified in milliseconds, and the key will be deleted from the database at earliest after the specified number of milliseconds have elapsed.
+   * Once the specified duration has passed, the key may still be visible for some additional time.
+   * If the expireIn option is not specified, the key will not expire.
+   */
   expireIn?: number
 }
 
+/** Deno [KvWatchOptions](https://deno.land/api?s=Deno.Kv&unstable=&p=prototype.watch) substitute type */
 export type DenoKvWatchOptions = {
+  /**
+   * Specify whether a new value should be emitted whenever a mutation occurs on any of the watched keys
+   * (even if the value of the key does not change, such as deleting a deleted key),
+   * or only when entries have observably changed in some way.
+   * When `raw: true` is used, it is possible for the stream to occasionally emit values even if no mutations have occurred on any of the watched keys.
+   * The default value for this option is `false`.
+   *
+   * @default false
+   */
   raw?: boolean
 }
 
+/** Deno [KvListSelector](https://deno.land/api?s=Deno.KvListSelector&unstable=) substitute type */
 export type DenoKvListSelector =
   | { prefix: DenoKvStrictKey }
   | { prefix: DenoKvStrictKey; start: DenoKvStrictKey }
   | { prefix: DenoKvStrictKey; end: DenoKvStrictKey }
   | { start: DenoKvStrictKey; end: DenoKvStrictKey }
 
+/** Deno [KvListOptions](https://deno.land/api?s=Deno.KvListOptions&unstable=) substitute type */
 export type DenoKvListOptions = {
+  /** The maximum number of values to return from the database. If not specified, all matching values will be returned. */
   limit?: number
+
+  /** The cursor to resume the iteration from. If not specified, the iteration will start from the beginning. */
   cursor?: string
+
+  /**
+   * Whether to reverse the order of the returned values.
+   * If not specified, the order will be ascending from the start of the range as per the lexicographical ordering of the keys.
+   * If true, the order will be descending from the end of the range.
+   *
+   * @default false
+   */
   reverse?: boolean
-  consistency?: DenoKvConsistency
+
+  /**
+   * The consistency level of the list operation.
+   * The default consistency level is "strong".
+   * Some use cases can benefit from using a weaker consistency level.
+   * For more information on consistency levels, see the documentation for [Deno.KvConsistencyLevel](https://deno.land/api?s=Deno.KvConsistencyLevel&unstable=).
+   *
+   * List operations are performed in batches (in sizes specified by the `batchSize` option).
+   * The consistency level of the list operation is applied to each batch individually.
+   * This means that while each batch is guaranteed to be consistent within itself,
+   * the entire list operation may not be consistent across batches because a mutation may be applied to a key-value pair between batches,
+   * in a batch that has already been returned by the list operation.
+   *
+   * @default "strong"
+   */
+  consistency?: DenoKvConsistencyLevel
+
+  /**
+   * The size of the batches in which the list operation is performed.
+   * Larger or smaller batch sizes may positively or negatively affect the performance of a list operation depending on the specific use case and iteration behavior.
+   * Slow iterating queries may benefit from using a smaller batch size for increased overall consistency,
+   * while fast iterating queries may benefit from using a larger batch size for better performance.
+   *
+   * The default batch size is equal to the limit option, or 100 if this is unset.
+   * The maximum value for this option is 500. Larger values will be clamped.
+   */
   batchSize?: number
 }
 
+/** Deno [KVListIterator](https://deno.land/api?s=Deno.KvListIterator&unstable=) substitute type */
 export type DenoKvListIterator = AsyncIterableIterator<DenoKvEntryMaybe> & {
+  /**
+   * Cursor of the current position in the iteration.
+   * This cursor can be used to resume iteration from the current position in the future
+   * by passing it to any of the list operations (e.g. `getMany()`, `map()`, `forEach()` etc).
+   */
   cursor: string
 }
 
+/** Deno [AtomicOperation](deno.land/api?s=Deno.AtomicOperation&unstable=) substitute type */
 export type DenoAtomicOperation = {
   set(
     key: DenoKvStrictKey,
@@ -822,6 +925,7 @@ export type DenoAtomicOperation = {
   commit(): Promise<DenoKvCommitError | DenoKvCommitResult>
 }
 
+/** Deno [KV](https://deno.land/api?s=Deno.Kv&unstable=) substitute type */
 export type DenoKv = {
   atomic(): DenoAtomicOperation
 
@@ -862,10 +966,3 @@ export type DenoKv = {
     options?: DenoKvWatchOptions,
   ): ReadableStream<DenoKvEntryMaybe[]>
 }
-
-function check(_: DenoKv) {}
-
-import type { Kv } from "npm:@deno/kv"
-
-check(null as unknown as Deno.Kv)
-check(null as unknown as Kv)
