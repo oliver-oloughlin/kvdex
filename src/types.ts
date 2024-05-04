@@ -712,6 +712,7 @@ export type KvValue =
   | Uint32Array
   | BigUint64Array
   | Uint8ClampedArray
+  | Float16Array
   | Float32Array
   | Float64Array
   | ArrayBuffer
