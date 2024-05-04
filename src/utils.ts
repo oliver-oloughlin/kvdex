@@ -128,6 +128,7 @@ export function isKvObject(value: unknown) {
     value instanceof Uint32Array ||
     value instanceof BigUint64Array ||
     value instanceof Uint8ClampedArray ||
+    value instanceof Float16Array ||
     value instanceof Float32Array ||
     value instanceof Float64Array ||
     value instanceof ArrayBuffer ||
@@ -590,6 +591,7 @@ export enum TypeKey {
   Uint32Array = "__uint32array__",
   BigUint64Array = "__biguint64array__",
   Uint8ClampedArray = "__uint8clampedarray__",
+  Float16Array = "__float16array__",
   Float32Array = "__float32array__",
   Float64Array = "__float64array__",
   ArrayBuffer = "__arraybuffer__",
@@ -949,6 +951,13 @@ export function _replacer(value: unknown): unknown {
     }
   }
 
+  // Float16Array
+  if (value instanceof Float16Array) {
+    return {
+      [TypeKey.Float16Array]: Array.from(value),
+    }
+  }
+
   // Float32Array
   if (value instanceof Float32Array) {
     return {
@@ -1087,6 +1096,11 @@ export function _reviver(value: unknown): unknown {
   // Uint8ClampedArray
   if (TypeKey.Uint8ClampedArray in value) {
     return Uint8ClampedArray.from(mapValue(TypeKey.Uint8ClampedArray, value))
+  }
+
+  // Float16Array
+  if (TypeKey.Float16Array in value) {
+    return Float16Array.from(mapValue(TypeKey.Float16Array, value))
   }
 
   // Float32Array
