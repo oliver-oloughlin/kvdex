@@ -8,6 +8,7 @@ import {
 } from "../../ext/zod.ts"
 import { collection, kvdex } from "../../mod.ts"
 import { useKv } from "../utils.ts"
+import { VALUES } from "../values.ts"
 
 const UserSchema = z.object({
   username: z.string(),
@@ -38,36 +39,6 @@ const notKvArray = [Symbol("test")]
 const notKvValues = [Symbol(), notKvObject, notKvArray]
 
 const kvArray = ["test", 10, true, 10n]
-
-const kvValues = [
-  undefined,
-  null,
-  "string",
-  10,
-  true,
-  10n,
-  new Deno.KvU64(10n),
-  kvObject,
-  kvArray,
-  new Int8Array(),
-  new Int16Array(),
-  new Int32Array(),
-  new BigInt64Array(),
-  new Uint8Array(),
-  new Uint16Array(),
-  new Uint32Array(),
-  new BigUint64Array(),
-  new Uint8ClampedArray(),
-  new Float32Array(),
-  new Float64Array(),
-  new ArrayBuffer(16),
-  new Date(),
-  new Set<number>().add(10),
-  new Map<string, number>().set("test", 10),
-  new RegExp(""),
-  new DataView(new ArrayBuffer(16)),
-  new Error("test"),
-]
 
 Deno.test("ext - zod", async (t) => {
   await t.step("Should correctly parse insert model", async () => {
@@ -173,7 +144,10 @@ Deno.test("ext - zod", async (t) => {
   await t.step(
     "KvValueSchema should only successfully parse values according to KvValue",
     () => {
-      kvValues.forEach((val) => assert(KvValueSchema.safeParse(val).success))
+      VALUES.forEach((val) => {
+        console.log(KvValueSchema.safeParse(val).success, val)
+        assert(KvValueSchema.safeParse(val).success)
+      })
 
       notKvValues.forEach(
         (val) => assert(!KvValueSchema.safeParse(val).success),
