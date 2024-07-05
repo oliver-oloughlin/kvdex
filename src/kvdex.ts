@@ -416,13 +416,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     // Add interval listener
     const listener = this.listenQueue<IntervalMessage>(async (msg) => {
       // Check if while condition is met, terminate interval if false
-      let shouldContinue = true
-      try {
-        shouldContinue = await options?.while?.(msg) ?? false
-      } catch (e) {
-        console.error(e)
-      }
-
+      const shouldContinue = options?.while?.(msg) ?? true
       if (!shouldContinue) {
         await options?.onExit?.(msg)
         return
@@ -527,32 +521,16 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     // Add loop listener
     const listener = this.listenQueue<LoopMessage<Awaited<T1>>>(async (msg) => {
       // Check if while condition is met, terminate loop if false
-      let shouldContinue = true
-      try {
-        shouldContinue = await options?.while?.(msg) ?? false
-      } catch (e) {
-        console.error(e)
-      }
-
+      const shouldContinue = await options?.while?.(msg) ?? true
       if (!shouldContinue) {
         await options?.onExit?.(msg)
         return
       }
 
       // Set the next delay
-      let delay = 0
-      try {
-        if (typeof options?.delay === "function") {
-          delay = await options.delay(msg)
-        } else {
-          delay = options?.delay ?? 0
-        }
-      } catch (e) {
-        console.error(
-          `An error was caught while setting the next callback delay for loop {ID = ${id}}`,
-          e,
-        )
-      }
+      const delay = typeof options?.delay === "function"
+        ? await options.delay(msg)
+        : options?.delay ?? 0
 
       // Run task
       const result = await fn(msg)

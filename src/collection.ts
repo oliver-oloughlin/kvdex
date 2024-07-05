@@ -512,15 +512,13 @@ export class Collection<
         // Set history entry
         historyEntry = {
           ...historyEntry,
-          value: this._model.__validate?.(deserialized) ??
-            this._model.parse(deserialized as any),
+          value: this._model.parse?.(deserialized),
         }
       } else if (historyEntry.type === "write") {
         // Set history entry
         historyEntry = {
           ...historyEntry,
-          value: this._model.__validate?.(historyEntry.value) ??
-            this._model.parse(historyEntry.value as any),
+          value: this._model.parse?.(historyEntry.value),
         }
       }
 
@@ -1869,7 +1867,9 @@ export class Collection<
     options: SetOptions | undefined,
   ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     // Create id, document key and parse document value
-    const parsed = this._model.parse(value as TInput)
+    const parsed = this._model._transform?.(value as TInput) ??
+      this._model.parse(value)
+
     const docId = id ?? await this._idGenerator(parsed)
     const idKey = extendKey(this._keys.id, docId)
     return await this.setDoc(docId, idKey, parsed, options)
@@ -2132,8 +2132,7 @@ export class Collection<
       : deepMerge({ value }, { value: data }, options?.mergeOptions).value
 
     // Parse updated value
-    const parsed = this._model.__validate?.(updated) ??
-      this._model.parse(updated as any)
+    const parsed = this._model.parse(updated as any)
 
     // Set new document value
     return await this.setDoc(

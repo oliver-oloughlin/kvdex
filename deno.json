@@ -3,8 +3,8 @@
   "version": "1.0.2",
   "exports": {
     ".": "./mod.ts",
-    "./ext/zod": "./ext/zod.ts",
-    "./ext/migrate": "./ext/migrate.ts"
+    "./zod": "./ext/zod.ts",
+    "./migrate": "./ext/migrate.ts"
   },
   "tasks": {
     "check": "deno check mod.ts src/*.ts ext/*.ts tests/*.ts tests/**/*.ts benchmarks/**/*ts",
@@ -18,7 +18,8 @@
   },
   "lint": {
     "rules": {
-      "exclude": ["no-explicit-any"]
+      "exclude": ["no-explicit-any"],
+      "include": ["no-console"]
     }
   },
   "test": {

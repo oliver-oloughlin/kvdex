@@ -20,7 +20,7 @@ export class Document<const TOutput extends KvValue> {
   ) {
     this.id = id
     this.versionstamp = versionstamp
-    this.value = model.__validate?.(value) ?? model.parse(value)
+    this.value = model.parse(value)
   }
 
   /**

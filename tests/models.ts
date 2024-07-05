@@ -24,7 +24,7 @@ export const UserSchema = z.object({
   address: AddressSchema,
 })
 
-export const TransformUserModel = model<User, OutputUser>((user) => ({
+export const TransformUserModel = model<OutputUser, User>((user) => ({
   name: user.username,
   decadeAge: user.age / 10,
   addressStr: `${user.address.city}, ${user.address.country}`,

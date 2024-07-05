@@ -27,19 +27,14 @@ import type { KvValue, Model } from "./types.ts"
  * @returns A standard model.
  */
 export function model<
-  const TInput = unknown,
-  const TOutput extends KvValue = TInput extends KvValue ? TInput : KvValue,
+  const TOutput extends KvValue,
+  const TInput = TOutput,
 >(
   transform?: (data: TInput) => TOutput,
 ): Model<TInput, TOutput> {
-  if (transform) {
-    return {
-      parse: (data) => transform(data),
-      __validate: (data) => data as TOutput,
-    }
-  }
-
   return {
-    parse: (value) => value as unknown as TOutput,
+    parse: (data) => data as TOutput,
+    _transform: transform,
+    _input: null as TInput,
   }
 }

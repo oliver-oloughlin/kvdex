@@ -4,7 +4,6 @@ import {
   KvIdSchema,
   KvObjectSchema,
   KvValueSchema,
-  zodModel,
 } from "../../ext/zod.ts"
 import { collection, kvdex } from "../../mod.ts"
 import { useKv } from "../utils.ts"
@@ -44,14 +43,14 @@ Deno.test("ext - zod", async (t) => {
   await t.step("Should correctly parse insert model", async () => {
     await useKv(async (kv) => {
       const db = kvdex(kv, {
-        users: collection(zodModel(UserSchema)),
-        i_users: collection(zodModel(UserSchema), {
+        users: collection(UserSchema),
+        i_users: collection(UserSchema, {
           indices: {
             username: "primary",
             age: "secondary",
           },
         }),
-        s_users: collection(zodModel(UserSchema), { serialize: "json" }),
+        s_users: collection(UserSchema, { serialize: "json" }),
       })
 
       const cr1 = await db.users.add({
@@ -89,14 +88,14 @@ Deno.test("ext - zod", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
-          users: collection(zodModel(UserSchema)),
-          i_users: collection(zodModel(UserSchema), {
+          users: collection(UserSchema),
+          i_users: collection(UserSchema, {
             indices: {
               username: "primary",
               age: "secondary",
             },
           }),
-          l_users: collection(zodModel(UserSchema)),
+          l_users: collection(UserSchema),
         })
 
         // Default values should not be inferred as optional when selecting
@@ -145,7 +144,6 @@ Deno.test("ext - zod", async (t) => {
     "KvValueSchema should only successfully parse values according to KvValue",
     () => {
       VALUES.forEach((val) => {
-        console.log(KvValueSchema.safeParse(val).success, val)
         assert(KvValueSchema.safeParse(val).success)
       })
 
