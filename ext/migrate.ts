@@ -11,7 +11,7 @@
  * pass --all to migrate all entries.
  *
  * ```console
- * deno run -A --unstable-kv jsr:@olli/kvdex/ext/migrate --source=./source.sqlite3 --target=./target.sqlite3
+ * deno run -A --unstable-kv jsr:@olli/kvdex/migrate --source=./source.sqlite3 --target=./target.sqlite3
  * ```
  *
  * ## Function
@@ -20,7 +20,7 @@
  * Optionally pass `all: true` to migrate all entries.
  *
  * ```ts
- * import { migrate } from "jsr:@olli/kvdex/ext/migrate"
+ * import { migrate } from "jsr:@olli/kvdex/migrate"
  *
  * const source = await Deno.openKv("./source.sqlite3")
  * const target = await Deno.openKv("./target.sqlite3")
