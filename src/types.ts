@@ -80,7 +80,7 @@ export type SetIntervalOptions = {
   /** Condition used to determine if the interval should continue running */
   while?: (msg: IntervalMessage) => boolean | Promise<boolean>
 
-  /** Task to be run when terminating the interval, executed after `exitOn()` returns true. */
+  /** Task to be run when terminating the interval, executed after `while()` returns true. */
   onExit?: (msg: IntervalMessage) => unknown
 
   /**
@@ -133,7 +133,7 @@ export type LoopOptions<T> = {
   /** Condition used to determine if the loop should continue running */
   while?: (msg: LoopMessage<T>) => boolean | Promise<boolean>
 
-  /** Task to be run when terminating the loop, executed after `exitOn()` returns true. */
+  /** Task to be run when terminating the loop, executed after `while()` returns true. */
   onExit?: (msg: LoopMessage<T>) => unknown
 
   /**
@@ -308,15 +308,16 @@ export type ParseInputType<TInput, TOutput extends KvValue> = TInput extends
  * Contains a parse function, and optionally a `__validate()` function used instead of parse upon reading data.
  */
 export type Model<TInput, TOutput extends KvValue> = {
-  /** A parse function that takes an input type and returns an output type */
-  parse: (data: TInput) => TOutput
+  /** A parse function that takes data as an argument and returns the parsed output */
+  parse(data: unknown): TOutput
 
   /**
-   * An optional validate function that takes any input value and returns an output type.
-   *
-   * Is used instead of `parse()` upon reading a document.
+   * An optional transform function that takes an input value as argument and returns the output type.
    */
-  __validate?: (data: unknown) => TOutput
+  _transform?(input: TInput): TOutput
+
+  /** Used to determine the input type */
+  _input: TInput
 }
 
 /** Historic write entry */

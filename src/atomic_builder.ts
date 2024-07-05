@@ -495,7 +495,10 @@ export class AtomicBuilder<
     this.operations.asyncMutations.push(async () => {
       // Create id key from collection id key and id
       const collection = this.collection
-      const parsed = collection._model.parse(value as TInput)
+
+      const parsed = collection._model._transform?.(value as TInput) ??
+        collection._model.parse(value)
+
       const docId = id ?? await collection._idGenerator(parsed)
       const idKey = extendKey(collection._keys.id, docId)
 

@@ -35,6 +35,17 @@
 import { parseArgs } from "jsr:@std/cli@^0.217/parse_args"
 import { KVDEX_KEY_PREFIX } from "../src/constants.ts"
 
+export class NoKvFoundError extends Error {
+  name = "NoKvFoundError"
+
+  constructor(
+    message?: string | undefined,
+    options?: ErrorOptions | undefined,
+  ) {
+    super(message, options)
+  }
+}
+
 if (import.meta.main) {
   const { source, target, all } = parseArgs(Deno.args, {
     string: ["source", "target"],
@@ -42,17 +53,15 @@ if (import.meta.main) {
   })
 
   if (!source) {
-    console.log(
+    throw new NoKvFoundError(
       "A source KV path to export from must be provided using the --source argument",
     )
-    Deno.exit()
   }
 
   if (!target) {
-    console.log(
+    throw new NoKvFoundError(
       "A target KV path to export to must be provided using the --target argument",
     )
-    Deno.exit()
   }
 
   using sourceKv = await Deno.openKv(source)
