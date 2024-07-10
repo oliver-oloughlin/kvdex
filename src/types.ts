@@ -467,15 +467,15 @@ export type ListOptions<T> = Omit<DenoKvListOptions, "limit"> & {
   /** Id of document to end at. */
   endId?: KvId
 
-  /** Max number of documents that are read from the KV store. */
+  /** Max number of documents that are read from the KV store. Applies before before filtering. */
   limit?: number
 
-  /** Max number of documents that are returned. Differs from "limit" by applying after documents are read from the KV store. */
-  resultLimit?: number
+  /** Max number of documents that are returned. Differs from "limit" by applying after documents are read from the KV store and filtered. */
+  take?: number
 }
 
 /** Options for handling one listed document */
-export type HandleOneOptions<T> = Omit<ListOptions<T>, "resultLimit">
+export type HandleOneOptions<T> = Omit<ListOptions<T>, "take">
 
 /** Options for finding a single document */
 export type FindOptions = NonNullable<Parameters<DenoKv["get"]>[1]>

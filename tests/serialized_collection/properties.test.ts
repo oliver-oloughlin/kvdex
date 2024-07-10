@@ -251,7 +251,7 @@ Deno.test("serialized_collection - properties", async (t) => {
       assert(cr3.ok)
 
       const { result } = await db.s_users.getMany({
-        resultLimit: 2,
+        take: 2,
         filter: (doc) => doc.value.username !== mockUser1.username,
       })
 
