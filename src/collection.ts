@@ -1034,7 +1034,7 @@ export class Collection<
     const { result } = await this.handleMany(
       this._keys.id,
       (doc) => this.updateDocument(doc, data, options),
-      { ...options, resultLimit: 1 },
+      { ...options, take: 1 },
     )
 
     // Return first result, or commit error object if not present
@@ -1087,7 +1087,7 @@ export class Collection<
     const { result } = await this.handleMany(
       prefixKey,
       (doc) => this.updateDocument(doc, data, options),
-      { ...options, resultLimit: 1 },
+      { ...options, take: 1 },
     )
 
     // Return first result, or commit error object if not present
@@ -1287,7 +1287,7 @@ export class Collection<
     const { result } = await this.handleMany(
       this._keys.id,
       (doc) => doc,
-      { ...options, resultLimit: 1 },
+      { ...options, take: 1 },
     )
 
     // Return first result item, or null if not present
@@ -1336,7 +1336,7 @@ export class Collection<
     const { result } = await this.handleMany(
       prefixKey,
       (doc) => doc,
-      { ...options, resultLimit: 1 },
+      { ...options, take: 1 },
     )
 
     // Return first result item, or null if not present
@@ -2228,7 +2228,7 @@ export class Collection<
     const docs: Document<TOutput>[] = []
     const result: Awaited<T>[] = []
     const errors: unknown[] = []
-    const resultLimit = options?.resultLimit
+    const take = options?.take
 
     // Loop over each document entry
     let count = -1
@@ -2243,7 +2243,7 @@ export class Collection<
       }
 
       // Check if result limit is reached
-      if (resultLimit && docs.length >= resultLimit) {
+      if (take && docs.length >= take) {
         break
       }
 
