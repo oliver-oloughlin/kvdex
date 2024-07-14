@@ -27,7 +27,6 @@ import type {
   Model,
   Pagination,
   PaginationResult,
-  ParseInputType,
   PossibleCollectionOptions,
   PrimaryIndexKeys,
   PrimaryIndexUpsert,
@@ -552,7 +551,7 @@ export class Collection<
    * @returns Promise resolving to a CommitResult or CommitError.
    */
   async add(
-    value: ParseInputType<TInput, TOutput>,
+    value: TInput,
     options?: SetOptions,
   ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     // Set document value with generated id
@@ -579,7 +578,7 @@ export class Collection<
    */
   async set(
     id: KvId,
-    data: ParseInputType<TInput, TOutput>,
+    data: TInput,
     options?: SetOptions,
   ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     return await this.setDocument(id, data, options)
@@ -1122,7 +1121,7 @@ export class Collection<
    * @returns A promise that resolves to a list of CommitResults or CommitErrors.
    */
   async addMany(
-    values: ParseInputType<TInput, TOutput>[],
+    values: TInput[],
     options?: SetOptions,
   ): Promise<ManyCommitResult | DenoKvCommitError> {
     // Initiate result and error lists
@@ -1863,7 +1862,7 @@ export class Collection<
    */
   private async setDocument(
     id: KvId | null,
-    value: ParseInputType<TInput, TOutput>,
+    value: TInput,
     options: SetOptions | undefined,
   ): Promise<CommitResult<TOutput> | DenoKvCommitError> {
     // Create id, document key and parse document value
