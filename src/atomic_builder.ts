@@ -18,7 +18,6 @@ import type {
   KvObject,
   KvValue,
   Operations,
-  ParseInputType,
   Schema,
   SchemaDefinition,
 } from "./types.ts"
@@ -126,7 +125,7 @@ export class AtomicBuilder<
    * @returns Current AtomicBuilder instance.
    */
   add(
-    value: ParseInputType<TInput, TOutput>,
+    value: TInput,
     options?: AtomicSetOptions,
   ): this {
     return this.setDocument(null, value, options)
@@ -152,7 +151,7 @@ export class AtomicBuilder<
    */
   set(
     id: KvId,
-    value: ParseInputType<TInput, TOutput>,
+    value: TInput,
     options?: AtomicSetOptions,
   ): this {
     return this.setDocument(id, value, options)
@@ -335,7 +334,7 @@ export class AtomicBuilder<
    * @returns Current AtomicBuilder instance.
    */
   mutate(
-    ...mutations: AtomicMutation<ParseInputType<TInput, TOutput>>[]
+    ...mutations: AtomicMutation<TInput>[]
   ): this {
     // Add each atomic mutation by case
     mutations.forEach(({ id, ...rest }) => {
@@ -489,7 +488,7 @@ export class AtomicBuilder<
    */
   private setDocument(
     id: KvId | null,
-    value: ParseInputType<TInput, TOutput>,
+    value: TInput,
     options?: AtomicSetOptions,
   ) {
     this.operations.asyncMutations.push(async () => {

@@ -299,10 +299,6 @@ export type CollectionKeys = {
   historySegment: KvKey
 }
 
-/** Parses the input type of a model */
-export type ParseInputType<TInput, TOutput extends KvValue> = TInput extends
-  KvValue ? TInput : TOutput
-
 /**
  * Model describing the input and output type of data.
  * Contains a parse function, and optionally a `__validate()` function used instead of parse upon reading data.
@@ -561,7 +557,7 @@ export type IdUpsert<
   id: KvId
 
   /** New value */
-  set: ParseInputType<TInput, TOutput>
+  set: TInput
 
   /** Update value */
   update: UpdateData<TOutput, TStrategy>
@@ -581,7 +577,7 @@ export type PrimaryIndexUpsert<
   index: [TIndex, CheckKeyOf<TIndex, TOutput>]
 
   /** New value */
-  set: ParseInputType<TInput, TOutput>
+  set: TInput
 
   /** Update value */
   update: UpdateData<TOutput, TStrategy>
