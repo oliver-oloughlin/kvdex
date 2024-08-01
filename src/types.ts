@@ -286,7 +286,7 @@ export type CollectionOptions<T extends KvValue> =
   )
 
 export type ParseId<T extends CollectionOptions<any>> = T["idGenerator"] extends
-  IdGenerator<KvValue, infer Id> ? Id : string
+  IdGenerator<any, any> ? Awaited<ReturnType<T["idGenerator"]>> : string
 
 /** Utility type for accessing all possible collection options */
 export type PossibleCollectionOptions = CollectionOptions<Record<string, never>>

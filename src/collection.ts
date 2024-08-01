@@ -466,7 +466,7 @@ export class Collection<
    * @returns A promise resolving to a list of history entries.
    */
   async findHistory(
-    id: KvId,
+    id: ParseId<TOptions>,
     options?: ListOptions<HistoryEntry<TOutput>, ParseId<TOptions>>,
   ): Promise<PaginationResult<HistoryEntry<TOutput>>> {
     // Initialize result list and create history key prefix
@@ -600,7 +600,7 @@ export class Collection<
    * @param ids - IDs of documents to be deleted.
    * @returns A promise that resovles to void.
    */
-  async delete(...ids: KvId[]): Promise<void> {
+  async delete(...ids: ParseId<TOptions>[]): Promise<void> {
     await this.deleteDocuments(ids, this._keepsHistory)
   }
 
@@ -1787,7 +1787,7 @@ export class Collection<
    *
    * @param id - Document id.
    */
-  async deleteHistory(id: KvId): Promise<void> {
+  async deleteHistory(id: ParseId<TOptions>): Promise<void> {
     // Initialize atomic operation and create iterators
     const atomic = new AtomicWrapper(this.kv)
     const historyKeyPrefix = extendKey(this._keys.history, id)

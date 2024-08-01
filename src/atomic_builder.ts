@@ -14,7 +14,6 @@ import type {
   DenoKvU64,
   EnqueueOptions,
   HistoryEntry,
-  KvId,
   KvObject,
   KvValue,
   Operations,
@@ -164,7 +163,7 @@ export class AtomicBuilder<
    * @returns Current AtomicBuilder instance.
    */
   set(
-    id: KvId,
+    id: ParseId<TOptions>,
     value: TInput,
     options?: AtomicSetOptions,
   ): this {
@@ -184,7 +183,7 @@ export class AtomicBuilder<
    * @param id - Id of document to be deleted.
    * @returns Current AtomicBuilder instance.
    */
-  delete(id: KvId): this {
+  delete(id: ParseId<TOptions>): this {
     // Create id key from id and collection id key
     const collection = this.collection
     const idKey = extendKey(collection._keys.id, id)
@@ -274,7 +273,10 @@ export class AtomicBuilder<
    * @param value - The value to add to the document value.
    * @returns Current AtomicBuilder instance.
    */
-  sum(id: KvId, value: TOutput extends DenoKvU64 ? bigint : never): this {
+  sum(
+    id: ParseId<TOptions>,
+    value: TOutput extends DenoKvU64 ? bigint : never,
+  ): this {
     const idKey = extendKey(this.collection._keys.id, id)
     this.operations.atomic.sum(idKey, value)
     return this
@@ -296,7 +298,10 @@ export class AtomicBuilder<
    * @param value - The value to compare with the existing value.
    * @returns Current AtomicBuilder instance.
    */
-  min(id: KvId, value: TOutput extends DenoKvU64 ? bigint : never): this {
+  min(
+    id: ParseId<TOptions>,
+    value: TOutput extends DenoKvU64 ? bigint : never,
+  ): this {
     const idKey = extendKey(this.collection._keys.id, id)
     this.operations.atomic.min(idKey, value)
     return this
@@ -318,7 +323,10 @@ export class AtomicBuilder<
    * @param value - The value to compare with the existing value.
    * @returns Current AtomicBuilder instance.
    */
-  max(id: KvId, value: TOutput extends DenoKvU64 ? bigint : never): this {
+  max(
+    id: ParseId<TOptions>,
+    value: TOutput extends DenoKvU64 ? bigint : never,
+  ): this {
     const idKey = extendKey(this.collection._keys.id, id)
     this.operations.atomic.max(idKey, value)
     return this
@@ -501,7 +509,7 @@ export class AtomicBuilder<
    * @returns
    */
   private setDocument(
-    id: KvId | null,
+    id: ParseId<TOptions> | null,
     value: TInput,
     options?: AtomicSetOptions,
   ) {
