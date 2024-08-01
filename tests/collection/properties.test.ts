@@ -47,7 +47,7 @@ Deno.test("collection - properties", async (t) => {
       const cr = await db.users.addMany(users)
       assert(cr.ok)
 
-      const selected: Document<User>[] = []
+      const selected: Document<User, string>[] = []
       let cursor: string | undefined = undefined
       do {
         const query = await db.users.getMany({
@@ -73,7 +73,7 @@ Deno.test("collection - properties", async (t) => {
       const cr = await db.users.addMany(users)
       assert(cr.ok)
 
-      const selected: Document<User>[] = []
+      const selected: Document<User, string>[] = []
       const limit = 50
       for (let offset = 0; offset < users.length; offset += limit) {
         const { result } = await db.users.getMany({ offset, limit })

@@ -40,10 +40,10 @@ export type KeysOfThatDontExtend<T1, T2> = keyof {
 }
 
 /** Successful commit result object */
-export type CommitResult<T1 extends KvValue> = {
+export type CommitResult<T1 extends KvValue, T2 extends KvId> = {
   ok: true
-  versionstamp: Document<T1>["versionstamp"]
-  id: KvId
+  versionstamp: Document<T1, T2>["versionstamp"]
+  id: T2
 }
 
 /** Many commit result object */
@@ -62,7 +62,9 @@ export type PaginationResult<T> = Pagination & {
 }
 
 /** Id generator function */
-export type IdGenerator<T extends KvValue> = (data: T) => KvId | Promise<KvId>
+export type IdGenerator<T1 extends KvValue, T2 extends KvId> = (
+  data: T1,
+) => T2 | Promise<T2>
 
 /**********************/
 /*                    */
@@ -193,9 +195,10 @@ export type CollectionSelector<
   TSchema extends Schema<SchemaDefinition>,
   TInput,
   TOutput extends KvValue,
+  TOptions extends CollectionOptions<TOutput>,
 > = (
   schema: TSchema,
-) => Collection<TInput, TOutput, CollectionOptions<TOutput>>
+) => Collection<TInput, TOutput, TOptions>
 
 /** Prepared value delete function */
 export type PrepareDeleteFn = (kv: DenoKv) => Promise<PreparedIndexDelete>
@@ -216,41 +219,41 @@ export type Operations = {
 }
 
 /** Kvdex atomic check */
-export type AtomicCheck<T extends KvValue> = {
+export type AtomicCheck<T1 extends KvValue, T2 extends KvId> = {
   /** Id of document to check */
-  id: Document<T>["id"]
+  id: Document<T1, T2>["id"]
 
   /** Versionstamp of document to check */
-  versionstamp: Document<T>["versionstamp"]
+  versionstamp: Document<T1, T2>["versionstamp"]
 }
 
 /** Atomic mutation object */
-export type AtomicMutation<T> =
+export type AtomicMutation<T1, T2 extends KvId> =
   & {
-    id: KvId
+    id: T2
   }
   & (
     | {
       type: "set"
-      value: T
+      value: T1
       expireIn?: number
     }
     | {
       type: "add"
-      value: T
+      value: T1
       expireIn?: number
     }
     | {
       type: "sum"
-      value: T extends DenoKvU64 ? bigint : never
+      value: T1 extends DenoKvU64 ? bigint : never
     }
     | {
       type: "min"
-      value: T extends DenoKvU64 ? bigint : never
+      value: T1 extends DenoKvU64 ? bigint : never
     }
     | {
       type: "max"
-      value: T extends DenoKvU64 ? bigint : never
+      value: T1 extends DenoKvU64 ? bigint : never
     }
     | {
       type: "delete"
@@ -271,7 +274,7 @@ export type AtomicSetOptions = NonNullable<
 /** Options for creating a new collection */
 export type CollectionOptions<T extends KvValue> =
   & {
-    idGenerator?: IdGenerator<T>
+    idGenerator?: IdGenerator<T, KvId>
     serialize?: SerializeOptions
     history?: true
   }
@@ -282,10 +285,11 @@ export type CollectionOptions<T extends KvValue> =
       : { [K in never]: never }
   )
 
+export type ParseId<T extends CollectionOptions<any>> = T["idGenerator"] extends
+  IdGenerator<any, any> ? Awaited<ReturnType<T["idGenerator"]>> : string
+
 /** Utility type for accessing all possible collection options */
-export type PossibleCollectionOptions = CollectionOptions<
-  Record<string, never>
->
+export type PossibleCollectionOptions = CollectionOptions<Record<string, never>>
 
 /** Record of all collection keys */
 export type CollectionKeys = {
@@ -441,37 +445,42 @@ export type SetOptions = NonNullable<Parameters<DenoKv["set"]>["2"]> & {
 }
 
 /** Options for listing documents */
-export type ListOptions<T> = Omit<DenoKvListOptions, "limit"> & {
-  /**
-   * Filter result based on predicate.
-   *
-   * @param value - Input value.
-   * @returns true or false.
-   */
-  filter?: (value: T) => boolean
+export type ListOptions<T1, T2 extends KvId> =
+  & Omit<DenoKvListOptions, "limit">
+  & {
+    /**
+     * Filter result based on predicate.
+     *
+     * @param value - Input value.
+     * @returns true or false.
+     */
+    filter?: (value: T1) => boolean
 
-  /**
-   * Number of documents to offset by.
-   *
-   * If set, the underlying limit for the KV.list operation is set equal to offset + limit.
-   */
-  offset?: number
+    /**
+     * Number of documents to offset by.
+     *
+     * If set, the underlying limit for the KV.list operation is set equal to offset + limit.
+     */
+    offset?: number
 
-  /** Id of document to start from. */
-  startId?: KvId
+    /** Id of document to start from. */
+    startId?: T2
 
-  /** Id of document to end at. */
-  endId?: KvId
+    /** Id of document to end at. */
+    endId?: T2
 
-  /** Max number of documents that are read from the KV store. Applies before before filtering. */
-  limit?: number
+    /** Max number of documents that are read from the KV store. Applies before before filtering. */
+    limit?: number
 
-  /** Max number of documents that are returned. Differs from "limit" by applying after documents are read from the KV store and filtered. */
-  take?: number
-}
+    /** Max number of documents that are returned. Differs from "limit" by applying after documents are read from the KV store and filtered. */
+    take?: number
+  }
 
 /** Options for handling one listed document */
-export type HandleOneOptions<T> = Omit<ListOptions<T>, "take">
+export type HandleOneOptions<T1, T2 extends KvId> = Omit<
+  ListOptions<T1, T2>,
+  "take"
+>
 
 /** Options for finding a single document */
 export type FindOptions = NonNullable<Parameters<DenoKv["get"]>[1]>
@@ -506,17 +515,17 @@ export type UpdateOptions = Omit<SetOptions, "overwrite"> & {
 export type UpdateStrategy = "replace" | "merge" | "merge-shallow"
 
 /** Options for updating many documents */
-export type UpdateManyOptions<T> =
-  & ListOptions<T>
+export type UpdateManyOptions<T1, T2 extends KvId> =
+  & ListOptions<T1, T2>
   & UpdateOptions
 
 /** Options for updating one listed document */
-export type UpdateOneOptions<T> =
-  & HandleOneOptions<T>
+export type UpdateOneOptions<T1, T2 extends KvId> =
+  & HandleOneOptions<T1, T2>
   & UpdateOptions
 
 /** Options for counting all documents */
-export type CountAllOptions = Pick<ListOptions<any>, "consistency">
+export type CountAllOptions = Pick<ListOptions<any, KvId>, "consistency">
 
 /** Options for enqueing messages */
 export type EnqueueOptions =
@@ -552,9 +561,10 @@ export type IdUpsert<
   TInput,
   TOutput extends KvValue,
   TStrategy extends UpdateStrategy | undefined,
+  TId extends KvId,
 > = {
   /** Document id to upsert by */
-  id: KvId
+  id: TId
 
   /** New value */
   set: TInput
@@ -569,9 +579,10 @@ export type PrimaryIndexUpsert<
   TOutput extends KvValue,
   TIndex,
   TStrategy extends UpdateStrategy | undefined,
+  TId extends KvId,
 > = {
   /** Id of document if new value is set */
-  id?: KvId
+  id?: TId
 
   /** Document index to upsert by */
   index: [TIndex, CheckKeyOf<TIndex, TOutput>]
@@ -649,19 +660,19 @@ export type UpdateData<
 > = TStrategy extends "replace" ? TOutput : Partial<TOutput>
 
 /** Flattened document data */
-export type FlatDocumentData<T extends KvValue> =
-  & Omit<DocumentData<T>, "value">
+export type FlatDocumentData<T1 extends KvValue, T2 extends KvId> =
+  & Omit<DocumentData<T1, T2>, "value">
   & (
-    T extends KvObject ? T : {
-      readonly value: T
+    T1 extends KvObject ? T1 : {
+      readonly value: T1
     }
   )
 
 /** Document data */
-export type DocumentData<T> = {
-  readonly id: KvId
+export type DocumentData<T1, T2 extends KvId> = {
+  readonly id: T2
   readonly versionstamp: string
-  readonly value: T
+  readonly value: T1
 }
 
 /****************/

@@ -460,9 +460,9 @@ export function parseQueueMessage<T extends KvValue>(
  * @param options - List options.
  * @returns A list selector.
  */
-export function createListSelector<T>(
+export function createListSelector<T1, T2 extends KvId>(
   prefixKey: KvKey,
-  options: ListOptions<T> | undefined,
+  options: ListOptions<T1, T2> | undefined,
 ): DenoKvListSelector {
   // Create start key
   const start = typeof options?.startId !== "undefined"
@@ -493,7 +493,9 @@ export function createListSelector<T>(
  * @param options
  * @returns
  */
-export function createListOptions<T>(options: ListOptions<T> | undefined) {
+export function createListOptions<T1, T2 extends KvId>(
+  options: ListOptions<T1, T2> | undefined,
+) {
   const limit = options?.limit && options.limit + (options.offset ?? 0)
   return {
     ...options,
@@ -507,8 +509,8 @@ export function createListOptions<T>(options: ListOptions<T> | undefined) {
  * @param options - List options.
  * @returns true if list options selects all entries, false if potentially not.
  */
-export function selectsAll<T>(
-  options: ListOptions<T> | undefined,
+export function selectsAll<T1, T2 extends KvId>(
+  options: ListOptions<T1, T2> | undefined,
 ) {
   return (
     !options?.consistency &&

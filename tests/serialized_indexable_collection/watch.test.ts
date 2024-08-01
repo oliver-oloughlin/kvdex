@@ -8,7 +8,7 @@ Deno.test("serialized_indexable_collection - watch", async (t) => {
   await t.step("Should receive all document updates", async () => {
     await useDb(async (db) => {
       const id = "id"
-      const docs: (Document<User> | null)[] = []
+      const docs: (Document<User, string> | null)[] = []
 
       const watcher = db.is_users.watch(id, (doc) => {
         docs.push(doc)

@@ -154,9 +154,18 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    * @param selector - Collection selector function.
    * @returns A new AtomicBuilder instance.
    */
-  atomic<const TInput, const TOutput extends KvValue>(
-    selector: CollectionSelector<TSchema, TInput, TOutput>,
-  ): AtomicBuilder<TSchema, TInput, TOutput> {
+  atomic<
+    const TInput,
+    const TOutput extends KvValue,
+    const TOptions extends CollectionOptions<TOutput>,
+  >(
+    selector: CollectionSelector<TSchema, TInput, TOutput, TOptions>,
+  ): AtomicBuilder<
+    TSchema,
+    TInput,
+    TOutput,
+    TOptions
+  > {
     return new AtomicBuilder(this.kv, this.schema, selector(this.schema))
   }
 
@@ -312,10 +321,10 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    * @param options - Find options, optional.
    * @returns Document if found, null if not.
    */
-  async findUndelivered<const T extends KvValue>(
-    id: KvId,
+  async findUndelivered<const T1 extends KvValue, const T2 extends KvId>(
+    id: T2,
     options?: FindOptions,
-  ): Promise<Document<T> | null> {
+  ): Promise<Document<T1, T2> | null> {
     // Create document key, get document entry
     const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id)
     const result = await this.kv.get(key, options)
@@ -326,10 +335,10 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     }
 
     // Return document
-    return new Document(model<T, T>(), {
+    return new Document(model<T1, T1>(), {
       id,
       versionstamp: result.versionstamp,
-      value: result.value as T,
+      value: result.value as T1,
     })
   }
 

@@ -10,7 +10,7 @@ Deno.test("collection - watchMany", async (t) => {
       const id1 = "id1"
       const id2 = "id2"
       const id3 = "id3"
-      const snapshots: (Document<User> | null)[][] = []
+      const snapshots: (Document<User, string> | null)[][] = []
 
       await db.users.set(id3, mockUser1)
 

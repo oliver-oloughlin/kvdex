@@ -12,7 +12,7 @@ Deno.test("indexable_collection - forEachBySecondaryIndex", async (t) => {
         const cr = await db.i_users.addMany([mockUser1, mockUser2, mockUser3])
         assert(cr.ok)
 
-        const docs: Document<User>[] = []
+        const docs: Document<User, string>[] = []
         await db.i_users.forEachBySecondaryIndex(
           "age",
           mockUser1.age,
