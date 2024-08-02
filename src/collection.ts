@@ -1840,6 +1840,16 @@ export class Collection<
    * })
    * ```
    *
+   * @example Cancel a watcher.
+   * ```ts
+   * const { promise, cancel } = db.numbers.watch("id", (doc) => {
+   *   // ...
+   * })
+   *
+   * await cancel()
+   * await promise
+   * ```
+   *
    * @param id - Id of document to watch for.
    * @param fn - Callback function to be invoked on each update.
    * @param options - Watch options.
@@ -1884,6 +1894,19 @@ export class Collection<
    *   console.log(docs[1]?.value) // null, 20, 20
    *   console.log(docs[2]?.value) // null, null, 30
    * })
+   * ```
+   *
+   * @example Cancel a watcher.
+   * ```ts
+   * const { promise, cancel } = db.numbers.watchMany(
+   *   ["id1", "id2", "id3"],
+   *   (docs) => {
+   *     // ...
+   *   },
+   * )
+   *
+   * await cancel()
+   * await promise
    * ```
    *
    * @param ids - List of ids of documents to watch.
