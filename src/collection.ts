@@ -1936,29 +1936,6 @@ export class Collection<
     })
   }
 
-  watchByPrimaryIndex<const K extends PrimaryIndexKeys<TOutput, TOptions>>(
-    index: K,
-    value: CheckKeyOf<K, TOutput>,
-    fn: (doc: Document<TOutput, ParseId<TOptions>> | null) => unknown,
-    options?: WatchOptions,
-  ) {
-    const key = extendKey(this._keys.primaryIndex, index as KvId, value as KvId)
-
-    return createWatcher(this.kv, options, [key], async (entries) => {
-      const entry = entries.at(0)
-
-      // If no entry is found, invoke callback function with null
-      if (!entry) {
-        await fn(null)
-        return
-      }
-
-      // Construct document and invoke callback function
-      const doc = await this.constructDocument(entry)
-      await fn(doc)
-    })
-  }
-
   /***********************/
   /*                     */
   /*   PRIVATE METHODS   */
