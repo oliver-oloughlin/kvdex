@@ -18,9 +18,12 @@ Deno.test({
 
         await db.s_users.set(id3, mockUser1)
 
-        const watcher = db.s_users.watchMany([id1, id2, id3], (docs) => {
-          snapshots.push(docs)
-        })
+        const { promise, cancel } = db.s_users.watchMany(
+          [id1, id2, id3],
+          (docs) => {
+            snapshots.push(docs)
+          },
+        )
 
         const cr1 = await db.s_users.set(id1, mockUser1)
         await sleep(500)
@@ -75,7 +78,8 @@ Deno.test({
             doc3?.value.username === mockUser3.username
         }))
 
-        return async () => await watcher
+        await cancel()
+        await promise
       })
     })
 
@@ -88,10 +92,13 @@ Deno.test({
         let count = 0
         let lastDocs: any[] = []
 
-        const watcher = db.s_users.watchMany([id1, id2, id3], (docs) => {
-          count++
-          lastDocs = docs
-        })
+        const { promise, cancel } = db.s_users.watchMany(
+          [id1, id2, id3],
+          (docs) => {
+            count++
+            lastDocs = docs
+          },
+        )
 
         await db.s_users.set(id4, mockUser1)
         await sleep(500)
@@ -107,7 +114,8 @@ Deno.test({
         assert(lastDocs[1] === null)
         assert(lastDocs[2] === null)
 
-        return async () => await watcher
+        await cancel()
+        await promise
       })
     })
   },

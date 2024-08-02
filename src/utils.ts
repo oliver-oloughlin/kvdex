@@ -4,6 +4,7 @@ import type {
   AtomicSetOptions,
   DenoAtomicOperation,
   DenoKv,
+  DenoKvEntryMaybe,
   DenoKvListSelector,
   DenoKvStrictKey,
   EnqueueOptions,
@@ -17,6 +18,7 @@ import type {
   ParsedQueueMessage,
   PreparedEnqueue,
   QueueMessage,
+  WatchOptions,
 } from "./types.ts"
 import {
   brotliCompressSync,
@@ -521,6 +523,47 @@ export function selectsAll<T1, T2 extends KvId>(
     !options?.limit &&
     !options?.offset
   )
+}
+
+export function createWatcher(
+  collection: Collection<any, any, any>,
+  kv: DenoKv,
+  options: WatchOptions | undefined,
+  ids: KvId[],
+  fn: (entries: DenoKvEntryMaybe[]) => unknown,
+): {
+  promise: Promise<void>
+  cancel: () => Promise<void>
+} {
+  // Create watch stream
+  const keys = ids.map((id) => extendKey(collection._keys.id, id))
+  const stream = kv.watch(keys, options)
+  const reader = stream.getReader()
+
+  // Receive incoming updates
+  const promise = async () => {
+    let isDone = false
+    while (!isDone) {
+      try {
+        const { value, done } = await reader.read()
+        if (value) {
+          await fn(value)
+        }
+
+        isDone = done
+      } catch (_) {
+        isDone = true
+      }
+    }
+  }
+
+  // Create cancel function
+  async function cancel() {
+    reader.releaseLock()
+    await stream.cancel()
+  }
+
+  return { promise: promise(), cancel }
 }
 
 /**

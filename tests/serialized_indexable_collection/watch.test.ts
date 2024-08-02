@@ -10,7 +10,7 @@ Deno.test("serialized_indexable_collection - watch", async (t) => {
       const id = "id"
       const docs: (Document<User, string> | null)[] = []
 
-      const watcher = db.is_users.watch(id, (doc) => {
+      const { promise, cancel } = db.is_users.watch(id, (doc) => {
         docs.push(doc)
       })
 
@@ -28,7 +28,8 @@ Deno.test("serialized_indexable_collection - watch", async (t) => {
       assert(docs.some((doc) => doc?.value.username === mockUser3.username))
       assert(docs.some((doc) => doc === null))
 
-      return async () => await watcher
+      await cancel()
+      await promise
     })
   })
 
@@ -40,7 +41,7 @@ Deno.test("serialized_indexable_collection - watch", async (t) => {
       let username = ""
       let lastDoc: any
 
-      const watcher = db.is_users.watch(id1, (doc) => {
+      const { promise, cancel } = db.is_users.watch(id1, (doc) => {
         count++
         lastDoc = doc
         if (doc?.value.username) {
@@ -62,7 +63,8 @@ Deno.test("serialized_indexable_collection - watch", async (t) => {
       assert(username === "")
       assert(lastDoc === null)
 
-      return async () => await watcher
+      await cancel()
+      await promise
     })
   })
 })

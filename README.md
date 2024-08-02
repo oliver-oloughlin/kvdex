@@ -955,6 +955,17 @@ db.numbers.watch("id", (doc) => {
 })
 ```
 
+Watchers can also be stopped.
+
+```ts
+const { promise, cancel } = db.numbers.watch("id", (doc) => {
+  // ...
+})
+
+await cancel()
+await promise
+```
+
 ### watchMany()
 
 Listen for live changes to an array of specified documents by id.
@@ -972,6 +983,20 @@ db.numbers.watchMany(["id1", "id2", "id3"], (docs) => {
   console.log(docs[1]?.value) // null, 20, 20
   console.log(docs[2]?.value) // null, null, 30
 })
+```
+
+Watchers can also be stopped.
+
+```ts
+const { promise, cancel } = db.numbers.watchMany(
+  ["id1", "id2", "id3"],
+  (docs) => {
+    // ...
+  },
+)
+
+await cancel()
+await promise
 ```
 
 ## Database Methods
