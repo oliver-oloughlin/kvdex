@@ -53,7 +53,7 @@ Deno.test("serialized_collection - properties", async (t) => {
       const cr = await db.s_users.addMany(users)
       assert(cr.ok)
 
-      const selected: Document<User>[] = []
+      const selected: Document<User, string>[] = []
       let cursor: string | undefined = undefined
       do {
         const query = await db.s_users.getMany({
@@ -79,7 +79,7 @@ Deno.test("serialized_collection - properties", async (t) => {
       const cr = await db.s_users.addMany(users)
       assert(cr.ok)
 
-      const selected: Document<User>[] = []
+      const selected: Document<User, string>[] = []
       const limit = 50
       for (let offset = 0; offset < users.length; offset += limit) {
         const { result } = await db.s_users.getMany({ offset, limit })
@@ -251,7 +251,7 @@ Deno.test("serialized_collection - properties", async (t) => {
       assert(cr3.ok)
 
       const { result } = await db.s_users.getMany({
-        resultLimit: 2,
+        take: 2,
         filter: (doc) => doc.value.username !== mockUser1.username,
       })
 

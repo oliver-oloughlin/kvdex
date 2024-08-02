@@ -11,15 +11,18 @@ Deno.test("indexable_collection - watchMany", async (t) => {
       const id2 = "id2"
       const id3 = "id3"
       const generatedUser = generateUsers(1)[0]
-      const snapshots: (Document<User> | null)[][] = []
+      const snapshots: (Document<User, string> | null)[][] = []
 
       await db.i_users.set(id3, generatedUser)
 
       await sleep(500)
 
-      const watcher = db.i_users.watchMany([id1, id2, id3], (docs) => {
-        snapshots.push(docs)
-      })
+      const { promise, cancel } = db.i_users.watchMany(
+        [id1, id2, id3],
+        (docs) => {
+          snapshots.push(docs)
+        },
+      )
 
       const cr1 = await db.i_users.set(id1, mockUser1)
       await sleep(500)
@@ -74,7 +77,8 @@ Deno.test("indexable_collection - watchMany", async (t) => {
           doc3?.value.username === mockUser3.username
       }))
 
-      return async () => await watcher
+      await cancel()
+      await promise
     })
   })
 
@@ -87,10 +91,13 @@ Deno.test("indexable_collection - watchMany", async (t) => {
       let count = 0
       let lastDocs: any[] = []
 
-      const watcher = db.i_users.watchMany([id1, id2, id3], (docs) => {
-        count++
-        lastDocs = docs
-      })
+      const { promise, cancel } = db.i_users.watchMany(
+        [id1, id2, id3],
+        (docs) => {
+          count++
+          lastDocs = docs
+        },
+      )
 
       await db.i_users.set(id4, mockUser1)
       await sleep(500)
@@ -106,7 +113,8 @@ Deno.test("indexable_collection - watchMany", async (t) => {
       assert(lastDocs[1] === null)
       assert(lastDocs[2] === null)
 
-      return async () => await watcher
+      await cancel()
+      await promise
     })
   })
 })

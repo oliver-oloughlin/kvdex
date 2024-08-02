@@ -4,6 +4,7 @@ import type {
   AtomicSetOptions,
   DenoAtomicOperation,
   DenoKv,
+  DenoKvEntryMaybe,
   DenoKvListSelector,
   DenoKvStrictKey,
   EnqueueOptions,
@@ -17,6 +18,7 @@ import type {
   ParsedQueueMessage,
   PreparedEnqueue,
   QueueMessage,
+  WatchOptions,
 } from "./types.ts"
 import {
   brotliCompressSync,
@@ -460,9 +462,9 @@ export function parseQueueMessage<T extends KvValue>(
  * @param options - List options.
  * @returns A list selector.
  */
-export function createListSelector<T>(
+export function createListSelector<T1, T2 extends KvId>(
   prefixKey: KvKey,
-  options: ListOptions<T> | undefined,
+  options: ListOptions<T1, T2> | undefined,
 ): DenoKvListSelector {
   // Create start key
   const start = typeof options?.startId !== "undefined"
@@ -493,7 +495,9 @@ export function createListSelector<T>(
  * @param options
  * @returns
  */
-export function createListOptions<T>(options: ListOptions<T> | undefined) {
+export function createListOptions<T1, T2 extends KvId>(
+  options: ListOptions<T1, T2> | undefined,
+) {
   const limit = options?.limit && options.limit + (options.offset ?? 0)
   return {
     ...options,
@@ -507,8 +511,8 @@ export function createListOptions<T>(options: ListOptions<T> | undefined) {
  * @param options - List options.
  * @returns true if list options selects all entries, false if potentially not.
  */
-export function selectsAll<T>(
-  options: ListOptions<T> | undefined,
+export function selectsAll<T1, T2 extends KvId>(
+  options: ListOptions<T1, T2> | undefined,
 ) {
   return (
     !options?.consistency &&
@@ -519,6 +523,45 @@ export function selectsAll<T>(
     !options?.limit &&
     !options?.offset
   )
+}
+
+export function createWatcher(
+  kv: DenoKv,
+  options: WatchOptions | undefined,
+  keys: KvKey[],
+  fn: (entries: DenoKvEntryMaybe[]) => unknown,
+): {
+  promise: Promise<void>
+  cancel: () => Promise<void>
+} {
+  // Create watch stream
+  const stream = kv.watch(keys, options)
+  const reader = stream.getReader()
+
+  // Receive incoming updates
+  const promise = async () => {
+    let isDone = false
+    while (!isDone) {
+      try {
+        const { value, done } = await reader.read()
+        if (value) {
+          await fn(value)
+        }
+
+        isDone = done
+      } catch (_) {
+        isDone = true
+      }
+    }
+  }
+
+  // Create cancel function
+  async function cancel() {
+    reader.releaseLock()
+    await stream.cancel()
+  }
+
+  return { promise: promise(), cancel }
 }
 
 /**

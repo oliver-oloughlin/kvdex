@@ -8,9 +8,9 @@ Deno.test("indexable_collection - watch", async (t) => {
   await t.step("Should receive all document updates", async () => {
     await useDb(async (db) => {
       const id = "id"
-      const docs: (Document<User> | null)[] = []
+      const docs: (Document<User, string> | null)[] = []
 
-      const watcher = db.i_users.watch(id, (doc) => {
+      const { promise, cancel } = db.i_users.watch(id, (doc) => {
         docs.push(doc)
       })
 
@@ -32,7 +32,8 @@ Deno.test("indexable_collection - watch", async (t) => {
       assert(docs.some((doc) => doc?.value.username === mockUser3.username))
       assert(docs.some((doc) => doc === null))
 
-      return async () => await watcher
+      await cancel()
+      await promise
     })
   })
 
@@ -44,7 +45,7 @@ Deno.test("indexable_collection - watch", async (t) => {
       let username = ""
       let lastDoc: any
 
-      const watcher = db.i_users.watch(id1, (doc) => {
+      const { promise, cancel } = db.i_users.watch(id1, (doc) => {
         count++
         lastDoc = doc
         if (doc?.value.username) {
@@ -66,7 +67,8 @@ Deno.test("indexable_collection - watch", async (t) => {
       assert(username === "")
       assert(lastDoc === null)
 
-      return async () => await watcher
+      await cancel()
+      await promise
     })
   })
 })

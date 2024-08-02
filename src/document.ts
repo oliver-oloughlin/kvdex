@@ -9,18 +9,18 @@ import type {
 import { isKvObject } from "./utils.ts"
 
 /** Represents a database entry with id, versionstamp and value. */
-export class Document<const TOutput extends KvValue> {
-  readonly id: KvId
+export class Document<const TOutput extends KvValue, const TId extends KvId> {
+  readonly id: TId
   readonly versionstamp: string
   readonly value: TOutput
 
   constructor(
     model: Model<any, TOutput>,
-    { id, versionstamp, value }: DocumentData<TOutput>,
+    { id, versionstamp, value }: DocumentData<TOutput, TId>,
   ) {
     this.id = id
     this.versionstamp = versionstamp
-    this.value = model.__validate?.(value) ?? model.parse(value)
+    this.value = model.parse(value)
   }
 
   /**
@@ -52,19 +52,19 @@ export class Document<const TOutput extends KvValue> {
    * @returns Object containing the id, versionstamp and value entries
    * for documents of type Model, else simply returns the document data.
    */
-  flat(): FlatDocumentData<TOutput> {
+  flat(): FlatDocumentData<TOutput, TId> {
     if (isKvObject(this.value)) {
       return {
         id: this.id,
         versionstamp: this.versionstamp,
         ...this.value as KvObject,
-      } as unknown as FlatDocumentData<TOutput>
+      } as unknown as FlatDocumentData<TOutput, TId>
     }
 
     return {
       id: this.id,
       versionstamp: this.versionstamp,
       value: this.value,
-    } as unknown as FlatDocumentData<TOutput>
+    } as unknown as FlatDocumentData<TOutput, TId>
   }
 }

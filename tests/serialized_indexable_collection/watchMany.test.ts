@@ -11,7 +11,7 @@ Deno.test("serialized_indexable_collection - watchMany", async (t) => {
       const id2 = "id2"
       const id3 = "id3"
       const generatedUser = generateUsers(1)[0]
-      const snapshots: (Document<User> | null)[][] = []
+      const snapshots: (Document<User, string> | null)[][] = []
 
       await db.is_users.set(id3, generatedUser)
 

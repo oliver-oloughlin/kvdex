@@ -1,41 +1,7 @@
 /**
  * @module # Zod
  *
- * Extended support for Zod. Includes a model parser and schemas for some KV-types.
- *
- * ## zodModel()
- *
- * Provides additional compatibility when using zod schemas as models. While zod
- * schemas can be used as models directly, `zodModel()` properly parses a model
- * from a zod schema, recognizing default fields as optional.
- *
- * ```ts
- * import { z } from "npm:zod"
- * import { zodModel } from "jsr:@olli/kvdex/ext/zod"
- * import { collection, kvdex } from "jsr:@olli/kvdex"
- *
- * const UserSchema = z.object({
- *   username: z.string(),
- *   gender: z.string().default("not given"),
- * })
- *
- * const kv = await Deno.openKv()
- *
- * const db = kvdex(kv, {
- *   users_basic: collection(UserSchema),
- *   users_zod: collection(zodModel(UserSchema)),
- * })
- *
- * // Produces a type error for missing "gender" field.
- * const result = await db.users_basic.add({
- *   username: "oliver",
- * })
- *
- * // No type error for missing "gender" field.
- * const result = await db.users_zod.add({
- *   username: "oliver",
- * })
- * ```
+ * Extended support for Zod. Includes schemas for some of the KV-types.
  *
  * ## Schemas
  *
@@ -45,7 +11,7 @@
  *
  * ```ts
  * import { z } from "npm:zod"
- * import { KvIdSchema } from "jsr:@olli/kvdex/ext/zod"
+ * import { KvIdSchema } from "jsr:@olli/kvdex/zod"
  *
  * const UserSchema = z.object({
  *   username: z.string(),
@@ -60,7 +26,7 @@
  */
 
 import { z } from "npm:zod@^3.22"
-import type { KvArray, KvId, KvObject, KvValue, Model } from "../src/types.ts"
+import type { KvArray, KvId, KvObject, KvValue } from "../src/types.ts"
 
 /*******************/
 /*                 */
@@ -118,48 +84,3 @@ export const KvObjectSchema: z.ZodType<KvObject> = z.record(
   z.string().or(z.number()),
   KvValueSchema,
 )
-
-/*****************/
-/*               */
-/*   FUNCTIONS   */
-/*               */
-/*****************/
-
-/**
- * Create a model from a Zod schema.
- *
- * Correctly parses the input model from the given schema.
- *
- * @example
- * ```ts
- * import { z } from "npm:zod"
- * import { zodModel } from "jsr:@olli/kvdex/ext/zod"
- * import { collection, kvdex } from "jsr:@olli/kvdex"
- *
- * const UserSchema = z.object({
- *   username: z.string(),
- *   gender: z.string().default("undefined"),
- * })
- *
- * const kv = await Deno.openKv()
- *
- * const db = kvdex(kv, {
- *   users: collection(zodModel(UserSchema)),
- * })
- *
- * // No type error for missing "gender" field.
- * const result2 = await db.users.add({
- *   username: "oliver",
- * })
- * ```
- *
- * @param schema - Zod schema.
- * @returns A model with inferred input and output types.
- */
-export function zodModel<const T extends z.ZodType<KvValue>>(
-  schema: T,
-): Model<z.input<T>, z.infer<T>> {
-  return {
-    parse: (data) => schema.parse(data),
-  }
-}

@@ -97,7 +97,6 @@ _Supported Deno verisons:_ **^1.43.0**
     - [jsonParse()](#jsonparse)
   - [Extensions](#extensions)
     - [Zod](#zod)
-      - [zodModel()](#zodmodel)
       - [Schemas](#schemas)
     - [Migrate](#migrate)
       - [Script](#script)
@@ -109,14 +108,13 @@ _Supported Deno verisons:_ **^1.43.0**
 ## Models
 
 Collections are typed using models. Standard models can be defined using the
-`model()` function. Alternatively, any object that implements the Model type can
-be used as a model. Zod is therefore compatible, without being a dependency (see
-[zodModel()](#zodmodel) for additional support). The standard model uses type
-casting only, and does not validate any data when parsing. Asymmetric models can
-be created by passing a transform function which maps from an input type to an
-output type. Asymmetric models are useful for storing derived values or filling
-default values. It is up to the developer to choose the strategy that fits their
-use case the best.
+`model()` function. Alternatively, any object that is compatible with the Model
+type can be used as a model. Zod is therefore supported, without being a
+dependency. The standard model uses type casting only, and does not validate any
+data when parsing. Asymmetric models can be created by passing a transform
+function which maps from an input type to an output type. Asymmetric models are
+useful for storing derived values or filling default values. It is up to the
+developer to choose the strategy that fits their use case the best.
 
 **_NOTE_:** When using interfaces instead of types, they must extend the KvValue
 type.
@@ -957,6 +955,17 @@ db.numbers.watch("id", (doc) => {
 })
 ```
 
+Watchers can also be stopped.
+
+```ts
+const { promise, cancel } = db.numbers.watch("id", (doc) => {
+  // ...
+})
+
+await cancel()
+await promise
+```
+
 ### watchMany()
 
 Listen for live changes to an array of specified documents by id.
@@ -974,6 +983,20 @@ db.numbers.watchMany(["id1", "id2", "id3"], (docs) => {
   console.log(docs[1]?.value) // null, 20, 20
   console.log(docs[2]?.value) // null, null, 30
 })
+```
+
+Watchers can also be stopped.
+
+```ts
+const { promise, cancel } = db.numbers.watchMany(
+  ["id1", "id2", "id3"],
+  (docs) => {
+    // ...
+  },
+)
+
+await cancel()
+await promise
 ```
 
 ## Database Methods
@@ -1317,57 +1340,22 @@ const value = jsonParse(str)
 ## Extensions
 
 Additional features outside of the basic functionality provided by `kvdex`.
-While the basic functions are dependency-free, extended features may rely on
-some dependenices to enhance integration. All extensions are found in the
-`kvdex/ext/` sub-path.
+While the core functionalities are dependency-free, extended features may rely
+on some dependenices to enhance integration.
 
 ### Zod
 
-Extended support for Zod. Includes a model parser and schemas for some KV-types.
-
-#### zodModel()
-
-Provides additional compatibility when using zod schemas as models. While zod
-schemas can be used as models directly, `zodModel()` properly parses a model
-from a zod schema, recognizing default fields as optional.
-
-```ts
-import { z } from "npm:zod"
-import { zodModel } from "jsr:@olli/kvdex/ext/zod"
-import { collection, kvdex } from "jsr:@olli/kvdex"
-
-const UserSchema = z.object({
-  username: z.string(),
-  gender: z.string().default("not given"),
-})
-
-const kv = await Deno.openKv()
-
-const db = kvdex(kv, {
-  users_basic: collection(UserSchema),
-  users_zod: collection(zodModel(UserSchema)),
-})
-
-// Produces a type error for missing "gender" field.
-const result = await db.users_basic.add({
-  username: "oliver",
-})
-
-// No type error for missing "gender" field.
-const result = await db.users_zod.add({
-  username: "oliver",
-})
-```
+Extended support for Zod. Includes schemas for some of the KV-types.
 
 #### Schemas
 
-The zod extension provides schemas for some of the Kv-types, such as KvId,
+The zod extension provides schemas for some of the KV-types, such as KvId,
 KvValue, KvObject and KvArray. This makes it easier to properly build your
 schemas.
 
 ```ts
 import { z } from "npm:zod"
-import { KvIdSchema } from "jsr:@olli/kvdex/ext/zod"
+import { KvIdSchema } from "jsr:@olli/kvdex/zod"
 
 const UserSchema = z.object({
   username: z.string(),
@@ -1392,7 +1380,7 @@ Run the migrate script and provide --source and --target arguments. Optionally
 pass --all to migrate all entries.
 
 ```console
-deno run -A --unstable-kv jsr:@olli/kvdex/ext/migrate --source=./source.sqlite3 --target=./target.sqlite3
+deno run -A --unstable-kv jsr:@olli/kvdex/migrate --source=./source.sqlite3 --target=./target.sqlite3
 ```
 
 #### Function
@@ -1401,7 +1389,7 @@ Use the migrate function and pass a source KV instance and a target KV instance.
 Optionally pass `all: true` to migrate all entries.
 
 ```ts
-import { migrate } from "jsr:@olli/kvdex/ext/migrate"
+import { migrate } from "jsr:@olli/kvdex/migrate"
 
 const source = await Deno.openKv("./source.sqlite3")
 const target = await Deno.openKv("./target.sqlite3")

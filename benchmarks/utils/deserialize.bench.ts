@@ -9,13 +9,16 @@ import {
 const js = jsonSerialize(obj)
 const ds = v8Serialize(obj)
 
-console.log("JSON size:", js.byteLength / 1024 / 1024, "MB")
-console.log("V8 size:", ds.byteLength / 1024 / 1024, "MB")
+Deno.bench(
+  `utils - jsonDeserialize (${js.byteLength / 1024 / 1024} MB)`,
+  () => {
+    jsonDeserialize(js)
+  },
+)
 
-Deno.bench("utils - jsonDeserialize", () => {
-  jsonDeserialize(js)
-})
-
-Deno.bench("utils - v8Deserialize", () => {
-  v8Deserialize(ds)
-})
+Deno.bench(
+  `utils - v8Deserialize - (${ds.byteLength / 1024 / 1024} MS)`,
+  () => {
+    v8Deserialize(ds)
+  },
+)

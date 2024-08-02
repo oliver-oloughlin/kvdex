@@ -11,7 +11,7 @@
  * pass --all to migrate all entries.
  *
  * ```console
- * deno run -A --unstable-kv jsr:@olli/kvdex/ext/migrate --source=./source.sqlite3 --target=./target.sqlite3
+ * deno run -A --unstable-kv jsr:@olli/kvdex/migrate --source=./source.sqlite3 --target=./target.sqlite3
  * ```
  *
  * ## Function
@@ -20,7 +20,7 @@
  * Optionally pass `all: true` to migrate all entries.
  *
  * ```ts
- * import { migrate } from "jsr:@olli/kvdex/ext/migrate"
+ * import { migrate } from "jsr:@olli/kvdex/migrate"
  *
  * const source = await Deno.openKv("./source.sqlite3")
  * const target = await Deno.openKv("./target.sqlite3")
@@ -35,6 +35,17 @@
 import { parseArgs } from "jsr:@std/cli@^0.217/parse_args"
 import { KVDEX_KEY_PREFIX } from "../src/constants.ts"
 
+export class NoKvFoundError extends Error {
+  name = "NoKvFoundError"
+
+  constructor(
+    message?: string | undefined,
+    options?: ErrorOptions | undefined,
+  ) {
+    super(message, options)
+  }
+}
+
 if (import.meta.main) {
   const { source, target, all } = parseArgs(Deno.args, {
     string: ["source", "target"],
@@ -42,17 +53,15 @@ if (import.meta.main) {
   })
 
   if (!source) {
-    console.log(
+    throw new NoKvFoundError(
       "A source KV path to export from must be provided using the --source argument",
     )
-    Deno.exit()
   }
 
   if (!target) {
-    console.log(
+    throw new NoKvFoundError(
       "A target KV path to export to must be provided using the --target argument",
     )
-    Deno.exit()
   }
 
   using sourceKv = await Deno.openKv(source)

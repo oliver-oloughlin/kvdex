@@ -19,7 +19,7 @@ Deno.test("serialized_indexable_collection - find", async (t) => {
 
   await t.step("Should not find document by non-existing id", async () => {
     await useDb(async (db) => {
-      const doc = await db.is_users.find(123)
+      const doc = await db.is_users.find("123")
       assert(doc === null)
     })
   })
