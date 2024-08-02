@@ -526,17 +526,15 @@ export function selectsAll<T1, T2 extends KvId>(
 }
 
 export function createWatcher(
-  collection: Collection<any, any, any>,
   kv: DenoKv,
   options: WatchOptions | undefined,
-  ids: KvId[],
+  keys: KvKey[],
   fn: (entries: DenoKvEntryMaybe[]) => unknown,
 ): {
   promise: Promise<void>
   cancel: () => Promise<void>
 } {
   // Create watch stream
-  const keys = ids.map((id) => extendKey(collection._keys.id, id))
   const stream = kv.watch(keys, options)
   const reader = stream.getReader()
 

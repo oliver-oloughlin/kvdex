@@ -1862,7 +1862,9 @@ export class Collection<
     promise: Promise<void>
     cancel: () => Promise<void>
   } {
-    return createWatcher(this, this.kv, options, [id], async (entries) => {
+    const key = extendKey(this._keys.id, id)
+
+    return createWatcher(this.kv, options, [key], async (entries) => {
       const entry = entries.at(0)
 
       // If no entry is found, invoke callback function with null
@@ -1921,7 +1923,9 @@ export class Collection<
     promise: Promise<void>
     cancel: () => Promise<void>
   } {
-    return createWatcher(this, this.kv, options, ids, async (entries) => {
+    const keys = ids.map((id) => extendKey(this._keys.id, id))
+
+    return createWatcher(this.kv, options, keys, async (entries) => {
       // Construct documents
       const docs = await Array.fromAsync(
         entries.map((entry) => this.constructDocument(entry)),
@@ -1929,6 +1933,29 @@ export class Collection<
 
       // Invoke callback function
       await fn(docs)
+    })
+  }
+
+  watchByPrimaryIndex<const K extends PrimaryIndexKeys<TOutput, TOptions>>(
+    index: K,
+    value: CheckKeyOf<K, TOutput>,
+    fn: (doc: Document<TOutput, ParseId<TOptions>> | null) => unknown,
+    options?: WatchOptions,
+  ) {
+    const key = extendKey(this._keys.primaryIndex, index as KvId, value as KvId)
+
+    return createWatcher(this.kv, options, [key], async (entries) => {
+      const entry = entries.at(0)
+
+      // If no entry is found, invoke callback function with null
+      if (!entry) {
+        await fn(null)
+        return
+      }
+
+      // Construct document and invoke callback function
+      const doc = await this.constructDocument(entry)
+      await fn(doc)
     })
   }
 
