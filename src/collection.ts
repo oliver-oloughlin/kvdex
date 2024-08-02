@@ -53,6 +53,7 @@ import {
   createListOptions,
   createListSelector,
   createSecondaryIndexKeyPrefix,
+  createWatcher,
   decompress,
   deleteIndices,
   extendKey,
@@ -1843,30 +1844,27 @@ export class Collection<
    * @param fn - Callback function to be invoked on each update.
    * @param options - Watch options.
    */
-  async watch(
+  watch(
     id: ParseId<TOptions>,
     fn: (doc: Document<TOutput, ParseId<TOptions>> | null) => unknown,
     options?: WatchOptions,
-  ): Promise<void> {
-    // Create watch stream
-    const key = extendKey(this._keys.id, id)
-    const stream = this.kv.watch([key], options)
-
-    // Catch incoming updates
-    for await (const entries of stream) {
-      // Get first entry
+  ): {
+    promise: Promise<void>
+    cancel: () => Promise<void>
+  } {
+    return createWatcher(this, this.kv, options, [id], async (entries) => {
       const entry = entries.at(0)
 
       // If no entry is found, invoke callback function with null
       if (!entry) {
         await fn(null)
-        continue
+        return
       }
 
       // Construct document and invoke callback function
       const doc = await this.constructDocument(entry)
       await fn(doc)
-    }
+    })
   }
 
   /**
@@ -1892,17 +1890,15 @@ export class Collection<
    * @param fn - Callback function to be invoked on each update.
    * @param options - Watch options.
    */
-  async watchMany(
+  watchMany(
     ids: ParseId<TOptions>[],
     fn: (doc: (Document<TOutput, ParseId<TOptions>> | null)[]) => unknown,
     options?: WatchOptions,
-  ): Promise<void> {
-    // Create watch stream
-    const keys = ids.map((id) => extendKey(this._keys.id, id))
-    const stream = this.kv.watch(keys, options)
-
-    // Catch incoming updates
-    for await (const entries of stream) {
+  ): {
+    promise: Promise<void>
+    cancel: () => Promise<void>
+  } {
+    return createWatcher(this, this.kv, options, ids, async (entries) => {
       // Construct documents
       const docs = await Array.fromAsync(
         entries.map((entry) => this.constructDocument(entry)),
@@ -1910,7 +1906,7 @@ export class Collection<
 
       // Invoke callback function
       await fn(docs)
-    }
+    })
   }
 
   /***********************/
