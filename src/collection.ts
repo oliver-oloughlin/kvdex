@@ -1862,7 +1862,9 @@ export class Collection<
     promise: Promise<void>
     cancel: () => Promise<void>
   } {
-    return createWatcher(this, this.kv, options, [id], async (entries) => {
+    const key = extendKey(this._keys.id, id)
+
+    return createWatcher(this.kv, options, [key], async (entries) => {
       const entry = entries.at(0)
 
       // If no entry is found, invoke callback function with null
@@ -1921,7 +1923,9 @@ export class Collection<
     promise: Promise<void>
     cancel: () => Promise<void>
   } {
-    return createWatcher(this, this.kv, options, ids, async (entries) => {
+    const keys = ids.map((id) => extendKey(this._keys.id, id))
+
+    return createWatcher(this.kv, options, keys, async (entries) => {
       // Construct documents
       const docs = await Array.fromAsync(
         entries.map((entry) => this.constructDocument(entry)),
