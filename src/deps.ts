@@ -1,5 +1,5 @@
 export { brotliCompressSync, brotliDecompressSync, constants } from "node:zlib"
-export { ulid } from "jsr:@std/ulid@^0.224.1"
+export { ulid } from "jsr:@std/ulid@^1.0.0"
 export { concat } from "jsr:@std/bytes@^1.0.1/concat"
 export {
   deepMerge,
