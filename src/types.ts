@@ -942,7 +942,10 @@ export type DenoAtomicOperation = {
 
   enqueue(value: unknown, options?: DenoKvEnqueueOptions): DenoAtomicOperation
 
-  commit(): Promise<DenoKvCommitError | DenoKvCommitResult>
+  commit():
+    | Promise<DenoKvCommitError | DenoKvCommitResult>
+    | DenoKvCommitError
+    | DenoKvCommitResult
 }
 
 /** Deno [KV](https://deno.land/api?s=Deno.Kv&unstable=) substitute type */
@@ -951,22 +954,22 @@ export type DenoKv = {
 
   close(): void
 
-  delete(key: DenoKvStrictKey): Promise<void>
+  delete(key: DenoKvStrictKey): Promise<void> | void
 
   enqueue(
     value: unknown,
     options?: DenoKvEnqueueOptions,
-  ): Promise<DenoKvCommitResult>
+  ): Promise<DenoKvCommitResult> | DenoKvCommitResult
 
   get(
     key: DenoKvStrictKey,
     options?: DenoKvGetOptions,
-  ): Promise<DenoKvEntryMaybe>
+  ): Promise<DenoKvEntryMaybe> | DenoKvEntryMaybe
 
   getMany(
     keys: DenoKvStrictKey[],
     options?: DenoKvGetOptions,
-  ): Promise<DenoKvEntryMaybe[]>
+  ): Promise<DenoKvEntryMaybe[]> | DenoKvEntryMaybe[]
 
   list(
     selector: DenoKvListSelector,
@@ -979,7 +982,10 @@ export type DenoKv = {
     key: DenoKvStrictKey,
     value: unknown,
     options?: DenoKvSetOptions,
-  ): Promise<DenoKvCommitError | DenoKvCommitResult>
+  ):
+    | Promise<DenoKvCommitError | DenoKvCommitResult>
+    | DenoKvCommitError
+    | DenoKvCommitResult
 
   watch(
     keys: DenoKvStrictKey[],
