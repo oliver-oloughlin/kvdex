@@ -10,40 +10,131 @@ import type {
 import type { KvMap } from "./kv_map.ts"
 
 export class KvMapAtomicOperation implements DenoAtomicOperation {
-  private map: KvMap
+  private kvMap: KvMap
+  private checks: (() => boolean)[]
+  private ops: (() => void)[]
 
-  constructor(map: KvMap) {
-    this.map = map
+  constructor(kvMap: KvMap) {
+    this.kvMap = kvMap
+    this.checks = []
+    this.ops = []
   }
+
   set(
     key: DenoKvStrictKey,
     value: unknown,
     options?: DenoKvSetOptions,
   ): DenoAtomicOperation {
-    throw new Error("Method not implemented.")
+    this.ops.push(() => this.kvMap.set(key, value, options))
+    return this
   }
+
   delete(key: DenoKvStrictKey): DenoAtomicOperation {
-    throw new Error("Method not implemented.")
+    this.ops.push(() => this.kvMap.delete(key))
+    return this
   }
+
   min(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation {
-    throw new Error("Method not implemented.")
+    this.ops.push(() => {
+      const { value } = this.kvMap.get(key)
+      if (!value) {
+        this.kvMap.set(key, { value: n })
+        return
+      }
+
+      const val = (value as any).value
+      if (typeof val !== "bigint") {
+        throw new Error("Min operation can only be performed on KvU64 value")
+      }
+
+      this.kvMap.set(key, {
+        value: n < val ? n : val,
+      })
+    })
+
+    return this
   }
+
   max(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation {
-    throw new Error("Method not implemented.")
+    this.ops.push(() => {
+      const { value } = this.kvMap.get(key)
+      if (!value) {
+        this.kvMap.set(key, { value: n })
+        return
+      }
+
+      const val = (value as any).value
+      if (typeof val !== "bigint") {
+        throw new Error("Max operation can only be performed on KvU64 value")
+      }
+
+      this.kvMap.set(key, {
+        value: n > val ? n : val,
+      })
+    })
+
+    return this
   }
+
   sum(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation {
-    throw new Error("Method not implemented.")
+    this.ops.push(() => {
+      const { value } = this.kvMap.get(key)
+      if (!value) {
+        this.kvMap.set(key, { value: n })
+        return
+      }
+
+      const val = (value as any).value
+      if (typeof val !== "bigint") {
+        throw new Error("Sum operation can only be performed on KvU64 value")
+      }
+
+      this.kvMap.set(key, {
+        value: n + val,
+      })
+    })
+
+    return this
   }
+
   check(...checks: DenoAtomicCheck[]): DenoAtomicOperation {
-    throw new Error("Method not implemented.")
+    checks.forEach(({ key, versionstamp }) => {
+      this.checks.push(() => {
+        const entry = this.kvMap.get(key)
+        return entry.versionstamp === versionstamp
+      })
+    })
+
+    return this
   }
+
   enqueue(value: unknown, options?: DenoKvEnqueueOptions): DenoAtomicOperation {
-    throw new Error("Method not implemented.")
+    this.ops.push(() => {
+      this.kvMap.enqueue(value, options)
+    })
+
+    return this
   }
+
   commit():
     | Promise<DenoKvCommitError | DenoKvCommitResult>
     | DenoKvCommitError
     | DenoKvCommitResult {
-    throw new Error("Method not implemented.")
+    const passedChecks = this.checks
+      .map((check) => check())
+      .every((check) => check)
+
+    if (!passedChecks) {
+      return {
+        ok: false,
+      }
+    }
+
+    this.ops.forEach((op) => op())
+
+    return {
+      ok: true,
+      versionstamp: crypto.randomUUID(),
+    }
   }
 }

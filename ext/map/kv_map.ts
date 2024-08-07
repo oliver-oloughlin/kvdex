@@ -12,14 +12,13 @@ import type {
   DenoKvSetOptions,
   DenoKvStrictKey,
   DenoKvWatchOptions,
-  KvValue,
 } from "../../src/types.ts"
-import { jsonStringify } from "../../src/utils.ts"
+import { jsonParse, jsonStringify } from "../../src/utils.ts"
 import { KvMapAtomicOperation } from "./atomic.ts"
 import { Watcher } from "./watcher.ts"
 
 export class KvMap implements DenoKv {
-  private map = new Map<DenoKvLaxKey, Omit<DenoKvEntry, "key">>()
+  private map = new Map<string, Omit<DenoKvEntry, "key">>()
   private watchers: Watcher[]
   private listenHandlers: ((msg: unknown) => unknown)[]
   private listener:
@@ -31,12 +30,11 @@ export class KvMap implements DenoKv {
 
   constructor(entries?: DenoKvEntry[]) {
     this.map = new Map()
-    this.map = new Map()
     this.watchers = []
     this.listenHandlers = []
 
     entries?.forEach(({ key, ...data }) =>
-      this.map.set(key as DenoKvLaxKey, data)
+      this.map.set(jsonStringify(key), data)
     )
   }
 
@@ -44,16 +42,17 @@ export class KvMap implements DenoKv {
     this.map.clear()
     this.watchers = []
     this.listenHandlers = []
+    this.listener?.resolve()
     this.listener = undefined
   }
 
   delete(key: DenoKvStrictKey) {
-    this.map.delete(key)
-    this.watchers.forEach((w) => w.check(key))
+    this.map.delete(jsonStringify(key))
+    this.watchers.forEach((w) => w.update(key))
   }
 
   get(key: DenoKvStrictKey): DenoKvEntryMaybe {
-    const data = this.map.get(key) ?? {
+    const data = this.map.get(jsonStringify(key)) ?? {
       value: null,
       versionstamp: null,
     }
@@ -65,26 +64,26 @@ export class KvMap implements DenoKv {
   }
 
   getMany(keys: DenoKvStrictKey[]): DenoKvEntryMaybe[] {
-    return keys.map(this.get)
+    return keys.map((key) => this.get(key))
   }
 
   set(
     key: DenoKvStrictKey,
-    value: KvValue,
+    value: unknown,
     options?: DenoKvSetOptions,
   ): DenoKvCommitResult {
     const versionstamp = crypto.randomUUID()
 
-    this.map.set(key, {
+    this.map.set(jsonStringify(key), {
       value,
       versionstamp,
     })
 
+    this.watchers.forEach((w) => w.update(key))
+
     if (options?.expireIn !== undefined) {
       setInterval(() => this.delete(key), options.expireIn)
     }
-
-    this.watchers.forEach((w) => w.check(key))
 
     return {
       ok: true,
@@ -151,7 +150,7 @@ export class KvMap implements DenoKv {
         }
 
         yield {
-          key,
+          key: jsonParse(key) as DenoKvLaxKey,
           ...entry,
         }
 
