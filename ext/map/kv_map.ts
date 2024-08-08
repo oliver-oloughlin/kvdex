@@ -15,6 +15,7 @@ import type {
 } from "../../src/types.ts"
 import { jsonParse, jsonStringify } from "../../src/utils.ts"
 import { KvMapAtomicOperation } from "./atomic.ts"
+import { keySort } from "./key_sort.ts"
 import { Watcher } from "./watcher.ts"
 
 export class KvMap implements DenoKv {
@@ -98,7 +99,13 @@ export class KvMap implements DenoKv {
     let entries = Array.from(this.map.entries())
     const start = (selector as any).start as DenoKvStrictKey | undefined
     const end = (selector as any).end as DenoKvStrictKey | undefined
-    const prefix = (selector as any).end as DenoKvStrictKey | undefined
+    const prefix = (selector as any).prefix as DenoKvStrictKey | undefined
+
+    entries.sort(([k1], [k2]) => {
+      const key1 = jsonParse<DenoKvStrictKey>(k1)
+      const key2 = jsonParse<DenoKvStrictKey>(k2)
+      return keySort(key1, key2)
+    })
 
     if (options?.reverse) {
       entries.reverse()
@@ -106,14 +113,15 @@ export class KvMap implements DenoKv {
 
     if (prefix && prefix.length > 0) {
       entries = entries.filter(([key]) => {
-        const keyPrefix = key.slice(0, prefix.length)
+        const parsedKey = jsonParse<DenoKvStrictKey>(key)
+        const keyPrefix = parsedKey.slice(0, prefix.length)
         return jsonStringify(keyPrefix) === jsonStringify(prefix)
       })
     }
 
     if (start) {
       const index = entries.findIndex(
-        ([key]) => jsonStringify(key) === jsonStringify(start),
+        ([key]) => key === jsonStringify(start),
       )
 
       if (index) {
@@ -123,7 +131,7 @@ export class KvMap implements DenoKv {
 
     if (end) {
       const index = entries.findIndex(
-        ([key]) => jsonStringify(key) === jsonStringify(end),
+        ([key]) => key === jsonStringify(end),
       )
 
       if (index) {
@@ -133,7 +141,7 @@ export class KvMap implements DenoKv {
 
     if (options?.cursor) {
       const index = entries.findIndex(
-        ([key]) => jsonStringify(key) === options.cursor,
+        ([key]) => key === options.cursor,
       )
 
       if (index) {
@@ -159,7 +167,7 @@ export class KvMap implements DenoKv {
     }
 
     const cursorEntry = options?.limit ? entries.at(options?.limit) : undefined
-    const cursor = cursorEntry ? jsonStringify(cursorEntry[0]) : ""
+    const cursor = cursorEntry ? cursorEntry[0] : ""
     return Object.assign(iter(), { cursor })
   }
 
