@@ -8,7 +8,6 @@ import type {
   DenoKvStrictKey,
 } from "../../src/types.ts"
 import type { KvMap } from "./kv_map.ts"
-import { createVersionstamp } from "./utils.ts"
 
 export class KvMapAtomicOperation implements DenoAtomicOperation {
   private kvMap: KvMap
@@ -132,7 +131,7 @@ export class KvMapAtomicOperation implements DenoAtomicOperation {
 
     return {
       ok: true,
-      versionstamp: createVersionstamp(null),
+      versionstamp: this.kvMap._versionstamp,
     }
   }
 }

@@ -15,11 +15,11 @@ import type {
 } from "../../src/types.ts"
 import { jsonParse, jsonStringify } from "../../src/utils.ts"
 import { KvMapAtomicOperation } from "./atomic.ts"
-import { keySort } from "./key_sort.ts"
 import { Watcher } from "./watcher.ts"
+import { keySort } from "./utils.ts"
 
 export class KvMap implements DenoKv {
-  private map = new Map<string, Omit<DenoKvEntry, "key">>()
+  private map: Map<string, Omit<DenoKvEntry, "key">>
   private watchers: Watcher[]
   private listenHandlers: ((msg: unknown) => unknown)[]
   private listener:
@@ -29,10 +29,13 @@ export class KvMap implements DenoKv {
     }
     | undefined
 
+  _versionstamp: string
+
   constructor(entries?: DenoKvEntry[]) {
     this.map = new Map()
     this.watchers = []
     this.listenHandlers = []
+    this._versionstamp = "0"
 
     entries?.forEach(({ key, ...data }) =>
       this.map.set(jsonStringify(key), data)
@@ -73,11 +76,11 @@ export class KvMap implements DenoKv {
     value: unknown,
     options?: DenoKvSetOptions,
   ): DenoKvCommitResult {
-    const versionstamp = crypto.randomUUID()
+    this.incrementVersionstamp()
 
     this.map.set(jsonStringify(key), {
       value,
-      versionstamp,
+      versionstamp: this._versionstamp,
     })
 
     this.watchers.forEach((w) => w.update(key))
@@ -88,7 +91,7 @@ export class KvMap implements DenoKv {
 
     return {
       ok: true,
-      versionstamp,
+      versionstamp: this._versionstamp,
     }
   }
 
@@ -189,9 +192,11 @@ export class KvMap implements DenoKv {
       await Promise.all(this.listenHandlers.map((h) => h(value)))
     }, options?.delay ?? 0)
 
+    this.incrementVersionstamp()
+
     return {
       ok: true,
-      versionstamp: crypto.randomUUID(),
+      versionstamp: this._versionstamp,
     }
   }
 
@@ -206,5 +211,12 @@ export class KvMap implements DenoKv {
 
   atomic(): DenoAtomicOperation {
     return new KvMapAtomicOperation(this)
+  }
+
+  private incrementVersionstamp() {
+    const n = parseInt(this._versionstamp)
+    if (Number.isNaN(n)) this._versionstamp = "0"
+
+    this._versionstamp = (n + 1).toString()
   }
 }
