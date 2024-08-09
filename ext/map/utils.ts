@@ -1,5 +1,14 @@
 import type { DenoKvStrictKey, DenoKvStrictKeyPart } from "../../src/types.ts"
 
+export function createVersionstamp(previous: string | null) {
+  if (!previous) return "0"
+
+  const n = parseInt(previous)
+  if (Number.isNaN(n)) return "0"
+
+  return (n + 1).toString()
+}
+
 export function keySort(key1: DenoKvStrictKey, key2: DenoKvStrictKey): number {
   for (let i = 0; i < Math.min(key1.length, key2.length); i++) {
     const p1 = key1.at(i)

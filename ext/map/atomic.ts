@@ -8,6 +8,7 @@ import type {
   DenoKvStrictKey,
 } from "../../src/types.ts"
 import type { KvMap } from "./kv_map.ts"
+import { createVersionstamp } from "./utils.ts"
 
 export class KvMapAtomicOperation implements DenoAtomicOperation {
   private kvMap: KvMap
@@ -116,10 +117,7 @@ export class KvMapAtomicOperation implements DenoAtomicOperation {
     return this
   }
 
-  commit():
-    | Promise<DenoKvCommitError | DenoKvCommitResult>
-    | DenoKvCommitError
-    | DenoKvCommitResult {
+  commit(): DenoKvCommitError | DenoKvCommitResult {
     const passedChecks = this.checks
       .map((check) => check())
       .every((check) => check)
@@ -134,7 +132,7 @@ export class KvMapAtomicOperation implements DenoAtomicOperation {
 
     return {
       ok: true,
-      versionstamp: crypto.randomUUID(),
+      versionstamp: createVersionstamp(null),
     }
   }
 }
