@@ -68,7 +68,10 @@ export function createDb(kv: DenoKv) {
 export async function useKv(
   fn: (kv: DenoKv) => unknown,
 ) {
-  const kv = new KvMap()
+  const kv = Deno.args[0] === "map"
+    ? new KvMap()
+    : await Deno.openKv(":memory:")
+
   const result = await fn(kv)
   kv.close()
 
