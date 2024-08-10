@@ -1106,7 +1106,7 @@ before the first delivery.
 // Will repeat indefinitely with 1 second interval
 db.setInterval(() => console.log("Hello World!"), 1_000)
 
-// First callback starts after a 10 second delay, after that there is a random delay between 0 and 5 seconds
+// First callback starts after a 10 second delay, after that there is a random interval between 0 and 5 seconds
 db.setInterval(
   () => console.log("I terminate after running 10 times"),
   () => Math.random() * 5_000,
@@ -1114,7 +1114,7 @@ db.setInterval(
     // Delay before the first callback is invoked
     startDelay: 10_000,
 
-    // Count starts at 0, exitOn is run before the current callback
+    // Count starts at 0 and is given before the current callback is run
     while: ({ count }) => count < 10,
   },
 )
