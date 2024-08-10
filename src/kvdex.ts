@@ -375,7 +375,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    *
    * @example
    * ```ts
-   * // First callback starts after a 10 second delay, after that there is a random delay between 0 and 5 seconds
+   * // First callback starts after a 10 second delay, after that there is a random interval between 0 and 5 seconds
    * db.setInterval(() => console.log("I terminate after the 10th run"), () => Math.random() * 5_000, {
    *   // 10 second delay before the first job callback invoked
    *   startDelay: 10_000,
