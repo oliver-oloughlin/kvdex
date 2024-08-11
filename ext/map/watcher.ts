@@ -1,7 +1,7 @@
 import type { DenoKvWatchOptions } from "../../mod.ts"
 import type { DenoKvEntryMaybe, DenoKvStrictKey } from "../../src/types.ts"
 import { jsonStringify } from "../../src/utils.ts"
-import type { MapKv } from "./kv_map.ts"
+import type { MapKv } from "./map_kv.ts"
 
 export class Watcher {
   private listener: ReturnType<typeof Promise.withResolvers<DenoKvStrictKey>>

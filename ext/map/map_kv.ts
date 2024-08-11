@@ -18,7 +18,7 @@ import { KvMapAtomicOperation } from "./atomic.ts"
 import { Watcher } from "./watcher.ts"
 import { keySort } from "./utils.ts"
 
-type SimpleMap<K, V> = {
+export type SimpleMap<K, V> = {
   set(key: K, value: V): void
   get(key: K): V | null
   delete(key: K): void
