@@ -18,8 +18,15 @@ import { KvMapAtomicOperation } from "./atomic.ts"
 import { Watcher } from "./watcher.ts"
 import { keySort } from "./utils.ts"
 
-export class KvMap implements DenoKv {
-  private map: Map<string, Omit<DenoKvEntry, "key">>
+type SimpleMap<K, V> = {
+  set(key: K, value: V): void
+  get(key: K): V | null
+  delete(key: K): void
+  entries(): IterableIterator<[K, V]>
+}
+
+export class MapKv implements DenoKv {
+  private map: SimpleMap<string, Omit<DenoKvEntry, "key">>
   private watchers: Watcher[]
   private listenHandlers: ((msg: unknown) => unknown)[]
   private listener:
@@ -31,8 +38,11 @@ export class KvMap implements DenoKv {
 
   _versionstamp: string
 
-  constructor(entries?: DenoKvEntry[]) {
-    this.map = new Map()
+  constructor(
+    map?: SimpleMap<string, Omit<DenoKvEntry, "key">>,
+    entries?: DenoKvEntry[],
+  ) {
+    this.map = map ?? new Map()
     this.watchers = []
     this.listenHandlers = []
     this._versionstamp = "0"
@@ -43,11 +53,8 @@ export class KvMap implements DenoKv {
   }
 
   close(): void {
-    this.map.clear()
-    this.watchers = []
-    this.listenHandlers = []
+    this.watchers.forEach((w) => w.stream.cancel())
     this.listener?.resolve()
-    this.listener = undefined
   }
 
   delete(key: DenoKvStrictKey) {

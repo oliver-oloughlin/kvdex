@@ -1,14 +1,14 @@
 import type { DenoKvWatchOptions } from "../../mod.ts"
 import type { DenoKvEntryMaybe, DenoKvStrictKey } from "../../src/types.ts"
 import { jsonStringify } from "../../src/utils.ts"
-import type { KvMap } from "./kv_map.ts"
+import type { MapKv } from "./kv_map.ts"
 
 export class Watcher {
   private listener: ReturnType<typeof Promise.withResolvers<DenoKvStrictKey>>
   readonly stream: ReadableStream<DenoKvEntryMaybe[]>
 
   constructor(
-    kvMap: KvMap,
+    kv: MapKv,
     keys: DenoKvStrictKey[],
     options?: DenoKvWatchOptions,
   ) {
@@ -17,7 +17,7 @@ export class Watcher {
 
     this.stream = new ReadableStream({
       async start(controller) {
-        let previousEntries = kvMap.getMany(keys)
+        let previousEntries = kv.getMany(keys)
         controller.enqueue(previousEntries)
 
         while (true) {
@@ -38,7 +38,7 @@ export class Watcher {
               continue
             }
 
-            const entries = kvMap.getMany(keys)
+            const entries = kv.getMany(keys)
 
             const previousEntry = previousEntries.find((entry) =>
               jsonStringify(entry.key) === jsonStringify(key)
