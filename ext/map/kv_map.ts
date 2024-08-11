@@ -214,9 +214,9 @@ export class KvMap implements DenoKv {
   }
 
   private incrementVersionstamp() {
-    const n = parseInt(this._versionstamp)
-    if (Number.isNaN(n)) this._versionstamp = "0"
+    const n = parseInt(this._versionstamp, 16)
+    if (Number.isNaN(n)) this._versionstamp = (0).toString(16)
 
-    this._versionstamp = (n + 1).toString()
+    this._versionstamp = (n + 1).toString(16)
   }
 }
