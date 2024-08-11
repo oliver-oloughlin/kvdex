@@ -9,7 +9,6 @@
   "tasks": {
     "check": "deno check mod.ts src/*.ts ext/*.ts tests/*.ts tests/**/*.ts benchmarks/**/*ts",
     "test": "deno test --allow-write --allow-read --allow-ffi --allow-sys --unstable-kv --trace-leaks",
-    "test:map": "deno task test -- map",
     "bench": "deno bench --unstable-kv",
     "prep": "deno task check && deno fmt && deno lint && deno publish --dry-run --allow-dirty && deno task test",
     "cache": "deno cache -r mod.ts && deno cache -r ext/zod.ts && deno cache -r ext/migrate.ts"

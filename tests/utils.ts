@@ -1,4 +1,3 @@
-import { KvMap } from "../ext/map/kv_map.ts"
 import { collection, type DenoKv, type DenoKvU64, kvdex } from "../mod.ts"
 import { model } from "../src/model.ts"
 import { TransformUserModel, type User, UserSchema } from "./models.ts"
@@ -68,9 +67,7 @@ export function createDb(kv: DenoKv) {
 export async function useKv(
   fn: (kv: DenoKv) => unknown,
 ) {
-  const kv = Deno.args[0] === "map"
-    ? new KvMap()
-    : await Deno.openKv(":memory:")
+  const kv = await Deno.openKv(":memory:")
 
   const result = await fn(kv)
   kv.close()
