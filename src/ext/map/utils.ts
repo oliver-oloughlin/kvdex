@@ -1,4 +1,4 @@
-import type { DenoKvStrictKey, DenoKvStrictKeyPart } from "../../src/types.ts"
+import type { DenoKvStrictKey, DenoKvStrictKeyPart } from "../../types.ts"
 
 export function keySort(key1: DenoKvStrictKey, key2: DenoKvStrictKey): number {
   for (let i = 0; i < Math.min(key1.length, key2.length); i++) {

@@ -12,8 +12,8 @@ import type {
   DenoKvSetOptions,
   DenoKvStrictKey,
   DenoKvWatchOptions,
-} from "../../src/types.ts"
-import { jsonParse, jsonStringify } from "../../src/utils.ts"
+} from "../../types.ts"
+import { jsonParse, jsonStringify } from "../../utils.ts"
 import { KvMapAtomicOperation } from "./atomic.ts"
 import { Watcher } from "./watcher.ts"
 import { keySort } from "./utils.ts"

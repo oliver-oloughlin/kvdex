@@ -6,7 +6,7 @@ import type {
   DenoKvEnqueueOptions,
   DenoKvSetOptions,
   DenoKvStrictKey,
-} from "../../src/types.ts"
+} from "../../types.ts"
 import type { MapKv } from "./map_kv.ts"
 
 export class KvMapAtomicOperation implements DenoAtomicOperation {

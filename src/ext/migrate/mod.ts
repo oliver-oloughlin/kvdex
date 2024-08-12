@@ -32,20 +32,17 @@
  * ```
  */
 
-import { parseArgs } from "jsr:@std/cli@^0.217/parse_args"
-import { KVDEX_KEY_PREFIX } from "../src/constants.ts"
+// Imports
+import { parseArgs } from "./deps.ts"
+import { migrate } from "./migrate.ts"
+import { NoKvFoundError } from "./errors.ts"
 
-export class NoKvFoundError extends Error {
-  name = "NoKvFoundError"
+// Exports
+export { migrate }
+export type * from "./types.ts"
+export * from "./errors.ts"
 
-  constructor(
-    message?: string | undefined,
-    options?: ErrorOptions | undefined,
-  ) {
-    super(message, options)
-  }
-}
-
+// Run migrate if main
 if (import.meta.main) {
   const { source, target, all } = parseArgs(Deno.args, {
     string: ["source", "target"],
@@ -72,49 +69,4 @@ if (import.meta.main) {
     target: targetKv,
     all,
   })
-}
-
-/** Options for migrating entries from a source KV instance to a target KV instance */
-export type MigrateOptions = {
-  /** Source KV. */
-  source: Deno.Kv
-
-  /** Target KV. */
-  target: Deno.Kv
-
-  /**
-   * Flag indicating whether to migrate all entries or only kvdex specific entries.
-   *
-   * @default false
-   */
-  all?: boolean
-}
-
-/**
- * Migrate entries from a source KV instance to a target KV instance.
- *
- * @example
- * ```ts
- * import { migrate } from "jsr:@olli/kvdex/ext/migrate"
- *
- * const source = await Deno.openKv("./source.sqlite3")
- * const target = await Deno.openKv("./target.sqlite3")
- *
- * await migrate({
- *   source,
- *   target,
- * })
- * ```
- *
- * @param options - Migrate options
- */
-export async function migrate({
-  source,
-  target,
-  all,
-}: MigrateOptions): Promise<void> {
-  const iter = source.list({ prefix: all ? [] : [KVDEX_KEY_PREFIX] })
-  for await (const { key, value } of iter) {
-    await target.set(key, value)
-  }
 }

@@ -1,4 +1,4 @@
-import { jsonParse, jsonStringify } from "../../src/utils.ts"
+import { jsonParse, jsonStringify } from "../../utils.ts"
 import type { SimpleMap } from "./map_kv.ts"
 
 export class StorageAdapter<K, V> implements SimpleMap<K, V> {
