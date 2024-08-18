@@ -93,7 +93,7 @@ export class MapKv implements DenoKv {
     this.watchers.forEach((w) => w.update(key))
 
     if (options?.expireIn !== undefined) {
-      setInterval(() => this.delete(key), options.expireIn)
+      setTimeout(() => this.delete(key), options.expireIn)
     }
 
     return {

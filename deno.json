@@ -4,7 +4,7 @@
   "exports": {
     ".": "./mod.ts",
     "./zod": "./src/ext/zod/mod.ts",
-    "./migrate": "./src/ext/migrate/mod.ts.ts"
+    "./migrate": "./src/ext/migrate/mod.ts"
   },
   "tasks": {
     "check": "deno check mod.ts src/*.ts tests/**/*.ts benchmarks/**/*.ts",
