@@ -16,7 +16,7 @@ import type {
 import { jsonParse, jsonStringify } from "../../utils.ts"
 import { KvMapAtomicOperation } from "./atomic.ts"
 import { Watcher } from "./watcher.ts"
-import { keySort } from "./utils.ts"
+import { createVersionstamp, keySort } from "./utils.ts"
 
 export type SimpleMap<K, V> = {
   set(key: K, value: V): void
@@ -36,8 +36,6 @@ export class MapKv implements DenoKv {
     }
     | undefined
 
-  _versionstamp: string
-
   constructor(
     map?: SimpleMap<string, Omit<DenoKvEntry, "key">>,
     entries?: DenoKvEntry[],
@@ -45,7 +43,6 @@ export class MapKv implements DenoKv {
     this.map = map ?? new Map()
     this.watchers = []
     this.listenHandlers = []
-    this._versionstamp = "0"
 
     entries?.forEach(({ key, ...data }) =>
       this.map.set(jsonStringify(key), data)
@@ -53,7 +50,7 @@ export class MapKv implements DenoKv {
   }
 
   close(): void {
-    this.watchers.forEach((w) => w.stream.cancel())
+    this.watchers.forEach((w) => w.cancel())
     this.listener?.resolve()
   }
 
@@ -83,23 +80,7 @@ export class MapKv implements DenoKv {
     value: unknown,
     options?: DenoKvSetOptions,
   ): DenoKvCommitResult {
-    this.incrementVersionstamp()
-
-    this.map.set(jsonStringify(key), {
-      value,
-      versionstamp: this._versionstamp,
-    })
-
-    this.watchers.forEach((w) => w.update(key))
-
-    if (options?.expireIn !== undefined) {
-      setTimeout(() => this.delete(key), options.expireIn)
-    }
-
-    return {
-      ok: true,
-      versionstamp: this._versionstamp,
-    }
+    return this._set(key, value, createVersionstamp(), options)
   }
 
   list(
@@ -195,16 +176,7 @@ export class MapKv implements DenoKv {
     value: unknown,
     options?: DenoKvEnqueueOptions,
   ): Promise<DenoKvCommitResult> | DenoKvCommitResult {
-    setTimeout(async () => {
-      await Promise.all(this.listenHandlers.map((h) => h(value)))
-    }, options?.delay ?? 0)
-
-    this.incrementVersionstamp()
-
-    return {
-      ok: true,
-      versionstamp: this._versionstamp,
-    }
+    return this._enqueue(value, createVersionstamp(), options)
   }
 
   watch(
@@ -220,10 +192,41 @@ export class MapKv implements DenoKv {
     return new KvMapAtomicOperation(this)
   }
 
-  private incrementVersionstamp() {
-    const n = parseInt(this._versionstamp, 16)
-    if (Number.isNaN(n)) this._versionstamp = (0).toString(16)
+  _set(
+    key: DenoKvStrictKey,
+    value: unknown,
+    versionstamp: string,
+    options?: DenoKvSetOptions,
+  ): DenoKvCommitResult {
+    this.map.set(jsonStringify(key), {
+      value,
+      versionstamp: versionstamp,
+    })
 
-    this._versionstamp = (n + 1).toString(16)
+    this.watchers.forEach((w) => w.update(key))
+
+    if (options?.expireIn !== undefined) {
+      setTimeout(() => this.delete(key), options.expireIn)
+    }
+
+    return {
+      ok: true,
+      versionstamp,
+    }
+  }
+
+  _enqueue(
+    value: unknown,
+    versionstamp: string,
+    options?: DenoKvEnqueueOptions,
+  ): Promise<DenoKvCommitResult> | DenoKvCommitResult {
+    setTimeout(async () => {
+      await Promise.all(this.listenHandlers.map((h) => h(value)))
+    }, options?.delay ?? 0)
+
+    return {
+      ok: true,
+      versionstamp,
+    }
   }
 }

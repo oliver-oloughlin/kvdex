@@ -1,4 +1,9 @@
+import { ulid } from "../../deps.ts"
 import type { DenoKvStrictKey, DenoKvStrictKeyPart } from "../../types.ts"
+
+export function createVersionstamp() {
+  return ulid()
+}
 
 export function keySort(key1: DenoKvStrictKey, key2: DenoKvStrictKey): number {
   for (let i = 0; i < Math.min(key1.length, key2.length); i++) {

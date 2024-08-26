@@ -15,6 +15,16 @@ export class Watcher {
     this.listener = Promise.withResolvers<DenoKvStrictKey>()
     const listener = this.listener
 
+    function resetListener() {
+      const { promise, resolve, reject } = Promise.withResolvers<
+        DenoKvStrictKey
+      >()
+
+      listener.promise = promise
+      listener.resolve = resolve
+      listener.reject = reject
+    }
+
     this.stream = new ReadableStream({
       async start(controller) {
         let previousEntries = kv.getMany(keys)
@@ -26,15 +36,9 @@ export class Watcher {
             const match = keys.some((k) =>
               jsonStringify(k) === jsonStringify(key)
             )
+
             if (!match) {
-              const { promise, resolve, reject } = Promise.withResolvers<
-                DenoKvStrictKey
-              >()
-
-              listener.promise = promise
-              listener.resolve = resolve
-              listener.reject = reject
-
+              resetListener()
               continue
             }
 
@@ -60,32 +64,20 @@ export class Watcher {
               continue
             }
 
-            if (
-              !options?.raw &&
-              previousEntry.versionstamp === newEntry.versionstamp
-            ) {
-              const { promise, resolve, reject } = Promise.withResolvers<
-                DenoKvStrictKey
-              >()
-
-              listener.promise = promise
-              listener.resolve = resolve
-              listener.reject = reject
-
-              continue
-            }
+            // if (
+            //   !options?.raw &&
+            //   previousEntry.versionstamp === newEntry.versionstamp
+            // ) {
+            //   resetListener()
+            //   continue
+            // }
 
             previousEntries = entries
             controller.enqueue(entries)
 
-            const { promise, resolve, reject } = Promise.withResolvers<
-              DenoKvStrictKey
-            >()
-
-            listener.promise = promise
-            listener.resolve = resolve
-            listener.reject = reject
+            resetListener()
           } catch (_) {
+            controller.close()
             break
           }
         }
@@ -99,5 +91,9 @@ export class Watcher {
 
   update(key: DenoKvStrictKey) {
     this.listener.resolve(key)
+  }
+
+  cancel() {
+    this.listener.reject()
   }
 }

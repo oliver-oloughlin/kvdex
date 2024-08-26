@@ -8,11 +8,12 @@ import type {
   DenoKvStrictKey,
 } from "../../types.ts"
 import type { MapKv } from "./map_kv.ts"
+import { createVersionstamp } from "./utils.ts"
 
 export class KvMapAtomicOperation implements DenoAtomicOperation {
   private kv: MapKv
   private checks: (() => boolean)[]
-  private ops: (() => void)[]
+  private ops: ((versionstamp: string) => void)[]
 
   constructor(kv: MapKv) {
     this.kv = kv
@@ -25,7 +26,9 @@ export class KvMapAtomicOperation implements DenoAtomicOperation {
     value: unknown,
     options?: DenoKvSetOptions,
   ): DenoAtomicOperation {
-    this.ops.push(() => this.kv.set(key, value, options))
+    this.ops.push((versionstamp) =>
+      this.kv._set(key, value, versionstamp, options)
+    )
     return this
   }
 
@@ -35,10 +38,10 @@ export class KvMapAtomicOperation implements DenoAtomicOperation {
   }
 
   min(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation {
-    this.ops.push(() => {
+    this.ops.push((versionstamp) => {
       const { value } = this.kv.get(key)
       if (!value) {
-        this.kv.set(key, { value: n })
+        this.kv._set(key, { value: n }, versionstamp)
         return
       }
 
@@ -47,19 +50,19 @@ export class KvMapAtomicOperation implements DenoAtomicOperation {
         throw new Error("Min operation can only be performed on KvU64 value")
       }
 
-      this.kv.set(key, {
+      this.kv._set(key, {
         value: n < val ? n : val,
-      })
+      }, versionstamp)
     })
 
     return this
   }
 
   max(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation {
-    this.ops.push(() => {
+    this.ops.push((versionstamp) => {
       const { value } = this.kv.get(key)
       if (!value) {
-        this.kv.set(key, { value: n })
+        this.kv._set(key, { value: n }, versionstamp)
         return
       }
 
@@ -68,19 +71,19 @@ export class KvMapAtomicOperation implements DenoAtomicOperation {
         throw new Error("Max operation can only be performed on KvU64 value")
       }
 
-      this.kv.set(key, {
+      this.kv._set(key, {
         value: n > val ? n : val,
-      })
+      }, versionstamp)
     })
 
     return this
   }
 
   sum(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation {
-    this.ops.push(() => {
+    this.ops.push((versionstamp) => {
       const { value } = this.kv.get(key)
       if (!value) {
-        this.kv.set(key, { value: n })
+        this.kv._set(key, { value: n }, versionstamp)
         return
       }
 
@@ -89,9 +92,9 @@ export class KvMapAtomicOperation implements DenoAtomicOperation {
         throw new Error("Sum operation can only be performed on KvU64 value")
       }
 
-      this.kv.set(key, {
+      this.kv._set(key, {
         value: n + val,
-      })
+      }, versionstamp)
     })
 
     return this
@@ -109,8 +112,8 @@ export class KvMapAtomicOperation implements DenoAtomicOperation {
   }
 
   enqueue(value: unknown, options?: DenoKvEnqueueOptions): DenoAtomicOperation {
-    this.ops.push(() => {
-      this.kv.enqueue(value, options)
+    this.ops.push((versionstamp) => {
+      this.kv._enqueue(value, versionstamp, options)
     })
 
     return this
@@ -127,11 +130,13 @@ export class KvMapAtomicOperation implements DenoAtomicOperation {
       }
     }
 
-    this.ops.forEach((op) => op())
+    const versionstamp = createVersionstamp()
+
+    this.ops.forEach((op) => op(versionstamp))
 
     return {
       ok: true,
-      versionstamp: this.kv._versionstamp,
+      versionstamp,
     }
   }
 }
