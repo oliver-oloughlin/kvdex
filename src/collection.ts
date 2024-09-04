@@ -1300,6 +1300,23 @@ export class Collection<
     )
   }
 
+  async getManyBySecondaryOrder<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    order: K,
+    options?: ListOptions<
+      Document<TOutput, ParseId<TOptions>>,
+      ParseId<TOptions>
+    >,
+  ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
+    const key = extendKey(this._keys.secondaryIndex, order as KvId)
+    return await this.handleMany(
+      key,
+      (doc) => doc,
+      options,
+    )
+  }
+
   /**
    * Retrieves one document from the KV store according to the given options.
    *
@@ -1328,7 +1345,7 @@ export class Collection<
       ParseId<TOptions>
     >,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
-    // Get result list with limit of one item
+    // Get result list with one item
     const { result } = await this.handleMany(
       this._keys.id,
       (doc) => doc,
@@ -1380,7 +1397,30 @@ export class Collection<
       this,
     )
 
-    // Get result list with limit of one item
+    // Get result list with one item
+    const { result } = await this.handleMany(
+      prefixKey,
+      (doc) => doc,
+      { ...options, take: 1 },
+    )
+
+    // Return first result item, or null if not present
+    return result.at(0) ?? null
+  }
+
+  async getOneBySecondaryOrder<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    order: K,
+    options?: HandleOneOptions<
+      Document<TOutput, ParseId<TOptions>>,
+      ParseId<TOptions>
+    >,
+  ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
+    // Create prefix key
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+
+    // Get result list with one item
     const { result } = await this.handleMany(
       prefixKey,
       (doc) => doc,
@@ -1467,6 +1507,30 @@ export class Collection<
       value as KvValue,
       this,
     )
+
+    // Execute callback function for each document entry
+    const { cursor } = await this.handleMany(
+      prefixKey,
+      (doc) => fn(doc),
+      options,
+    )
+
+    // Return iterator cursor
+    return { cursor }
+  }
+
+  async forEachBySecondaryOrder<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    order: K,
+    fn: (doc: Document<TOutput, ParseId<TOptions>>) => unknown,
+    options?: UpdateManyOptions<
+      Document<TOutput, ParseId<TOptions>>,
+      ParseId<TOptions>
+    >,
+  ): Promise<Pagination> {
+    // Create prefix key
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
 
     // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
@@ -1570,6 +1634,28 @@ export class Collection<
     )
   }
 
+  async mapBySecondaryOrder<
+    const T,
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    order: K,
+    fn: (doc: Document<TOutput, ParseId<TOptions>>) => T,
+    options?: UpdateManyOptions<
+      Document<TOutput, ParseId<TOptions>>,
+      ParseId<TOptions>
+    >,
+  ): Promise<PaginationResult<Awaited<T>>> {
+    // Create prefix key
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+
+    // Execute callback function for each document entry, return result and cursor
+    return await this.handleMany(
+      prefixKey,
+      (doc) => fn(doc),
+      options,
+    )
+  }
+
   /**
    * Counts the number of documents in the collection.
    *
@@ -1645,6 +1731,32 @@ export class Collection<
       index as KvId,
       compressed,
     )
+
+    // Initialize count result
+    let result = 0
+
+    // Update each document by secondary index, add commit result to result list
+    await this.handleMany(
+      prefixKey,
+      () => result++,
+      options,
+    )
+
+    // Return count result
+    return result
+  }
+
+  async countBySecondaryOrder<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    order: K,
+    options?: ListOptions<
+      Document<TOutput, ParseId<TOptions>>,
+      ParseId<TOptions>
+    >,
+  ): Promise<number> {
+    // Create prefix key
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
 
     // Initialize count result
     let result = 0
