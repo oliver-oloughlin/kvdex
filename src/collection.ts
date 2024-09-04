@@ -2284,9 +2284,14 @@ export class Collection<
       })
     }
 
-    // Remove id from value if indexed entry
+    // Remove id from value and return parsed document if indexed entry
     if (typeof indexedDocId !== "undefined") {
-      delete (value as any).__id__
+      const { __id__, ...val } = value as any
+      return new Document<TOutput, ParseId<TOptions>>(this._model, {
+        id: docId as ParseId<TOptions>,
+        value: val as TOutput,
+        versionstamp,
+      })
     }
 
     // Return parsed document

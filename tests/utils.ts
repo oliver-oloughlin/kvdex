@@ -1,5 +1,5 @@
 import { collection, type DenoKv, type DenoKvU64, kvdex } from "../mod.ts"
-import { MapKv } from "../src/ext/map/map_kv.ts"
+import { MapKv } from "../src/ext/map_kv/kv.ts"
 import { model } from "../src/model.ts"
 import { TransformUserModel, type User, UserSchema } from "./models.ts"
 

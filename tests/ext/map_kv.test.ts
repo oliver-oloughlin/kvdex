@@ -1,4 +1,4 @@
-import { MapKv } from "../../src/ext/map/map_kv.ts"
+import { MapKv } from "../../src/ext/map_kv/kv.ts"
 import { assert } from "../test.deps.ts"
 import { sleep } from "../utils.ts"
 

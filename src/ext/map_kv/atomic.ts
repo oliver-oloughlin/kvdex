@@ -7,7 +7,7 @@ import type {
   DenoKvSetOptions,
   DenoKvStrictKey,
 } from "../../types.ts"
-import type { MapKv } from "./map_kv.ts"
+import type { MapKv } from "./kv.ts"
 import { createVersionstamp } from "./utils.ts"
 
 export class KvMapAtomicOperation implements DenoAtomicOperation {
