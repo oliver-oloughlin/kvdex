@@ -865,6 +865,32 @@ export class Collection<
     )
   }
 
+  async updateBySecondaryOrder<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const T extends UpdateManyOptions<
+      Document<TOutput, ParseId<TOptions>>,
+      ParseId<TOptions>
+    >,
+  >(
+    order: K,
+    data: UpdateData<TOutput, T["strategy"]>,
+    options?: T,
+  ): Promise<
+    PaginationResult<
+      CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError
+    >
+  > {
+    // Create prefix key
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+
+    // Update each document by secondary index, add commit result to result list
+    return await this.handleMany(
+      prefixKey,
+      (doc) => this.updateDocument(doc, data, options),
+      options,
+    )
+  }
+
   /**
    * Update an existing document by id, or set a new document entry if no matching document exists.
    *
@@ -1117,6 +1143,33 @@ export class Collection<
       value as KvValue,
       this,
     )
+
+    // Update a single document
+    const { result } = await this.handleMany(
+      prefixKey,
+      (doc) => this.updateDocument(doc, data, options),
+      { ...options, take: 1 },
+    )
+
+    // Return first result, or commit error object if not present
+    return result.at(0) ?? {
+      ok: false,
+    }
+  }
+
+  async updateOneBySecondaryOrder<
+    const T extends UpdateOneOptions<
+      Document<TOutput, ParseId<TOptions>>,
+      ParseId<TOptions>
+    >,
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    order: K,
+    data: UpdateData<TOutput, T["strategy"]>,
+    options?: T,
+  ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
+    // Create prefix key
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
 
     // Update a single document
     const { result } = await this.handleMany(
