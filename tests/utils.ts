@@ -1,12 +1,13 @@
-import { collection, kvdex } from "../mod.ts"
+import { collection, type DenoKv, type DenoKvU64, kvdex } from "../mod.ts"
+import { MapKv } from "../src/ext/map_kv/kv.ts"
 import { model } from "../src/model.ts"
 import { TransformUserModel, type User, UserSchema } from "./models.ts"
 
 // Create test db
-export function createDb(kv: Deno.Kv) {
+export function createDb(kv: DenoKv) {
   return kvdex(kv, {
-    u64s: collection(model<Deno.KvU64>()),
-    s_u64s: collection(model<Deno.KvU64>(), {
+    u64s: collection(model<DenoKvU64>()),
+    s_u64s: collection(model<DenoKvU64>(), {
       serialize: "v8",
     }),
     users: collection(model<User>()),
@@ -65,9 +66,12 @@ export function createDb(kv: Deno.Kv) {
 
 // Temporary use functions
 export async function useKv(
-  fn: (kv: Deno.Kv) => unknown,
+  fn: (kv: DenoKv) => unknown,
 ) {
-  const kv = await Deno.openKv(":memory:")
+  const kv = Deno.args[0] === "map"
+    ? new MapKv()
+    : await Deno.openKv(":memory:")
+
   const result = await fn(kv)
   kv.close()
 

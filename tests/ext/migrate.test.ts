@@ -1,4 +1,4 @@
-import { migrate } from "../../ext/migrate.ts"
+import { migrate } from "../../src/ext/migrate/mod.ts"
 import { collection } from "../../src/collection.ts"
 import { kvdex } from "../../src/kvdex.ts"
 import { model } from "../../src/model.ts"

@@ -4,7 +4,7 @@ import {
   KvIdSchema,
   KvObjectSchema,
   KvValueSchema,
-} from "../../ext/zod.ts"
+} from "../../src/ext/zod/mod.ts"
 import { collection, kvdex } from "../../mod.ts"
 import { useKv } from "../utils.ts"
 import { VALUES } from "../values.ts"
