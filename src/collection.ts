@@ -1362,9 +1362,9 @@ export class Collection<
       ParseId<TOptions>
     >,
   ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
-    const key = extendKey(this._keys.secondaryIndex, order as KvId)
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
     return await this.handleMany(
-      key,
+      prefixKey,
       (doc) => doc,
       options,
     )
