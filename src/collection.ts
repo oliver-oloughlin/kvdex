@@ -81,7 +81,7 @@ import {
 import { AtomicWrapper } from "./atomic_wrapper.ts"
 import { AtomicPool } from "./atomic_pool.ts"
 import { Document } from "./document.ts"
-import { model } from "./model.ts"
+import { model as m } from "./model.ts"
 import { concat, deepMerge, ulid } from "./deps.ts"
 import { v8Serialize } from "./utils.ts"
 import { v8Deserialize } from "./utils.ts"
@@ -120,7 +120,7 @@ export function collection<
   const TOutput extends KvValue,
   const TOptions extends CollectionOptions<TOutput>,
 >(
-  model: Model<TInput, TOutput>,
+  model: Model<TInput, TOutput> = m(),
   options?: TOptions,
 ): BuilderFn<TInput, TOutput, TOptions> {
   return (
@@ -2097,7 +2097,7 @@ export class Collection<
     }
 
     // Return document
-    return new Document(model<T, T>(), {
+    return new Document(m<T, T>(), {
       id,
       versionstamp: result.versionstamp,
       value: result.value as T,

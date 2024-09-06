@@ -17,7 +17,7 @@ import { jsonParse, jsonStringify } from "../../utils.ts"
 import { MapKvAtomicOperation } from "./atomic.ts"
 import { Watcher } from "./watcher.ts"
 import { createVersionstamp, keySort } from "./utils.ts"
-import type { SimpleMap } from "./types.ts"
+import type { MapKvOptions, SimpleMap } from "./types.ts"
 
 export class MapKv implements DenoKv {
   private map: SimpleMap<string, Omit<DenoKvEntry, "key">>
@@ -30,11 +30,11 @@ export class MapKv implements DenoKv {
     }
     | undefined
 
-  constructor(
-    map?: SimpleMap<string, Omit<DenoKvEntry, "key">>,
-    entries?: DenoKvEntry[],
-  ) {
-    this.map = map ?? new Map()
+  constructor({
+    map = new Map(),
+    entries,
+  }: MapKvOptions = {}) {
+    this.map = map
     this.watchers = []
     this.listenHandlers = []
 
