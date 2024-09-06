@@ -400,23 +400,6 @@ export class Collection<
     )
   }
 
-  async findBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
-  >(
-    order: K,
-    options?: ListOptions<
-      Document<TOutput, ParseId<TOptions>>,
-      ParseId<TOptions>
-    >,
-  ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
-    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
-    return await this.handleMany(
-      prefixKey,
-      (doc) => doc,
-      options,
-    )
-  }
-
   /**
    * Finds multiple documents with the given array of ids in the KV store.
    *
@@ -1388,6 +1371,44 @@ export class Collection<
     // Get each document, return result list and current iterator cursor
     return await this.handleMany(
       this._keys.id,
+      (doc) => doc,
+      options,
+    )
+  }
+
+  /**
+   * Retrieves multiple documents from the KV store in the specified
+   * secondary order and according to the given options.
+   *
+   * If no options are given, all documents are retrieved.
+   *
+   * @example
+   * ```ts
+   * // Get all users ordered by 'age'
+   * const { result } = await db.users.getMany("age")
+   *
+   * // Only get users with username that starts with "a", ordered by 'age'
+   * const { result } = await db.users.getMany("age", {
+   *   filter: doc => doc.value.username.startsWith("a")
+   * })
+   * ```
+   *
+   * @param order - Secondary order to retrieve documents by.
+   * @param options - List options, optional.
+   * @returns A promise that resovles to an object containing a list of the retrieved documents and the iterator cursor
+   */
+  async getManyBySecondaryOrder<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    order: K,
+    options?: ListOptions<
+      Document<TOutput, ParseId<TOptions>>,
+      ParseId<TOptions>
+    >,
+  ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+    return await this.handleMany(
+      prefixKey,
       (doc) => doc,
       options,
     )

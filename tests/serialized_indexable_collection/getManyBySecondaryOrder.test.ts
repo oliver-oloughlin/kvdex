@@ -7,13 +7,13 @@ import {
 import { assert } from "../test.deps.ts"
 import { useDb } from "../utils.ts"
 
-Deno.test("indexable_collection - findBySecondaryOrder", async (t) => {
+Deno.test("serialized_indexable_collection - getManyBySecondaryOrder", async (t) => {
   await t.step("Should get all documents by secondary order", async () => {
     await useDb(async (db) => {
-      const cr = await db.i_users.addMany(mockUsersWithAlteredAge)
+      const cr = await db.is_users.addMany(mockUsersWithAlteredAge)
       assert(cr.ok)
 
-      const { result } = await db.i_users.findBySecondaryOrder("age")
+      const { result } = await db.is_users.getManyBySecondaryOrder("age")
       assert(result.length === mockUsersWithAlteredAge.length)
       assert(result[0].value.username === mockUser3.username)
       assert(result[1].value.username === mockUser1.username)
