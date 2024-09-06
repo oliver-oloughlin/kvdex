@@ -9,12 +9,12 @@ import {
 import { useDb } from "../utils.ts"
 import type { User } from "../models.ts"
 
-Deno.test("indexable_collection - updateOneBySecondaryOrder", async (t) => {
+Deno.test("serialized_indexable_collection - updateOneBySecondaryOrder", async (t) => {
   await t.step(
     "Should update only one document of KvObject type using shallow merge",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.i_users.addMany(mockUsersWithAlteredAge)
+        const cr = await db.is_users.addMany(mockUsersWithAlteredAge)
         assert(cr.ok)
 
         const updateData = {
@@ -25,7 +25,7 @@ Deno.test("indexable_collection - updateOneBySecondaryOrder", async (t) => {
           },
         }
 
-        const updateCr = await db.i_users.updateOneBySecondaryOrder(
+        const updateCr = await db.is_users.updateOneBySecondaryOrder(
           "age",
           updateData,
           {
@@ -35,7 +35,7 @@ Deno.test("indexable_collection - updateOneBySecondaryOrder", async (t) => {
 
         assert(updateCr.ok)
 
-        const { result } = await db.i_users.mapBySecondaryOrder(
+        const { result } = await db.is_users.mapBySecondaryOrder(
           "age",
           (doc) => doc.value,
         )
@@ -62,7 +62,7 @@ Deno.test("indexable_collection - updateOneBySecondaryOrder", async (t) => {
     "Should update only one document of KvObject type using deep merge",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.i_users.addMany(mockUsersWithAlteredAge)
+        const cr = await db.is_users.addMany(mockUsersWithAlteredAge)
         assert(cr.ok)
 
         const updateData = {
@@ -73,7 +73,7 @@ Deno.test("indexable_collection - updateOneBySecondaryOrder", async (t) => {
           },
         }
 
-        const updateCr = await db.i_users.updateOneBySecondaryOrder(
+        const updateCr = await db.is_users.updateOneBySecondaryOrder(
           "age",
           updateData,
           {
@@ -84,7 +84,7 @@ Deno.test("indexable_collection - updateOneBySecondaryOrder", async (t) => {
 
         assert(updateCr.ok)
 
-        const { result } = await db.i_users.mapBySecondaryOrder(
+        const { result } = await db.is_users.mapBySecondaryOrder(
           "age",
           (doc) => doc.value,
         )
@@ -111,7 +111,7 @@ Deno.test("indexable_collection - updateOneBySecondaryOrder", async (t) => {
     "Should update only one document of KvObject type using replace",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.i_users.addMany(mockUsersWithAlteredAge)
+        const cr = await db.is_users.addMany(mockUsersWithAlteredAge)
         assert(cr.ok)
 
         const updateData: User = {
@@ -124,7 +124,7 @@ Deno.test("indexable_collection - updateOneBySecondaryOrder", async (t) => {
           },
         }
 
-        const updateCr = await db.i_users.updateOneBySecondaryOrder(
+        const updateCr = await db.is_users.updateOneBySecondaryOrder(
           "age",
           updateData,
           {
@@ -134,7 +134,7 @@ Deno.test("indexable_collection - updateOneBySecondaryOrder", async (t) => {
 
         assert(updateCr.ok)
 
-        const { result } = await db.i_users.mapBySecondaryOrder(
+        const { result } = await db.is_users.mapBySecondaryOrder(
           "age",
           (doc) => doc.value,
         )
@@ -165,7 +165,7 @@ Deno.test("indexable_collection - updateOneBySecondaryOrder", async (t) => {
     await useDb(async (db) => {
       let assertion = true
 
-      const cr = await db.zi_users.addMany(mockUsersWithAlteredAge)
+      const cr = await db.zis_users.addMany(mockUsersWithAlteredAge)
       assert(cr.ok)
 
       const updateData: User = {
@@ -178,7 +178,7 @@ Deno.test("indexable_collection - updateOneBySecondaryOrder", async (t) => {
         },
       }
 
-      await db.zi_users.updateOneBySecondaryOrder(
+      await db.zis_users.updateOneBySecondaryOrder(
         "age",
         updateData,
       ).catch(() => assertion = false)
@@ -191,10 +191,10 @@ Deno.test("indexable_collection - updateOneBySecondaryOrder", async (t) => {
     await useDb(async (db) => {
       let assertion = false
 
-      const cr = await db.zi_users.addMany(mockUsersWithAlteredAge)
+      const cr = await db.zis_users.addMany(mockUsersWithAlteredAge)
       assert(cr.ok)
 
-      await db.zi_users.updateOneBySecondaryOrder(
+      await db.zis_users.updateOneBySecondaryOrder(
         "age",
         mockUserInvalid,
       ).catch(() => assertion = true)
