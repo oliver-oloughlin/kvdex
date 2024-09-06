@@ -19,6 +19,31 @@ import { Watcher } from "./watcher.ts"
 import { createVersionstamp, keySort } from "./utils.ts"
 import type { BasicMap, MapKvOptions } from "./types.ts"
 
+/**
+ * KV instance utilising a `BasicMap` as it's backend.
+ *
+ * Uses `new Map()` by default.
+ *
+ * @example
+ * ```ts
+ * // Initializes a new KV instance wrapping the built-in `Map`
+ * const kv = new MapKv()
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Initializes a new KV instance utilizing `localStorage` as it's backend
+ * const map = new StorageAdapter()
+ * const kv = new MapKv({ map })
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Initializes a new ephimeral KV instance explicitly utilizing `localStorage` as it's backend
+ * const map = new StorageAdapter(localStorage)
+ * const kv = new MapKv({ map, clearOnClose: true })
+ * ```
+ */
 export class MapKv implements DenoKv {
   private map: BasicMap<string, Omit<DenoKvEntry, "key">>
   private clearOnClose: boolean
