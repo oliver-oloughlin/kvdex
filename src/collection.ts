@@ -865,32 +865,6 @@ export class Collection<
     )
   }
 
-  async updateBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
-    const T extends UpdateManyOptions<
-      Document<TOutput, ParseId<TOptions>>,
-      ParseId<TOptions>
-    >,
-  >(
-    order: K,
-    data: UpdateData<TOutput, T["strategy"]>,
-    options?: T,
-  ): Promise<
-    PaginationResult<
-      CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError
-    >
-  > {
-    // Create prefix key
-    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
-
-    // Update each document by secondary index, add commit result to result list
-    return await this.handleMany(
-      prefixKey,
-      (doc) => this.updateDocument(doc, data, options),
-      options,
-    )
-  }
-
   /**
    * Update an existing document by id, or set a new document entry if no matching document exists.
    *
@@ -1053,6 +1027,32 @@ export class Collection<
     return await this.handleMany(
       this._keys.id,
       (doc) => this.updateDocument(doc, value, options),
+      options,
+    )
+  }
+
+  async updateManyBySecondaryOrder<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const T extends UpdateManyOptions<
+      Document<TOutput, ParseId<TOptions>>,
+      ParseId<TOptions>
+    >,
+  >(
+    order: K,
+    data: UpdateData<TOutput, T["strategy"]>,
+    options?: T,
+  ): Promise<
+    PaginationResult<
+      CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError
+    >
+  > {
+    // Create prefix key
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+
+    // Update each document by secondary index, add commit result to result list
+    return await this.handleMany(
+      prefixKey,
+      (doc) => this.updateDocument(doc, data, options),
       options,
     )
   }
@@ -2334,28 +2334,19 @@ export class Collection<
         this,
       )
 
+      await deleteIndices(
+        id,
+        doc.value as KvObject,
+        atomic,
+        this,
+      )
+
       const cr = await atomic.commit()
 
-      // If check fails, return commit error
       if (!cr.ok) {
         return {
           ok: false,
         }
-      }
-
-      // Delete existing indices
-      const doc = await this.find(id)
-      if (doc) {
-        const atomic = this.kv.atomic()
-
-        await deleteIndices(
-          id,
-          doc.value as KvObject,
-          atomic,
-          this,
-        )
-
-        await atomic.commit()
       }
     }
 

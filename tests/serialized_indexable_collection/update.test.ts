@@ -1,6 +1,6 @@
 import type { Document } from "../../mod.ts"
 import { assert } from "../test.deps.ts"
-import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts"
+import { mockUser1, mockUser2, mockUser3, mockUserInvalid } from "../mocks.ts"
 import type { User } from "../models.ts"
 import { useDb } from "../utils.ts"
 
@@ -161,6 +161,38 @@ Deno.test("serialized_indexable_collection - update", async (t) => {
         asserts(byId)
         asserts(byPrimary)
         asserts(bySecondary.result.at(0) ?? null)
+      })
+    },
+  )
+
+  await t.step(
+    "Should not update document or delete indexed entries upon index collision",
+    async () => {
+      await useDb(async (db) => {
+        const id1 = "id1"
+        const id2 = "id2"
+
+        const cr1 = await db.is_users.set(id1, mockUser1)
+        const cr2 = await db.is_users.set(id2, mockUser2)
+
+        assert(cr1.ok)
+        assert(cr2.ok)
+
+        const update = await db.is_users.update(id2, {
+          ...mockUser3,
+          username: mockUser2.username,
+        })
+
+        assert(!update.ok)
+
+        const doc = await db.is_users.find(id2)
+        const docByPrimaryIndex = await db.is_users.findByPrimaryIndex(
+          "username",
+          mockUser2.username,
+        )
+
+        assert(doc?.value.username === mockUser2.username)
+        assert(docByPrimaryIndex?.value.username === mockUser2.username)
       })
     },
   )
