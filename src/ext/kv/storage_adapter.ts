@@ -1,7 +1,26 @@
 import { jsonParse, jsonStringify } from "../../utils.ts"
-import type { SimpleMap } from "./types.ts"
+import type { BasicMap } from "./types.ts"
 
-export class StorageAdapter<K, V> implements SimpleMap<K, V> {
+/**
+ * BasicMap adapter for Storage.
+ *
+ * Enables a Storage object, such as `localStorage`, to be utilized as a basic map.
+ *
+ * Wraps `localStorage` by default.
+ *
+ * @example
+ * ```ts
+ * // Creates a new BasicMap, wrapping `localStorage`
+ * const map = new StorageAdapter()
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Creates a new BasicMap, explicitly wrapping `localStorage`
+ * const map = new StorageAdapter(localStorage)
+ * ```
+ */
+export class StorageAdapter<K, V> implements BasicMap<K, V> {
   private storage: Storage
 
   constructor(storage: Storage = localStorage) {

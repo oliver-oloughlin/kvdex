@@ -17,10 +17,10 @@ import { jsonParse, jsonStringify } from "../../utils.ts"
 import { MapKvAtomicOperation } from "./atomic.ts"
 import { Watcher } from "./watcher.ts"
 import { createVersionstamp, keySort } from "./utils.ts"
-import type { MapKvOptions, SimpleMap } from "./types.ts"
+import type { BasicMap, MapKvOptions } from "./types.ts"
 
 export class MapKv implements DenoKv {
-  private map: SimpleMap<string, Omit<DenoKvEntry, "key">>
+  private map: BasicMap<string, Omit<DenoKvEntry, "key">>
   private clearOnClose: boolean
   private watchers: Watcher[]
   private listenHandlers: ((msg: unknown) => unknown)[]
