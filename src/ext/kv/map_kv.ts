@@ -14,16 +14,10 @@ import type {
   DenoKvWatchOptions,
 } from "../../types.ts"
 import { jsonParse, jsonStringify } from "../../utils.ts"
-import { KvMapAtomicOperation } from "./atomic.ts"
+import { MapKvAtomicOperation } from "./atomic.ts"
 import { Watcher } from "./watcher.ts"
 import { createVersionstamp, keySort } from "./utils.ts"
-
-export type SimpleMap<K, V> = {
-  set(key: K, value: V): void
-  get(key: K): V | null
-  delete(key: K): void
-  entries(): IterableIterator<[K, V]>
-}
+import type { SimpleMap } from "./types.ts"
 
 export class MapKv implements DenoKv {
   private map: SimpleMap<string, Omit<DenoKvEntry, "key">>
@@ -189,7 +183,7 @@ export class MapKv implements DenoKv {
   }
 
   atomic(): DenoAtomicOperation {
-    return new KvMapAtomicOperation(this)
+    return new MapKvAtomicOperation(this)
   }
 
   _set(

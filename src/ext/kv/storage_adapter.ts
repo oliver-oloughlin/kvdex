@@ -1,5 +1,5 @@
 import { jsonParse, jsonStringify } from "../../utils.ts"
-import type { SimpleMap } from "./map_kv.ts"
+import type { SimpleMap } from "./types.ts"
 
 export class StorageAdapter<K, V> implements SimpleMap<K, V> {
   private storage: Storage
