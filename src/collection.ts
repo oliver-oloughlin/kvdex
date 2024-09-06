@@ -1385,10 +1385,10 @@ export class Collection<
    * @example
    * ```ts
    * // Get all users ordered by 'age'
-   * const { result } = await db.users.getMany("age")
+   * const { result } = await db.users.getManyBySecondaryOrder("age")
    *
    * // Only get users with username that starts with "a", ordered by 'age'
-   * const { result } = await db.users.getMany("age", {
+   * const { result } = await db.users.getManyBySecondaryOrder("age", {
    *   filter: doc => doc.value.username.startsWith("a")
    * })
    * ```
