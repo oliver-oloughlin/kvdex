@@ -400,6 +400,23 @@ export class Collection<
     )
   }
 
+  async findBySecondaryOrder<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    order: K,
+    options?: ListOptions<
+      Document<TOutput, ParseId<TOptions>>,
+      ParseId<TOptions>
+    >,
+  ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+    return await this.handleMany(
+      prefixKey,
+      (doc) => doc,
+      options,
+    )
+  }
+
   /**
    * Finds multiple documents with the given array of ids in the KV store.
    *
@@ -693,6 +710,29 @@ export class Collection<
       index as KvId,
       compressed,
     )
+
+    // Delete documents by secondary index, return iterator cursor
+    const { cursor } = await this.handleMany(
+      prefixKey,
+      (doc) => this.deleteDocuments([doc.id], this._keepsHistory),
+      options,
+    )
+
+    // Return iterator cursor
+    return { cursor }
+  }
+
+  async deleteBySecondaryOrder<
+    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+  >(
+    order: K,
+    options?: ListOptions<
+      Document<TOutput, ParseId<TOptions>>,
+      ParseId<TOptions>
+    >,
+  ): Promise<Pagination> {
+    // Create prefix key
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
 
     // Delete documents by secondary index, return iterator cursor
     const { cursor } = await this.handleMany(
@@ -1031,7 +1071,7 @@ export class Collection<
     )
   }
 
-  async updateManyBySecondaryOrder<
+  async updateBySecondaryOrder<
     const K extends SecondaryIndexKeys<TOutput, TOptions>,
     const T extends UpdateManyOptions<
       Document<TOutput, ParseId<TOptions>>,
@@ -1348,23 +1388,6 @@ export class Collection<
     // Get each document, return result list and current iterator cursor
     return await this.handleMany(
       this._keys.id,
-      (doc) => doc,
-      options,
-    )
-  }
-
-  async getManyBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
-  >(
-    order: K,
-    options?: ListOptions<
-      Document<TOutput, ParseId<TOptions>>,
-      ParseId<TOptions>
-    >,
-  ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
-    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
-    return await this.handleMany(
-      prefixKey,
       (doc) => doc,
       options,
     )
