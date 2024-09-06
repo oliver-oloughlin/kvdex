@@ -4,17 +4,17 @@ import type { SimpleMap } from "./types.ts"
 export class StorageAdapter<K, V> implements SimpleMap<K, V> {
   private storage: Storage
 
-  constructor(storage?: Storage) {
-    this.storage = storage ?? localStorage
+  constructor(storage: Storage = localStorage) {
+    this.storage = storage
   }
 
   set(key: K, value: V): void {
     this.storage.setItem(jsonStringify(key), jsonStringify(value))
   }
 
-  get(key: K): V | null {
+  get(key: K): V | undefined {
     const valStr = this.storage.getItem(jsonStringify(key))
-    return !valStr ? null : jsonParse<V>(valStr)
+    return !valStr ? undefined : jsonParse<V>(valStr)
   }
 
   delete(key: K): void {
@@ -33,5 +33,9 @@ export class StorageAdapter<K, V> implements SimpleMap<K, V> {
       const value = jsonParse<V>(valStr)
       yield [key, value]
     }
+  }
+
+  clear(): void {
+    this.storage.clear()
   }
 }

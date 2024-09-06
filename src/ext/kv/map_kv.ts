@@ -21,6 +21,7 @@ import type { MapKvOptions, SimpleMap } from "./types.ts"
 
 export class MapKv implements DenoKv {
   private map: SimpleMap<string, Omit<DenoKvEntry, "key">>
+  private clearOnClose: boolean
   private watchers: Watcher[]
   private listenHandlers: ((msg: unknown) => unknown)[]
   private listener:
@@ -33,8 +34,10 @@ export class MapKv implements DenoKv {
   constructor({
     map = new Map(),
     entries,
+    clearOnClose = false,
   }: MapKvOptions = {}) {
     this.map = map
+    this.clearOnClose = clearOnClose
     this.watchers = []
     this.listenHandlers = []
 
@@ -46,6 +49,7 @@ export class MapKv implements DenoKv {
   close(): void {
     this.watchers.forEach((w) => w.cancel())
     this.listener?.resolve()
+    if (this.clearOnClose) this.map.clear()
   }
 
   delete(key: DenoKvStrictKey) {
