@@ -1,13 +1,14 @@
 {
   "name": "@olli/kvdex",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "exports": {
     ".": "./mod.ts",
-    "./zod": "./ext/zod.ts",
-    "./migrate": "./ext/migrate.ts"
+    "./zod": "./src/ext/zod/mod.ts",
+    "./migrate": "./src/ext/migrate/mod.ts",
+    "./kv": "./src/ext/kv/mod.ts"
   },
   "tasks": {
-    "check": "deno check mod.ts src/*.ts ext/*.ts tests/*.ts tests/**/*.ts benchmarks/**/*ts",
+    "check": "deno check mod.ts src/*.ts tests/**/*.ts benchmarks/**/*.ts",
     "test": "deno test --allow-write --allow-read --allow-ffi --allow-sys --unstable-kv --trace-leaks",
     "bench": "deno bench --unstable-kv",
     "prep": "deno task check && deno fmt && deno lint && deno publish --dry-run --allow-dirty && deno task test",

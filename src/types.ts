@@ -913,14 +913,19 @@ export type DenoKvListOptions = {
 }
 
 /** Deno [KVListIterator](https://deno.land/api?s=Deno.KvListIterator&unstable=) substitute type */
-export type DenoKvListIterator = AsyncIterableIterator<DenoKvEntryMaybe> & {
-  /**
-   * Cursor of the current position in the iteration.
-   * This cursor can be used to resume iteration from the current position in the future
-   * by passing it to any of the list operations (e.g. `getMany()`, `map()`, `forEach()` etc).
-   */
-  cursor: string
-}
+export type DenoKvListIterator =
+  & (
+    | AsyncIterableIterator<DenoKvEntryMaybe>
+    | IterableIterator<DenoKvEntryMaybe>
+  )
+  & {
+    /**
+     * Cursor of the current position in the iteration.
+     * This cursor can be used to resume iteration from the current position in the future
+     * by passing it to any of the list operations (e.g. `getMany()`, `map()`, `forEach()` etc).
+     */
+    cursor: string
+  }
 
 /** Deno [AtomicOperation](deno.land/api?s=Deno.AtomicOperation&unstable=) substitute type */
 export type DenoAtomicOperation = {

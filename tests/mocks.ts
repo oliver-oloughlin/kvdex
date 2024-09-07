@@ -40,3 +40,18 @@ export const mockUserInvalid = {
     houseNr: "420",
   },
 } as unknown as User
+
+export const mockUsersWithAlteredAge: User[] = [
+  {
+    ...mockUser1,
+    age: 50,
+  },
+  {
+    ...mockUser2,
+    age: 80,
+  },
+  {
+    ...mockUser3,
+    age: 20,
+  },
+]

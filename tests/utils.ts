@@ -1,13 +1,14 @@
-import { collection, kvdex } from "../mod.ts"
+import { collection, type DenoKv, type DenoKvU64, kvdex } from "../mod.ts"
+import { MapKv } from "../src/ext/kv/map_kv.ts"
 import { model } from "../src/model.ts"
 import { TransformUserModel, type User, UserSchema } from "./models.ts"
 
 // Create test db
-export function createDb(kv: Deno.Kv) {
+export function createDb(kv: DenoKv) {
   return kvdex(kv, {
-    u64s: collection(model<Deno.KvU64>()),
-    s_u64s: collection(model<Deno.KvU64>(), {
-      serialize: "v8",
+    u64s: collection(model<DenoKvU64>()),
+    s_u64s: collection(model<DenoKvU64>(), {
+      serialize: "json",
     }),
     users: collection(model<User>()),
     i_users: collection(model<User>(), {
@@ -17,14 +18,14 @@ export function createDb(kv: Deno.Kv) {
       },
     }),
     s_users: collection(model<User>(), {
-      serialize: "v8",
+      serialize: "json",
     }),
     is_users: collection(model<User>(), {
       indices: {
         username: "primary",
         age: "secondary",
       },
-      serialize: "v8",
+      serialize: "json",
     }),
     z_users: collection(UserSchema),
     zi_users: collection(UserSchema, {
@@ -34,14 +35,14 @@ export function createDb(kv: Deno.Kv) {
       },
     }),
     zs_users: collection(UserSchema, {
-      serialize: "v8",
+      serialize: "json",
     }),
     zis_users: collection(UserSchema, {
       indices: {
         username: "primary",
         age: "secondary",
       },
-      serialize: "v8",
+      serialize: "json",
     }),
     a_users: collection(TransformUserModel),
     ai_users: collection(TransformUserModel, {
@@ -51,23 +52,26 @@ export function createDb(kv: Deno.Kv) {
       },
     }),
     as_users: collection(TransformUserModel, {
-      serialize: "v8",
+      serialize: "json",
     }),
     ais_users: collection(TransformUserModel, {
       indices: {
         name: "primary",
         decadeAge: "secondary",
       },
-      serialize: "v8",
+      serialize: "json",
     }),
   })
 }
 
 // Temporary use functions
 export async function useKv(
-  fn: (kv: Deno.Kv) => unknown,
+  fn: (kv: DenoKv) => unknown,
 ) {
-  const kv = await Deno.openKv(":memory:")
+  const kv = Deno.args[0] === "map"
+    ? new MapKv()
+    : await Deno.openKv(":memory:")
+
   const result = await fn(kv)
   kv.close()
 
