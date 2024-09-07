@@ -9,7 +9,7 @@ import { generateUsers, useDb } from "../utils.ts"
 import type { User } from "../models.ts"
 
 Deno.test.ignore(
-  "indexable_collection - updateBySecondaryOrder",
+  "indexable_collection - updateManyBySecondaryOrder",
   async (t) => {
     await t.step(
       "Should update documents of KvObject type using shallow merge by secondary order",
@@ -30,7 +30,7 @@ Deno.test.ignore(
             },
           }
 
-          const { result } = await db.i_users.updateBySecondaryOrder(
+          const { result } = await db.i_users.updateManyBySecondaryOrder(
             "age",
             updateData,
             {
@@ -84,7 +84,7 @@ Deno.test.ignore(
             },
           }
 
-          const { result } = await db.i_users.updateBySecondaryOrder(
+          const { result } = await db.i_users.updateManyBySecondaryOrder(
             "age",
             updateData,
             {
@@ -138,7 +138,7 @@ Deno.test.ignore(
             },
           }
 
-          const { result: crs } = await db.i_users.updateBySecondaryOrder(
+          const { result: crs } = await db.i_users.updateManyBySecondaryOrder(
             "age",
             updateData,
             {
@@ -191,7 +191,7 @@ Deno.test.ignore(
         const cr = await db.zi_users.addMany(users)
         assert(cr.ok)
 
-        await db.zi_users.updateBySecondaryOrder("age", mockUser1)
+        await db.zi_users.updateManyBySecondaryOrder("age", mockUser1)
           .catch(() => assertion = false)
 
         assert(assertion)
@@ -206,7 +206,7 @@ Deno.test.ignore(
         const cr = await db.zi_users.addMany(users)
         assert(cr.ok)
 
-        await db.zi_users.updateBySecondaryOrder(
+        await db.zi_users.updateManyBySecondaryOrder(
           "age",
           mockUserInvalid,
         ).catch(() => assertion = true)

@@ -14,19 +14,39 @@ import type {
   DenoKvWatchOptions,
 } from "../../types.ts"
 import { jsonParse, jsonStringify } from "../../utils.ts"
-import { KvMapAtomicOperation } from "./atomic.ts"
+import { MapKvAtomicOperation } from "./atomic.ts"
 import { Watcher } from "./watcher.ts"
 import { createVersionstamp, keySort } from "./utils.ts"
+import type { BasicMap, MapKvOptions } from "./types.ts"
 
-export type SimpleMap<K, V> = {
-  set(key: K, value: V): void
-  get(key: K): V | null
-  delete(key: K): void
-  entries(): IterableIterator<[K, V]>
-}
-
+/**
+ * KV instance utilising a `BasicMap` as it's backend.
+ *
+ * Uses `new Map()` by default.
+ *
+ * @example
+ * ```ts
+ * // Initializes a new KV instance wrapping the built-in `Map`
+ * const kv = new MapKv()
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Initializes a new KV instance utilizing `localStorage` as it's backend
+ * const map = new StorageAdapter()
+ * const kv = new MapKv({ map })
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Initializes a new ephimeral KV instance explicitly utilizing `localStorage` as it's backend
+ * const map = new StorageAdapter(localStorage)
+ * const kv = new MapKv({ map, clearOnClose: true })
+ * ```
+ */
 export class MapKv implements DenoKv {
-  private map: SimpleMap<string, Omit<DenoKvEntry, "key">>
+  private map: BasicMap<string, Omit<DenoKvEntry, "key">>
+  private clearOnClose: boolean
   private watchers: Watcher[]
   private listenHandlers: ((msg: unknown) => unknown)[]
   private listener:
@@ -36,11 +56,13 @@ export class MapKv implements DenoKv {
     }
     | undefined
 
-  constructor(
-    map?: SimpleMap<string, Omit<DenoKvEntry, "key">>,
-    entries?: DenoKvEntry[],
-  ) {
-    this.map = map ?? new Map()
+  constructor({
+    map = new Map(),
+    entries,
+    clearOnClose = false,
+  }: MapKvOptions = {}) {
+    this.map = map
+    this.clearOnClose = clearOnClose
     this.watchers = []
     this.listenHandlers = []
 
@@ -52,6 +74,7 @@ export class MapKv implements DenoKv {
   close(): void {
     this.watchers.forEach((w) => w.cancel())
     this.listener?.resolve()
+    if (this.clearOnClose) this.map.clear()
   }
 
   delete(key: DenoKvStrictKey) {
@@ -189,7 +212,7 @@ export class MapKv implements DenoKv {
   }
 
   atomic(): DenoAtomicOperation {
-    return new KvMapAtomicOperation(this)
+    return new MapKvAtomicOperation(this)
   }
 
   _set(

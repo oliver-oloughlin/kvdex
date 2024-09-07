@@ -1,10 +1,11 @@
 {
   "name": "@olli/kvdex",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "exports": {
     ".": "./mod.ts",
     "./zod": "./src/ext/zod/mod.ts",
-    "./migrate": "./src/ext/migrate/mod.ts"
+    "./migrate": "./src/ext/migrate/mod.ts",
+    "./kv": "./src/ext/kv/mod.ts"
   },
   "tasks": {
     "check": "deno check mod.ts src/*.ts tests/**/*.ts benchmarks/**/*.ts",
