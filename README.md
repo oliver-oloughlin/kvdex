@@ -51,25 +51,33 @@ _Supported Deno verisons:_ **^1.43.0**
     - [updateByPrimaryIndex()](#updatebyprimaryindex)
     - [updateBySecondaryIndex()](#updatebysecondaryindex)
     - [updateMany()](#updatemany)
+    - [updateManyBySecondaryOrder()](#updatemanybysecondaryorder)
     - [updateOne()](#updateone)
     - [updateOneBySecondaryIndex()](#updateonebysecondaryindex)
+    - [updateOneBySecondaryOrder()](#updateonebysecondaryorder)
     - [upsert()](#upsert)
     - [upsertByPrimaryIndex()](#upsertbyprimaryindex)
     - [delete()](#delete)
     - [deleteByPrimaryIndex()](#deletebyprimaryindex)
     - [deleteBySecondaryIndex()](#deletebysecondaryindex)
     - [deleteMany()](#deletemany)
+    - [deleteManyBySecondaryOrder()](#deletemanybysecondaryorder)
     - [deleteHistory()](#deletehistory)
     - [deleteUndelivered()](#deleteundelivered)
     - [getMany()](#getmany)
+    - [getManyBySecondaryOrder()](#getmanybysecondaryorder)
     - [getOne()](#getone)
     - [getOneBySecondaryIndex()](#getonebysecondaryindex)
+    - [getOneBySecondaryOrder()](#getonebysecondaryorder)
     - [forEach()](#foreach)
     - [forEachBySecondaryIndex()](#foreachbysecondaryindex)
+    - [forEachBySecondaryOrder()](#foreachbysecondaryorder)
     - [map()](#map)
     - [mapBySecondaryIndex()](#mapbysecondaryindex)
+    - [mapBySecondaryOrder()](#mapbysecondaryorder)
     - [count()](#count)
     - [countBySecondaryIndex()](#countbysecondaryindex)
+    - [countBySecondaryOrder()](#countbysecondaryorder)
     - [enqueue()](#enqueue)
     - [listenQueue()](#listenqueue)
     - [watch()](#watch)
@@ -554,6 +562,16 @@ const { result } = await db.users.updateMany({ age: 67 }, {
 const { result } = await db.users.updateMany({ username: "oliver" })
 ```
 
+### updateManyBySecondaryOrder()
+
+Update the value of multiple existing documents in the collection by a secondary
+order.
+
+```ts
+// Updates the first 10 users ordered by age and sets username = "anon"
+await db.users.updateManyBySecondaryOrder("age", { username: "anon" })
+```
+
 ### updateOne()
 
 Update the first matching document from the KV store. It optionally takes the
@@ -596,6 +614,18 @@ const result = await db.users.updateOneBySecondaryIndex(
     strategy: "merge-shallow",
   },
 )
+```
+
+### updateOneBySecondaryOrder()
+
+Update the value of one existing document in the collection by a secondary
+order.
+
+```ts
+// Updates the first user ordered by age and sets username = "anon"
+const result = await db.users.updateOneBySecondaryOrder("age", {
+  username: "anon",
+})
 ```
 
 ### upsert()
@@ -707,6 +737,18 @@ await db.users.deleteMany({
 })
 ```
 
+### deleteManyBySecondaryOrder()
+
+Delete multiple documents from the KV store by a secondary order. The method
+takes an optional options argument that can be used for filtering of documents,
+and pagination. If no options are provided, all documents in the collection are
+deleted.
+
+```ts
+// Deletes the first 10 users ordered by age
+await db.users.deleteManyBySecondaryOrder("age", { limit: 10 })
+```
+
 ### deleteHistory()
 
 Delete the version history of a document by id.
@@ -751,6 +793,22 @@ const { result } = await db.users.getMany({
 })
 ```
 
+### getManyBySecondaryOrder()
+
+Retrieves multiple documents from the KV store in the specified secondary order
+and according to the given options. If no options are provided, all documents
+are retrieved.
+
+```ts
+// Get all users ordered by age
+const { result } = await db.users.getManyBySecondaryOrder("age")
+
+// Only get users with username that starts with "a", ordered by age
+const { result } = await db.users.getManyBySecondaryOrder("age", {
+  filter: (doc) => doc.value.username.startsWith("a"),
+})
+```
+
 ### getOne()
 
 Retrieve the first matching document from the KV store. It optionally takes the
@@ -782,6 +840,17 @@ const user = await db.users.getOneBySecondaryIndex("age", 20)
 const user = await db.users.getOneBySecondaryIndex("age", 20, {
   filter: (doc) => doc.value.username.startsWith("a"),
 })
+```
+
+### getOneBySecondaryOrder()
+
+Retrieves one document from the KV store by a secondary order and according to
+the given options. If no options are provided, the first document in the
+collection by the given order is retrieved.
+
+```ts
+// Get the first user ordered by age
+const user = await db.users.getOneBySecondaryOrder("age")
 ```
 
 ### forEach()
@@ -824,6 +893,20 @@ all documents in the collection matching the index.
 await db.users.forEachBySecondaryIndex(
   "age",
   20,
+  (doc) => console.log(doc.value.username),
+)
+```
+
+### forEachBySecondaryOrder()
+
+Executes a callback function for every document by a secondary order and
+according to the given options. If no options are provided, the callback
+function is executed for all documents.
+
+```ts
+// Prints the username of all users ordered by age
+await db.users.forEachBySecondaryOrder(
+  "age",
   (doc) => console.log(doc.value.username),
 )
 ```
@@ -872,6 +955,21 @@ const { result } = await db.users.mapBySecondaryIndex(
 )
 ```
 
+### mapBySecondaryOrder()
+
+Executes a callback function for every document by a secondary order and
+according to the given options. If no options are provided, the callback
+function is executed for all documents. The results from the callback function
+are returned as a list.
+
+```ts
+// Returns a list of usernames of all users ordered by age
+const { result } = await db.users.mapBySecondaryOrder(
+  "age",
+  (doc) => doc.value.username,
+)
+```
+
 ### count()
 
 Count the number of documents in a collection. Takes an optional options
@@ -897,6 +995,18 @@ options are given, it will count all documents matching the index.
 ```ts
 // Counts all users where age = 20
 const count = await db.users.countBySecondaryIndex("age", 20)
+```
+
+### countBySecondaryOrder()
+
+Counts the number of documents in the collection by a secondary order.
+
+```ts
+// Counts how many of the first 10 users ordered by age that are under the age of 18
+const count = await db.users.countBySecondaryOrder("age", {
+  limit: 10,
+  filter: (doc) => doc.value.age < 18,
+})
 ```
 
 ### enqueue()

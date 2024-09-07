@@ -1177,7 +1177,7 @@ export class Collection<
    * @example
    * ```ts
    * // Updates the first user ordered by age and sets username = "anon"
-   * const result = await db.users.updateOneBySecondaryIndex("age", { username: "anon" })
+   * const result = await db.users.updateOneBySecondaryOrder("age", { username: "anon" })
    * ```
    *
    * @param order - Secondary order to update document by.
@@ -1425,7 +1425,7 @@ export class Collection<
    * Retrieves multiple documents from the KV store in the specified
    * secondary order and according to the given options.
    *
-   * If no options are given, all documents are retrieved.
+   * If no options are provided, all documents are retrieved.
    *
    * @example
    * ```ts
@@ -1553,7 +1553,7 @@ export class Collection<
   /**
    * Retrieves one document from the KV store by a secondary order and according to the given options.
    *
-   * If no options are given, the first document in the collection by the given order is retrieved.
+   * If no options are provided, the first document in the collection by the given order is retrieved.
    *
    * @example
    * ```ts
@@ -1679,7 +1679,7 @@ export class Collection<
   /**
    * Executes a callback function for every document by a secondary order and according to the given options.
    *
-   * If no options are given, the callback function is executed for all documents.
+   * If no options are provided, the callback function is executed for all documents.
    *
    * @example
    * ```ts
@@ -1813,7 +1813,7 @@ export class Collection<
   /**
    * Executes a callback function for every document by a secondary order and according to the given options.
    *
-   * If no options are given, the callback function is executed for all documents.
+   * If no options are provided, the callback function is executed for all documents.
    *
    * The results from the callback function are returned as a list.
    *
