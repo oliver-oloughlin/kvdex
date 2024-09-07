@@ -11,7 +11,7 @@
  * import { kvdex } from "@olli/kvdex"
  * import { MapKv } from "@olli/kvdex/kv"
  *
- * // Create a database from a `MapKv` instance, using `Map`as it's backend by default.
+ * // Create a database from a `MapKv` instance, using `Map` as it's backend by default.
  * const kv = new MapKv()
  * const db = kvdex(kv, {})
  * ```
