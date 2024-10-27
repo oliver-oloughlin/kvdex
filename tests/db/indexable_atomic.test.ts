@@ -1,6 +1,6 @@
-import { assert } from "../test.deps.ts"
-import { mockUser1 } from "../mocks.ts"
-import { useDb } from "../utils.ts"
+import { assert } from "../test.deps.ts";
+import { mockUser1 } from "../mocks.ts";
+import { useDb } from "../utils.ts";
 
 Deno.test("db - indexable_atomic", async (t) => {
   await t.step(
@@ -10,104 +10,104 @@ Deno.test("db - indexable_atomic", async (t) => {
         await db
           .atomic((schema) => schema.i_users)
           .add(mockUser1)
-          .commit()
+          .commit();
 
-        const count = await db.i_users.count()
+        const count = await db.i_users.count();
 
         const byPrimary = await db.i_users.findByPrimaryIndex(
           "username",
           mockUser1.username,
-        )
+        );
 
         const bySecondary = await db.i_users.findBySecondaryIndex(
           "age",
           mockUser1.age,
-        )
+        );
 
-        assert(count === 1)
-        assert(byPrimary?.value.username === mockUser1.username)
-        assert(bySecondary.result.at(0)?.value.username === mockUser1.username)
-      })
+        assert(count === 1);
+        assert(byPrimary?.value.username === mockUser1.username);
+        assert(bySecondary.result.at(0)?.value.username === mockUser1.username);
+      });
     },
-  )
+  );
 
   await t.step(
     "Should set document in collection with index entries",
     async () => {
       await useDb(async (db) => {
-        const id = "id"
+        const id = "id";
 
         await db
           .atomic((schema) => schema.i_users)
           .set(id, mockUser1)
-          .commit()
+          .commit();
 
-        const byId = await db.i_users.find(id)
+        const byId = await db.i_users.find(id);
 
         const byPrimary = await db.i_users.findByPrimaryIndex(
           "username",
           mockUser1.username,
-        )
+        );
 
         const bySecondary = await db.i_users.findBySecondaryIndex(
           "age",
           mockUser1.age,
-        )
+        );
 
-        assert(byId?.id === id)
-        assert(byPrimary?.id === id)
-        assert(bySecondary.result.at(0)?.id === id)
-      })
+        assert(byId?.id === id);
+        assert(byPrimary?.id === id);
+        assert(bySecondary.result.at(0)?.id === id);
+      });
     },
-  )
+  );
 
   await t.step(
     "Should not set document in collection with colliding primary index",
     async () => {
       await useDb(async (db) => {
-        const cr1 = await db.i_users.add(mockUser1)
-        assert(cr1.ok)
+        const cr1 = await db.i_users.add(mockUser1);
+        assert(cr1.ok);
 
         const cr2 = await db
           .atomic((schema) => schema.i_users)
           .add(mockUser1)
-          .commit()
+          .commit();
 
-        assert(!cr2.ok)
-      })
+        assert(!cr2.ok);
+      });
     },
-  )
+  );
 
   await t.step(
     "Should delete document and indices from collection",
     async () => {
       await useDb(async (db) => {
-        const cr1 = await db.i_users.add(mockUser1)
-        assert(cr1.ok)
+        const cr1 = await db.i_users.add(mockUser1);
+        assert(cr1.ok);
 
         await db
           .atomic((schema) => schema.i_users)
           .delete(cr1.id)
-          .commit()
+          .commit();
 
-        const byId = await db.i_users.find(cr1.id)
+        const byId = await db.i_users.find(cr1.id);
 
         const byPrimary = await db.i_users.findByPrimaryIndex(
           "username",
           mockUser1.username,
-        )
+        );
 
         const bySecondary = await db.i_users.findBySecondaryIndex(
           "age",
           mockUser1.age,
-        )
+        );
 
-        assert(byId === null)
-        assert(byPrimary === null)
-        assert(bySecondary.result.length === 0)
-      })
+        assert(byId === null);
+        assert(byPrimary === null);
+        assert(bySecondary.result.length === 0);
+      });
     },
-  )
+  );
 
   await t.step(
     "Should fail operation when trying to set and delete from the same indexbale collection",
@@ -117,10 +117,10 @@ Deno.test("db - indexable_atomic", async (t) => {
           .atomic((schema) => schema.i_users)
           .add(mockUser1)
           .delete("id")
-          .commit()
+          .commit();
 
-        assert(!cr.ok)
-      })
+        assert(!cr.ok);
+      });
     },
-  )
-})
+  );
+});

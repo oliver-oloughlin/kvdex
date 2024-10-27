@@ -131,37 +131,37 @@ type.
 Using the standard model strategy:
 
 ```ts
-import { model } from "jsr:@olli/kvdex"
+import { model } from "jsr:@olli/kvdex";
 
 type User = {
-  username: string
-  age: number
-  activities: string[]
+  username: string;
+  age: number;
+  activities: string[];
   address?: {
-    country: string
-    city: string
-    street: string
-    houseNumber: number | null
-  }
-}
+    country: string;
+    city: string;
+    street: string;
+    houseNumber: number | null;
+  };
+};
 
 // Normal model (equal input and output)
-const UserModel = model<User>()
+const UserModel = model<User>();
 
 // Asymmetric model (mapped output)
 const UserModel = model((user: User) => ({
   upperCaseUsername: user.username.toUpperCase(),
   ageInDecades: user.age / 10,
   createdAt: new Date(),
-}))
+}));
 ```
 
 Using Zod instead:
 
 ```ts
-import { z } from "npm:zod"
+import { z } from "npm:zod";
 
-type User = z.infer<typeof UserModel>
+type User = z.infer<typeof UserModel>;
 
 const UserModel = z.object({
   username: z.string(),
@@ -173,7 +173,7 @@ const UserModel = z.object({
     street: z.string(),
     houseNumber: z.number().nullable(),
   }).optional(),
-})
+});
 ```
 
 ## Database
@@ -227,29 +227,29 @@ added, which can be useful to create derived ids. The default id generator uses
 Id created from the data being added:
 
 ```ts
-import { collection, kvdex, model } from "jsr:@olli/kvdex"
+import { collection, kvdex, model } from "jsr:@olli/kvdex";
 
-const kv = await Deno.openKv()
+const kv = await Deno.openKv();
 
 const db = kvdex(kv, {
   users: collection(model<User>(), {
     idGenerator: (user) => user.username,
   }),
-})
+});
 ```
 
 Using randomely generated uuids:
 
 ```ts
-import { collection, kvdex, model } from "jsr:@olli/kvdex"
+import { collection, kvdex, model } from "jsr:@olli/kvdex";
 
-const kv = await Deno.openKv()
+const kv = await Deno.openKv();
 
 const db = kvdex(kv, {
   users: collection(model<User>(), {
     idGenerator: () => crypto.randomUUID(),
   }),
-})
+});
 ```
 
 ### `indices`
@@ -260,9 +260,9 @@ querying data based on index values.
 **NOTE:** Index values are always serialized.
 
 ```ts
-import { collection, kvdex, model } from "jsr:@olli/kvdex"
+import { collection, kvdex, model } from "jsr:@olli/kvdex";
 
-const kv = await Deno.openKv()
+const kv = await Deno.openKv();
 
 const db = kvdex(kv, {
   users: collection(model<User>(), {
@@ -271,7 +271,7 @@ const db = kvdex(kv, {
       age: "secondary", // non-unique
     },
   }),
-})
+});
 ```
 
 ### `serialize`
@@ -321,15 +321,15 @@ const db = kvdex(kv, {
 Set to `true` to enable version history. Default is `false`.
 
 ```ts
-import { collection, kvdex, model } from "jsr:@olli/kvdex"
+import { collection, kvdex, model } from "jsr:@olli/kvdex";
 
-const kv = await Deno.openKv()
+const kv = await Deno.openKv();
 
 const db = kvdex(kv, {
   users: collection(model<User>(), {
     history: true,
   }),
-})
+});
 ```
 
 ## Collection Methods
@@ -341,13 +341,13 @@ adhere to the type KvId. This method takes an optional options argument that can
 be used to set the consistency mode.
 
 ```ts
-const userDoc1 = await db.users.find(123)
+const userDoc1 = await db.users.find(123);
 
-const userDoc2 = await db.users.find(123n)
+const userDoc2 = await db.users.find(123n);
 
 const userDoc3 = await db.users.find("oliver", {
   consistency: "eventual", // "strong" by default
-})
+});
 ```
 
 ### findByPrimaryIndex()
@@ -356,7 +356,7 @@ Find a document by a primary index.
 
 ```ts
 // Finds a user document with the username = "oliver"
-const userByUsername = await db.users.findByPrimaryIndex("username", "oliver")
+const userByUsername = await db.users.findByPrimaryIndex("username", "oliver");
 ```
 
 ### findBySecondaryIndex()
@@ -367,12 +367,12 @@ options argument that can be used for filtering of documents, and pagination.
 
 ```ts
 // Returns all users with age = 24
-const { result } = await db.users.findBySecondaryIndex("age", 24)
+const { result } = await db.users.findBySecondaryIndex("age", 24);
 
 // Returns all users with age = 24 AND username that starts with "o"
 const { result } = await db.users.findBySecondaryIndex("age", 24, {
   filter: (doc) => doc.value.username.startsWith("o"),
-})
+});
 ```
 
 ### findMany()
@@ -382,11 +382,11 @@ ids must adhere to the type KvId. This method takes an optional options argument
 that can be used to set the consistency mode.
 
 ```ts
-const userDocs1 = await db.users.findMany(["abc", 123, 123n])
+const userDocs1 = await db.users.findMany(["abc", 123, 123n]);
 
 const userDocs2 = await db.users.findMany(["abc", 123, 123n], {
   consistency: "eventual", // "strong" by default
-})
+});
 ```
 
 ### findHistory()
@@ -396,13 +396,13 @@ timestamp, type of either "write" or "delete", and a copy of the document value
 if the type is "write".
 
 ```ts
-const { result } = await db.users.findHistory("user_id")
+const { result } = await db.users.findHistory("user_id");
 ```
 
 ```ts
 const { result } = await db.users.findHistory("user_id", {
   filter: (entry) => entry.type === "write",
-})
+});
 ```
 
 ### findUndelivered()
@@ -412,11 +412,11 @@ in the collection queue. This method takes an optional options argument that can
 be used to set the consistency mode.
 
 ```ts
-const doc1 = await db.users.findUndelivered("undelivered_id")
+const doc1 = await db.users.findUndelivered("undelivered_id");
 
 const doc2 = await db.users.findUndelivered("undelivered_id", {
   consistency: "eventual", // "strong" by default
-})
+});
 ```
 
 ### add()
@@ -436,7 +436,7 @@ const result = await db.users.add({
     street: "Sesame",
     houseNumber: null,
   },
-})
+});
 ```
 
 ### addMany()
@@ -469,13 +469,13 @@ versionstamp and ok flag.
 
 ```ts
 // Add a new document if the id is not already in use
-const result1 = await db.numbers.set("id", 1024)
+const result1 = await db.numbers.set("id", 1024);
 
 // Overwrite any existing document with the same id
-const result2 = await db.numbers.set("id", 2048, { overwrite: true })
+const result2 = await db.numbers.set("id", 2048, { overwrite: true });
 
 if (result1.ok) {
-  console.log(result.id) // id
+  console.log(result.id); // id
 }
 ```
 
@@ -488,14 +488,14 @@ the `merge-shallow` strategy is also supported.
 
 ```ts
 // Updates the document with a new value
-const result = await db.numbers.update("num1", 42)
+const result = await db.numbers.update("num1", 42);
 
 // Partial update using merge, only updates the age field
 const result = await db.users.update(
   "oliver",
   { age: 30 },
   { strategy: "merge" },
-)
+);
 ```
 
 ### updateByPrimaryIndex()
@@ -508,7 +508,7 @@ const result = await db.users.updateByPrimaryIndex(
   "username",
   "oliver",
   { age: 56 },
-)
+);
 
 // Updates a user document using shallow merge
 const result = await db.users.updateByPrimaryIndex(
@@ -516,7 +516,7 @@ const result = await db.users.updateByPrimaryIndex(
   "anders",
   { age: 89 },
   { strategy: "merge-shallow" },
-)
+);
 ```
 
 ### updateBySecondaryIndex()
@@ -527,7 +527,9 @@ options are given, all documents by the given index value will we updated.
 
 ```ts
 // Updates all user documents with age = 24 and sets age = 67
-const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
+const { result } = await db.users.updateBySecondaryIndex("age", 24, {
+  age: 67,
+});
 
 // Updates all users where age = 24 and username starts with "o", using shallow merge
 const { result } = await db.users.updateBySecondaryIndex(
@@ -538,7 +540,7 @@ const { result } = await db.users.updateBySecondaryIndex(
     filter: (doc) => doc.value.username.startsWith("o"),
     strategy: "merge-shallow",
   },
-)
+);
 ```
 
 ### updateMany()
@@ -550,16 +552,16 @@ documents in the collection.
 
 ```ts
 // Updates all user documents and sets age = 67
-const { result } = await db.users.updateMany({ age: 67 })
+const { result } = await db.users.updateMany({ age: 67 });
 
 // Updates all users where age > 20, using shallow merge
 const { result } = await db.users.updateMany({ age: 67 }, {
   filter: (doc) => doc.value.age > 20,
   strategy: "merge-shallow",
-})
+});
 
 // Only updates first user document and fails the rest when username is a primary index
-const { result } = await db.users.updateMany({ username: "oliver" })
+const { result } = await db.users.updateMany({ username: "oliver" });
 ```
 
 ### updateManyBySecondaryOrder()
@@ -569,7 +571,7 @@ order.
 
 ```ts
 // Updates the first 10 users ordered by age and sets username = "anon"
-await db.users.updateManyBySecondaryOrder("age", { username: "anon" })
+await db.users.updateManyBySecondaryOrder("age", { username: "anon" });
 ```
 
 ### updateOne()
@@ -580,7 +582,7 @@ same `options` argument as `updateMany()`. If no options are given,
 
 ```ts
 // Updates the first user document and sets age = 67
-const result = await db.users.updateOne({ age: 67 })
+const result = await db.users.updateOne({ age: 67 });
 ```
 
 ```ts
@@ -588,7 +590,7 @@ const result = await db.users.updateOne({ age: 67 })
 const result = await db.users.updateOne({ age: 67 }, {
   filter: (doc) => doc.value.age > 20,
   strategy: "merge-shallow",
-})
+});
 ```
 
 ### updateOneBySecondaryIndex()
@@ -600,7 +602,7 @@ collection by the given index value.
 
 ```ts
 // Updates the first user document where age = 20 and sets age = 67
-const result = await db.users.updateOneBySecondaryIndex("age", 20, { age: 67 })
+const result = await db.users.updateOneBySecondaryIndex("age", 20, { age: 67 });
 ```
 
 ```ts
@@ -613,7 +615,7 @@ const result = await db.users.updateOneBySecondaryIndex(
     filter: (doc) => doc.value.username.startsWith("a"),
     strategy: "merge-shallow",
   },
-)
+);
 ```
 
 ### updateOneBySecondaryOrder()
@@ -625,7 +627,7 @@ order.
 // Updates the first user ordered by age and sets username = "anon"
 const result = await db.users.updateOneBySecondaryOrder("age", {
   username: "anon",
-})
+});
 ```
 
 ### upsert()
@@ -680,9 +682,9 @@ const result = await db.users.upsertByPrimaryIndex({
 Delete one or more documents with the given ids from the KV store.
 
 ```ts
-await db.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77")
+await db.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77");
 
-await db.users.delete("user1", "user2", "user3")
+await db.users.delete("user1", "user2", "user3");
 ```
 
 ### deleteByPrimaryIndex()
@@ -691,7 +693,7 @@ Delete a document by a primary index.
 
 ```ts
 // Deletes user with username = "oliver"
-await db.users.deleteByPrimaryIndex("username", "oliver")
+await db.users.deleteByPrimaryIndex("username", "oliver");
 ```
 
 ### deleteBySecondaryIndex()
@@ -701,12 +703,12 @@ argument that can be used for filtering of documents, and pagination.
 
 ```ts
 // Deletes all users with age = 24
-await db.users.deleteBySecondaryIndex("age", 24)
+await db.users.deleteBySecondaryIndex("age", 24);
 
 // Deletes all users with age = 24 AND username that starts with "o"
 await db.users.deleteBySecondaryIndex("age", 24, {
   filter: (doc) => doc.value.username.startsWith("o"),
-})
+});
 ```
 
 ### deleteMany()
@@ -718,23 +720,23 @@ documents in the collection.
 
 ```ts
 // Deletes all user documents
-await db.users.deleteMany()
+await db.users.deleteMany();
 
 // Deletes all user documents where the user's age is above 20
 await db.users.deleteMany({
   filter: (doc) => doc.value.age > 20,
-})
+});
 
 // Deletes the first 10 user documents in the KV store
 await db.users.deleteMany({
   limit: 10,
-})
+});
 
 // Deletes the last 10 user documents in the KV store
 await db.users.deleteMany({
   limit: 10,
   reverse: true,
-})
+});
 ```
 
 ### deleteManyBySecondaryOrder()
@@ -746,7 +748,7 @@ deleted.
 
 ```ts
 // Deletes the first 10 users ordered by age
-await db.users.deleteManyBySecondaryOrder("age", { limit: 10 })
+await db.users.deleteManyBySecondaryOrder("age", { limit: 10 });
 ```
 
 ### deleteHistory()
@@ -754,7 +756,7 @@ await db.users.deleteManyBySecondaryOrder("age", { limit: 10 })
 Delete the version history of a document by id.
 
 ```ts
-await db.users.deleteHistory("user_id")
+await db.users.deleteHistory("user_id");
 ```
 
 ### deleteUndelivered()
@@ -762,7 +764,7 @@ await db.users.deleteHistory("user_id")
 Delete an undelivered document entry by id from the collection queue.
 
 ```ts
-await db.users.deleteUndelivered("id")
+await db.users.deleteUndelivered("id");
 ```
 
 ### getMany()
@@ -774,23 +776,23 @@ the collection.
 
 ```ts
 // Retrieves all user documents
-const { result } = await db.users.getMany()
+const { result } = await db.users.getMany();
 
 // Retrieves all user documents where the user's age is above or equal to 18
 const { result } = await db.users.getMany({
   filter: (doc) => doc.value.age >= 18,
-})
+});
 
 // Retrieves the first 10 user documents in the KV store
 const { result } = await db.users.getMany({
   limit: 10,
-})
+});
 
 // Retrieves the last 10 user documents in the KV store
 const { result } = await db.users.getMany({
   limit: 10,
   reverse: true,
-})
+});
 ```
 
 ### getManyBySecondaryOrder()
@@ -801,12 +803,12 @@ are retrieved.
 
 ```ts
 // Get all users ordered by age
-const { result } = await db.users.getManyBySecondaryOrder("age")
+const { result } = await db.users.getManyBySecondaryOrder("age");
 
 // Only get users with username that starts with "a", ordered by age
 const { result } = await db.users.getManyBySecondaryOrder("age", {
   filter: (doc) => doc.value.username.startsWith("a"),
-})
+});
 ```
 
 ### getOne()
@@ -817,12 +819,12 @@ retrieve the first document in the collection.
 
 ```ts
 // Retrieves the first user document
-const user = await db.users.getOne()
+const user = await db.users.getOne();
 
 // Retrieves the first user where the user's age is above or equal to 18
 const user = await db.users.getOne({
   filter: (doc) => doc.value.age > 18,
-})
+});
 ```
 
 ### getOneBySecondaryIndex()
@@ -834,12 +836,12 @@ collection by the given index value.
 
 ```ts
 // Retrieves the first user document where age = 20
-const user = await db.users.getOneBySecondaryIndex("age", 20)
+const user = await db.users.getOneBySecondaryIndex("age", 20);
 
 // Retrieves the first user where age = 20 and username starts with "a"
 const user = await db.users.getOneBySecondaryIndex("age", 20, {
   filter: (doc) => doc.value.username.startsWith("a"),
-})
+});
 ```
 
 ### getOneBySecondaryOrder()
@@ -850,7 +852,7 @@ collection by the given order is retrieved.
 
 ```ts
 // Get the first user ordered by age
-const user = await db.users.getOneBySecondaryOrder("age")
+const user = await db.users.getOneBySecondaryOrder("age");
 ```
 
 ### forEach()
@@ -862,23 +864,23 @@ all documents in the collection.
 
 ```ts
 // Log the username of every user document
-await db.users.forEach((doc) => console.log(doc.value.username))
+await db.users.forEach((doc) => console.log(doc.value.username));
 
 // Log the username of every user that has "swimming" as an activity
 await db.users.forEach((doc) => console.log(doc.value.username), {
   filter: (doc) => doc.value.activities.includes("swimming"),
-})
+});
 
 // Log the usernames of the first 10 user documents in the KV store
 await db.users.forEach((doc) => console.log(doc.value.username), {
   limit: 10,
-})
+});
 
 // Log the usernames of the last 10 user documents in the KV store
 await db.users.forEach((doc) => console.log(doc.value.username), {
   limit: 10,
   reverse: true,
-})
+});
 ```
 
 ### forEachBySecondaryIndex()
@@ -894,7 +896,7 @@ await db.users.forEachBySecondaryIndex(
   "age",
   20,
   (doc) => console.log(doc.value.username),
-)
+);
 ```
 
 ### forEachBySecondaryOrder()
@@ -908,7 +910,7 @@ function is executed for all documents.
 await db.users.forEachBySecondaryOrder(
   "age",
   (doc) => console.log(doc.value.username),
-)
+);
 ```
 
 ### map()
@@ -920,23 +922,23 @@ function will be executed for all documents in the collection.
 
 ```ts
 // Get a list of all the ids of the user documents
-const { result } = await db.users.map((doc) => doc.id)
+const { result } = await db.users.map((doc) => doc.id);
 
 // Get a list of all usernames of users with age > 20
 const { result } = await db.users.map((doc) => doc.value.username, {
   filter: (doc) => doc.value.age > 20,
-})
+});
 
 // Get a list of the usernames of the first 10 users in the KV store
 const { result } = await db.users.forEach((doc) => doc.value.username, {
   limit: 10,
-})
+});
 
 // Get a list of the usernames of the last 10 users in the KV store
 const { result } = await db.users.forEach((doc) => doc.value.username, {
   limit: 10,
   reverse: true,
-})
+});
 ```
 
 ### mapBySecondaryIndex()
@@ -952,7 +954,7 @@ const { result } = await db.users.mapBySecondaryIndex(
   "age",
   20,
   (doc) => doc.value.username,
-)
+);
 ```
 
 ### mapBySecondaryOrder()
@@ -967,7 +969,7 @@ are returned as a list.
 const { result } = await db.users.mapBySecondaryOrder(
   "age",
   (doc) => doc.value.username,
-)
+);
 ```
 
 ### count()
@@ -978,12 +980,12 @@ it will count all documents in the collection.
 
 ```ts
 // Returns the total number of user documents in the KV store
-const count = await db.users.count()
+const count = await db.users.count();
 
 // Returns the number of users with age > 20
 const count = await db.users.count({
   filter: (doc) => doc.value.age > 20,
-})
+});
 ```
 
 ### countBySecondaryIndex()
@@ -994,7 +996,7 @@ options are given, it will count all documents matching the index.
 
 ```ts
 // Counts all users where age = 20
-const count = await db.users.countBySecondaryIndex("age", 20)
+const count = await db.users.countBySecondaryIndex("age", 20);
 ```
 
 ### countBySecondaryOrder()
@@ -1006,7 +1008,7 @@ Counts the number of documents in the collection by a secondary order.
 const count = await db.users.countBySecondaryOrder("age", {
   limit: 10,
   filter: (doc) => doc.value.age < 18,
-})
+});
 ```
 
 ### enqueue()
@@ -1018,13 +1020,13 @@ argument that can be used to set a delivery delay and topic.
 
 ```ts
 // Immediate delivery
-await db.users.enqueue("some data")
+await db.users.enqueue("some data");
 
 // Delay of 2 seconds before delivery
 await db.users.enqueue("cake", {
   delay: 2_000,
   topic: "food",
-})
+});
 ```
 
 ### listenQueue()
@@ -1036,19 +1038,19 @@ well as optional options that can be used to set the topic.
 
 ```ts
 // Prints the data to console when recevied
-db.users.listenQueue((data) => console.log(data))
+db.users.listenQueue((data) => console.log(data));
 
 // Sends post request when data is received
 db.users.listenQueue(async (data) => {
-  const dataBody = JSON.stringify(data)
+  const dataBody = JSON.stringify(data);
 
   const res = await fetch("...", {
     method: "POST",
     body: data,
-  })
+  });
 
-  console.log("POSTED:", dataBody, res.ok)
-}, { topic: "posts" })
+  console.log("POSTED:", dataBody, res.ok);
+}, { topic: "posts" });
 ```
 
 ### watch()
@@ -1057,13 +1059,13 @@ Listen for live changes to a single document by id.
 
 ```ts
 // Updates the document value every second
-setInterval(() => db.numbers.set("id", Math.random()), 1_000)
+setInterval(() => db.numbers.set("id", Math.random()), 1_000);
 
 // Listen for any updates to the document value
 db.numbers.watch("id", (doc) => {
   // Document will be null if the latest update was a delete operation
-  console.log(doc?.value)
-})
+  console.log(doc?.value);
+});
 ```
 
 Watchers can also be stopped.
@@ -1071,10 +1073,10 @@ Watchers can also be stopped.
 ```ts
 const { promise, cancel } = db.numbers.watch("id", (doc) => {
   // ...
-})
+});
 
-await cancel()
-await promise
+await cancel();
+await promise;
 ```
 
 ### watchMany()
@@ -1083,17 +1085,17 @@ Listen for live changes to an array of specified documents by id.
 
 ```ts
 // Delayed setting of document values
-setTimeout(() => db.numbers.set("id1", 10), 1_000)
-setTimeout(() => db.numbers.set("id2", 20), 2_000)
-setTimeout(() => db.numbers.set("id3", 30), 3_000)
+setTimeout(() => db.numbers.set("id1", 10), 1_000);
+setTimeout(() => db.numbers.set("id2", 20), 2_000);
+setTimeout(() => db.numbers.set("id3", 30), 3_000);
 
 // Listen for any updates to the document values
 db.numbers.watchMany(["id1", "id2", "id3"], (docs) => {
   // Prints for each update to any of the documents
-  console.log(docs[0]?.value) // 10, 10, 10
-  console.log(docs[1]?.value) // null, 20, 20
-  console.log(docs[2]?.value) // null, null, 30
-})
+  console.log(docs[0]?.value); // 10, 10, 10
+  console.log(docs[1]?.value); // null, 20, 20
+  console.log(docs[2]?.value); // null, null, 30
+});
 ```
 
 Watchers can also be stopped.
@@ -1104,10 +1106,10 @@ const { promise, cancel } = db.numbers.watchMany(
   (docs) => {
     // ...
   },
-)
+);
 
-await cancel()
-await promise
+await cancel();
+await promise;
 ```
 
 ## Database Methods
@@ -1122,7 +1124,7 @@ options argument that can be used to set the consistency mode.
 
 ```ts
 // Gets the total number of documents in the KV store across all collections
-const count = await db.countAll()
+const count = await db.countAll();
 ```
 
 ### deleteAll()
@@ -1130,7 +1132,7 @@ const count = await db.countAll()
 Delete all documents across all collections.
 
 ```ts
-await db.deleteAll()
+await db.deleteAll();
 ```
 
 ### wipe()
@@ -1138,7 +1140,7 @@ await db.deleteAll()
 Delete all kvdex entries, including undelivered and history entries.
 
 ```ts
-await db.wipe()
+await db.wipe();
 ```
 
 ### deleteUndelivered()
@@ -1146,7 +1148,7 @@ await db.wipe()
 Delete an undelivered document entry by id from the database queue.
 
 ```ts
-await db.deleteUndelivered("id")
+await db.deleteUndelivered("id");
 ```
 
 ### findUndelivered()
@@ -1156,11 +1158,11 @@ in the database queue. This method takes an optional options argument that can
 be used to set the consistency mode.
 
 ```ts
-const doc1 = await db.findUndelivered("undelivered_id")
+const doc1 = await db.findUndelivered("undelivered_id");
 
 const doc2 = await db.findUndelivered("undelivered_id", {
   consistency: "eventual", // "strong" by default
-})
+});
 ```
 
 ### enqueue()
@@ -1172,13 +1174,13 @@ argument that can be used to set a delivery delay and topic.
 
 ```ts
 // Immediate delivery
-await db.enqueue("some data")
+await db.enqueue("some data");
 
 // Delay of 2 seconds before delivery
 await db.enqueue("cake", {
   delay: 2_000,
   topic: "food",
-})
+});
 ```
 
 ### listenQueue()
@@ -1190,19 +1192,19 @@ can be used to set the topic.
 
 ```ts
 // Prints the data to console when recevied
-db.listenQueue((data) => console.log(data))
+db.listenQueue((data) => console.log(data));
 
 // Sends post request when data is received in the "posts" topic
 db.listenQueue(async (data) => {
-  const dataBody = JSON.stringify(data)
+  const dataBody = JSON.stringify(data);
 
   const res = await fetch("...", {
     method: "POST",
     body: data,
-  })
+  });
 
-  console.log("POSTED:", dataBody, res.ok)
-}, { topic: "posts" })
+  console.log("POSTED:", dataBody, res.ok);
+}, { topic: "posts" });
 ```
 
 ### setInterval()
@@ -1215,7 +1217,7 @@ before the first delivery.
 
 ```ts
 // Will repeat indefinitely with 1 second interval
-db.setInterval(() => console.log("Hello World!"), 1_000)
+db.setInterval(() => console.log("Hello World!"), 1_000);
 
 // First callback starts after a 10 second delay, after that there is a random interval between 0 and 5 seconds
 db.setInterval(
@@ -1228,7 +1230,7 @@ db.setInterval(
     // Count starts at 0 and is given before the current callback is run
     while: ({ count }) => count < 10,
   },
-)
+);
 ```
 
 ### loop()
@@ -1241,13 +1243,13 @@ ensure the queue listener is registered before the first delivery.
 
 ```ts
 // Sequentially prints "Hello World!" indefinitely with no delay between each iteration
-db.loop(() => console.log("Hello World!"))
+db.loop(() => console.log("Hello World!"));
 
 // Sequentially prints "Hello World!" 10 times, with a 3 second delay between each iteration
 db.loop(() => console.log("Hello World!"), {
   delay: 3_000,
   while: ({ count }) => count < 10,
-})
+});
 ```
 
 ### atomic()
@@ -1256,7 +1258,7 @@ Initiate an atomic operation. The method takes a selector function as argument
 for selecting the initial collection context.
 
 ```ts
-db.atomic((schema) => schema.users)
+db.atomic((schema) => schema.users);
 ```
 
 ## Atomic Operations
@@ -1293,7 +1295,7 @@ const result1 = await db
   .atomic((schema) => schema.numbers)
   .delete("id_1")
   .set("id_2", 100)
-  .commit()
+  .commit();
 
 // Adds 2 new entries to the numbers collection and 1 new entry to the users collection
 const result2 = await db
@@ -1312,7 +1314,7 @@ const result2 = await db
       houseNumber: 42,
     },
   })
-  .commit()
+  .commit();
 
 // Will fail and return Deno.KvCommitError because it is trying
 // to both add and delete from an indexable collection
@@ -1330,16 +1332,16 @@ const result3 = await db
       houseNumber: 42,
     },
   })
-  .commit()
+  .commit();
 ```
 
 ### With checking
 
 ```ts
 // Only adds 10 to the value when it has not been changed since being read
-let result = null
+let result = null;
 while (!result || !result.ok) {
-  const { id, versionstamp, value } = await db.numbers.find("id")
+  const { id, versionstamp, value } = await db.numbers.find("id");
 
   result = await db
     .atomic((schema) => schema.numbers)
@@ -1348,7 +1350,7 @@ while (!result || !result.ok) {
       versionstamp,
     })
     .set(id, value + 10)
-    .commit()
+    .commit();
 }
 ```
 
@@ -1365,8 +1367,8 @@ the document data.
 
 ```ts
 // We assume the document exists in the KV store
-const doc = await db.users.find(123n)
-const flattened = doc.flat()
+const doc = await db.users.find(123n);
+const flattened = doc.flat();
 
 // Document:
 // {
@@ -1393,13 +1395,13 @@ of `kvdex`.
 Serialize a JSON-like value to a Uint8Array.
 
 ```ts
-import { jsonSerialize } from "@olli/kvdex"
+import { jsonSerialize } from "@olli/kvdex";
 
 const serialized = jsonSerialize({
   foo: "foo",
   bar: "bar",
   bigint: 10n,
-})
+});
 ```
 
 ### jsonDeserialize()
@@ -1407,15 +1409,15 @@ const serialized = jsonSerialize({
 Deserialize a value that was serialized using `jsonSerialize()`.
 
 ```ts
-import { jsonDeserialize, jsonSerialize } from "@olli/kvdex"
+import { jsonDeserialize, jsonSerialize } from "@olli/kvdex";
 
 const serialized = jsonSerialize({
   foo: "foo",
   bar: "bar",
   bigint: 10n,
-})
+});
 
-const value = jsonDeserialize(serialized)
+const value = jsonDeserialize(serialized);
 ```
 
 ### jsonStringify()
@@ -1423,13 +1425,13 @@ const value = jsonDeserialize(serialized)
 Stringify a JSON-like value.
 
 ```ts
-import { jsonStringify } from "@olli/kvdex"
+import { jsonStringify } from "@olli/kvdex";
 
 const str = jsonStringify({
   foo: "foo",
   bar: "bar",
   bigint: 10n,
-})
+});
 ```
 
 ### jsonParse()
@@ -1437,15 +1439,15 @@ const str = jsonStringify({
 Parse a value that was stringified using `jsonStringify()`
 
 ```ts
-import { jsonParse, jsonStringify } from "@olli/kvdex"
+import { jsonParse, jsonStringify } from "@olli/kvdex";
 
 const str = jsonStringify({
   foo: "foo",
   bar: "bar",
   bigint: 10n,
-})
+});
 
-const value = jsonParse(str)
+const value = jsonParse(str);
 ```
 
 ## Extensions
@@ -1465,18 +1467,18 @@ KvValue, KvObject and KvArray. This makes it easier to properly build your
 schemas.
 
 ```ts
-import { z } from "npm:zod"
-import { KvIdSchema } from "jsr:@olli/kvdex/zod"
+import { z } from "npm:zod";
+import { KvIdSchema } from "jsr:@olli/kvdex/zod";
 
 const UserSchema = z.object({
   username: z.string(),
   postIds: z.array(KvIdSchema),
-})
+});
 
 const PostSchema = z.object({
   text: z.string(),
   userId: KvIdSchema,
-})
+});
 ```
 
 ### Migrate
@@ -1500,15 +1502,15 @@ Use the migrate function and pass a source KV instance and a target KV instance.
 Optionally pass `all: true` to migrate all entries.
 
 ```ts
-import { migrate } from "jsr:@olli/kvdex/migrate"
+import { migrate } from "jsr:@olli/kvdex/migrate";
 
-const source = await Deno.openKv("./source.sqlite3")
-const target = await Deno.openKv("./target.sqlite3")
+const source = await Deno.openKv("./source.sqlite3");
+const target = await Deno.openKv("./target.sqlite3");
 
 await migrate({
   source,
   target,
-})
+});
 ```
 
 ### KV
@@ -1518,23 +1520,23 @@ used to employ `kvdex` in the browser or other environments where Deno's KV
 store is not available, or to adapt to other database backends.
 
 ```ts
-import { kvdex } from "@olli/kvdex"
-import { MapKv } from "@olli/kvdex/kv"
+import { kvdex } from "@olli/kvdex";
+import { MapKv } from "@olli/kvdex/kv";
 
 // Create a database from a `MapKv` instance, using `Map` as it's backend by default.
-const kv = new MapKv() // Equivalent to `new MapKv({ map: new Map() })`
-const db = kvdex(kv, {})
+const kv = new MapKv(); // Equivalent to `new MapKv({ map: new Map() })`
+const db = kvdex(kv, {});
 ```
 
 ```ts
-import { kvdex } from "@olli/kvdex"
-import { MapKv, StorageAdapter } from "@olli/kvdex/kv"
+import { kvdex } from "@olli/kvdex";
+import { MapKv, StorageAdapter } from "@olli/kvdex/kv";
 
 // Create an ephimeral database from a `MapKv` instance,
 // explicitly using `localStorage` as it's backend.
-const map = new StorageAdapter(localStorage)
-const kv = new MapKv({ map, clearOnClose: true })
-const db = kvdex(kv, {})
+const map = new StorageAdapter(localStorage);
+const kv = new MapKv({ map, clearOnClose: true });
+const db = kvdex(kv, {});
 ```
 
 ## Blob Storage

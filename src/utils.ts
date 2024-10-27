@@ -1,5 +1,5 @@
-import { COMPRESSION_QUALITY_LEVEL, GET_MANY_KEY_LIMIT } from "./constants.ts"
-import type { Collection } from "./collection.ts"
+import { COMPRESSION_QUALITY_LEVEL, GET_MANY_KEY_LIMIT } from "./constants.ts";
+import type { Collection } from "./collection.ts";
 import type {
   AtomicSetOptions,
   DenoAtomicOperation,
@@ -19,7 +19,7 @@ import type {
   PreparedEnqueue,
   QueueMessage,
   WatchOptions,
-} from "./types.ts"
+} from "./types.ts";
 import {
   brotliCompressSync,
   brotliDecompressSync,
@@ -27,7 +27,7 @@ import {
   deserialize as _v8Deserialize,
   serialize as _v8Serialize,
   ulid,
-} from "./deps.ts"
+} from "./deps.ts";
 
 /*************************/
 /*                       */
@@ -41,7 +41,7 @@ import {
  * @returns A generated id of type KvId.
  */
 export function generateId() {
-  return ulid()
+  return ulid();
 }
 
 /**
@@ -51,7 +51,7 @@ export function generateId() {
  * @returns A document id, or undefined if key is empty.
  */
 export function getDocumentId(key: DenoKvStrictKey) {
-  return key.at(-1)
+  return key.at(-1);
 }
 
 /**
@@ -62,7 +62,7 @@ export function getDocumentId(key: DenoKvStrictKey) {
  * @returns An extended kv key.
  */
 export function extendKey(key: KvKey, ...keyParts: KvKey) {
-  return [...key, ...keyParts] as KvKey
+  return [...key, ...keyParts] as KvKey;
 }
 
 /**
@@ -73,7 +73,7 @@ export function extendKey(key: KvKey, ...keyParts: KvKey) {
  * @returns true if keys are equal, false if not.
  */
 export function keyEq(k1: KvKey, k2: KvKey) {
-  return JSON.stringify(k1) === JSON.stringify(k2)
+  return JSON.stringify(k1) === JSON.stringify(k2);
 }
 
 /**
@@ -90,15 +90,15 @@ export async function createSecondaryIndexKeyPrefix(
   collection: Collection<any, any, any>,
 ) {
   // Serialize and compress index value
-  const serialized = await collection._serializer.serialize(value)
-  const compressed = await collection._serializer.compress(serialized)
+  const serialized = await collection._serializer.serialize(value);
+  const compressed = await collection._serializer.compress(serialized);
 
   // Create prefix key
   return extendKey(
     collection._keys.secondaryIndex,
     index as KvId,
     compressed,
-  )
+  );
 }
 
 /**
@@ -110,12 +110,12 @@ export async function createSecondaryIndexKeyPrefix(
 export function isKvObject(value: unknown) {
   // If value is null or undefined, return false
   if (value === null || value === undefined) {
-    return false
+    return false;
   }
 
   // If value is not an object, return false
   if (typeof value !== "object") {
-    return false
+    return false;
   }
 
   // If value is an instance of other KvValue objects, return false
@@ -141,11 +141,11 @@ export function isKvObject(value: unknown) {
     value instanceof DataView ||
     value instanceof Error
   ) {
-    return false
+    return false;
   }
 
   // Return true after performing all checks
-  return true
+  return true;
 }
 
 /**
@@ -169,42 +169,42 @@ export async function setIndices(
   // Set primary indices using primary index list
   for (const index of collection._primaryIndexList) {
     // Get the index value from data, if undefined continue to next index
-    const indexValue = data[index] as KvId | undefined
-    if (typeof indexValue === "undefined") continue
+    const indexValue = data[index] as KvId | undefined;
+    if (typeof indexValue === "undefined") continue;
 
     // Serialize and compress
-    const serialized = await collection._serializer.serialize(indexValue)
-    const compressed = await collection._serializer.compress(serialized)
+    const serialized = await collection._serializer.serialize(indexValue);
+    const compressed = await collection._serializer.compress(serialized);
 
     // Create the index key
     const indexKey = extendKey(
       collection._keys.primaryIndex,
       index,
       compressed,
-    )
+    );
 
     // Create the index document value
     const indexEntry: IndexDataEntry<KvObject> = {
       ...value,
       __id__: id,
-    }
+    };
 
     // Add index insertion to atomic operation, check for exisitng indices
     atomic.set(indexKey, indexEntry, options).check({
       key: indexKey,
       versionstamp: null,
-    })
+    });
   }
 
   // Set secondary indices using secondary index list
   for (const index of collection._secondaryIndexList) {
     // Get the index value from data, if undefined continue to next index
-    const indexValue = data[index] as KvId | undefined
-    if (typeof indexValue === "undefined") continue
+    const indexValue = data[index] as KvId | undefined;
+    if (typeof indexValue === "undefined") continue;
 
     // Serialize and compress
-    const serialized = await collection._serializer.serialize(indexValue)
-    const compressed = await collection._serializer.compress(serialized)
+    const serialized = await collection._serializer.serialize(indexValue);
+    const compressed = await collection._serializer.compress(serialized);
 
     // Create the index key
     const indexKey = extendKey(
@@ -212,10 +212,10 @@ export async function setIndices(
       index,
       compressed,
       id,
-    )
+    );
 
     // Add index insertion to atomic operation, check for exisitng indices
-    atomic.set(indexKey, value, options)
+    atomic.set(indexKey, value, options);
   }
 }
 
@@ -235,27 +235,27 @@ export async function checkIndices(
   // Check primary indices using primary index list
   for (const index of collection._primaryIndexList) {
     // Get the index value from data, if undefined continue to next index
-    const indexValue = data[index] as KvId | undefined
+    const indexValue = data[index] as KvId | undefined;
     if (typeof indexValue === "undefined") {
-      continue
+      continue;
     }
 
     // Serialize and compress
-    const serialized = await collection._serializer.serialize(indexValue)
-    const compressed = await collection._serializer.compress(serialized)
+    const serialized = await collection._serializer.serialize(indexValue);
+    const compressed = await collection._serializer.compress(serialized);
 
     // Create the index key
     const indexKey = extendKey(
       collection._keys.primaryIndex,
       index,
       compressed,
-    )
+    );
 
     // Check for existing index entry
     atomic.check({
       key: indexKey,
       versionstamp: null,
-    })
+    });
   }
 }
 
@@ -277,33 +277,33 @@ export async function deleteIndices(
   // Delete primary indices using primary index list
   for (const index of collection._primaryIndexList) {
     // Get the index value from data, if undefined continue to next index
-    const indexValue = data[index] as KvId | undefined
-    if (typeof indexValue === "undefined") continue
+    const indexValue = data[index] as KvId | undefined;
+    if (typeof indexValue === "undefined") continue;
 
     // Serialize and compress
-    const serialized = await collection._serializer.serialize(indexValue)
-    const compressed = await collection._serializer.compress(serialized)
+    const serialized = await collection._serializer.serialize(indexValue);
+    const compressed = await collection._serializer.compress(serialized);
 
     // Create the index key
     const indexKey = extendKey(
       collection._keys.primaryIndex,
       index,
       compressed,
-    )
+    );
 
     // Add index deletion to atomic operation
-    atomic.delete(indexKey)
+    atomic.delete(indexKey);
   }
 
   // Delete seocndary indices using secondary index list
   for (const index of collection._secondaryIndexList) {
     // Get the index value from data, if undefined continue to next index
-    const indexValue = data[index] as KvId | undefined
-    if (typeof indexValue === "undefined") continue
+    const indexValue = data[index] as KvId | undefined;
+    if (typeof indexValue === "undefined") continue;
 
     // Serialize and compress
-    const serialized = await collection._serializer.serialize(indexValue)
-    const compressed = await collection._serializer.compress(serialized)
+    const serialized = await collection._serializer.serialize(indexValue);
+    const compressed = await collection._serializer.compress(serialized);
 
     // Create the index key
     const indexKey = extendKey(
@@ -311,10 +311,10 @@ export async function deleteIndices(
       index,
       compressed,
       id,
-    )
+    );
 
     // Add index deletion to atomic operation
-    atomic.delete(indexKey)
+    atomic.delete(indexKey);
   }
 }
 
@@ -332,20 +332,20 @@ export async function kvGetMany(
   options?: FindManyOptions,
 ) {
   // Initialize sliced keys list
-  const slicedKeys: DenoKvStrictKey[][] = []
+  const slicedKeys: DenoKvStrictKey[][] = [];
 
   // Slice keys based on getMany keys limit
   for (let i = 0; i < keys.length; i += GET_MANY_KEY_LIMIT) {
-    slicedKeys.push(keys.slice(i, i + GET_MANY_KEY_LIMIT))
+    slicedKeys.push(keys.slice(i, i + GET_MANY_KEY_LIMIT));
   }
 
   // Execute getMany for each sliced keys entry
   const slicedEntries = await allFulfilled(slicedKeys.map((keys) => {
-    return kv.getMany(keys, options)
-  }))
+    return kv.getMany(keys, options);
+  }));
 
   // Return accumulated result
-  return slicedEntries.flat()
+  return slicedEntries.flat();
 }
 
 /**
@@ -359,14 +359,14 @@ export async function allFulfilled<const T>(
   values: T[],
 ) {
   // Get settled results
-  const settled = await Promise.allSettled(values)
+  const settled = await Promise.allSettled(values);
 
   // Return fulfilled values
   return settled.reduce(
     (acc, result) =>
       result.status === "fulfilled" ? [...acc, result.value] : acc,
     [] as Awaited<T>[],
-  )
+  );
 }
 
 /**
@@ -388,12 +388,12 @@ export function prepareEnqueue<const T extends KvValue>(
     __is_undefined__: data === undefined,
     __data__: data,
     __handlerId__: createHandlerId(baseKey, options?.topic),
-  }
+  };
 
   // Create keys if undelivered
   const keysIfUndelivered = options?.idsIfUndelivered?.map((id) =>
     extendKey(undeliveredKey, id)
-  )
+  );
 
   // Return prepared enqueue
   return {
@@ -402,7 +402,7 @@ export function prepareEnqueue<const T extends KvValue>(
       ...options,
       keysIfUndelivered,
     },
-  }
+  };
 }
 
 /**
@@ -416,7 +416,7 @@ export function createHandlerId(
   key: KvKey,
   topic: string | undefined,
 ) {
-  return `${JSON.stringify(key)}${topic ?? ""}`
+  return `${JSON.stringify(key)}${topic ?? ""}`;
 }
 
 /**
@@ -432,11 +432,11 @@ export function parseQueueMessage<T extends KvValue>(
   if (!msg) {
     return {
       ok: false,
-    }
+    };
   }
 
   // Cast message as QueueMessage
-  const _msg = msg as QueueMessage<T>
+  const _msg = msg as QueueMessage<T>;
 
   // Check correctness of message parts
   if (
@@ -445,14 +445,14 @@ export function parseQueueMessage<T extends KvValue>(
   ) {
     return {
       ok: false,
-    }
+    };
   }
 
   // Return parsed queue message
   return {
     ok: true,
     msg: _msg,
-  }
+  };
 }
 
 /**
@@ -469,24 +469,24 @@ export function createListSelector<T1, T2 extends KvId>(
   // Create start key
   const start = typeof options?.startId !== "undefined"
     ? [...prefixKey, options.startId!]
-    : undefined
+    : undefined;
 
   // Create end key
   const end = typeof options?.endId !== "undefined"
     ? [...prefixKey, options.endId!]
-    : undefined
+    : undefined;
 
   // Conditionally set prefix key
   const prefix = Array.isArray(start) && Array.isArray(end)
     ? undefined!
-    : prefixKey
+    : prefixKey;
 
   // Return list selector
   return {
     prefix,
     start,
     end,
-  }
+  };
 }
 
 /**
@@ -498,11 +498,11 @@ export function createListSelector<T1, T2 extends KvId>(
 export function createListOptions<T1, T2 extends KvId>(
   options: ListOptions<T1, T2> | undefined,
 ) {
-  const limit = options?.limit && options.limit + (options.offset ?? 0)
+  const limit = options?.limit && options.limit + (options.offset ?? 0);
   return {
     ...options,
     limit,
-  }
+  };
 }
 
 /**
@@ -522,7 +522,7 @@ export function selectsAll<T1, T2 extends KvId>(
     !options?.filter &&
     !options?.limit &&
     !options?.offset
-  )
+  );
 }
 
 export function createWatcher(
@@ -531,37 +531,37 @@ export function createWatcher(
   keys: KvKey[],
   fn: (entries: DenoKvEntryMaybe[]) => unknown,
 ): {
-  promise: Promise<void>
-  cancel: () => Promise<void>
+  promise: Promise<void>;
+  cancel: () => Promise<void>;
 } {
   // Create watch stream
-  const stream = kv.watch(keys, options)
-  const reader = stream.getReader()
+  const stream = kv.watch(keys, options);
+  const reader = stream.getReader();
 
   // Receive incoming updates
   const promise = async () => {
-    let isDone = false
+    let isDone = false;
     while (!isDone) {
       try {
-        const { value, done } = await reader.read()
+        const { value, done } = await reader.read();
         if (value) {
-          await fn(value)
+          await fn(value);
         }
 
-        isDone = done
+        isDone = done;
       } catch (_) {
-        isDone = true
+        isDone = true;
       }
     }
-  }
+  };
 
   // Create cancel function
   async function cancel() {
-    reader.releaseLock()
-    await stream.cancel()
+    reader.releaseLock();
+    await stream.cancel();
   }
 
-  return { promise: promise(), cancel }
+  return { promise: promise(), cancel };
 }
 
 /**
@@ -573,9 +573,9 @@ export function createWatcher(
 export function compress(data: Uint8Array) {
   const buffer = brotliCompressSync(data, {
     params: { [constants.BROTLI_PARAM_QUALITY]: COMPRESSION_QUALITY_LEVEL },
-  })
+  });
 
-  return new Uint8Array(buffer)
+  return new Uint8Array(buffer);
 }
 
 /**
@@ -587,9 +587,9 @@ export function compress(data: Uint8Array) {
 export function decompress(data: Uint8Array) {
   const buffer = brotliDecompressSync(data, {
     params: { [constants.BROTLI_PARAM_QUALITY]: COMPRESSION_QUALITY_LEVEL },
-  })
+  });
 
-  return new Uint8Array(buffer)
+  return new Uint8Array(buffer);
 }
 
 /**
@@ -599,7 +599,7 @@ export function decompress(data: Uint8Array) {
  * @returns A serialized value.
  */
 export function v8Serialize(value: unknown): Uint8Array {
-  return _v8Serialize(beforeV8Serialize(value))
+  return new Uint8Array(_v8Serialize(beforeV8Serialize(value)));
 }
 
 /**
@@ -611,15 +611,15 @@ export function v8Serialize(value: unknown): Uint8Array {
 export function v8Deserialize<T>(
   value: Uint8Array,
 ): T {
-  return afterV8Serialize(_v8Deserialize(value)) as T
+  return afterV8Serialize(_v8Deserialize(value)) as T;
 }
 
 export type JSONError = {
-  message: string
-  name: string
-  cause?: string
-  stack?: string
-}
+  message: string;
+  name: string;
+  cause?: string;
+  stack?: string;
+};
 
 export enum TypeKey {
   Undefined = "__undefined__",
@@ -661,19 +661,19 @@ export function beforeV8Serialize(value: unknown): unknown {
       Object.entries(value as KvObject).map((
         [key, val],
       ) => [key, beforeV8Serialize(val)]),
-    )
+    );
   }
 
   // Array
   if (Array.isArray(value)) {
-    return value.map((val) => beforeV8Serialize(val))
+    return value.map((val) => beforeV8Serialize(val));
   }
 
   // Set
   if (value instanceof Set) {
     return new Set(
       Array.from(value.values()).map((v) => beforeV8Serialize(v)),
-    )
+    );
   }
 
   // Map
@@ -682,10 +682,10 @@ export function beforeV8Serialize(value: unknown): unknown {
       Array.from(value.entries()).map((
         [k, v],
       ) => [k, beforeV8Serialize(v)]),
-    )
+    );
   }
 
-  return value
+  return value;
 }
 
 /**
@@ -701,26 +701,26 @@ export function afterV8Serialize(value: unknown): unknown {
     value === null ||
     typeof value !== "object"
   ) {
-    return value
+    return value;
   }
 
   // KvObject
   if (isKvObject(value)) {
     return Object.fromEntries(
       Object.entries(value).map(([k, v]) => [k, afterV8Serialize(v)]),
-    )
+    );
   }
 
   // Array
   if (Array.isArray(value)) {
-    return value.map((v) => afterV8Serialize(v))
+    return value.map((v) => afterV8Serialize(v));
   }
 
   // Set
   if (value instanceof Set) {
     return new Set(
       Array.from(value.values()).map((v) => afterV8Serialize(v)),
-    )
+    );
   }
 
   // Map
@@ -729,10 +729,10 @@ export function afterV8Serialize(value: unknown): unknown {
       Array.from(value.entries()).map((
         [k, v],
       ) => [k, afterV8Serialize(v)]),
-    )
+    );
   }
 
-  return value
+  return value;
 }
 
 /**
@@ -753,8 +753,8 @@ export function afterV8Serialize(value: unknown): unknown {
  * @returns Serialized value.
  */
 export function jsonSerialize(value: unknown): Uint8Array {
-  const str = jsonStringify(value)
-  return new TextEncoder().encode(str)
+  const str = jsonStringify(value);
+  return new TextEncoder().encode(str);
 }
 
 /**
@@ -777,8 +777,8 @@ export function jsonSerialize(value: unknown): Uint8Array {
  * @returns Deserialized value.
  */
 export function jsonDeserialize<T>(value: Uint8Array): T {
-  const str = new TextDecoder().decode(value)
-  return jsonParse<T>(str)
+  const str = new TextDecoder().decode(value);
+  return jsonParse<T>(str);
 }
 
 /**
@@ -800,7 +800,7 @@ export function jsonDeserialize<T>(value: Uint8Array): T {
  * @returns
  */
 export function jsonStringify(value: unknown, space?: number | string): string {
-  return JSON.stringify(_replacer(value), replacer, space)
+  return JSON.stringify(_replacer(value), replacer, space);
 }
 
 /**
@@ -823,7 +823,7 @@ export function jsonStringify(value: unknown, space?: number | string): string {
  * @returns
  */
 export function jsonParse<T>(value: string): T {
-  return postReviver(JSON.parse(value, reviver)) as T
+  return postReviver(JSON.parse(value, reviver)) as T;
 }
 
 /**
@@ -834,7 +834,7 @@ export function jsonParse<T>(value: string): T {
  * @returns
  */
 export function replacer(_key: string, value: unknown) {
-  return _replacer(value)
+  return _replacer(value);
 }
 
 /**
@@ -845,7 +845,7 @@ export function replacer(_key: string, value: unknown) {
  * @returns
  */
 export function reviver(_key: string, value: unknown) {
-  return _reviver(value)
+  return _reviver(value);
 }
 
 /**
@@ -859,47 +859,47 @@ export function _replacer(value: unknown): unknown {
   if (value === undefined) {
     return {
       [TypeKey.Undefined]: false,
-    }
+    };
   }
 
   // NaN
   if (Number.isNaN(value)) {
     return {
       [TypeKey.NaN]: false,
-    }
+    };
   }
 
   // Infinity
   if (value === Infinity) {
     return {
       [TypeKey.Infinity]: false,
-    }
+    };
   }
 
   // bigint
   if (typeof value === "bigint") {
     return {
       [TypeKey.BigInt]: value.toString(),
-    }
+    };
   }
 
   // Date
   if (value instanceof Date) {
     return {
       [TypeKey.Date]: value.toISOString(),
-    }
+    };
   }
 
   // Array
   if (Array.isArray(value)) {
-    return value.map(_replacer)
+    return value.map(_replacer);
   }
 
   // Set
   if (value instanceof Set) {
     return {
       [TypeKey.Set]: Array.from(value.values()).map(_replacer),
-    }
+    };
   }
 
   // Map
@@ -908,14 +908,14 @@ export function _replacer(value: unknown): unknown {
       [TypeKey.Map]: Array.from(value.entries()).map((
         [k, v],
       ) => [k, _replacer(v)]),
-    }
+    };
   }
 
   // RegExp
   if (value instanceof RegExp) {
     return {
       [TypeKey.RegExp]: value.source,
-    }
+    };
   }
 
   // Error
@@ -925,118 +925,118 @@ export function _replacer(value: unknown): unknown {
       name: value.name,
       stack: value.stack,
       cause: jsonStringify(value.cause),
-    }
+    };
     return {
       [TypeKey.Error]: jsonError,
-    }
+    };
   }
 
   // Int8Array
   if (value instanceof Int8Array) {
     return {
       [TypeKey.Int8Array]: Array.from(value),
-    }
+    };
   }
 
   // Int16Array
   if (value instanceof Int16Array) {
     return {
       [TypeKey.Int16Array]: Array.from(value),
-    }
+    };
   }
 
   // Int32Array
   if (value instanceof Int32Array) {
     return {
       [TypeKey.Int32Array]: Array.from(value),
-    }
+    };
   }
 
   // BigInt64Array
   if (value instanceof BigInt64Array) {
     return {
       [TypeKey.BigInt64Array]: Array.from(value),
-    }
+    };
   }
 
   // Uint8Array
   if (value instanceof Uint8Array) {
     return {
       [TypeKey.Uint8Array]: Array.from(value),
-    }
+    };
   }
 
   // Uint16Array
   if (value instanceof Uint16Array) {
     return {
       [TypeKey.Uint16Array]: Array.from(value),
-    }
+    };
   }
 
   // Uint32Array
   if (value instanceof Uint32Array) {
     return {
       [TypeKey.Uint32Array]: Array.from(value),
-    }
+    };
   }
 
   // BigUint64Array
   if (value instanceof BigUint64Array) {
     return {
       [TypeKey.BigUint64Array]: Array.from(value),
-    }
+    };
   }
 
   // Uint8ClampedArray
   if (value instanceof Uint8ClampedArray) {
     return {
       [TypeKey.Uint8ClampedArray]: Array.from(value),
-    }
+    };
   }
 
   // Float16Array
   if (value instanceof Float16Array) {
     return {
       [TypeKey.Float16Array]: Array.from(value),
-    }
+    };
   }
 
   // Float32Array
   if (value instanceof Float32Array) {
     return {
       [TypeKey.Float32Array]: Array.from(value),
-    }
+    };
   }
 
   // Float64Array
   if (value instanceof Float64Array) {
     return {
       [TypeKey.Float64Array]: Array.from(value),
-    }
+    };
   }
 
   // ArrayBuffer
   if (value instanceof ArrayBuffer) {
     return {
       [TypeKey.ArrayBuffer]: Array.from(new Uint8Array(value)),
-    }
+    };
   }
 
   // DataView
   if (value instanceof DataView) {
     return {
       [TypeKey.DataView]: Array.from(new Uint8Array(value.buffer)),
-    }
+    };
   }
 
   // KvObject
   if (isKvObject(value)) {
     return Object.fromEntries(
       Object.entries(value as KvObject).map(([k, v]) => [k, _replacer(v)]),
-    )
+    );
   }
 
-  return value
+  return value;
 }
 
 /**
@@ -1052,32 +1052,32 @@ export function _reviver(value: unknown): unknown {
     value === undefined ||
     typeof value !== "object"
   ) {
-    return value
+    return value;
   }
 
   // bigint
   if (TypeKey.BigInt in value) {
-    return BigInt(mapValue(TypeKey.BigInt, value))
+    return BigInt(mapValue(TypeKey.BigInt, value));
   }
 
   // Date
   if (TypeKey.Date in value) {
-    return new Date(mapValue<string>(TypeKey.Date, value))
+    return new Date(mapValue<string>(TypeKey.Date, value));
   }
 
   // NaN
   if (TypeKey.NaN in value) {
-    return NaN
+    return NaN;
   }
 
   // Infnity
   if (TypeKey.Infinity in value) {
-    return Infinity
+    return Infinity;
   }
 
   // RegExp
   if (TypeKey.RegExp in value) {
-    return new RegExp(mapValue(TypeKey.RegExp, value))
+    return new RegExp(mapValue(TypeKey.RegExp, value));
   }
 
   // Error
@@ -1085,113 +1085,113 @@ export function _reviver(value: unknown): unknown {
     const { message, stack, cause, ...rest } = mapValue<JSONError>(
       TypeKey.Error,
       value,
-    )
+    );
 
     const error = new Error(message, {
       cause: cause ? jsonParse(cause) : undefined,
       ...rest,
-    })
+    });
 
-    error.stack = stack
-    return error
+    error.stack = stack;
+    return error;
   }
 
   // Int8Array
   if (TypeKey.Int8Array in value) {
-    return Int8Array.from(mapValue(TypeKey.Int8Array, value))
+    return Int8Array.from(mapValue(TypeKey.Int8Array, value));
   }
 
   // Int16Array
   if (TypeKey.Int16Array in value) {
-    return Int16Array.from(mapValue(TypeKey.Int16Array, value))
+    return Int16Array.from(mapValue(TypeKey.Int16Array, value));
   }
 
   // Int32Array
   if (TypeKey.Int32Array in value) {
-    return Int32Array.from(mapValue(TypeKey.Int32Array, value))
+    return Int32Array.from(mapValue(TypeKey.Int32Array, value));
   }
 
   // BigInt64Array
   if (TypeKey.BigInt64Array in value) {
-    return BigInt64Array.from(mapValue(TypeKey.BigInt64Array, value))
+    return BigInt64Array.from(mapValue(TypeKey.BigInt64Array, value));
   }
 
   // Uint8Array
   if (TypeKey.Uint8Array in value) {
-    return Uint8Array.from(mapValue(TypeKey.Uint8Array, value))
+    return Uint8Array.from(mapValue(TypeKey.Uint8Array, value));
   }
 
   // Uint16Array
   if (TypeKey.Uint16Array in value) {
-    return Uint16Array.from(mapValue(TypeKey.Uint16Array, value))
+    return Uint16Array.from(mapValue(TypeKey.Uint16Array, value));
   }
 
   // Uint32Array
   if (TypeKey.Uint32Array in value) {
-    return Uint32Array.from(mapValue(TypeKey.Uint32Array, value))
+    return Uint32Array.from(mapValue(TypeKey.Uint32Array, value));
   }
 
   // BigUint64Array
   if (TypeKey.BigUint64Array in value) {
-    return BigUint64Array.from(mapValue(TypeKey.BigUint64Array, value))
+    return BigUint64Array.from(mapValue(TypeKey.BigUint64Array, value));
   }
 
   // Uint8ClampedArray
   if (TypeKey.Uint8ClampedArray in value) {
-    return Uint8ClampedArray.from(mapValue(TypeKey.Uint8ClampedArray, value))
+    return Uint8ClampedArray.from(mapValue(TypeKey.Uint8ClampedArray, value));
   }
 
   // Float16Array
   if (TypeKey.Float16Array in value) {
-    return Float16Array.from(mapValue(TypeKey.Float16Array, value))
+    return Float16Array.from(mapValue(TypeKey.Float16Array, value));
   }
 
   // Float32Array
   if (TypeKey.Float32Array in value) {
-    return Float32Array.from(mapValue(TypeKey.Float32Array, value))
+    return Float32Array.from(mapValue(TypeKey.Float32Array, value));
   }
 
   // Float64Array
   if (TypeKey.Float64Array in value) {
-    return Float64Array.from(mapValue(TypeKey.Float64Array, value))
+    return Float64Array.from(mapValue(TypeKey.Float64Array, value));
   }
 
   // ArrayBuffer
   if (TypeKey.ArrayBuffer in value) {
-    const uint8array = Uint8Array.from(mapValue(TypeKey.ArrayBuffer, value))
-    return uint8array.buffer
+    const uint8array = Uint8Array.from(mapValue(TypeKey.ArrayBuffer, value));
+    return uint8array.buffer;
   }
 
   // DataView
   if (TypeKey.DataView in value) {
-    const uint8array = Uint8Array.from(mapValue(TypeKey.DataView, value))
-    return new DataView(uint8array.buffer)
+    const uint8array = Uint8Array.from(mapValue(TypeKey.DataView, value));
+    return new DataView(uint8array.buffer);
   }
 
   // Set
   if (TypeKey.Set in value) {
-    return new Set(mapValue<Array<KvValue>>(TypeKey.Set, value))
+    return new Set(mapValue<Array<KvValue>>(TypeKey.Set, value));
   }
 
   // Map
   if (TypeKey.Map in value) {
-    return new Map(mapValue<Array<[KvValue, KvValue]>>(TypeKey.Map, value))
+    return new Map(mapValue<Array<[KvValue, KvValue]>>(TypeKey.Map, value));
   }
 
   // Array
   if (Array.isArray(value)) {
-    return value.map(_reviver)
+    return value.map(_reviver);
   }
 
   // KvObject
   if (isKvObject(value)) {
     return Object.fromEntries(
       Object.entries(value).map(([k, v]) => [k, _reviver(v)]),
-    )
+    );
   }
 
   // Return value
-  return value
+  return value;
 }
 
 /**
@@ -1207,41 +1207,41 @@ export function postReviver<T>(value: T): T {
     value === null ||
     typeof value !== "object"
   ) {
-    return value
+    return value;
   }
 
   // undefined
   if (TypeKey.Undefined in value) {
-    return undefined as T
+    return undefined as T;
   }
 
   // Array
   if (Array.isArray(value)) {
-    return value.map(postReviver) as T
+    return value.map(postReviver) as T;
   }
 
   // Set
   if (value instanceof Set) {
     return new Set(
       Array.from(value.values()).map(postReviver),
-    ) as T
+    ) as T;
   }
 
   // Map
   if (value instanceof Map) {
     return new Map(
       Array.from(value.entries()).map(([k, v]) => [k, postReviver(v)]),
-    ) as T
+    ) as T;
   }
 
   // KvObject
   if (isKvObject(value)) {
     return Object.fromEntries(
       Object.entries(value).map(([k, v]) => [k, postReviver(v)]),
-    ) as T
+    ) as T;
   }
 
-  return value
+  return value;
 }
 
 /**
@@ -1252,5 +1252,5 @@ export function postReviver<T>(value: T): T {
  * @returns Mapped value.
  */
 export function mapValue<T>(key: string, value: unknown) {
-  return (value as Record<string, T>)[key]
+  return (value as Record<string, T>)[key];
 }

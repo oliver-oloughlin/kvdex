@@ -6,19 +6,19 @@ import type {
   DenoKvEnqueueOptions,
   DenoKvSetOptions,
   DenoKvStrictKey,
-} from "../../types.ts"
-import type { MapKv } from "./map_kv.ts"
-import { createVersionstamp } from "./utils.ts"
+} from "../../types.ts";
+import type { MapKv } from "./map_kv.ts";
+import { createVersionstamp } from "./utils.ts";
 
 export class MapKvAtomicOperation implements DenoAtomicOperation {
-  private kv: MapKv
-  private checks: (() => boolean)[]
-  private ops: ((versionstamp: string) => void)[]
+  private kv: MapKv;
+  private checks: (() => boolean)[];
+  private ops: ((versionstamp: string) => void)[];
 
   constructor(kv: MapKv) {
-    this.kv = kv
-    this.checks = []
-    this.ops = []
+    this.kv = kv;
+    this.checks = [];
+    this.ops = [];
   }
 
   set(
@@ -28,115 +28,115 @@ export class MapKvAtomicOperation implements DenoAtomicOperation {
   ): DenoAtomicOperation {
     this.ops.push((versionstamp) =>
       this.kv._set(key, value, versionstamp, options)
-    )
-    return this
+    );
+    return this;
   }
 
   delete(key: DenoKvStrictKey): DenoAtomicOperation {
-    this.ops.push(() => this.kv.delete(key))
-    return this
+    this.ops.push(() => this.kv.delete(key));
+    return this;
   }
 
   min(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation {
     this.ops.push((versionstamp) => {
-      const { value } = this.kv.get(key)
+      const { value } = this.kv.get(key);
       if (!value) {
-        this.kv._set(key, { value: n }, versionstamp)
-        return
+        this.kv._set(key, { value: n }, versionstamp);
+        return;
       }
 
-      const val = (value as any).value
+      const val = (value as any).value;
       if (typeof val !== "bigint") {
-        throw new Error("Min operation can only be performed on KvU64 value")
+        throw new Error("Min operation can only be performed on KvU64 value");
       }
 
       this.kv._set(key, {
         value: n < val ? n : val,
-      }, versionstamp)
-    })
+      }, versionstamp);
+    });
 
-    return this
+    return this;
   }
 
   max(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation {
     this.ops.push((versionstamp) => {
-      const { value } = this.kv.get(key)
+      const { value } = this.kv.get(key);
       if (!value) {
-        this.kv._set(key, { value: n }, versionstamp)
-        return
+        this.kv._set(key, { value: n }, versionstamp);
+        return;
       }
 
-      const val = (value as any).value
+      const val = (value as any).value;
       if (typeof val !== "bigint") {
-        throw new Error("Max operation can only be performed on KvU64 value")
+        throw new Error("Max operation can only be performed on KvU64 value");
       }
 
       this.kv._set(key, {
         value: n > val ? n : val,
-      }, versionstamp)
-    })
+      }, versionstamp);
+    });
 
-    return this
+    return this;
   }
 
   sum(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation {
     this.ops.push((versionstamp) => {
-      const { value } = this.kv.get(key)
+      const { value } = this.kv.get(key);
       if (!value) {
-        this.kv._set(key, { value: n }, versionstamp)
-        return
+        this.kv._set(key, { value: n }, versionstamp);
+        return;
       }
 
-      const val = (value as any).value
+      const val = (value as any).value;
       if (typeof val !== "bigint") {
-        throw new Error("Sum operation can only be performed on KvU64 value")
+        throw new Error("Sum operation can only be performed on KvU64 value");
       }
 
       this.kv._set(key, {
         value: n + val,
-      }, versionstamp)
-    })
+      }, versionstamp);
+    });
 
-    return this
+    return this;
   }
 
   check(...checks: DenoAtomicCheck[]): DenoAtomicOperation {
     checks.forEach(({ key, versionstamp }) => {
       this.checks.push(() => {
-        const entry = this.kv.get(key)
-        return entry.versionstamp === versionstamp
-      })
-    })
+        const entry = this.kv.get(key);
+        return entry.versionstamp === versionstamp;
+      });
+    });
 
-    return this
+    return this;
   }
 
   enqueue(value: unknown, options?: DenoKvEnqueueOptions): DenoAtomicOperation {
     this.ops.push((versionstamp) => {
-      this.kv._enqueue(value, versionstamp, options)
-    })
+      this.kv._enqueue(value, versionstamp, options);
+    });
 
-    return this
+    return this;
   }
 
   commit(): DenoKvCommitError | DenoKvCommitResult {
     const passedChecks = this.checks
       .map((check) => check())
-      .every((check) => check)
+      .every((check) => check);
 
     if (!passedChecks) {
       return {
         ok: false,
-      }
+      };
     }
 
-    const versionstamp = createVersionstamp()
+    const versionstamp = createVersionstamp();
 
-    this.ops.forEach((op) => op(versionstamp))
+    this.ops.forEach((op) => op(versionstamp));
 
     return {
       ok: true,
       versionstamp,
-    }
+    };
   }
 }

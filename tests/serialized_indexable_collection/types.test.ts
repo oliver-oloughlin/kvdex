@@ -1,7 +1,7 @@
-import { collection, kvdex, model } from "../../mod.ts"
-import { assert, assertEquals } from "../test.deps.ts"
-import { useKv } from "../utils.ts"
-import { TObject } from "../values.ts"
+import { collection, kvdex, model } from "../../mod.ts";
+import { assert, assertEquals } from "../test.deps.ts";
+import { useKv } from "../utils.ts";
+import { TObject } from "../values.ts";
 
 Deno.test("serialized_indexable_collection - types", async (t) => {
   await t.step(
@@ -16,14 +16,14 @@ Deno.test("serialized_indexable_collection - types", async (t) => {
               TNumber: "secondary",
             },
           }),
-        })
+        });
 
-        const cr = await db.objects.add(TObject)
-        assert(cr.ok)
+        const cr = await db.objects.add(TObject);
+        assert(cr.ok);
 
-        const doc = await db.objects.find(cr.id)
-        assertEquals(doc?.value, TObject)
-      })
+        const doc = await db.objects.find(cr.id);
+        assertEquals(doc?.value, TObject);
+      });
     },
-  )
-})
+  );
+});

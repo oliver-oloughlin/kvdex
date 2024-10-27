@@ -4,11 +4,11 @@ import {
   type KvValue,
   model,
   type QueueMessage,
-} from "../../mod.ts"
-import { createHandlerId } from "../../src/utils.ts"
-import { assert } from "../test.deps.ts"
-import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts"
-import { sleep, useDb, useKv } from "../utils.ts"
+} from "../../mod.ts";
+import { createHandlerId } from "../../src/utils.ts";
+import { assert } from "../test.deps.ts";
+import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
+import { sleep, useDb, useKv } from "../utils.ts";
 
 Deno.test("db - atomic", async (t) => {
   await t.step("Should add documents to collection", async () => {
@@ -17,186 +17,186 @@ Deno.test("db - atomic", async (t) => {
         .atomic((schema) => schema.users)
         .add(mockUser1)
         .add(mockUser2)
-        .commit()
+        .commit();
 
-      assert(cr.ok)
+      assert(cr.ok);
 
-      const count = await db.users.count()
-      assert(count === 2)
-    })
-  })
+      const count = await db.users.count();
+      assert(count === 2);
+    });
+  });
 
   await t.step(
     "Should only set first document with colliding ids",
     async () => {
       await useDb(async (db) => {
-        const id = "id"
+        const id = "id";
 
         const cr = await db
           .atomic((schema) => schema.users)
           .set(id, mockUser1)
           .set(id, mockUser2)
-          .commit()
+          .commit();
 
-        assert(cr.ok)
+        assert(cr.ok);
 
-        const count = await db.users.count()
-        assert(count === 1)
-      })
+        const count = await db.users.count();
+        assert(count === 1);
+      });
     },
-  )
+  );
 
   await t.step("Should delete document", async () => {
     await useDb(async (db) => {
-      const cr1 = await db.users.add(mockUser1)
-      assert(cr1.ok)
+      const cr1 = await db.users.add(mockUser1);
+      assert(cr1.ok);
 
       const cr2 = await db
         .atomic((schema) => schema.users)
         .delete(cr1.id)
-        .commit()
+        .commit();
 
-      assert(cr2.ok)
+      assert(cr2.ok);
 
-      const count = await db.users.count()
-      const doc = await db.users.find(cr1.id)
-      assert(count === 0)
-      assert(doc === null)
-    })
-  })
+      const count = await db.users.count();
+      const doc = await db.users.find(cr1.id);
+      assert(count === 0);
+      assert(doc === null);
+    });
+  });
 
   await t.step("Should perform sum operation", async () => {
     await useDb(async (db) => {
-      const initial = 100n
-      const additional = 10n
+      const initial = 100n;
+      const additional = 10n;
 
-      const cr1 = await db.u64s.add(new Deno.KvU64(initial))
-      assert(cr1.ok)
+      const cr1 = await db.u64s.add(new Deno.KvU64(initial));
+      assert(cr1.ok);
 
       const cr2 = await db
         .atomic((schema) => schema.u64s)
         .sum(cr1.id, additional)
-        .commit()
+        .commit();
 
-      assert(cr2.ok)
+      assert(cr2.ok);
 
-      const doc = await db.u64s.find(cr1.id)
-      assert(doc?.value.value === initial + additional)
-    })
-  })
+      const doc = await db.u64s.find(cr1.id);
+      assert(doc?.value.value === initial + additional);
+    });
+  });
 
   await t.step(
     "Should perform min operation and set document value to the given value",
     async () => {
       await useDb(async (db) => {
-        const initial = 100n
-        const min = 10n
+        const initial = 100n;
+        const min = 10n;
 
-        const cr1 = await db.u64s.add(new Deno.KvU64(initial))
-        assert(cr1.ok)
+        const cr1 = await db.u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
 
         const cr2 = await db
           .atomic((schema) => schema.u64s)
           .min(cr1.id, min)
-          .commit()
+          .commit();
 
-        assert(cr2.ok)
+        assert(cr2.ok);
 
-        const doc = await db.u64s.find(cr1.id)
-        assert(doc?.value.value === min)
-      })
+        const doc = await db.u64s.find(cr1.id);
+        assert(doc?.value.value === min);
+      });
     },
-  )
+  );
 
   await t.step(
     "Should perform min operation and set document value to the existing value",
     async () => {
       await useDb(async (db) => {
-        const initial = 100n
-        const min = 200n
+        const initial = 100n;
+        const min = 200n;
 
-        const cr1 = await db.u64s.add(new Deno.KvU64(initial))
-        assert(cr1.ok)
+        const cr1 = await db.u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
 
         const cr2 = await db
           .atomic((schema) => schema.u64s)
           .min(cr1.id, min)
-          .commit()
+          .commit();
 
-        assert(cr2.ok)
+        assert(cr2.ok);
 
-        const doc = await db.u64s.find(cr1.id)
-        assert(doc?.value.value === initial)
-      })
+        const doc = await db.u64s.find(cr1.id);
+        assert(doc?.value.value === initial);
+      });
     },
-  )
+  );
 
   await t.step(
     "Should perform max operation and set document value to the given value",
     async () => {
       await useDb(async (db) => {
-        const initial = 100n
-        const max = 200n
+        const initial = 100n;
+        const max = 200n;
 
-        const cr1 = await db.u64s.add(new Deno.KvU64(initial))
-        assert(cr1.ok)
+        const cr1 = await db.u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
 
         const cr2 = await db
           .atomic((schema) => schema.u64s)
           .max(cr1.id, max)
-          .commit()
+          .commit();
 
-        assert(cr2.ok)
+        assert(cr2.ok);
 
-        const doc = await db.u64s.find(cr1.id)
-        assert(doc?.value.value === max)
-      })
+        const doc = await db.u64s.find(cr1.id);
+        assert(doc?.value.value === max);
+      });
     },
-  )
+  );
 
   await t.step(
     "Should perform max operation and set document value to the existing value",
     async () => {
       await useDb(async (db) => {
-        const initial = 100n
-        const max = 10n
+        const initial = 100n;
+        const max = 10n;
 
-        const cr1 = await db.u64s.add(new Deno.KvU64(initial))
-        assert(cr1.ok)
+        const cr1 = await db.u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
 
         const cr2 = await db
           .atomic((schema) => schema.u64s)
           .max(cr1.id, max)
-          .commit()
+          .commit();
 
-        assert(cr2.ok)
+        assert(cr2.ok);
 
-        const doc = await db.u64s.find(cr1.id)
-        assert(doc?.value.value === initial)
-      })
+        const doc = await db.u64s.find(cr1.id);
+        assert(doc?.value.value === initial);
+      });
     },
-  )
+  );
 
   await t.step("Should perform mutation operations", async () => {
     await useDb(async (db) => {
-      const initial = new Deno.KvU64(100n)
-      const set = new Deno.KvU64(200n)
-      const add = new Deno.KvU64(300n)
-      const id = "id"
-      const sum = new Deno.KvU64(100n)
-      const min1 = new Deno.KvU64(10n)
-      const min2 = new Deno.KvU64(200n)
-      const max1 = new Deno.KvU64(200n)
-      const max2 = new Deno.KvU64(10n)
+      const initial = new Deno.KvU64(100n);
+      const set = new Deno.KvU64(200n);
+      const add = new Deno.KvU64(300n);
+      const id = "id";
+      const sum = new Deno.KvU64(100n);
+      const min1 = new Deno.KvU64(10n);
+      const min2 = new Deno.KvU64(200n);
+      const max1 = new Deno.KvU64(200n);
+      const max2 = new Deno.KvU64(10n);
 
-      const cr1 = await db.u64s.add(initial)
-      const cr2 = await db.u64s.add(initial)
-      const cr3 = await db.u64s.add(initial)
-      const cr4 = await db.u64s.add(initial)
-      const cr5 = await db.u64s.add(initial)
-      const cr6 = await db.u64s.add(initial)
+      const cr1 = await db.u64s.add(initial);
+      const cr2 = await db.u64s.add(initial);
+      const cr3 = await db.u64s.add(initial);
+      const cr4 = await db.u64s.add(initial);
+      const cr5 = await db.u64s.add(initial);
+      const cr6 = await db.u64s.add(initial);
 
-      assert(cr1.ok && cr2.ok && cr3.ok && cr4.ok && cr5.ok && cr6.ok)
+      assert(cr1.ok && cr2.ok && cr3.ok && cr4.ok && cr5.ok && cr6.ok);
 
       await db
         .atomic((schema) => schema.u64s)
@@ -241,77 +241,77 @@ Deno.test("db - atomic", async (t) => {
             type: "delete",
           },
         )
-        .commit()
+        .commit();
 
-      const docSet = await db.u64s.find(id)
+      const docSet = await db.u64s.find(id);
 
       const { result: [docAdd] } = await db.u64s.getMany({
         filter: (d) => d.value.value === 300n,
-      })
+      });
 
-      const doc1 = await db.u64s.find(cr1.id)
-      const doc2 = await db.u64s.find(cr2.id)
-      const doc3 = await db.u64s.find(cr3.id)
-      const doc4 = await db.u64s.find(cr4.id)
-      const doc5 = await db.u64s.find(cr5.id)
-      const doc6 = await db.u64s.find(cr6.id)
+      const doc1 = await db.u64s.find(cr1.id);
+      const doc2 = await db.u64s.find(cr2.id);
+      const doc3 = await db.u64s.find(cr3.id);
+      const doc4 = await db.u64s.find(cr4.id);
+      const doc5 = await db.u64s.find(cr5.id);
+      const doc6 = await db.u64s.find(cr6.id);
 
-      assert(docSet?.value.value === set.value)
-      assert(docAdd?.value.value === add.value)
-      assert(doc1?.value.value === initial.value + sum.value)
-      assert(doc2?.value.value === min1.value)
-      assert(doc3?.value.value === initial.value)
-      assert(doc4?.value.value === max1.value)
-      assert(doc5?.value.value === initial.value)
-      assert(doc6 === null)
-    })
-  })
+      assert(docSet?.value.value === set.value);
+      assert(docAdd?.value.value === add.value);
+      assert(doc1?.value.value === initial.value + sum.value);
+      assert(doc2?.value.value === min1.value);
+      assert(doc3?.value.value === initial.value);
+      assert(doc4?.value.value === max1.value);
+      assert(doc5?.value.value === initial.value);
+      assert(doc6 === null);
+    });
+  });
 
   await t.step("Should enqueue message with string data", async () => {
     await useKv(async (kv) => {
-      const data = "data"
-      const undeliveredId = "undelivered"
+      const data = "data";
+      const undeliveredId = "undelivered";
 
       const db = kvdex(kv, {
         numbers: collection(model<number>()),
-      })
+      });
 
-      const handlerId = createHandlerId(db.numbers._keys.base, undefined)
+      const handlerId = createHandlerId(db.numbers._keys.base, undefined);
 
-      let assertion = false
+      let assertion = false;
 
       const listener = kv.listenQueue((msg) => {
-        const qMsg = msg as QueueMessage<KvValue>
-        assertion = qMsg.__handlerId__ === handlerId && qMsg.__data__ === data
-      })
+        const qMsg = msg as QueueMessage<KvValue>;
+        assertion = qMsg.__handlerId__ === handlerId && qMsg.__data__ === data;
+      });
 
       await db
         .atomic((schema) => schema.numbers)
         .enqueue("data", {
           idsIfUndelivered: [undeliveredId],
         })
-        .commit()
+        .commit();
 
-      await sleep(100)
+      await sleep(100);
 
-      const undelivered = await db.numbers.findUndelivered(undeliveredId)
-      assert(assertion || typeof undelivered?.value === typeof data)
+      const undelivered = await db.numbers.findUndelivered(undeliveredId);
+      assert(assertion || typeof undelivered?.value === typeof data);
 
-      return async () => await listener
-    })
-  })
+      return async () => await listener;
+    });
+  });
 
   await t.step("Should successfully parse and add documents", async () => {
     await useDb(async (db) => {
       const cr1 = await db
         .atomic((schema) => schema.z_users)
         .add(mockUser1)
-        .commit()
+        .commit();
 
       const cr2 = await db
         .atomic((schema) => schema.users)
         .set("id2", mockUser1)
-        .commit()
+        .commit();
 
       const cr3 = await db
         .atomic((schema) => schema.users)
@@ -320,36 +320,36 @@ Deno.test("db - atomic", async (t) => {
           id: "id3",
           value: mockUser1,
         })
-        .commit()
+        .commit();
 
-      assert(cr1.ok)
-      assert(cr2.ok)
-      assert(cr3.ok)
-    })
-  })
+      assert(cr1.ok);
+      assert(cr2.ok);
+      assert(cr3.ok);
+    });
+  });
 
   await t.step("Should fail to parse and adding documents", async () => {
     await useDb(async (db) => {
-      let assertion1 = false
-      let assertion2 = false
-      let assertion3 = false
+      let assertion1 = false;
+      let assertion2 = false;
+      let assertion3 = false;
 
       try {
         await db
           .atomic((schema) => schema.z_users)
           .add(mockUserInvalid)
-          .commit()
+          .commit();
       } catch (_) {
-        assertion1 = true
+        assertion1 = true;
       }
 
       try {
         await db
           .atomic((schema) => schema.z_users)
           .set("id2", mockUserInvalid)
-          .commit()
+          .commit();
       } catch (_) {
-        assertion2 = true
+        assertion2 = true;
       }
 
       try {
@@ -360,52 +360,52 @@ Deno.test("db - atomic", async (t) => {
             id: "id3",
             value: mockUserInvalid,
           })
-          .commit()
+          .commit();
       } catch (_) {
-        assertion3 = true
+        assertion3 = true;
       }
 
-      assert(assertion1)
-      assert(assertion2)
-      assert(assertion3)
-    })
-  })
+      assert(assertion1);
+      assert(assertion2);
+      assert(assertion3);
+    });
+  });
 
   await t.step("Should retain history in correct order", async () => {
     await useKv(async (kv) => {
       const db = kvdex(kv, {
         numbers: collection(model<number>(), { history: true }),
-      })
+      });
 
-      const id = "id"
+      const id = "id";
 
       await db
         .atomic((s) => s.numbers)
         .add(100)
         .set(id, 200)
-        .commit()
+        .commit();
 
-      await sleep(10)
+      await sleep(10);
 
       await db
         .atomic((s) => s.numbers)
         .delete(id)
-        .commit()
+        .commit();
 
       const { result: [doc] } = await db.numbers.getMany({
         filter: (d) => d.value === 100,
-      })
+      });
 
-      const { result: [h] } = await db.numbers.findHistory(doc.id)
-      assert(h.type === "write")
-      assert(h.value === 100)
+      const { result: [h] } = await db.numbers.findHistory(doc.id);
+      assert(h.type === "write");
+      assert(h.value === 100);
 
-      const { result: [h1, h2] } = await db.numbers.findHistory(id)
+      const { result: [h1, h2] } = await db.numbers.findHistory(id);
 
-      assert(h1.type === "write")
-      assert(h1.value === 200)
-      assert(h1.timestamp.valueOf() <= h2.timestamp.valueOf())
-      assert(h2.type === "delete")
-    })
-  })
-})
+      assert(h1.type === "write");
+      assert(h1.value === 200);
+      assert(h1.timestamp.valueOf() <= h2.timestamp.valueOf());
+      assert(h2.type === "delete");
+    });
+  });
+});

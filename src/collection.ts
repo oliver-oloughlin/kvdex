@@ -44,7 +44,7 @@ import type {
   UpdateOptions,
   UpdateStrategy,
   WatchOptions,
-} from "./types.ts"
+} from "./types.ts";
 import {
   allFulfilled,
   checkIndices,
@@ -66,7 +66,7 @@ import {
   prepareEnqueue,
   selectsAll,
   setIndices,
-} from "./utils.ts"
+} from "./utils.ts";
 import {
   DEFAULT_UPDATE_STRATEGY,
   HISTORY_KEY_PREFIX,
@@ -77,14 +77,14 @@ import {
   SEGMENT_KEY_PREFIX,
   UINT8ARRAY_LENGTH_LIMIT,
   UNDELIVERED_KEY_PREFIX,
-} from "./constants.ts"
-import { AtomicWrapper } from "./atomic_wrapper.ts"
-import { AtomicPool } from "./atomic_pool.ts"
-import { Document } from "./document.ts"
-import { model as m } from "./model.ts"
-import { concat, deepMerge, ulid } from "./deps.ts"
-import { v8Serialize } from "./utils.ts"
-import { v8Deserialize } from "./utils.ts"
+} from "./constants.ts";
+import { AtomicWrapper } from "./atomic_wrapper.ts";
+import { AtomicPool } from "./atomic_pool.ts";
+import { Document } from "./document.ts";
+import { model as m } from "./model.ts";
+import { concat, deepMerge, ulid } from "./deps.ts";
+import { v8Serialize } from "./utils.ts";
+import { v8Deserialize } from "./utils.ts";
 
 /**
  * Create a new collection within a database context.
@@ -136,7 +136,7 @@ export function collection<
       idempotentListener,
       model,
       options,
-    )
+    );
 }
 
 /** Represents a collection of documents and provides methods for handling them, alongside queues. */
@@ -145,19 +145,19 @@ export class Collection<
   const TOutput extends KvValue,
   const TOptions extends CollectionOptions<TOutput>,
 > {
-  private kv: DenoKv
-  private queueHandlers: QueueHandlers
-  private idempotentListener: IdempotentListener
+  private kv: DenoKv;
+  private queueHandlers: QueueHandlers;
+  private idempotentListener: IdempotentListener;
 
-  readonly _model: Model<TInput, TOutput>
-  readonly _primaryIndexList: string[]
-  readonly _secondaryIndexList: string[]
-  readonly _keys: CollectionKeys
-  readonly _idGenerator: IdGenerator<TOutput, ParseId<TOptions>>
-  readonly _serializer: Serializer
-  readonly _isIndexable: boolean
-  readonly _isSerialized: boolean
-  readonly _keepsHistory: boolean
+  readonly _model: Model<TInput, TOutput>;
+  readonly _primaryIndexList: string[];
+  readonly _secondaryIndexList: string[];
+  readonly _keys: CollectionKeys;
+  readonly _idGenerator: IdGenerator<TOutput, ParseId<TOptions>>;
+  readonly _serializer: Serializer;
+  readonly _isIndexable: boolean;
+  readonly _isSerialized: boolean;
+  readonly _keepsHistory: boolean;
 
   constructor(
     kv: DenoKv,
@@ -168,11 +168,11 @@ export class Collection<
     options?: TOptions,
   ) {
     // Set basic fields
-    this.kv = kv
-    this.queueHandlers = queueHandlers
-    this.idempotentListener = idempotentListener
-    this._model = model
-    this._idGenerator = options?.idGenerator ?? generateId as any
+    this.kv = kv;
+    this.queueHandlers = queueHandlers;
+    this.idempotentListener = idempotentListener;
+    this._model = model;
+    this._idGenerator = options?.idGenerator ?? generateId as any;
 
     // Set keys
     this._keys = {
@@ -213,25 +213,25 @@ export class Collection<
         SEGMENT_KEY_PREFIX,
         ...key,
       ),
-    }
+    };
 
     // Check all possible options
-    const opts = (options ?? {}) as PossibleCollectionOptions
+    const opts = (options ?? {}) as PossibleCollectionOptions;
 
     // Set index lists
-    this._primaryIndexList = []
-    this._secondaryIndexList = []
+    this._primaryIndexList = [];
+    this._secondaryIndexList = [];
 
     Object.entries(opts?.indices ?? {}).forEach(([index, value]) => {
       if (value === "primary") {
-        this._primaryIndexList.push(index)
+        this._primaryIndexList.push(index);
       } else {
-        this._secondaryIndexList.push(index)
+        this._secondaryIndexList.push(index);
       }
-    })
+    });
 
     // Set serialization
-    this._isSerialized = !!opts?.serialize
+    this._isSerialized = !!opts?.serialize;
 
     if (opts?.serialize === "v8") {
       this._serializer = {
@@ -239,28 +239,28 @@ export class Collection<
         deserialize: v8Deserialize,
         compress,
         decompress,
-      }
+      };
     } else if (opts?.serialize === "v8-uncompressed") {
       this._serializer = {
         serialize: v8Serialize,
         deserialize: v8Deserialize,
         compress: (v) => v,
         decompress: (v) => v,
-      }
+      };
     } else if (opts?.serialize === "json") {
       this._serializer = {
         serialize: jsonSerialize,
         deserialize: jsonDeserialize,
         compress,
         decompress,
-      }
+      };
     } else if (opts?.serialize === "json-uncompressed") {
       this._serializer = {
         serialize: jsonSerialize,
         deserialize: jsonDeserialize,
         compress: (v) => v,
         decompress: (v) => v,
-      }
+      };
     } else {
       this._serializer = {
         serialize: jsonSerialize,
@@ -268,15 +268,15 @@ export class Collection<
         compress,
         decompress,
         ...opts?.serialize,
-      }
+      };
     }
 
     // Set isIndexable flag
     this._isIndexable = this._primaryIndexList.length > 0 ||
-      this._secondaryIndexList.length > 0
+      this._secondaryIndexList.length > 0;
 
     // Set keepsHistory flag
-    this._keepsHistory = options?.history ?? false
+    this._keepsHistory = options?.history ?? false;
   }
 
   /**********************/
@@ -306,9 +306,9 @@ export class Collection<
     options?: FindOptions,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
     // Create document key, get document entry
-    const key = extendKey(this._keys.id, id)
-    const entry = await this.kv.get(key, options)
-    return await this.constructDocument(entry)
+    const key = extendKey(this._keys.id, id);
+    const entry = await this.kv.get(key, options);
+    return await this.constructDocument(entry);
   }
 
   /**
@@ -333,21 +333,21 @@ export class Collection<
     options?: FindOptions,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value)
-    const compressed = await this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value);
+    const compressed = await this._serializer.compress(serialized);
 
     // Create the index key
     const key = extendKey(
       this._keys.primaryIndex,
       index as KvId,
       compressed,
-    )
+    );
 
     // Get index entry
-    const entry = await this.kv.get(key, options)
+    const entry = await this.kv.get(key, options);
 
     // Return constructed document
-    return await this.constructDocument(entry)
+    return await this.constructDocument(entry);
   }
 
   /**
@@ -382,22 +382,22 @@ export class Collection<
     >,
   ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value)
-    const compressed = await this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value);
+    const compressed = await this._serializer.compress(serialized);
 
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
       compressed,
-    )
+    );
 
     // Add documents to result list by secondary index
     return await this.handleMany(
       prefixKey,
       (doc) => doc,
       options,
-    )
+    );
   }
 
   /**
@@ -424,25 +424,25 @@ export class Collection<
     options?: FindManyOptions,
   ): Promise<Document<TOutput, ParseId<TOptions>>[]> {
     // Create document keys, get document entries
-    const keys = ids.map((id) => extendKey(this._keys.id, id))
-    const entries = await kvGetMany(keys, this.kv, options)
+    const keys = ids.map((id) => extendKey(this._keys.id, id));
+    const entries = await kvGetMany(keys, this.kv, options);
 
     // Create empty result list
-    const result: Document<TOutput, ParseId<TOptions>>[] = []
+    const result: Document<TOutput, ParseId<TOptions>>[] = [];
 
     // Loop over entries, add to result list
     for (const entry of entries) {
-      const doc = await this.constructDocument(entry)
+      const doc = await this.constructDocument(entry);
 
       if (!doc) {
-        continue
+        continue;
       }
 
-      result.push(doc)
+      result.push(doc);
     }
 
     // Return result list
-    return result
+    return result;
   }
 
   /**
@@ -471,65 +471,65 @@ export class Collection<
     options?: ListOptions<HistoryEntry<TOutput>, ParseId<TOptions>>,
   ): Promise<PaginationResult<HistoryEntry<TOutput>>> {
     // Initialize result list and create history key prefix
-    const result: HistoryEntry<TOutput>[] = []
-    const keyPrefix = extendKey(this._keys.history, id)
-    const selector = createListSelector(keyPrefix, options)
+    const result: HistoryEntry<TOutput>[] = [];
+    const keyPrefix = extendKey(this._keys.history, id);
+    const selector = createListSelector(keyPrefix, options);
 
     // Create hsitory entries iterator
-    const listOptions = createListOptions(options)
-    const iter = this.kv.list(selector, listOptions)
+    const listOptions = createListOptions(options);
+    const iter = this.kv.list(selector, listOptions);
 
     // Collect history entries
-    let count = 0
-    const offset = options?.offset ?? 0
+    let count = 0;
+    const offset = options?.offset ?? 0;
     for await (const { value, key } of iter) {
       // Skip by offset
-      count++
+      count++;
 
       if (count <= offset) {
-        continue
+        continue;
       }
 
       // Cast history entry
-      let historyEntry = value as HistoryEntry<TOutput>
+      let historyEntry = value as HistoryEntry<TOutput>;
 
       // Handle serialized entries
       if (historyEntry.type === "write" && this._isSerialized) {
-        const { ids } = historyEntry.value as SerializedEntry
-        const timeId = getDocumentId(key as DenoKvStrictKey)!
+        const { ids } = historyEntry.value as SerializedEntry;
+        const timeId = getDocumentId(key as DenoKvStrictKey)!;
 
         const keys = ids.map((segmentId) =>
           extendKey(this._keys.historySegment, id, timeId, segmentId)
-        )
+        );
 
-        const entries = await kvGetMany(keys, this.kv)
+        const entries = await kvGetMany(keys, this.kv);
 
         // Concatenate chunks
-        const data = concat(entries.map((entry) => entry.value as Uint8Array))
+        const data = concat(entries.map((entry) => entry.value as Uint8Array));
 
         // Decompress and deserialize
-        const serialized = await this._serializer.decompress(data)
+        const serialized = await this._serializer.decompress(data);
         const deserialized = await this._serializer.deserialize<TOutput>(
           serialized,
-        )
+        );
 
         // Set history entry
         historyEntry = {
           ...historyEntry,
           value: this._model.parse?.(deserialized),
-        }
+        };
       } else if (historyEntry.type === "write") {
         // Set history entry
         historyEntry = {
           ...historyEntry,
           value: this._model.parse?.(historyEntry.value),
-        }
+        };
       }
 
       // Filter and add history entry to result list
-      const filter = options?.filter
+      const filter = options?.filter;
       if (!filter || filter(historyEntry)) {
-        result.push(historyEntry)
+        result.push(historyEntry);
       }
     }
 
@@ -537,7 +537,7 @@ export class Collection<
     return {
       result,
       cursor: iter.cursor || undefined,
-    }
+    };
   }
 
   /**
@@ -560,7 +560,7 @@ export class Collection<
     options?: SetOptions,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Set document value with generated id
-    return await this.setDocument(null, value, options)
+    return await this.setDocument(null, value, options);
   }
 
   /**
@@ -586,7 +586,7 @@ export class Collection<
     data: TInput,
     options?: SetOptions,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
-    return await this.setDocument(id, data, options)
+    return await this.setDocument(id, data, options);
   }
 
   /**
@@ -602,7 +602,7 @@ export class Collection<
    * @returns A promise that resovles to void.
    */
   async delete(...ids: ParseId<TOptions>[]): Promise<void> {
-    await this.deleteDocuments(ids, this._keepsHistory)
+    await this.deleteDocuments(ids, this._keepsHistory);
   }
 
   /**
@@ -627,31 +627,31 @@ export class Collection<
     options?: FindOptions,
   ): Promise<void> {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value)
-    const compressed = await this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value);
+    const compressed = await this._serializer.compress(serialized);
 
     // Create index key
     const key = extendKey(
       this._keys.primaryIndex,
       index as KvId,
       compressed,
-    )
+    );
 
     // Get index entry
-    const result = await this.kv.get(key, options)
+    const result = await this.kv.get(key, options);
 
     // If no value, abort delete
     if (result.value === null || result.versionstamp === null) {
-      return
+      return;
     }
 
     // Extract document id from index entry
     const { __id__ } = result.value as
       & unknown
-      & Pick<IndexDataEntry<KvObject>, "__id__">
+      & Pick<IndexDataEntry<KvObject>, "__id__">;
 
     // Delete document by id
-    await this.deleteDocuments([__id__], this._keepsHistory)
+    await this.deleteDocuments([__id__], this._keepsHistory);
   }
 
   /**
@@ -684,25 +684,25 @@ export class Collection<
     >,
   ): Promise<Pagination> {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value)
-    const compressed = await this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value);
+    const compressed = await this._serializer.compress(serialized);
 
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
       compressed,
-    )
+    );
 
     // Delete documents by secondary index, return iterator cursor
     const { cursor } = await this.handleMany(
       prefixKey,
       (doc) => this.deleteDocuments([doc.id], this._keepsHistory),
       options,
-    )
+    );
 
     // Return iterator cursor
-    return { cursor }
+    return { cursor };
   }
 
   /**
@@ -739,17 +739,17 @@ export class Collection<
     options?: T,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Get document
-    const doc = await this.find(id)
+    const doc = await this.find(id);
 
     // If no document is found, return commit error
     if (!doc) {
       return {
         ok: false,
-      }
+      };
     }
 
     // Update document and return commit result
-    return await this.updateDocument(doc, data, options)
+    return await this.updateDocument(doc, data, options);
   }
 
   /**
@@ -788,17 +788,17 @@ export class Collection<
     options?: T,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Find document by primary index
-    const doc = await this.findByPrimaryIndex(index, value)
+    const doc = await this.findByPrimaryIndex(index, value);
 
     // If no document, return commit error
     if (!doc) {
       return {
         ok: false,
-      }
+      };
     }
 
     // Update document, return result
-    return await this.updateDocument(doc, data, options)
+    return await this.updateDocument(doc, data, options);
   }
 
   /**
@@ -847,22 +847,22 @@ export class Collection<
     >
   > {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value)
-    const compressed = await this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value);
+    const compressed = await this._serializer.compress(serialized);
 
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
       compressed,
-    )
+    );
 
     // Update each document by secondary index, add commit result to result list
     return await this.handleMany(
       prefixKey,
       (doc) => this.updateDocument(doc, data, options),
       options,
-    )
+    );
   }
 
   /**
@@ -902,17 +902,17 @@ export class Collection<
     >,
     options?: TUpsertOptions,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
-    const updateCr = await this.update(input.id, input.update, options)
+    const updateCr = await this.update(input.id, input.update, options);
 
     if (updateCr.ok) {
-      return updateCr
+      return updateCr;
     }
 
     // Set new entry with given id
     return await this.set(input.id, input.set, {
       ...options,
       overwrite: false,
-    })
+    });
   }
 
   /**
@@ -961,10 +961,10 @@ export class Collection<
       ...input.index,
       input.update,
       options,
-    )
+    );
 
     if (updateCr.ok) {
-      return updateCr
+      return updateCr;
     }
 
     // If id is present, set new entry with given id
@@ -972,14 +972,14 @@ export class Collection<
       return await this.set(input.id, input.set, {
         ...options,
         overwrite: false,
-      })
+      });
     }
 
     // If no id, add new entry with generated id
     return await this.add(input.set, {
       ...options,
       overwrite: false,
-    })
+    });
   }
 
   /**
@@ -1028,7 +1028,7 @@ export class Collection<
       this._keys.id,
       (doc) => this.updateDocument(doc, value, options),
       options,
-    )
+    );
   }
 
   /**
@@ -1061,14 +1061,14 @@ export class Collection<
     >
   > {
     // Create prefix key
-    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId);
 
     // Update each document by secondary index, add commit result to result list
     return await this.handleMany(
       prefixKey,
       (doc) => this.updateDocument(doc, data, options),
       options,
-    )
+    );
   }
 
   /**
@@ -1107,12 +1107,12 @@ export class Collection<
       this._keys.id,
       (doc) => this.updateDocument(doc, data, options),
       { ...options, take: 1 },
-    )
+    );
 
     // Return first result, or commit error object if not present
     return result.at(0) ?? {
       ok: false,
-    }
+    };
   }
 
   /**
@@ -1156,19 +1156,19 @@ export class Collection<
       index,
       value as KvValue,
       this,
-    )
+    );
 
     // Update a single document
     const { result } = await this.handleMany(
       prefixKey,
       (doc) => this.updateDocument(doc, data, options),
       { ...options, take: 1 },
-    )
+    );
 
     // Return first result, or commit error object if not present
     return result.at(0) ?? {
       ok: false,
-    }
+    };
   }
 
   /**
@@ -1197,19 +1197,19 @@ export class Collection<
     options?: T,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Create prefix key
-    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId);
 
     // Update a single document
     const { result } = await this.handleMany(
       prefixKey,
       (doc) => this.updateDocument(doc, data, options),
       { ...options, take: 1 },
-    )
+    );
 
     // Return first result, or commit error object if not present
     return result.at(0) ?? {
       ok: false,
-    }
+    };
   }
 
   /**
@@ -1243,35 +1243,35 @@ export class Collection<
   ): Promise<ManyCommitResult | DenoKvCommitError> {
     // Initiate result and error lists
     const results:
-      (CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError)[] = []
-    const errors: unknown[] = []
+      (CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError)[] = [];
+    const errors: unknown[] = [];
 
     // Add each value
     await allFulfilled(
       values.map(async (value) => {
         try {
-          const result = await this.add(value, options)
-          results.push(result)
+          const result = await this.add(value, options);
+          results.push(result);
         } catch (e) {
-          errors.push(e)
+          errors.push(e);
         }
       }),
-    )
+    );
 
     // Throw any caught errors
     if (errors.length > 0) {
-      throw errors
+      throw errors;
     }
 
     // If a commit has failed, return commit error
     if (!results.every((cr) => cr.ok)) {
-      return { ok: false }
+      return { ok: false };
     }
 
     // Return commit result
     return {
       ok: true,
-    }
+    };
   }
 
   /**
@@ -1302,39 +1302,39 @@ export class Collection<
     // Perform quick delete if all documents are to be deleted
     if (selectsAll(options)) {
       // Create list iterator and empty keys list, init atomic operation
-      const iter = this.kv.list({ prefix: this._keys.base }, options)
+      const iter = this.kv.list({ prefix: this._keys.base }, options);
 
-      const keys: DenoKvStrictKey[] = []
-      const atomic = new AtomicWrapper(this.kv)
+      const keys: DenoKvStrictKey[] = [];
+      const atomic = new AtomicWrapper(this.kv);
 
       // Collect all collection entry keys
       for await (const { key } of iter) {
-        keys.push(key as DenoKvStrictKey)
+        keys.push(key as DenoKvStrictKey);
       }
 
       // Set history entries if keeps history
       if (this._keepsHistory) {
         for await (const { key } of this.kv.list({ prefix: this._keys.id })) {
-          const id = getDocumentId(key as DenoKvStrictKey)
+          const id = getDocumentId(key as DenoKvStrictKey);
 
           if (!id) {
-            continue
+            continue;
           }
 
-          const historyKey = extendKey(this._keys.history, id, ulid())
+          const historyKey = extendKey(this._keys.history, id, ulid());
 
           const historyEntry: HistoryEntry<TOutput> = {
             type: "delete",
             timestamp: new Date(),
-          }
+          };
 
-          atomic.set(historyKey, historyEntry)
+          atomic.set(historyKey, historyEntry);
         }
       }
 
       // Delete all keys and return
-      keys.forEach((key) => atomic.delete(key))
-      await atomic.commit()
+      keys.forEach((key) => atomic.delete(key));
+      await atomic.commit();
     }
 
     // Execute delete operation for each document entry
@@ -1342,10 +1342,10 @@ export class Collection<
       this._keys.id,
       (doc) => this.deleteDocuments([doc.id], this._keepsHistory),
       options,
-    )
+    );
 
     // Return iterator cursor
-    return { cursor }
+    return { cursor };
   }
 
   /**
@@ -1375,17 +1375,17 @@ export class Collection<
     >,
   ): Promise<Pagination> {
     // Create prefix key
-    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId);
 
     // Delete documents by secondary index, return iterator cursor
     const { cursor } = await this.handleMany(
       prefixKey,
       (doc) => this.deleteDocuments([doc.id], this._keepsHistory),
       options,
-    )
+    );
 
     // Return iterator cursor
-    return { cursor }
+    return { cursor };
   }
 
   /**
@@ -1418,7 +1418,7 @@ export class Collection<
       this._keys.id,
       (doc) => doc,
       options,
-    )
+    );
   }
 
   /**
@@ -1451,12 +1451,12 @@ export class Collection<
       ParseId<TOptions>
     >,
   ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
-    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId);
     return await this.handleMany(
       prefixKey,
       (doc) => doc,
       options,
-    )
+    );
   }
 
   /**
@@ -1492,10 +1492,10 @@ export class Collection<
       this._keys.id,
       (doc) => doc,
       { ...options, take: 1 },
-    )
+    );
 
     // Return first result item, or null if not present
-    return result.at(0) ?? null
+    return result.at(0) ?? null;
   }
 
   /**
@@ -1537,17 +1537,17 @@ export class Collection<
       index,
       value as KvValue,
       this,
-    )
+    );
 
     // Get result list with one item
     const { result } = await this.handleMany(
       prefixKey,
       (doc) => doc,
       { ...options, take: 1 },
-    )
+    );
 
     // Return first result item, or null if not present
-    return result.at(0) ?? null
+    return result.at(0) ?? null;
   }
 
   /**
@@ -1575,17 +1575,17 @@ export class Collection<
     >,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
     // Create prefix key
-    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId);
 
     // Get result list with one item
     const { result } = await this.handleMany(
       prefixKey,
       (doc) => doc,
       { ...options, take: 1 },
-    )
+    );
 
     // Return first result item, or null if not present
-    return result.at(0) ?? null
+    return result.at(0) ?? null;
   }
 
   /**
@@ -1620,10 +1620,10 @@ export class Collection<
       this._keys.id,
       async (doc) => await fn(doc),
       options,
-    )
+    );
 
     // Return iterator cursor
-    return { cursor }
+    return { cursor };
   }
 
   /**
@@ -1663,17 +1663,17 @@ export class Collection<
       index,
       value as KvValue,
       this,
-    )
+    );
 
     // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
       prefixKey,
       (doc) => fn(doc),
       options,
-    )
+    );
 
     // Return iterator cursor
-    return { cursor }
+    return { cursor };
   }
 
   /**
@@ -1706,17 +1706,17 @@ export class Collection<
     >,
   ): Promise<Pagination> {
     // Create prefix key
-    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId);
 
     // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
       prefixKey,
       (doc) => fn(doc),
       options,
-    )
+    );
 
     // Return iterator cursor
-    return { cursor }
+    return { cursor };
   }
 
   /**
@@ -1753,7 +1753,7 @@ export class Collection<
       this._keys.id,
       (doc) => fn(doc),
       options,
-    )
+    );
   }
 
   /**
@@ -1792,22 +1792,22 @@ export class Collection<
     >,
   ): Promise<PaginationResult<Awaited<T>>> {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value)
-    const compressed = await this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value);
+    const compressed = await this._serializer.compress(serialized);
 
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
       compressed,
-    )
+    );
 
     // Execute callback function for each document entry, return result and cursor
     return await this.handleMany(
       prefixKey,
       (doc) => fn(doc),
       options,
-    )
+    );
   }
 
   /**
@@ -1843,14 +1843,14 @@ export class Collection<
     >,
   ): Promise<PaginationResult<Awaited<T>>> {
     // Create prefix key
-    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId);
 
     // Execute callback function for each document entry, return result and cursor
     return await this.handleMany(
       prefixKey,
       (doc) => fn(doc),
       options,
-    )
+    );
   }
 
   /**
@@ -1877,20 +1877,20 @@ export class Collection<
     >,
   ): Promise<number> {
     // Initiate count result
-    let result = 0
+    let result = 0;
 
     // Perform efficient count if counting all document entries
     if (selectsAll(options)) {
-      const iter = this.kv.list({ prefix: this._keys.id }, options)
+      const iter = this.kv.list({ prefix: this._keys.id }, options);
       for await (const _ of iter) {
-        result++
+        result++;
       }
-      return result
+      return result;
     }
 
     // Perform count using many documents handler
-    await this.handleMany(this._keys.id, () => result++, options)
-    return result
+    await this.handleMany(this._keys.id, () => result++, options);
+    return result;
   }
 
   /**
@@ -1919,28 +1919,28 @@ export class Collection<
     >,
   ): Promise<number> {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value)
-    const compressed = await this._serializer.compress(serialized)
+    const serialized = await this._serializer.serialize(value);
+    const compressed = await this._serializer.compress(serialized);
 
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
       compressed,
-    )
+    );
 
     // Initialize count result
-    let result = 0
+    let result = 0;
 
     // Update each document by secondary index, add commit result to result list
     await this.handleMany(
       prefixKey,
       () => result++,
       options,
-    )
+    );
 
     // Return count result
-    return result
+    return result;
   }
 
   /**
@@ -1970,20 +1970,20 @@ export class Collection<
     >,
   ): Promise<number> {
     // Create prefix key
-    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId)
+    const prefixKey = extendKey(this._keys.secondaryIndex, order as KvId);
 
     // Initialize count result
-    let result = 0
+    let result = 0;
 
     // Update each document by secondary index, add commit result to result list
     await this.handleMany(
       prefixKey,
       () => result++,
       options,
-    )
+    );
 
     // Return count result
-    return result
+    return result;
   }
 
   /**
@@ -2018,10 +2018,10 @@ export class Collection<
       this._keys.undelivered,
       data,
       options,
-    )
+    );
 
     // Enqueue message with options
-    return await this.kv.enqueue(prep.msg, prep.options)
+    return await this.kv.enqueue(prep.msg, prep.options);
   }
 
   /**
@@ -2056,15 +2056,15 @@ export class Collection<
     options?: QueueListenerOptions,
   ): Promise<void> {
     // Create handler id
-    const handlerId = createHandlerId(this._keys.base, options?.topic)
+    const handlerId = createHandlerId(this._keys.base, options?.topic);
 
     // Add new handler to specified handlers
-    const handlers = this.queueHandlers.get(handlerId) ?? []
-    handlers.push(handler as QueueMessageHandler<KvValue>)
-    this.queueHandlers.set(handlerId, handlers)
+    const handlers = this.queueHandlers.get(handlerId) ?? [];
+    handlers.push(handler as QueueMessageHandler<KvValue>);
+    this.queueHandlers.set(handlerId, handlers);
 
     // Activate idempotent listener
-    return await this.idempotentListener()
+    return await this.idempotentListener();
   }
 
   /**
@@ -2088,12 +2088,12 @@ export class Collection<
     options?: FindOptions,
   ): Promise<Document<T, KvId> | null> {
     // Create document key, get document entry
-    const key = extendKey(this._keys.undelivered, id)
-    const result = await this.kv.get(key, options)
+    const key = extendKey(this._keys.undelivered, id);
+    const result = await this.kv.get(key, options);
 
     // If no entry exists, return null
     if (result.value === null || result.versionstamp === null) {
-      return null
+      return null;
     }
 
     // Return document
@@ -2101,7 +2101,7 @@ export class Collection<
       id,
       versionstamp: result.versionstamp,
       value: result.value as T,
-    })
+    });
   }
 
   /**
@@ -2116,24 +2116,26 @@ export class Collection<
    */
   async deleteHistory(id: ParseId<TOptions>): Promise<void> {
     // Initialize atomic operation and create iterators
-    const atomic = new AtomicWrapper(this.kv)
-    const historyKeyPrefix = extendKey(this._keys.history, id)
-    const historySegmentKeyPrefix = extendKey(this._keys.historySegment, id)
-    const historyIter = this.kv.list({ prefix: historyKeyPrefix })
-    const historySegmentIter = this.kv.list({ prefix: historySegmentKeyPrefix })
+    const atomic = new AtomicWrapper(this.kv);
+    const historyKeyPrefix = extendKey(this._keys.history, id);
+    const historySegmentKeyPrefix = extendKey(this._keys.historySegment, id);
+    const historyIter = this.kv.list({ prefix: historyKeyPrefix });
+    const historySegmentIter = this.kv.list({
+      prefix: historySegmentKeyPrefix,
+    });
 
     // Delete history entries
     for await (const { key } of historyIter) {
-      atomic.delete(key as DenoKvStrictKey)
+      atomic.delete(key as DenoKvStrictKey);
     }
 
     // Delete any history segment entries
     for await (const { key } of historySegmentIter) {
-      atomic.delete(key as DenoKvStrictKey)
+      atomic.delete(key as DenoKvStrictKey);
     }
 
     // Commit atomic operation
-    await atomic.commit()
+    await atomic.commit();
   }
 
   /**
@@ -2147,8 +2149,8 @@ export class Collection<
    * @param id - Id of undelivered document.
    */
   async deleteUndelivered(id: KvId): Promise<void> {
-    const key = extendKey(this._keys.undelivered, id)
-    await this.kv.delete(key)
+    const key = extendKey(this._keys.undelivered, id);
+    await this.kv.delete(key);
   }
 
   /**
@@ -2185,24 +2187,24 @@ export class Collection<
     fn: (doc: Document<TOutput, ParseId<TOptions>> | null) => unknown,
     options?: WatchOptions,
   ): {
-    promise: Promise<void>
-    cancel: () => Promise<void>
+    promise: Promise<void>;
+    cancel: () => Promise<void>;
   } {
-    const key = extendKey(this._keys.id, id)
+    const key = extendKey(this._keys.id, id);
 
     return createWatcher(this.kv, options, [key], async (entries) => {
-      const entry = entries.at(0)
+      const entry = entries.at(0);
 
       // If no entry is found, invoke callback function with null
       if (!entry) {
-        await fn(null)
-        return
+        await fn(null);
+        return;
       }
 
       // Construct document and invoke callback function
-      const doc = await this.constructDocument(entry)
-      await fn(doc)
-    })
+      const doc = await this.constructDocument(entry);
+      await fn(doc);
+    });
   }
 
   /**
@@ -2246,20 +2248,20 @@ export class Collection<
     fn: (doc: (Document<TOutput, ParseId<TOptions>> | null)[]) => unknown,
     options?: WatchOptions,
   ): {
-    promise: Promise<void>
-    cancel: () => Promise<void>
+    promise: Promise<void>;
+    cancel: () => Promise<void>;
   } {
-    const keys = ids.map((id) => extendKey(this._keys.id, id))
+    const keys = ids.map((id) => extendKey(this._keys.id, id));
 
     return createWatcher(this.kv, options, keys, async (entries) => {
       // Construct documents
       const docs = await Array.fromAsync(
         entries.map((entry) => this.constructDocument(entry)),
-      )
+      );
 
       // Invoke callback function
-      await fn(docs)
-    })
+      await fn(docs);
+    });
   }
 
   /***********************/
@@ -2284,11 +2286,11 @@ export class Collection<
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Create id, document key and parse document value
     const parsed = this._model._transform?.(value as TInput) ??
-      this._model.parse(value)
+      this._model.parse(value);
 
-    const docId = id ?? await this._idGenerator(parsed)
-    const idKey = extendKey(this._keys.id, docId)
-    return await this.setDoc(docId, idKey, parsed, options)
+    const docId = id ?? await this._idGenerator(parsed);
+    const idKey = extendKey(this._keys.id, docId);
+    return await this.setDoc(docId, idKey, parsed, options);
   }
 
   /**
@@ -2308,36 +2310,36 @@ export class Collection<
     options: SetOptions | undefined,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Initialize atomic operation and keys list
-    const ids: KvId[] = []
-    let docValue: any = value
-    const isUint8Array = value instanceof Uint8Array
-    const timeId = ulid()
-    const operationPool = new AtomicPool()
-    const indexOperationPool = new AtomicPool()
+    const ids: KvId[] = [];
+    let docValue: any = value;
+    const isUint8Array = value instanceof Uint8Array;
+    const timeId = ulid();
+    const operationPool = new AtomicPool();
+    const indexOperationPool = new AtomicPool();
 
     // Check for id collision
     if (!options?.overwrite) {
       operationPool.check({
         key: idKey,
         versionstamp: null,
-      })
+      });
     }
 
     // Serialize if enabled
     if (this._isSerialized) {
       const serialized = isUint8Array
         ? value
-        : await this._serializer.serialize(value)
-      const compressed = await this._serializer.compress(serialized)
+        : await this._serializer.serialize(value);
+      const compressed = await this._serializer.compress(serialized);
 
       // Set segmented entries
-      let index = 0
+      let index = 0;
       for (let i = 0; i < compressed.length; i += UINT8ARRAY_LENGTH_LIMIT) {
-        const part = compressed.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT)
-        const key = extendKey(this._keys.segment, docId, index)
-        ids.push(index)
+        const part = compressed.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT);
+        const key = extendKey(this._keys.segment, docId, index);
+        ids.push(index);
 
-        operationPool.set(key, part, options)
+        operationPool.set(key, part, options);
 
         // Set history segments if keeps history
         if (this._keepsHistory) {
@@ -2346,37 +2348,37 @@ export class Collection<
             docId,
             timeId,
             index,
-          )
+          );
 
-          operationPool.set(historySegmentKey, part)
+          operationPool.set(historySegmentKey, part);
         }
 
-        index++
+        index++;
       }
 
       // Set serialized document value
       const serializedEntry: SerializedEntry = {
         ids,
         isUint8Array,
-      }
+      };
 
-      docValue = serializedEntry
+      docValue = serializedEntry;
     }
 
     // Set document entry
-    operationPool.set(idKey, docValue, options)
+    operationPool.set(idKey, docValue, options);
 
     // Set history entry if keeps history
     if (this._keepsHistory) {
-      const historyKey = extendKey(this._keys.history, docId, timeId)
+      const historyKey = extendKey(this._keys.history, docId, timeId);
 
       const historyEntry: HistoryEntry<any> = {
         type: "write",
         timestamp: new Date(),
         value: docValue,
-      }
+      };
 
-      operationPool.set(historyKey, historyEntry)
+      operationPool.set(historyKey, historyEntry);
     }
 
     // Set indices if is indexable
@@ -2388,51 +2390,51 @@ export class Collection<
         indexOperationPool,
         this,
         options,
-      )
+      );
     }
 
     // Initialize index check, commit result and atomic operation
-    let indexCheck = false
-    let cr: DenoKvCommitResult | DenoKvCommitError = { ok: false }
+    let indexCheck = false;
+    let cr: DenoKvCommitResult | DenoKvCommitError = { ok: false };
 
     const atomic = options?.batched
       ? new AtomicWrapper(this.kv)
-      : this.kv.atomic()
+      : this.kv.atomic();
 
     // Perform index mutations first if operation is batched, else bind all mutations to main operation
     if (options?.batched) {
-      const indexAtomic = this.kv.atomic()
-      indexOperationPool.bindTo(indexAtomic)
-      const indexCr = await indexAtomic.commit()
-      indexCheck = indexCr.ok
+      const indexAtomic = this.kv.atomic();
+      indexOperationPool.bindTo(indexAtomic);
+      const indexCr = await indexAtomic.commit();
+      indexCheck = indexCr.ok;
     } else {
-      indexOperationPool.bindTo(atomic)
+      indexOperationPool.bindTo(atomic);
     }
 
     // Bind remaining mutations to main operation
-    operationPool.bindTo(atomic)
+    operationPool.bindTo(atomic);
 
     // Commit operation if not batched or if index setters completed successfully
     if (!options?.batched || indexCheck) {
-      cr = await atomic.commit()
+      cr = await atomic.commit();
     }
 
     // Handle failed operation
     if (!cr.ok) {
       // Delete any entries upon failed batched operation
       if (options?.batched && indexCheck) {
-        const failedAtomic = new AtomicWrapper(this.kv)
+        const failedAtomic = new AtomicWrapper(this.kv);
 
         if (this._keepsHistory) {
-          const historyKey = extendKey(this._keys.history, docId, timeId)
-          failedAtomic.delete(historyKey)
+          const historyKey = extendKey(this._keys.history, docId, timeId);
+          failedAtomic.delete(historyKey);
         }
 
         if (this._isSerialized) {
-          const { ids } = docValue as SerializedEntry
+          const { ids } = docValue as SerializedEntry;
           ids.forEach((id) =>
             failedAtomic.delete(extendKey(this._keys.segment, docId, id))
-          )
+          );
         }
 
         if (this._isIndexable) {
@@ -2441,32 +2443,32 @@ export class Collection<
             value as KvObject,
             failedAtomic,
             this,
-          )
+          );
         }
 
-        await failedAtomic.commit()
+        await failedAtomic.commit();
       }
 
       // Return commit error if no remaining retry attempts
-      const retry = options?.retry ?? 0
+      const retry = options?.retry ?? 0;
       if (!retry) {
         return {
           ok: false,
-        }
+        };
       }
 
       // Retry operation and decrement retry count
       return await this.setDoc(docId, idKey, value, {
         ...options,
         retry: retry - 1,
-      })
+      });
     }
 
     // Return commit result
     return {
       ...cr,
       id: docId,
-    }
+    };
   }
 
   /**
@@ -2483,50 +2485,50 @@ export class Collection<
     options: UpdateOptions | undefined,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Get document value, delete document entry
-    const { value, id } = doc
+    const { value, id } = doc;
 
     // If indexable, check for index collisions and delete exisitng index entries
     if (this._isIndexable) {
-      const atomic = this.kv.atomic()
+      const atomic = this.kv.atomic();
 
       await checkIndices(
         data as KvObject,
         atomic,
         this,
-      )
+      );
 
       await deleteIndices(
         id,
         doc.value as KvObject,
         atomic,
         this,
-      )
+      );
 
-      const cr = await atomic.commit()
+      const cr = await atomic.commit();
 
       if (!cr.ok) {
         return {
           ok: false,
-        }
+        };
       }
     }
 
     // If serialized, delete existing segment entries
     if (this._isSerialized) {
-      const atomic = new AtomicWrapper(this.kv)
-      const keyPrefix = extendKey(this._keys.segment, id)
-      const iter = this.kv.list({ prefix: keyPrefix })
+      const atomic = new AtomicWrapper(this.kv);
+      const keyPrefix = extendKey(this._keys.segment, id);
+      const iter = this.kv.list({ prefix: keyPrefix });
 
       for await (const { key } of iter) {
-        atomic.delete(key as DenoKvStrictKey)
+        atomic.delete(key as DenoKvStrictKey);
       }
 
-      await atomic.commit()
+      await atomic.commit();
     }
 
     // Determine update strategy and check value type
-    const strategy = options?.strategy ?? DEFAULT_UPDATE_STRATEGY
-    const isObject = isKvObject(value)
+    const strategy = options?.strategy ?? DEFAULT_UPDATE_STRATEGY;
+    const isObject = isKvObject(value);
 
     // Handle different update strategies
     const updated = strategy === "replace"
@@ -2536,10 +2538,10 @@ export class Collection<
         ...value as KvObject,
         ...data as KvObject,
       }
-      : deepMerge({ value }, { value: data }, options?.mergeOptions).value
+      : deepMerge({ value }, { value: data }, options?.mergeOptions).value;
 
     // Parse updated value
-    const parsed = this._model.parse(updated as any)
+    const parsed = this._model.parse(updated as any);
 
     // Set new document value
     return await this.setDoc(
@@ -2550,7 +2552,7 @@ export class Collection<
         ...options,
         overwrite: true,
       },
-    )
+    );
   }
 
   /**
@@ -2563,52 +2565,52 @@ export class Collection<
     { key, value, versionstamp }: DenoKvEntryMaybe,
   ) {
     if (!versionstamp) {
-      return null
+      return null;
     }
 
-    const indexedDocId = (value as IndexDataEntry<any>)?.__id__
+    const indexedDocId = (value as IndexDataEntry<any>)?.__id__;
     const docId = indexedDocId ??
-      getDocumentId(key as DenoKvStrictKey)
+      getDocumentId(key as DenoKvStrictKey);
 
     if (!docId) {
-      return null
+      return null;
     }
 
     if (this._isSerialized) {
       // Get document parts
-      const { ids, isUint8Array } = value as SerializedEntry
+      const { ids, isUint8Array } = value as SerializedEntry;
 
       const keys = ids.map((segId) =>
         extendKey(this._keys.segment, docId, segId)
-      )
+      );
 
-      const docEntries = await kvGetMany(keys, this.kv)
+      const docEntries = await kvGetMany(keys, this.kv);
 
       // Concatenate chunks
-      const data = concat(docEntries.map((entry) => entry.value as Uint8Array))
+      const data = concat(docEntries.map((entry) => entry.value as Uint8Array));
 
       // Decompress and deserialize
-      const serialized = await this._serializer.decompress(data)
+      const serialized = await this._serializer.decompress(data);
       const deserialized = isUint8Array
         ? serialized as TOutput
-        : await this._serializer.deserialize<TOutput>(serialized)
+        : await this._serializer.deserialize<TOutput>(serialized);
 
       // Return parsed document
       return new Document<TOutput, ParseId<TOptions>>(this._model, {
         id: docId as ParseId<TOptions>,
         value: deserialized,
         versionstamp,
-      })
+      });
     }
 
     // Remove id from value and return parsed document if indexed entry
     if (typeof indexedDocId !== "undefined") {
-      const { __id__, ...val } = value as any
+      const { __id__, ...val } = value as any;
       return new Document<TOutput, ParseId<TOptions>>(this._model, {
         id: docId as ParseId<TOptions>,
         value: val as TOutput,
         versionstamp,
-      })
+      });
     }
 
     // Return parsed document
@@ -2616,7 +2618,7 @@ export class Collection<
       id: docId as ParseId<TOptions>,
       value: value as TOutput,
       versionstamp,
-    })
+    });
   }
 
   /**
@@ -2635,67 +2637,67 @@ export class Collection<
       | undefined,
   ) {
     // Create list iterator with given options
-    const selector = createListSelector(prefixKey, options)
-    const listOptions = createListOptions(options)
-    const iter = this.kv.list(selector, listOptions)
+    const selector = createListSelector(prefixKey, options);
+    const listOptions = createListOptions(options);
+    const iter = this.kv.list(selector, listOptions);
 
     // Initiate lists
-    const docs: Document<TOutput, ParseId<TOptions>>[] = []
-    const result: Awaited<T>[] = []
-    const errors: unknown[] = []
-    const take = options?.take
+    const docs: Document<TOutput, ParseId<TOptions>>[] = [];
+    const result: Awaited<T>[] = [];
+    const errors: unknown[] = [];
+    const take = options?.take;
 
     // Loop over each document entry
-    let count = -1
-    const offset = options?.offset ?? 0
+    let count = -1;
+    const offset = options?.offset ?? 0;
     for await (const entry of iter) {
       // Increment count
-      count++
+      count++;
 
       // Skip by offset
       if (count < offset) {
-        continue
+        continue;
       }
 
       // Check if result limit is reached
       if (take && docs.length >= take) {
-        break
+        break;
       }
 
       // Construct document from entry
-      const doc = await this.constructDocument(entry)
+      const doc = await this.constructDocument(entry);
 
       // Continue if document is not constructed
       if (!doc) {
-        continue
+        continue;
       }
 
       // Filter document and add to documents list
-      const filter = options?.filter
+      const filter = options?.filter;
       if (!filter || filter(doc)) {
-        docs.push(doc)
+        docs.push(doc);
       }
     }
 
     // Execute callback function for each document
     await allFulfilled(docs.map(async (doc) => {
       try {
-        result.push(await fn(doc))
+        result.push(await fn(doc));
       } catch (e) {
-        errors.push(e)
+        errors.push(e);
       }
-    }))
+    }));
 
     // Throw any caught errors
     if (errors.length > 0) {
-      throw errors
+      throw errors;
     }
 
     // Return result and current iterator cursor
     return {
       result,
       cursor: iter.cursor || undefined,
-    }
+    };
   }
 
   /**
@@ -2707,102 +2709,102 @@ export class Collection<
    */
   private async deleteDocuments(ids: KvId[], recordHistory: boolean) {
     // Initialize atomic operation
-    const atomic = new AtomicWrapper(this.kv)
+    const atomic = new AtomicWrapper(this.kv);
 
     // Set delete history entry if recordHistory is true
     if (recordHistory) {
       ids.forEach((id) => {
-        const historyKey = extendKey(this._keys.history, id, ulid())
+        const historyKey = extendKey(this._keys.history, id, ulid());
 
         const historyEntry: HistoryEntry<TOutput> = {
           type: "delete",
           timestamp: new Date(),
-        }
+        };
 
-        atomic.set(historyKey, historyEntry)
-      })
+        atomic.set(historyKey, historyEntry);
+      });
     }
 
     if (this._isIndexable && this._isSerialized) {
       // Run delete operations for each id
       await allFulfilled(ids.map(async (id) => {
         // Create document id key, get entry and construct document
-        const idKey = extendKey(this._keys.id, id)
-        const entry = await this.kv.get(idKey)
-        const doc = await this.constructDocument(entry)
+        const idKey = extendKey(this._keys.id, id);
+        const entry = await this.kv.get(idKey);
+        const doc = await this.constructDocument(entry);
 
         // Delete document entries
-        atomic.delete(idKey)
+        atomic.delete(idKey);
 
         if (entry.value) {
           const keys = (entry.value as SerializedEntry).ids.map((segId) =>
             extendKey(this._keys.segment, id, segId)
-          )
+          );
 
-          keys.forEach((key) => atomic.delete(key))
+          keys.forEach((key) => atomic.delete(key));
         }
 
         if (doc) {
-          await deleteIndices(id, doc.value as KvObject, atomic, this)
+          await deleteIndices(id, doc.value as KvObject, atomic, this);
         }
-      }))
+      }));
 
       // Commit the operation
-      await atomic.commit()
-      return
+      await atomic.commit();
+      return;
     }
 
     if (this._isIndexable) {
       // Run delete operations for each id
       await allFulfilled(ids.map(async (id) => {
         // Create idKey, get document value
-        const idKey = extendKey(this._keys.id, id)
-        const { value } = await this.kv.get(idKey)
+        const idKey = extendKey(this._keys.id, id);
+        const { value } = await this.kv.get(idKey);
 
         // If no value, abort delete
         if (!value) {
-          return
+          return;
         }
 
         // Delete document entries
-        atomic.delete(idKey)
-        await deleteIndices(id, value as KvObject, atomic, this)
-      }))
+        atomic.delete(idKey);
+        await deleteIndices(id, value as KvObject, atomic, this);
+      }));
 
       // Commit the operation
-      await atomic.commit()
-      return
+      await atomic.commit();
+      return;
     }
 
     if (this._isSerialized) {
       // Perform delete for each id
       await allFulfilled(ids.map(async (id) => {
         // Create document id key, get document value
-        const idKey = extendKey(this._keys.id, id)
-        const { value } = await this.kv.get(idKey)
+        const idKey = extendKey(this._keys.id, id);
+        const { value } = await this.kv.get(idKey);
 
         // If no value, abort delete
         if (!value) {
-          return
+          return;
         }
 
         // Delete document entries
-        atomic.delete(idKey)
+        atomic.delete(idKey);
 
         const keys = (value as SerializedEntry).ids.map((segId) =>
           extendKey(this._keys.segment, id, segId)
-        )
+        );
 
-        keys.forEach((key) => atomic.delete(key))
-      }))
+        keys.forEach((key) => atomic.delete(key));
+      }));
 
       // Commit the operation
-      await atomic.commit()
-      return
+      await atomic.commit();
+      return;
     }
 
     // Perform delete for each id and commit the operation
-    ids.forEach((id) => atomic.delete(extendKey(this._keys.id, id)))
-    await atomic.commit()
+    ids.forEach((id) => atomic.delete(extendKey(this._keys.id, id)));
+    await atomic.commit();
   }
 }

@@ -19,17 +19,17 @@ import type {
   Schema,
   SchemaDefinition,
   SetIntervalOptions,
-} from "./types.ts"
-import { Collection } from "./collection.ts"
-import { Document } from "./document.ts"
+} from "./types.ts";
+import { Collection } from "./collection.ts";
+import { Document } from "./document.ts";
 import {
   allFulfilled,
   createHandlerId,
   extendKey,
   parseQueueMessage,
   prepareEnqueue,
-} from "./utils.ts"
-import { AtomicBuilder } from "./atomic_builder.ts"
+} from "./utils.ts";
+import { AtomicBuilder } from "./atomic_builder.ts";
 import {
   DEFAULT_INTERVAL_RETRY,
   DEFAULT_LOOP_RETRY,
@@ -37,9 +37,9 @@ import {
   MIN_INTERVAL_START_DELAY,
   MIN_LOOP_START_DELAY,
   UNDELIVERED_KEY_PREFIX,
-} from "./constants.ts"
-import { model } from "./model.ts"
-import { AtomicWrapper } from "./atomic_wrapper.ts"
+} from "./constants.ts";
+import { model } from "./model.ts";
+import { AtomicWrapper } from "./atomic_wrapper.ts";
 
 /**
  * Create a new database instance.
@@ -79,8 +79,8 @@ export function kvdex<const T extends SchemaDefinition>(
   schemaDefinition: T,
 ): Kvdex<Schema<T>> & Schema<T> {
   // Set listener activated flag and queue handlers map
-  let listener: Promise<void>
-  const queueHandlers = new Map<string, QueueMessageHandler<KvValue>[]>()
+  let listener: Promise<void>;
+  const queueHandlers = new Map<string, QueueMessageHandler<KvValue>[]>();
 
   // Create idempotent listener activator
   const idempotentListener = () => {
@@ -89,23 +89,23 @@ export function kvdex<const T extends SchemaDefinition>(
       // Add queue listener
       listener = kv.listenQueue(async (msg) => {
         // Parse queue message
-        const parsed = parseQueueMessage(msg)
+        const parsed = parseQueueMessage(msg);
         if (!parsed.ok) {
-          return
+          return;
         }
 
         // Find correct queue handlers
-        const { __data__, __handlerId__ } = parsed.msg
-        const handlers = queueHandlers.get(__handlerId__)
+        const { __data__, __handlerId__ } = parsed.msg;
+        const handlers = queueHandlers.get(__handlerId__);
 
         // Run queue handlers
-        await allFulfilled(handlers?.map((handler) => handler(__data__)) ?? [])
-      })
+        await allFulfilled(handlers?.map((handler) => handler(__data__)) ?? []);
+      });
     }
 
     // Return queue listener
-    return listener
-  }
+    return listener;
+  };
 
   // Create schema
   const schema = _createSchema(
@@ -113,21 +113,21 @@ export function kvdex<const T extends SchemaDefinition>(
     kv,
     queueHandlers,
     idempotentListener,
-  ) as Schema<T>
+  ) as Schema<T>;
 
   // Create KvDex object
-  const db = new Kvdex(kv, schema, queueHandlers, idempotentListener)
+  const db = new Kvdex(kv, schema, queueHandlers, idempotentListener);
 
   // Return schema and db combination
-  return Object.assign(db, schema)
+  return Object.assign(db, schema);
 }
 
 /** Represents a database instance and contains methods for working on all documents and top-level queues. */
 export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
-  private kv: DenoKv
-  private schema: TSchema
-  private queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>
-  private idempotentListener: () => Promise<void>
+  private kv: DenoKv;
+  private schema: TSchema;
+  private queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>;
+  private idempotentListener: () => Promise<void>;
 
   constructor(
     kv: DenoKv,
@@ -135,10 +135,10 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>,
     idempotentListener: () => Promise<void>,
   ) {
-    this.kv = kv
-    this.schema = schema
-    this.queueHandlers = queueHandlers
-    this.idempotentListener = idempotentListener
+    this.kv = kv;
+    this.schema = schema;
+    this.queueHandlers = queueHandlers;
+    this.idempotentListener = idempotentListener;
   }
 
   /**
@@ -166,7 +166,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     TOutput,
     TOptions
   > {
-    return new AtomicBuilder(this.kv, this.schema, selector(this.schema))
+    return new AtomicBuilder(this.kv, this.schema, selector(this.schema));
   }
 
   /**
@@ -186,7 +186,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    * @returns Promise resolving to a number representing the total count of documents in the KV store.
    */
   async countAll(options?: CountAllOptions): Promise<number> {
-    return await _countAll(this.kv, this.schema, options)
+    return await _countAll(this.kv, this.schema, options);
   }
 
   /**
@@ -200,7 +200,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    * @returns Promise resolving to void.
    */
   async deleteAll(): Promise<void> {
-    await _deleteAll(this.kv, this.schema)
+    await _deleteAll(this.kv, this.schema);
   }
 
   /**
@@ -215,18 +215,18 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    */
   async wipe(): Promise<void> {
     // Create iterator
-    const iter = this.kv.list({ prefix: [KVDEX_KEY_PREFIX] })
+    const iter = this.kv.list({ prefix: [KVDEX_KEY_PREFIX] });
 
     // Collect all kvdex keys
-    const keys: DenoKvStrictKey[] = []
+    const keys: DenoKvStrictKey[] = [];
     for await (const { key } of iter) {
-      keys.push(key as DenoKvStrictKey)
+      keys.push(key as DenoKvStrictKey);
     }
 
     // Delete all entries
-    const atomic = new AtomicWrapper(this.kv)
-    keys.forEach((key) => atomic.delete(key))
-    await atomic.commit()
+    const atomic = new AtomicWrapper(this.kv);
+    keys.forEach((key) => atomic.delete(key));
+    await atomic.commit();
   }
 
   /**
@@ -260,9 +260,9 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
       [KVDEX_KEY_PREFIX, UNDELIVERED_KEY_PREFIX],
       data,
       options,
-    )
+    );
 
-    return await this.kv.enqueue(prep.msg, prep.options)
+    return await this.kv.enqueue(prep.msg, prep.options);
   }
 
   /**
@@ -294,15 +294,15 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     options?: QueueListenerOptions,
   ): Promise<void> {
     // Create handler id
-    const handlerId = createHandlerId([KVDEX_KEY_PREFIX], options?.topic)
+    const handlerId = createHandlerId([KVDEX_KEY_PREFIX], options?.topic);
 
     // Add new handler to specified handlers
-    const handlers = this.queueHandlers.get(handlerId) ?? []
-    handlers.push(handler as QueueMessageHandler<KvValue>)
-    this.queueHandlers.set(handlerId, handlers)
+    const handlers = this.queueHandlers.get(handlerId) ?? [];
+    handlers.push(handler as QueueMessageHandler<KvValue>);
+    this.queueHandlers.set(handlerId, handlers);
 
     // Activate idempotent listener
-    return this.idempotentListener()
+    return this.idempotentListener();
   }
 
   /**
@@ -326,12 +326,12 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     options?: FindOptions,
   ): Promise<Document<T1, T2> | null> {
     // Create document key, get document entry
-    const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id)
-    const result = await this.kv.get(key, options)
+    const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id);
+    const result = await this.kv.get(key, options);
 
     // If no entry exists, return null
     if (result.value === null || result.versionstamp === null) {
-      return null
+      return null;
     }
 
     // Return document
@@ -339,7 +339,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
       id,
       versionstamp: result.versionstamp,
       value: result.value as T1,
-    })
+    });
   }
 
   /**
@@ -353,8 +353,8 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    * @param id - Id of undelivered document.
    */
   async deleteUndelivered(id: KvId): Promise<void> {
-    const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id)
-    await this.kv.delete(key)
+    const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id);
+    await this.kv.delete(key);
   }
 
   /**
@@ -395,7 +395,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     options?: SetIntervalOptions,
   ): Promise<void> {
     // Set id
-    const id = crypto.randomUUID()
+    const id = crypto.randomUUID();
 
     // Create interval enqueuer
     const enqueue = async (
@@ -408,33 +408,33 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
           idsIfUndelivered: [id],
           delay,
           topic: id,
-        })
+        });
 
         // Check if message was delivered, break for-loop if successful
-        const doc = await this.findUndelivered(id)
+        const doc = await this.findUndelivered(id);
 
         if (doc === null) {
-          break
+          break;
         }
 
         // Delete undelivered entry before retrying
-        await this.deleteUndelivered(id)
+        await this.deleteUndelivered(id);
       }
-    }
+    };
 
     // Add interval listener
     const listener = this.listenQueue<IntervalMessage>(async (msg) => {
       // Check if while condition is met, terminate interval if false
-      const shouldContinue = options?.while?.(msg) ?? true
+      const shouldContinue = options?.while?.(msg) ?? true;
       if (!shouldContinue) {
-        await options?.onExit?.(msg)
-        return
+        await options?.onExit?.(msg);
+        return;
       }
 
       // Determine next interval delay
       const delay = typeof interval === "function"
         ? await interval(msg)
-        : interval
+        : interval;
 
       await allFulfilled([
         // Enqueue next callback
@@ -447,8 +447,8 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
 
         // Invoke callback function
         fn(msg),
-      ])
-    }, { topic: id })
+      ]);
+    }, { topic: id });
 
     // Enqueue first task
     await enqueue(
@@ -462,10 +462,10 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
         options?.startDelay ?? MIN_LOOP_START_DELAY,
         MIN_INTERVAL_START_DELAY,
       ),
-    )
+    );
 
     // Return listener
-    return listener
+    return listener;
   }
 
   /**
@@ -500,7 +500,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     options?: LoopOptions<Awaited<T1>>,
   ): Promise<void> {
     // Set id
-    const id = crypto.randomUUID()
+    const id = crypto.randomUUID();
 
     // Create loop enqueuer
     const enqueue = async (
@@ -513,36 +513,36 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
           idsIfUndelivered: [id],
           delay,
           topic: id,
-        })
+        });
 
         // Check if message was delivered, break for-loop if successful
-        const doc = await this.findUndelivered(id)
+        const doc = await this.findUndelivered(id);
 
         if (doc === null) {
-          break
+          break;
         }
 
         // Delete undelivered entry before retrying
-        await this.deleteUndelivered(id)
+        await this.deleteUndelivered(id);
       }
-    }
+    };
 
     // Add loop listener
     const listener = this.listenQueue<LoopMessage<Awaited<T1>>>(async (msg) => {
       // Check if while condition is met, terminate loop if false
-      const shouldContinue = await options?.while?.(msg) ?? true
+      const shouldContinue = await options?.while?.(msg) ?? true;
       if (!shouldContinue) {
-        await options?.onExit?.(msg)
-        return
+        await options?.onExit?.(msg);
+        return;
       }
 
       // Set the next delay
       const delay = typeof options?.delay === "function"
         ? await options.delay(msg)
-        : options?.delay ?? 0
+        : options?.delay ?? 0;
 
       // Run task
-      const result = await fn(msg)
+      const result = await fn(msg);
 
       // Enqueue next task
       await enqueue({
@@ -551,8 +551,8 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
         delay: delay,
         timestamp: new Date(),
         first: false,
-      }, delay)
-    }, { topic: id })
+      }, delay);
+    }, { topic: id });
 
     // Enqueue first task
     await enqueue(
@@ -567,10 +567,10 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
         options?.startDelay ?? MIN_LOOP_START_DELAY,
         MIN_LOOP_START_DELAY,
       ),
-    )
+    );
 
     // Return listener
-    return await listener
+    return await listener;
   }
 }
 
@@ -596,30 +596,30 @@ function _createSchema<const T extends SchemaDefinition>(
   treeKey?: KvKey,
 ): Schema<T> {
   // Get all the definition entries
-  const entries = Object.entries(def)
+  const entries = Object.entries(def);
 
   // Create schema entries from schema definition entries
   const schemaEntries = entries.map(([key, value]) => {
     // Get the current tree key
-    const extendedKey = treeKey ? extendKey(treeKey, key) : [key] as KvKey
+    const extendedKey = treeKey ? extendKey(treeKey, key) : [key] as KvKey;
 
     // If the entry value is a function => build collection and create collection entry
     if (typeof value === "function") {
-      return [key, value(kv, extendedKey, queueHandlers, idempotentListener)]
+      return [key, value(kv, extendedKey, queueHandlers, idempotentListener)];
     }
 
     // Create and return schema entry
     return [
       key,
       _createSchema(value, kv, queueHandlers, idempotentListener, extendedKey),
-    ]
-  })
+    ];
+  });
 
   // Create schema object from schema entries
-  const schema = Object.fromEntries(schemaEntries)
+  const schema = Object.fromEntries(schemaEntries);
 
   // Return the built schema object
-  return schema as Schema<T>
+  return schema as Schema<T>;
 }
 
 /**
@@ -639,16 +639,16 @@ async function _countAll(
 ): Promise<number> {
   // If input is a collection, return the collection count
   if (schemaOrCollection instanceof Collection) {
-    return await schemaOrCollection.count(options)
+    return await schemaOrCollection.count(options);
   }
 
   // Recursively count the schema collections.
   const counts = await allFulfilled(
     Object.values(schemaOrCollection).map((val) => _countAll(kv, val, options)),
-  )
+  );
 
   // Return the sum of collection counts
-  return counts.reduce((sum, c) => sum + c, 0)
+  return counts.reduce((sum, c) => sum + c, 0);
 }
 
 /**
@@ -666,12 +666,12 @@ async function _deleteAll(
 ): Promise<void> {
   // If input is a collection, perform deleteMany
   if (schemaOrCollection instanceof Collection) {
-    await schemaOrCollection.deleteMany()
-    return
+    await schemaOrCollection.deleteMany();
+    return;
   }
 
   // Recursively perform delete for all schemas/collections
   await allFulfilled(
     Object.values(schemaOrCollection).map((val) => _deleteAll(kv, val)),
-  )
+  );
 }

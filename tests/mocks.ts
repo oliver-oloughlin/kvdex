@@ -1,4 +1,4 @@
-import type { User } from "./models.ts"
+import type { User } from "./models.ts";
 
 export const mockUser1: User = {
   username: "oliver",
@@ -9,7 +9,7 @@ export const mockUser1: User = {
     street: "Olav Kyrres gate",
     houseNr: 420,
   },
-}
+};
 
 export const mockUser2: User = {
   username: "elias",
@@ -20,7 +20,7 @@ export const mockUser2: User = {
     street: "Karl Johans gate",
     houseNr: 420,
   },
-}
+};
 
 export const mockUser3: User = {
   username: "anders",
@@ -30,7 +30,7 @@ export const mockUser3: User = {
     city: "Dublin",
     houseNr: 10,
   },
-}
+};
 
 export const mockUserInvalid = {
   username: 100,
@@ -39,7 +39,7 @@ export const mockUserInvalid = {
     street: "Karl Johans gate",
     houseNr: "420",
   },
-} as unknown as User
+} as unknown as User;
 
 export const mockUsersWithAlteredAge: User[] = [
   {
@@ -54,4 +54,4 @@ export const mockUsersWithAlteredAge: User[] = [
     ...mockUser3,
     age: 20,
   },
-]
+];
