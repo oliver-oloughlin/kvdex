@@ -402,10 +402,10 @@ export type Compressor = {
 };
 
 /** Function that serializes a KvValue as a Uint8Array */
-export type SerializeFn = (data: KvValue) => Uint8Array | Promise<Uint8Array>;
+export type SerializeFn = (data: unknown) => Uint8Array | Promise<Uint8Array>;
 
 /** Function that deserializes a KvValue from a Uint8Array */
-export type DeserializeFn = <T extends KvValue>(
+export type DeserializeFn = <T>(
   data: Uint8Array,
 ) => T | Promise<T>;
 
