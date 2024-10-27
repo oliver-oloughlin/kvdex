@@ -1,6 +1,6 @@
-import type { Collection } from "./collection.ts"
-import type { DeepMergeOptions } from "./deps.ts"
-import type { Document } from "./document.ts"
+import type { Collection } from "./collection.ts";
+import type { DeepMergeOptions } from "./deps.ts";
+import type { Document } from "./document.ts";
 
 /*********************/
 /*                   */
@@ -18,53 +18,53 @@ export type BuilderFn<
   key: KvKey,
   queueHandlers: QueueHandlers,
   idempotentListener: IdempotentListener,
-) => Collection<TInput, TOutput, TOptions>
+) => Collection<TInput, TOutput, TOptions>;
 
 /** Any collection builder function */
-export type BuilderFnAny = (...args: any[]) => any
+export type BuilderFnAny = (...args: any[]) => any;
 
 /** An idempotent listener invoker */
-export type IdempotentListener = () => Promise<void>
+export type IdempotentListener = () => Promise<void>;
 
 /** Utility type for checking if K is a valid key of T */
-export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never
+export type CheckKeyOf<K, T> = K extends keyof T ? T[K] : never;
 
 /** Utility type for selecting keys of object T1 that extend T2 */
 export type KeysOfThatExtend<T1, T2> = keyof {
-  [K in keyof T1 as T1[K] extends T2 ? K : never]: unknown
-}
+  [K in keyof T1 as T1[K] extends T2 ? K : never]: unknown;
+};
 
 /** Utility type for selecting keys of object T1 that do not extend T2 */
 export type KeysOfThatDontExtend<T1, T2> = keyof {
-  [K in keyof T1 as T1[K] extends T2 ? never : K]: unknown
-}
+  [K in keyof T1 as T1[K] extends T2 ? never : K]: unknown;
+};
 
 /** Successful commit result object */
 export type CommitResult<T1 extends KvValue, T2 extends KvId> = {
-  ok: true
-  versionstamp: Document<T1, T2>["versionstamp"]
-  id: T2
-}
+  ok: true;
+  versionstamp: Document<T1, T2>["versionstamp"];
+  id: T2;
+};
 
 /** Many commit result object */
 export type ManyCommitResult = {
-  ok: true
-}
+  ok: true;
+};
 
 /** Pagination object containing last cursor */
 export type Pagination = {
-  cursor: string | undefined
-}
+  cursor: string | undefined;
+};
 
 /** Pagination result object containing last cursor and result array */
 export type PaginationResult<T> = Pagination & {
-  result: T[]
-}
+  result: T[];
+};
 
 /** Id generator function */
 export type IdGenerator<T1 extends KvValue, T2 extends KvId> = (
   data: T1,
-) => T2 | Promise<T2>
+) => T2 | Promise<T2>;
 
 /**********************/
 /*                    */
@@ -75,22 +75,22 @@ export type IdGenerator<T1 extends KvValue, T2 extends KvId> = (
 /** Either static or dynamic interval value */
 export type IntervalSetter =
   | number
-  | ((msg: IntervalMessage) => number | Promise<number>)
+  | ((msg: IntervalMessage) => number | Promise<number>);
 
 /** Options for creating a new interval */
 export type SetIntervalOptions = {
   /** Condition used to determine if the interval should continue running */
-  while?: (msg: IntervalMessage) => boolean | Promise<boolean>
+  while?: (msg: IntervalMessage) => boolean | Promise<boolean>;
 
   /** Task to be run when terminating the interval, executed after `while()` returns true. */
-  onExit?: (msg: IntervalMessage) => unknown
+  onExit?: (msg: IntervalMessage) => unknown;
 
   /**
    * Delay before running the first task.
    *
    * If not set, will run the first task immediately.
    */
-  startDelay?: number
+  startDelay?: number;
 
   /**
    * Number of retry attempts upon failed enqueue delivery.
@@ -99,23 +99,23 @@ export type SetIntervalOptions = {
    *
    * @default 10
    */
-  retry?: number
-}
+  retry?: number;
+};
 
 /** Contents of interval megssage */
 export type IntervalMessage = {
   /** Task number, starts at 0 for the first task. */
-  count: number
+  count: number;
 
   /** Previously set interval. Equal to `startDelay` or 0 for the first task. */
-  interval: number
+  interval: number;
 
   /** Enqueue timestamp of current task. */
-  timestamp: Date
+  timestamp: Date;
 
   /** True if the current task is the first callback, false if not. */
-  first: boolean
-}
+  first: boolean;
+};
 
 /******************/
 /*                */
@@ -130,20 +130,20 @@ export type LoopOptions<T> = {
    *
    * If not set, next callback is invoked immediately on task end.
    */
-  delay?: number | ((msg: LoopMessage<T>) => number | Promise<number>)
+  delay?: number | ((msg: LoopMessage<T>) => number | Promise<number>);
 
   /** Condition used to determine if the loop should continue running */
-  while?: (msg: LoopMessage<T>) => boolean | Promise<boolean>
+  while?: (msg: LoopMessage<T>) => boolean | Promise<boolean>;
 
   /** Task to be run when terminating the loop, executed after `while()` returns true. */
-  onExit?: (msg: LoopMessage<T>) => unknown
+  onExit?: (msg: LoopMessage<T>) => unknown;
 
   /**
    * Delay before running the first task.
    *
    * If not set, will run the first task immediately.
    */
-  startDelay?: number
+  startDelay?: number;
 
   /**
    * Number of retry attempts upon failed enqueue delivery.
@@ -152,37 +152,37 @@ export type LoopOptions<T> = {
    *
    * @default 10
    */
-  retry?: number
-}
+  retry?: number;
+};
 
 /** Contents of loop message */
 export type LoopMessage<T> =
   & {
     /** Task number, starts at 0. */
-    count: number
+    count: number;
 
     /** Previously set delay, is equal to `startDelay` or 0 for the first task. */
-    delay: number
+    delay: number;
 
     /** Enqueue timestamp of current task. */
-    timestamp: Date
+    timestamp: Date;
   }
   & (
     | {
       /** Result of prevous task. Is null for the first task. */
-      result: T
+      result: T;
 
       /** True if the current task is the first callback, false if not. */
-      first: false
+      first: false;
     }
     | {
       /** Result of prevous task. Is null for the first task. */
-      result: null
+      result: null;
 
       /** True if the current task is the first callback, false if not. */
-      first: true
+      first: true;
     }
-  )
+  );
 
 /****************************/
 /*                          */
@@ -198,72 +198,72 @@ export type CollectionSelector<
   TOptions extends CollectionOptions<TOutput>,
 > = (
   schema: TSchema,
-) => Collection<TInput, TOutput, TOptions>
+) => Collection<TInput, TOutput, TOptions>;
 
 /** Prepared value delete function */
-export type PrepareDeleteFn = (kv: DenoKv) => Promise<PreparedIndexDelete>
+export type PrepareDeleteFn = (kv: DenoKv) => Promise<PreparedIndexDelete>;
 
 /** Prepared index delete function */
 export type PreparedIndexDelete = {
-  id: KvId
-  data: KvObject
-}
+  id: KvId;
+  data: KvObject;
+};
 
 /** Atomic builder operations */
 export type Operations = {
-  atomic: DenoAtomicOperation
-  asyncMutations: Array<() => Promise<void>>
-  prepareDeleteFns: PrepareDeleteFn[]
-  indexDeleteCollectionKeys: KvKey[]
-  indexAddCollectionKeys: KvKey[]
-}
+  atomic: DenoAtomicOperation;
+  asyncMutations: Array<() => Promise<void>>;
+  prepareDeleteFns: PrepareDeleteFn[];
+  indexDeleteCollectionKeys: KvKey[];
+  indexAddCollectionKeys: KvKey[];
+};
 
 /** Kvdex atomic check */
 export type AtomicCheck<T1 extends KvValue, T2 extends KvId> = {
   /** Id of document to check */
-  id: Document<T1, T2>["id"]
+  id: Document<T1, T2>["id"];
 
   /** Versionstamp of document to check */
-  versionstamp: Document<T1, T2>["versionstamp"]
-}
+  versionstamp: Document<T1, T2>["versionstamp"];
+};
 
 /** Atomic mutation object */
 export type AtomicMutation<T1, T2 extends KvId> =
   & {
-    id: T2
+    id: T2;
   }
   & (
     | {
-      type: "set"
-      value: T1
-      expireIn?: number
+      type: "set";
+      value: T1;
+      expireIn?: number;
     }
     | {
-      type: "add"
-      value: T1
-      expireIn?: number
+      type: "add";
+      value: T1;
+      expireIn?: number;
     }
     | {
-      type: "sum"
-      value: T1 extends DenoKvU64 ? bigint : never
+      type: "sum";
+      value: T1 extends DenoKvU64 ? bigint : never;
     }
     | {
-      type: "min"
-      value: T1 extends DenoKvU64 ? bigint : never
+      type: "min";
+      value: T1 extends DenoKvU64 ? bigint : never;
     }
     | {
-      type: "max"
-      value: T1 extends DenoKvU64 ? bigint : never
+      type: "max";
+      value: T1 extends DenoKvU64 ? bigint : never;
     }
     | {
-      type: "delete"
+      type: "delete";
     }
-  )
+  );
 
 /** Options for atomic set operation */
 export type AtomicSetOptions = NonNullable<
   Parameters<ReturnType<DenoKv["atomic"]>["set"]>["2"]
->
+>;
 
 /************************/
 /*                      */
@@ -274,34 +274,36 @@ export type AtomicSetOptions = NonNullable<
 /** Options for creating a new collection */
 export type CollectionOptions<T extends KvValue> =
   & {
-    idGenerator?: IdGenerator<T, KvId>
-    serialize?: SerializeOptions
-    history?: true
+    idGenerator?: IdGenerator<T, KvId>;
+    serialize?: SerializeOptions;
+    history?: true;
   }
   & (
     T extends KvObject ? {
-        indices?: IndexRecord<T>
+        indices?: IndexRecord<T>;
       }
       : { [K in never]: never }
-  )
+  );
 
 export type ParseId<T extends CollectionOptions<any>> = T["idGenerator"] extends
-  IdGenerator<any, any> ? Awaited<ReturnType<T["idGenerator"]>> : string
+  IdGenerator<any, any> ? Awaited<ReturnType<T["idGenerator"]>> : string;
 
 /** Utility type for accessing all possible collection options */
-export type PossibleCollectionOptions = CollectionOptions<Record<string, never>>
+export type PossibleCollectionOptions = CollectionOptions<
+  Record<string, never>
+>;
 
 /** Record of all collection keys */
 export type CollectionKeys = {
-  base: KvKey
-  id: KvKey
-  primaryIndex: KvKey
-  secondaryIndex: KvKey
-  segment: KvKey
-  undelivered: KvKey
-  history: KvKey
-  historySegment: KvKey
-}
+  base: KvKey;
+  id: KvKey;
+  primaryIndex: KvKey;
+  secondaryIndex: KvKey;
+  segment: KvKey;
+  undelivered: KvKey;
+  history: KvKey;
+  historySegment: KvKey;
+};
 
 /**
  * Model describing the input and output type of data.
@@ -309,32 +311,32 @@ export type CollectionKeys = {
  */
 export type Model<TInput, TOutput extends KvValue> = {
   /** A parse function that takes data as an argument and returns the parsed output */
-  parse(data: unknown): TOutput
+  parse(data: unknown): TOutput;
 
   /**
    * An optional transform function that takes an input value as argument and returns the output type.
    */
-  _transform?(input: TInput): TOutput
+  _transform?(input: TInput): TOutput;
 
   /** Used to determine the input type */
-  _input: TInput
-}
+  _input: TInput;
+};
 
 /** Historic write entry */
 export type WriteHistoryEntry<T> = {
-  type: "write"
-  timestamp: Date
-  value: T
-}
+  type: "write";
+  timestamp: Date;
+  value: T;
+};
 
 /** Historic delete entry */
 export type DeleteHistoryEntry = {
-  type: "delete"
-  timestamp: Date
-}
+  type: "delete";
+  timestamp: Date;
+};
 
 /** Historic document entry */
-export type HistoryEntry<T> = WriteHistoryEntry<T> | DeleteHistoryEntry
+export type HistoryEntry<T> = WriteHistoryEntry<T> | DeleteHistoryEntry;
 
 /*******************/
 /*                 */
@@ -343,12 +345,12 @@ export type HistoryEntry<T> = WriteHistoryEntry<T> | DeleteHistoryEntry
 /*******************/
 
 /** Type of index. "primary" is unique, while "secondary" is non-unique. */
-export type IndexType = "primary" | "secondary"
+export type IndexType = "primary" | "secondary";
 
 /** Record of indices */
 export type IndexRecord<T extends KvObject> = {
-  [K in KeysOfThatExtend<T, KvValue | undefined>]?: IndexType
-}
+  [K in KeysOfThatExtend<T, KvValue | undefined>]?: IndexType;
+};
 
 /** Keys of primary indices */
 export type PrimaryIndexKeys<
@@ -356,7 +358,7 @@ export type PrimaryIndexKeys<
   T2 extends CollectionOptions<T1>,
 > = T2 extends { indices: IndexRecord<KvObject> }
   ? KeysOfThatExtend<T2["indices"], "primary">
-  : never
+  : never;
 
 /** Keys of secondary indices */
 export type SecondaryIndexKeys<
@@ -364,12 +366,12 @@ export type SecondaryIndexKeys<
   T2 extends CollectionOptions<T1>,
 > = T2 extends { indices: IndexRecord<KvObject> }
   ? KeysOfThatExtend<T2["indices"], "secondary">
-  : never
+  : never;
 
 /** Indexed value entry */
 export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
-  __id__: KvId
-}
+  __id__: KvId;
+};
 
 /***********************/
 /*                     */
@@ -379,17 +381,17 @@ export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
 
 /** Record of serializer functions */
 export type Serializer = {
-  serialize: <T>(data: T) => Uint8Array | Promise<Uint8Array>
-  deserialize: <T>(data: Uint8Array) => T | Promise<T>
-  compress: (data: Uint8Array) => Uint8Array | Promise<Uint8Array>
-  decompress: (data: Uint8Array) => Uint8Array | Promise<Uint8Array>
-}
+  serialize: <T>(data: T) => Uint8Array | Promise<Uint8Array>;
+  deserialize: <T>(data: Uint8Array) => T | Promise<T>;
+  compress: (data: Uint8Array) => Uint8Array | Promise<Uint8Array>;
+  decompress: (data: Uint8Array) => Uint8Array | Promise<Uint8Array>;
+};
 
 /** Serialized value entry */
 export type SerializedEntry = {
-  isUint8Array: boolean
-  ids: KvId[]
-}
+  isUint8Array: boolean;
+  ids: KvId[];
+};
 
 /**
  * Serialize options.
@@ -413,7 +415,7 @@ export type SerializeOptions =
   | "v8-uncompressed"
   | "json"
   | "json-uncompressed"
-  | Partial<Serializer>
+  | Partial<Serializer>;
 
 /***************************/
 /*                         */
@@ -424,14 +426,14 @@ export type SerializeOptions =
 /** Options for setting new document entry */
 export type SetOptions = NonNullable<Parameters<DenoKv["set"]>["2"]> & {
   /** Number of retry attempts before returning failed operation */
-  retry?: number
+  retry?: number;
 
   /**
    * Whether the operation should overwrite an existing document with the same id or not.
    *
    * @default false
    */
-  overwrite?: boolean
+  overwrite?: boolean;
 
   /**
    * Enable or disable atomic operation batching.
@@ -441,8 +443,8 @@ export type SetOptions = NonNullable<Parameters<DenoKv["set"]>["2"]> & {
    *
    * @default false
    */
-  batched?: boolean
-}
+  batched?: boolean;
+};
 
 /** Options for listing documents */
 export type ListOptions<T1, T2 extends KvId> =
@@ -454,39 +456,39 @@ export type ListOptions<T1, T2 extends KvId> =
      * @param value - Input value.
      * @returns true or false.
      */
-    filter?: (value: T1) => boolean
+    filter?: (value: T1) => boolean;
 
     /**
      * Number of documents to offset by.
      *
      * If set, the underlying limit for the KV.list operation is set equal to offset + limit.
      */
-    offset?: number
+    offset?: number;
 
     /** Id of document to start from. */
-    startId?: T2
+    startId?: T2;
 
     /** Id of document to end at. */
-    endId?: T2
+    endId?: T2;
 
     /** Max number of documents that are read from the KV store. Applies before before filtering. */
-    limit?: number
+    limit?: number;
 
     /** Max number of documents that are returned. Differs from "limit" by applying after documents are read from the KV store and filtered. */
-    take?: number
-  }
+    take?: number;
+  };
 
 /** Options for handling one listed document */
 export type HandleOneOptions<T1, T2 extends KvId> = Omit<
   ListOptions<T1, T2>,
   "take"
->
+>;
 
 /** Options for finding a single document */
-export type FindOptions = NonNullable<Parameters<DenoKv["get"]>[1]>
+export type FindOptions = NonNullable<Parameters<DenoKv["get"]>[1]>;
 
 /** Options for finding many documents */
-export type FindManyOptions = NonNullable<Parameters<DenoKv["getMany"]>[1]>
+export type FindManyOptions = NonNullable<Parameters<DenoKv["getMany"]>[1]>;
 
 /** Options for updating a single document */
 export type UpdateOptions = Omit<SetOptions, "overwrite"> & {
@@ -499,11 +501,11 @@ export type UpdateOptions = Omit<SetOptions, "overwrite"> & {
    *
    * @default "merge"
    */
-  strategy?: UpdateStrategy
+  strategy?: UpdateStrategy;
 
   /** Options to apply when deep-merging objects. */
-  mergeOptions?: DeepMergeOptions
-}
+  mergeOptions?: DeepMergeOptions;
+};
 
 /**
  * Update strategy.
@@ -512,20 +514,20 @@ export type UpdateOptions = Omit<SetOptions, "overwrite"> & {
  * "merge" deep-merges the existing value with a new value,
  * "merge-shallow" shallow-merges the existing value with a new value
  */
-export type UpdateStrategy = "replace" | "merge" | "merge-shallow"
+export type UpdateStrategy = "replace" | "merge" | "merge-shallow";
 
 /** Options for updating many documents */
 export type UpdateManyOptions<T1, T2 extends KvId> =
   & ListOptions<T1, T2>
-  & UpdateOptions
+  & UpdateOptions;
 
 /** Options for updating one listed document */
 export type UpdateOneOptions<T1, T2 extends KvId> =
   & HandleOneOptions<T1, T2>
-  & UpdateOptions
+  & UpdateOptions;
 
 /** Options for counting all documents */
-export type CountAllOptions = Pick<ListOptions<any, KvId>, "consistency">
+export type CountAllOptions = Pick<ListOptions<any, KvId>, "consistency">;
 
 /** Options for enqueing messages */
 export type EnqueueOptions =
@@ -535,20 +537,20 @@ export type EnqueueOptions =
   >
   & {
     /** List of ids to set the message value to if undelivered */
-    idsIfUndelivered?: KvId[]
+    idsIfUndelivered?: KvId[];
 
     /** Topic to queue the message in. Only listeners in the same topic will receive the message. */
-    topic?: string
-  }
+    topic?: string;
+  };
 
 /** Options for listening to queue messages  */
 export type QueueListenerOptions = {
   /** Topic to listen to. Only messages enqueued in the same topic will be received. */
-  topic?: string
-}
+  topic?: string;
+};
 
 /** Options for watching for live data updates */
-export type WatchOptions = NonNullable<Parameters<DenoKv["watch"]>[1]>
+export type WatchOptions = NonNullable<Parameters<DenoKv["watch"]>[1]>;
 
 /********************/
 /*                  */
@@ -564,14 +566,14 @@ export type IdUpsert<
   TId extends KvId,
 > = {
   /** Document id to upsert by */
-  id: TId
+  id: TId;
 
   /** New value */
-  set: TInput
+  set: TInput;
 
   /** Update value */
-  update: UpdateData<TOutput, TStrategy>
-}
+  update: UpdateData<TOutput, TStrategy>;
+};
 
 /** Upsert by primary index */
 export type PrimaryIndexUpsert<
@@ -582,17 +584,17 @@ export type PrimaryIndexUpsert<
   TId extends KvId,
 > = {
   /** Id of document if new value is set */
-  id?: TId
+  id?: TId;
 
   /** Document index to upsert by */
-  index: [TIndex, CheckKeyOf<TIndex, TOutput>]
+  index: [TIndex, CheckKeyOf<TIndex, TOutput>];
 
   /** New value */
-  set: TInput
+  set: TInput;
 
   /** Update value */
-  update: UpdateData<TOutput, TStrategy>
-}
+  update: UpdateData<TOutput, TStrategy>;
+};
 
 /********************/
 /*                  */
@@ -604,15 +606,15 @@ export type PrimaryIndexUpsert<
 export type SchemaDefinition = {
   [key: string]:
     | SchemaDefinition
-    | BuilderFnAny
-}
+    | BuilderFnAny;
+};
 
 /** Built schema from schema definition */
 export type Schema<T extends SchemaDefinition> = {
   [K in keyof T]: T[K] extends SchemaDefinition ? Schema<T[K]>
     : T[K] extends BuilderFnAny ? ReturnType<T[K]>
-    : never
-}
+    : never;
+};
 
 /*******************/
 /*                 */
@@ -622,30 +624,30 @@ export type Schema<T extends SchemaDefinition> = {
 
 /** Queue message contents */
 export type QueueMessage<T extends KvValue> = {
-  __is_undefined__: boolean
-  __handlerId__: string
-  __data__: T
-}
+  __is_undefined__: boolean;
+  __handlerId__: string;
+  __data__: T;
+};
 
 /** Parsed queue message */
 export type ParsedQueueMessage<T extends KvValue> = {
-  ok: true
-  msg: QueueMessage<T>
+  ok: true;
+  msg: QueueMessage<T>;
 } | {
-  ok: false
-}
+  ok: false;
+};
 
 /** Queue message handler function */
-export type QueueMessageHandler<T extends KvValue> = (data: T) => unknown
+export type QueueMessageHandler<T extends KvValue> = (data: T) => unknown;
 
 /** Prepared enqueue */
 export type PreparedEnqueue<T extends KvValue> = {
-  msg: QueueMessage<T>
-  options: KvEnqueueOptions
-}
+  msg: QueueMessage<T>;
+  options: KvEnqueueOptions;
+};
 
 /** Collection of queue handler functions */
-export type QueueHandlers = Map<string, QueueMessageHandler<KvValue>[]>
+export type QueueHandlers = Map<string, QueueMessageHandler<KvValue>[]>;
 
 /******************/
 /*                */
@@ -657,23 +659,23 @@ export type QueueHandlers = Map<string, QueueMessageHandler<KvValue>[]>
 export type UpdateData<
   TOutput extends KvValue,
   TStrategy extends UpdateStrategy | undefined,
-> = TStrategy extends "replace" ? TOutput : Partial<TOutput>
+> = TStrategy extends "replace" ? TOutput : Partial<TOutput>;
 
 /** Flattened document data */
 export type FlatDocumentData<T1 extends KvValue, T2 extends KvId> =
   & Omit<DocumentData<T1, T2>, "value">
   & (
     T1 extends KvObject ? T1 : {
-      readonly value: T1
+      readonly value: T1;
     }
-  )
+  );
 
 /** Document data */
 export type DocumentData<T1, T2 extends KvId> = {
-  readonly id: T2
-  readonly versionstamp: string
-  readonly value: T1
-}
+  readonly id: T2;
+  readonly versionstamp: string;
+  readonly value: T1;
+};
 
 /****************/
 /*              */
@@ -684,21 +686,21 @@ export type DocumentData<T1, T2 extends KvId> = {
 /** Kv enqueue options */
 export type KvEnqueueOptions = NonNullable<
   Parameters<DenoKv["enqueue"]>[1]
->
+>;
 
 /** An entry or collection key */
-export type KvKey = [DenoKvStrictKeyPart, ...DenoKvStrictKey]
+export type KvKey = [DenoKvStrictKeyPart, ...DenoKvStrictKey];
 
 /** An entry ID */
-export type KvId = DenoKvStrictKeyPart
+export type KvId = DenoKvStrictKeyPart;
 
 /** An object containing only KV values, and is itself a KV value. */
 export type KvObject = {
-  [K: string | number]: KvValue
-}
+  [K: string | number]: KvValue;
+};
 
 /** An array containing only KV values, and is itself a KV value. */
-export type KvArray = KvValue[]
+export type KvArray = KvValue[];
 
 /** Defines all valid KV value types */
 export type KvValue =
@@ -729,7 +731,7 @@ export type KvValue =
   | Map<KvValue, KvValue>
   | RegExp
   | DataView
-  | Error
+  | Error;
 
 /********************/
 /*                  */
@@ -743,41 +745,41 @@ export type DenoKvStrictKeyPart =
   | string
   | number
   | bigint
-  | Uint8Array
+  | Uint8Array;
 
 /** Deno [KvKeyPart](https://deno.land/api?s=Deno.KvKeyPart&unstable=) (relaxed) substitute type */
-export type DenoKvLaxKeyPart = DenoKvStrictKeyPart | symbol
+export type DenoKvLaxKeyPart = DenoKvStrictKeyPart | symbol;
 
 /** Deno [KvKey](https://deno.land/api?s=Deno.KvKey&unstable=) (strict) substitute type */
-export type DenoKvStrictKey = DenoKvStrictKeyPart[]
+export type DenoKvStrictKey = DenoKvStrictKeyPart[];
 
 /** Deno [KvKey](https://deno.land/api?s=Deno.KvKey&unstable=) (relaxed) substitute type */
-export type DenoKvLaxKey = DenoKvLaxKeyPart[]
+export type DenoKvLaxKey = DenoKvLaxKeyPart[];
 
 /** Deno [KvU64](https://deno.land/api?s=Deno.KvU64&unstable=) substitute type */
 export type DenoKvU64 = {
   /** The value of this unsigned 64-bit integer, represented as a bigint.  */
-  value: bigint
-}
+  value: bigint;
+};
 
 /** Deno [KvCommitError](https://deno.land/api?s=Deno.KvCommitError&unstable=) substitute type */
 export type DenoKvCommitError = {
-  ok: false
-}
+  ok: false;
+};
 
 /** Deno [KvCommitResult](https://deno.land/api?s=Deno.KvCommitResult&unstable=) substitute type */
 export type DenoKvCommitResult = {
-  ok: true
+  ok: true;
 
   /** The versionstamp of the value committed to KV. */
-  versionstamp: string
-}
+  versionstamp: string;
+};
 
 /** Deno [AtomicCheck](https://deno.land/api?s=Deno.AtomicCheck&unstable=) substitute type */
 export type DenoAtomicCheck = {
-  key: DenoKvStrictKey
-  versionstamp: string | null
-}
+  key: DenoKvStrictKey;
+  versionstamp: string | null;
+};
 
 /** Deno [KvEnqueueOptions](https://deno.land/api?s=Deno.Kv&unstable=&p=prototype.enqueue) substitute type */
 export type DenoKvEnqueueOptions = {
@@ -787,41 +789,41 @@ export type DenoKvEnqueueOptions = {
    *
    * @default 0
    */
-  delay?: number
+  delay?: number;
 
   /**
    * Can be used to specify the keys to be set if the value is not successfully delivered to the queue listener after several attempts.
    * The values are set to the value of the queued message.
    */
-  keysIfUndelivered?: DenoKvStrictKey[]
+  keysIfUndelivered?: DenoKvStrictKey[];
 
   /**
    * Can be used to specify the retry policy for failed message delivery.
    * Each element in the array represents the number of milliseconds to wait before retrying the delivery.
    * For example, [1000, 5000, 10000] means that a failed delivery will be retried at most 3 times, with 1 second, 5 seconds, and 10 seconds delay between each retry.
    */
-  backoffSchedule?: number[]
-}
+  backoffSchedule?: number[];
+};
 
 /** Deno [KvEntry](https://deno.land/api?s=Deno.KvEntry&unstable=) substitute type */
 export type DenoKvEntry = {
-  key: Readonly<DenoKvLaxKey>
-  value: unknown
-  versionstamp: string
-}
+  key: Readonly<DenoKvLaxKey>;
+  value: unknown;
+  versionstamp: string;
+};
 
 /** Deno [KvEntryNull](https://deno.land/api?s=Deno.KvEntryMaybe&unstable=) substitute type */
 export type DenoKvEntryNull = {
-  key: Readonly<DenoKvLaxKey>
-  value: null
-  versionstamp: null
-}
+  key: Readonly<DenoKvLaxKey>;
+  value: null;
+  versionstamp: null;
+};
 
 /** Deno [KvEntryMaybe](https://deno.land/api?s=Deno.KvEntryMaybe&unstable=) substitute type */
-export type DenoKvEntryMaybe = DenoKvEntry | DenoKvEntryNull
+export type DenoKvEntryMaybe = DenoKvEntry | DenoKvEntryNull;
 
 /** Deno [KvConsistencyLevel](https://deno.land/api?s=Deno.KvConsistencyLevel&unstable=) substitute type */
-export type DenoKvConsistencyLevel = "strong" | "eventual"
+export type DenoKvConsistencyLevel = "strong" | "eventual";
 
 /** Deno [KvGetOptions](https://deno.land/api?s=Deno.Kv&unstable=&p=prototype.get) substitute type */
 export type DenoKvGetOptions = {
@@ -832,8 +834,8 @@ export type DenoKvGetOptions = {
    *
    * @default "strong"
    */
-  consistency?: DenoKvConsistencyLevel
-}
+  consistency?: DenoKvConsistencyLevel;
+};
 
 /** Deno [KvSetOptions](https://deno.land/api?s=Deno.Kv&unstable=&p=prototype.set) substitute type */
 export type DenoKvSetOptions = {
@@ -843,8 +845,8 @@ export type DenoKvSetOptions = {
    * Once the specified duration has passed, the key may still be visible for some additional time.
    * If the expireIn option is not specified, the key will not expire.
    */
-  expireIn?: number
-}
+  expireIn?: number;
+};
 
 /** Deno [KvWatchOptions](https://deno.land/api?s=Deno.Kv&unstable=&p=prototype.watch) substitute type */
 export type DenoKvWatchOptions = {
@@ -857,23 +859,23 @@ export type DenoKvWatchOptions = {
    *
    * @default false
    */
-  raw?: boolean
-}
+  raw?: boolean;
+};
 
 /** Deno [KvListSelector](https://deno.land/api?s=Deno.KvListSelector&unstable=) substitute type */
 export type DenoKvListSelector =
   | { prefix: DenoKvStrictKey }
   | { prefix: DenoKvStrictKey; start: DenoKvStrictKey }
   | { prefix: DenoKvStrictKey; end: DenoKvStrictKey }
-  | { start: DenoKvStrictKey; end: DenoKvStrictKey }
+  | { start: DenoKvStrictKey; end: DenoKvStrictKey };
 
 /** Deno [KvListOptions](https://deno.land/api?s=Deno.KvListOptions&unstable=) substitute type */
 export type DenoKvListOptions = {
   /** The maximum number of values to return from the database. If not specified, all matching values will be returned. */
-  limit?: number
+  limit?: number;
 
   /** The cursor to resume the iteration from. If not specified, the iteration will start from the beginning. */
-  cursor?: string
+  cursor?: string;
 
   /**
    * Whether to reverse the order of the returned values.
@@ -882,7 +884,7 @@ export type DenoKvListOptions = {
    *
    * @default false
    */
-  reverse?: boolean
+  reverse?: boolean;
 
   /**
    * The consistency level of the list operation.
@@ -898,7 +900,7 @@ export type DenoKvListOptions = {
    *
    * @default "strong"
    */
-  consistency?: DenoKvConsistencyLevel
+  consistency?: DenoKvConsistencyLevel;
 
   /**
    * The size of the batches in which the list operation is performed.
@@ -909,8 +911,8 @@ export type DenoKvListOptions = {
    * The default batch size is equal to the limit option, or 100 if this is unset.
    * The maximum value for this option is 500. Larger values will be clamped.
    */
-  batchSize?: number
-}
+  batchSize?: number;
+};
 
 /** Deno [KVListIterator](https://deno.land/api?s=Deno.KvListIterator&unstable=) substitute type */
 export type DenoKvListIterator =
@@ -924,8 +926,8 @@ export type DenoKvListIterator =
      * This cursor can be used to resume iteration from the current position in the future
      * by passing it to any of the list operations (e.g. `getMany()`, `map()`, `forEach()` etc).
      */
-    cursor: string
-  }
+    cursor: string;
+  };
 
 /** Deno [AtomicOperation](deno.land/api?s=Deno.AtomicOperation&unstable=) substitute type */
 export type DenoAtomicOperation = {
@@ -933,55 +935,55 @@ export type DenoAtomicOperation = {
     key: DenoKvStrictKey,
     value: unknown,
     options?: DenoKvSetOptions,
-  ): DenoAtomicOperation
+  ): DenoAtomicOperation;
 
-  delete(key: DenoKvStrictKey): DenoAtomicOperation
+  delete(key: DenoKvStrictKey): DenoAtomicOperation;
 
-  min(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation
+  min(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation;
 
-  max(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation
+  max(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation;
 
-  sum(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation
+  sum(key: DenoKvStrictKey, n: bigint): DenoAtomicOperation;
 
-  check(...checks: DenoAtomicCheck[]): DenoAtomicOperation
+  check(...checks: DenoAtomicCheck[]): DenoAtomicOperation;
 
-  enqueue(value: unknown, options?: DenoKvEnqueueOptions): DenoAtomicOperation
+  enqueue(value: unknown, options?: DenoKvEnqueueOptions): DenoAtomicOperation;
 
   commit():
     | Promise<DenoKvCommitError | DenoKvCommitResult>
     | DenoKvCommitError
-    | DenoKvCommitResult
-}
+    | DenoKvCommitResult;
+};
 
 /** Deno [KV](https://deno.land/api?s=Deno.Kv&unstable=) substitute type */
 export type DenoKv = {
-  atomic(): DenoAtomicOperation
+  atomic(): DenoAtomicOperation;
 
-  close(): void
+  close(): void;
 
-  delete(key: DenoKvStrictKey): Promise<void> | void
+  delete(key: DenoKvStrictKey): Promise<void> | void;
 
   enqueue(
     value: unknown,
     options?: DenoKvEnqueueOptions,
-  ): Promise<DenoKvCommitResult> | DenoKvCommitResult
+  ): Promise<DenoKvCommitResult> | DenoKvCommitResult;
 
   get(
     key: DenoKvStrictKey,
     options?: DenoKvGetOptions,
-  ): Promise<DenoKvEntryMaybe> | DenoKvEntryMaybe
+  ): Promise<DenoKvEntryMaybe> | DenoKvEntryMaybe;
 
   getMany(
     keys: DenoKvStrictKey[],
     options?: DenoKvGetOptions,
-  ): Promise<DenoKvEntryMaybe[]> | DenoKvEntryMaybe[]
+  ): Promise<DenoKvEntryMaybe[]> | DenoKvEntryMaybe[];
 
   list(
     selector: DenoKvListSelector,
     options?: DenoKvListOptions,
-  ): DenoKvListIterator
+  ): DenoKvListIterator;
 
-  listenQueue(handler: (value: unknown) => unknown): Promise<void>
+  listenQueue(handler: (value: unknown) => unknown): Promise<void>;
 
   set(
     key: DenoKvStrictKey,
@@ -990,10 +992,10 @@ export type DenoKv = {
   ):
     | Promise<DenoKvCommitError | DenoKvCommitResult>
     | DenoKvCommitError
-    | DenoKvCommitResult
+    | DenoKvCommitResult;
 
   watch(
     keys: DenoKvStrictKey[],
     options?: DenoKvWatchOptions,
-  ): ReadableStream<DenoKvEntryMaybe[]>
-}
+  ): ReadableStream<DenoKvEntryMaybe[]>;
+};

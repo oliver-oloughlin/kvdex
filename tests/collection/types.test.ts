@@ -1,7 +1,7 @@
-import { collection, kvdex, model } from "../../mod.ts"
-import { assert, assertEquals } from "../test.deps.ts"
-import { useKv } from "../utils.ts"
-import { VALUES } from "../values.ts"
+import { collection, kvdex, model } from "../../mod.ts";
+import { assert, assertEquals } from "../test.deps.ts";
+import { useKv } from "../utils.ts";
+import { VALUES } from "../values.ts";
 
 Deno.test("collection - types", async (t) => {
   await t.step(
@@ -13,19 +13,19 @@ Deno.test("collection - types", async (t) => {
             val,
             i,
           ) => [i, collection(model<typeof val>())]),
-        )
+        );
 
-        const db = kvdex(kv, schema)
+        const db = kvdex(kv, schema);
 
-        const crs = await Promise.all(VALUES.map((val, i) => db[i].add(val)))
-        assert(crs.every((cr) => cr.ok))
+        const crs = await Promise.all(VALUES.map((val, i) => db[i].add(val)));
+        assert(crs.every((cr) => cr.ok));
 
         await Promise.all(
           VALUES.map((_, i) =>
             db[i].forEach((doc) => assertEquals(doc.value, VALUES[i]))
           ),
-        )
-      })
+        );
+      });
     },
-  )
-})
+  );
+});

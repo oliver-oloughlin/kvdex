@@ -1,10 +1,10 @@
 export class NoKvFoundError extends Error {
-  name = "NoKvFoundError"
+  override name = "NoKvFoundError";
 
   constructor(
     message?: string | undefined,
     options?: ErrorOptions | undefined,
   ) {
-    super(message, options)
+    super(message, options);
   }
 }

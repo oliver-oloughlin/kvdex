@@ -1,5 +1,5 @@
-import { KVDEX_KEY_PREFIX } from "../../constants.ts"
-import type { MigrateOptions } from "./types.ts"
+import { KVDEX_KEY_PREFIX } from "../../constants.ts";
+import type { MigrateOptions } from "./types.ts";
 
 /**
  * Migrate entries from a source KV instance to a target KV instance.
@@ -24,8 +24,8 @@ export async function migrate({
   target,
   all,
 }: MigrateOptions): Promise<void> {
-  const iter = source.list({ prefix: all ? [] : [KVDEX_KEY_PREFIX] })
+  const iter = source.list({ prefix: all ? [] : [KVDEX_KEY_PREFIX] });
   for await (const { key, value } of iter) {
-    await target.set(key, value)
+    await target.set(key, value);
   }
 }

@@ -1,9 +1,9 @@
-import { collection, kvdex, model } from "../../mod.ts"
-import { useKv } from "../../tests/utils.ts"
+import { collection, kvdex, model } from "../../mod.ts";
+import { useKv } from "../../tests/utils.ts";
 
 Deno.bench("db - kvdex (10 collections)", async (b) => {
   await useKv((kv) => {
-    b.start()
+    b.start();
 
     kvdex(kv, {
       1: collection(model<string>()),
@@ -16,15 +16,15 @@ Deno.bench("db - kvdex (10 collections)", async (b) => {
       8: collection(model<string>()),
       9: collection(model<string>()),
       10: collection(model<string>()),
-    })
+    });
 
-    b.end()
-  })
-})
+    b.end();
+  });
+});
 
 Deno.bench("db - kvdex (100 collections)", async (b) => {
   await useKv((kv) => {
-    b.start()
+    b.start();
 
     kvdex(kv, {
       1: collection(model<string>()),
@@ -127,8 +127,8 @@ Deno.bench("db - kvdex (100 collections)", async (b) => {
       98: collection(model<string>()),
       99: collection(model<string>()),
       100: collection(model<string>()),
-    })
+    });
 
-    b.end()
-  })
-})
+    b.end();
+  });
+});

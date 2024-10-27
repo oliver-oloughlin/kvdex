@@ -5,22 +5,22 @@ import type {
   KvObject,
   KvValue,
   Model,
-} from "./types.ts"
-import { isKvObject } from "./utils.ts"
+} from "./types.ts";
+import { isKvObject } from "./utils.ts";
 
 /** Represents a database entry with id, versionstamp and value. */
 export class Document<const TOutput extends KvValue, const TId extends KvId> {
-  readonly id: TId
-  readonly versionstamp: string
-  readonly value: TOutput
+  readonly id: TId;
+  readonly versionstamp: string;
+  readonly value: TOutput;
 
   constructor(
     model: Model<any, TOutput>,
     { id, versionstamp, value }: DocumentData<TOutput, TId>,
   ) {
-    this.id = id
-    this.versionstamp = versionstamp
-    this.value = model.parse(value)
+    this.id = id;
+    this.versionstamp = versionstamp;
+    this.value = model.parse(value);
   }
 
   /**
@@ -58,13 +58,13 @@ export class Document<const TOutput extends KvValue, const TId extends KvId> {
         id: this.id,
         versionstamp: this.versionstamp,
         ...this.value as KvObject,
-      } as unknown as FlatDocumentData<TOutput, TId>
+      } as unknown as FlatDocumentData<TOutput, TId>;
     }
 
     return {
       id: this.id,
       versionstamp: this.versionstamp,
       value: this.value,
-    } as unknown as FlatDocumentData<TOutput, TId>
+    } as unknown as FlatDocumentData<TOutput, TId>;
   }
 }

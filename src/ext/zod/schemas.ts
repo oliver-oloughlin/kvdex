@@ -1,18 +1,18 @@
-import { z } from "./deps.ts"
-import type { KvArray, KvId, KvObject, KvValue } from "../../types.ts"
+import { z } from "./deps.ts";
+import type { KvArray, KvId, KvObject, KvValue } from "../../types.ts";
 
-const LazyKvValueSchema = z.lazy(() => KvValueSchema)
+const LazyKvValueSchema = z.lazy(() => KvValueSchema);
 
-const LazyKvArraySchema = z.lazy(() => KvArraySchema)
+const LazyKvArraySchema = z.lazy(() => KvArraySchema);
 
-const LazyKvObjectSchema = z.lazy(() => KvObjectSchema)
+const LazyKvObjectSchema = z.lazy(() => KvObjectSchema);
 
 /** Zod schema for KvId type */
 export const KvIdSchema: z.ZodType<KvId> = z.string()
   .or(z.number())
   .or(z.bigint())
   .or(z.boolean())
-  .or(z.instanceof(Uint8Array))
+  .or(z.instanceof(Uint8Array));
 
 /** Zod schema for KvValue type */
 export const KvValueSchema: z.ZodType<KvValue> = z.undefined()
@@ -42,13 +42,13 @@ export const KvValueSchema: z.ZodType<KvValue> = z.undefined()
   .or(z.map(LazyKvValueSchema, LazyKvValueSchema))
   .or(z.instanceof(RegExp))
   .or(z.instanceof(DataView))
-  .or(z.instanceof(Error))
+  .or(z.instanceof(Error));
 
 /** Zod schema for KvArray type */
-export const KvArraySchema: z.ZodType<KvArray> = z.array(KvValueSchema)
+export const KvArraySchema: z.ZodType<KvArray> = z.array(KvValueSchema);
 
 /** Zod schema for KvObject type */
 export const KvObjectSchema: z.ZodType<KvObject> = z.record(
   z.string().or(z.number()),
   KvValueSchema,
-)
+);

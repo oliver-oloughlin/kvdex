@@ -1,6 +1,6 @@
-import type { Collection } from "./collection.ts"
-import { ulid } from "./deps.ts"
-import { InvalidCollectionError } from "./errors.ts"
+import type { Collection } from "./collection.ts";
+import { ulid } from "./deps.ts";
+import { InvalidCollectionError } from "./errors.ts";
 import type {
   AtomicCheck,
   AtomicMutation,
@@ -20,7 +20,7 @@ import type {
   ParseId,
   Schema,
   SchemaDefinition,
-} from "./types.ts"
+} from "./types.ts";
 import {
   allFulfilled,
   deleteIndices,
@@ -28,7 +28,7 @@ import {
   keyEq,
   prepareEnqueue,
   setIndices,
-} from "./utils.ts"
+} from "./utils.ts";
 
 /**
  * Builder object for creating and executing atomic operations in the KV store.
@@ -42,14 +42,14 @@ export class AtomicBuilder<
   const TOutput extends KvValue,
   const TOptions extends CollectionOptions<TOutput>,
 > {
-  private kv: DenoKv
-  private schema: TSchema
-  private operations: Operations
+  private kv: DenoKv;
+  private schema: TSchema;
+  private operations: Operations;
   private collection: Collection<
     TInput,
     TOutput,
     CollectionOptions<TOutput>
-  >
+  >;
 
   /**
    * Create a new AtomicBuilder for building and executing atomic operations in the KV store.
@@ -73,13 +73,13 @@ export class AtomicBuilder<
     if (collection._isSerialized) {
       throw new InvalidCollectionError(
         "Atomic operations are not supported for serialized collections",
-      )
+      );
     }
 
     // Set kv, schema and collection context
-    this.kv = kv
-    this.schema = schema
-    this.collection = collection
+    this.kv = kv;
+    this.schema = schema;
+    this.collection = collection;
 
     // Initiate operations or set from given operations
     this.operations = operations ?? {
@@ -88,7 +88,7 @@ export class AtomicBuilder<
       prepareDeleteFns: [],
       indexDeleteCollectionKeys: [],
       indexAddCollectionKeys: [],
-    }
+    };
   }
 
   /**
@@ -117,7 +117,7 @@ export class AtomicBuilder<
       this.schema,
       selector(this.schema),
       this.operations,
-    )
+    );
   }
 
   /**
@@ -141,7 +141,7 @@ export class AtomicBuilder<
     value: TInput,
     options?: AtomicSetOptions,
   ): this {
-    return this.setDocument(null, value, options)
+    return this.setDocument(null, value, options);
   }
 
   /**
@@ -167,7 +167,7 @@ export class AtomicBuilder<
     value: TInput,
     options?: AtomicSetOptions,
   ): this {
-    return this.setDocument(id, value, options)
+    return this.setDocument(id, value, options);
   }
 
   /**
@@ -185,42 +185,42 @@ export class AtomicBuilder<
    */
   delete(id: ParseId<TOptions>): this {
     // Create id key from id and collection id key
-    const collection = this.collection
-    const idKey = extendKey(collection._keys.id, id)
+    const collection = this.collection;
+    const idKey = extendKey(collection._keys.id, id);
 
     // Add delete operation
-    this.operations.atomic.delete(idKey)
+    this.operations.atomic.delete(idKey);
 
     // If collection is indexable, handle indexing
     if (this.collection._isIndexable) {
       // Add collection key for collision detection
-      this.operations.indexDeleteCollectionKeys.push(collection._keys.base)
+      this.operations.indexDeleteCollectionKeys.push(collection._keys.base);
 
       // Add delete preperation function to prepeare delete functions list
       this.operations.prepareDeleteFns.push(async (kv) => {
-        const doc = await kv.get(idKey)
+        const doc = await kv.get(idKey);
 
         return {
           id,
           data: doc.value as KvObject ?? {},
-        }
-      })
+        };
+      });
     }
 
     // Set history entry if keeps history
     if (this.collection._keepsHistory) {
-      const historyKey = extendKey(this.collection._keys.history, id, ulid())
+      const historyKey = extendKey(this.collection._keys.history, id, ulid());
 
       const historyEntry: HistoryEntry<TOutput> = {
         type: "delete",
         timestamp: new Date(),
-      }
+      };
 
-      this.operations.atomic.set(historyKey, historyEntry)
+      this.operations.atomic.set(historyKey, historyEntry);
     }
 
     // Return current AtomicBuilder
-    return this
+    return this;
   }
 
   /**
@@ -243,19 +243,19 @@ export class AtomicBuilder<
     // Create Denoatomic checks from atomci checks input list
     const checks: DenoAtomicCheck[] = atomicChecks.map(
       ({ id, versionstamp }) => {
-        const key = extendKey(this.collection._keys.id, id)
+        const key = extendKey(this.collection._keys.id, id);
         return {
           key,
           versionstamp,
-        }
+        };
       },
-    )
+    );
 
     // Add chech operation
-    this.operations.atomic.check(...checks)
+    this.operations.atomic.check(...checks);
 
     // Return current AtomicBuilder
-    return this
+    return this;
   }
 
   /**
@@ -277,9 +277,9 @@ export class AtomicBuilder<
     id: ParseId<TOptions>,
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
-    const idKey = extendKey(this.collection._keys.id, id)
-    this.operations.atomic.sum(idKey, value)
-    return this
+    const idKey = extendKey(this.collection._keys.id, id);
+    this.operations.atomic.sum(idKey, value);
+    return this;
   }
 
   /**
@@ -302,9 +302,9 @@ export class AtomicBuilder<
     id: ParseId<TOptions>,
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
-    const idKey = extendKey(this.collection._keys.id, id)
-    this.operations.atomic.min(idKey, value)
-    return this
+    const idKey = extendKey(this.collection._keys.id, id);
+    this.operations.atomic.min(idKey, value);
+    return this;
   }
 
   /**
@@ -327,9 +327,9 @@ export class AtomicBuilder<
     id: ParseId<TOptions>,
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
-    const idKey = extendKey(this.collection._keys.id, id)
-    this.operations.atomic.max(idKey, value)
-    return this
+    const idKey = extendKey(this.collection._keys.id, id);
+    this.operations.atomic.max(idKey, value);
+    return this;
   }
 
   /**
@@ -362,28 +362,28 @@ export class AtomicBuilder<
     mutations.forEach(({ id, ...rest }) => {
       switch (rest.type) {
         case "delete":
-          this.delete(id)
-          break
+          this.delete(id);
+          break;
         case "set":
-          this.set(id, rest.value, { expireIn: rest.expireIn })
-          break
+          this.set(id, rest.value, { expireIn: rest.expireIn });
+          break;
         case "add":
-          this.add(rest.value, { expireIn: rest.expireIn })
-          break
+          this.add(rest.value, { expireIn: rest.expireIn });
+          break;
         case "max":
-          this.max(id, rest.value as any)
-          break
+          this.max(id, rest.value as any);
+          break;
         case "min":
-          this.min(id, rest.value as any)
-          break
+          this.min(id, rest.value as any);
+          break;
         case "sum":
-          this.sum(id, rest.value as any)
-          break
+          this.sum(id, rest.value as any);
+          break;
       }
-    })
+    });
 
     // Return current AtomicBuilder
-    return this
+    return this;
   }
 
   /**
@@ -421,12 +421,12 @@ export class AtomicBuilder<
       this.collection._keys.undelivered,
       data,
       options,
-    )
+    );
 
-    this.operations.atomic.enqueue(prep.msg, prep.options)
+    this.operations.atomic.enqueue(prep.msg, prep.options);
 
     // Return current AtomicBuilder
-    return this
+    return this;
   }
 
   /**
@@ -438,7 +438,7 @@ export class AtomicBuilder<
   async commit(): Promise<DenoKvCommitResult | DenoKvCommitError> {
     // Perform async mutations
     for (const mut of this.operations.asyncMutations) {
-      await mut()
+      await mut();
     }
 
     // Check for key collisions between add/delete
@@ -452,16 +452,16 @@ export class AtomicBuilder<
       // If collisions are detected, return commit error
       return {
         ok: false,
-      }
+      };
     }
 
     // Prepare delete ops
     const preparedIndexDeletes = await allFulfilled(
       this.operations.prepareDeleteFns.map((fn) => fn(this.kv)),
-    )
+    );
 
     // Execute atomic operation
-    const commitResult = await this.operations.atomic.commit()
+    const commitResult = await this.operations.atomic.commit();
 
     // If successful commit, perform delete ops
     if (commitResult.ok) {
@@ -471,10 +471,10 @@ export class AtomicBuilder<
           const {
             id,
             data,
-          } = preparedDelete
+          } = preparedDelete;
 
           // Initiate atomic operation for index deletions
-          const atomic = this.kv.atomic()
+          const atomic = this.kv.atomic();
 
           // Set index delete operations using atomic operation
           await deleteIndices(
@@ -482,16 +482,16 @@ export class AtomicBuilder<
             data,
             atomic,
             this.collection,
-          )
+          );
 
           // Execute atomic operation
-          await atomic.commit()
+          await atomic.commit();
         }),
-      )
+      );
     }
 
     // Return commit result
-    return commitResult
+    return commitResult;
   }
 
   /***********************/
@@ -515,22 +515,22 @@ export class AtomicBuilder<
   ) {
     this.operations.asyncMutations.push(async () => {
       // Create id key from collection id key and id
-      const collection = this.collection
+      const collection = this.collection;
 
       const parsed = collection._model._transform?.(value as TInput) ??
-        collection._model.parse(value)
+        collection._model.parse(value);
 
-      const docId = id ?? await collection._idGenerator(parsed)
-      const idKey = extendKey(collection._keys.id, docId)
+      const docId = id ?? await collection._idGenerator(parsed);
+      const idKey = extendKey(collection._keys.id, docId);
 
       // Add set operation
       this.operations.atomic
         .check({ key: idKey, versionstamp: null })
-        .set(idKey, parsed, options)
+        .set(idKey, parsed, options);
 
       if (collection._isIndexable) {
         // Add collection id key for collision detection
-        this.operations.indexAddCollectionKeys.push(collection._keys.base)
+        this.operations.indexAddCollectionKeys.push(collection._keys.base);
 
         // Add indexing operations
         await setIndices(
@@ -540,7 +540,7 @@ export class AtomicBuilder<
           this.operations.atomic,
           this.collection,
           options,
-        )
+        );
       }
 
       // Set history entry if keeps history
@@ -549,19 +549,19 @@ export class AtomicBuilder<
           this.collection._keys.history,
           docId,
           ulid(),
-        )
+        );
 
         const historyEntry: HistoryEntry<TOutput> = {
           type: "write",
           timestamp: new Date(),
           value: parsed,
-        }
+        };
 
-        this.operations.atomic.set(historyKey, historyEntry)
+        this.operations.atomic.set(historyKey, historyEntry);
       }
-    })
+    });
 
     // Return current AtomicBuilder
-    return this
+    return this;
   }
 }

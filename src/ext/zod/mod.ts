@@ -25,4 +25,4 @@
  * ```
  */
 
-export * from "./schemas.ts"
+export * from "./schemas.ts";

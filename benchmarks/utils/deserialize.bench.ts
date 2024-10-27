@@ -1,24 +1,24 @@
-import { obj } from "./_object.ts"
+import { obj } from "./_object.ts";
 import {
   jsonDeserialize,
   jsonSerialize,
   v8Deserialize,
   v8Serialize,
-} from "../../src/utils.ts"
+} from "../../src/utils.ts";
 
-const js = jsonSerialize(obj)
-const ds = v8Serialize(obj)
+const js = jsonSerialize(obj);
+const ds = v8Serialize(obj);
 
 Deno.bench(
   `utils - jsonDeserialize (${js.byteLength / 1024 / 1024} MB)`,
   () => {
-    jsonDeserialize(js)
+    jsonDeserialize(js);
   },
-)
+);
 
 Deno.bench(
   `utils - v8Deserialize - (${ds.byteLength / 1024 / 1024} MS)`,
   () => {
-    v8Deserialize(ds)
+    v8Deserialize(ds);
   },
-)
+);

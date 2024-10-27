@@ -33,40 +33,40 @@
  */
 
 // Imports
-import { parseArgs } from "./deps.ts"
-import { migrate } from "./migrate.ts"
-import { NoKvFoundError } from "./errors.ts"
+import { parseArgs } from "./deps.ts";
+import { migrate } from "./migrate.ts";
+import { NoKvFoundError } from "./errors.ts";
 
 // Exports
-export { migrate }
-export type * from "./types.ts"
-export * from "./errors.ts"
+export { migrate };
+export type * from "./types.ts";
+export * from "./errors.ts";
 
 // Run migrate if main
 if (import.meta.main) {
   const { source, target, all } = parseArgs(Deno.args, {
     string: ["source", "target"],
     boolean: ["all"],
-  })
+  });
 
   if (!source) {
     throw new NoKvFoundError(
       "A source KV path to export from must be provided using the --source argument",
-    )
+    );
   }
 
   if (!target) {
     throw new NoKvFoundError(
       "A target KV path to export to must be provided using the --target argument",
-    )
+    );
   }
 
-  using sourceKv = await Deno.openKv(source)
-  using targetKv = await Deno.openKv(target)
+  using sourceKv = await Deno.openKv(source);
+  using targetKv = await Deno.openKv(target);
 
   await migrate({
     source: sourceKv,
     target: targetKv,
     all,
-  })
+  });
 }
