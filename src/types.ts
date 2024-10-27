@@ -275,7 +275,7 @@ export type AtomicSetOptions = NonNullable<
 export type CollectionOptions<T extends KvValue> =
   & {
     idGenerator?: IdGenerator<T, KvId>;
-    serialize?: SerializeOptions;
+    encoder?: Encoder;
     history?: true;
   }
   & (
@@ -373,49 +373,55 @@ export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
   __id__: KvId;
 };
 
-/***********************/
-/*                     */
-/*   SERIALIZE TYPES   */
-/*                     */
-/***********************/
+/**********************/
+/*                    */
+/*   ENCODING TYPES   */
+/*                    */
+/**********************/
 
-/** Record of serializer functions */
-export type Serializer = {
-  serialize: <T>(data: T) => Uint8Array | Promise<Uint8Array>;
-  deserialize: <T>(data: Uint8Array) => T | Promise<T>;
-  compress: (data: Uint8Array) => Uint8Array | Promise<Uint8Array>;
-  decompress: (data: Uint8Array) => Uint8Array | Promise<Uint8Array>;
+/**
+ * Object containing logic for serialization and compression of KvValues.
+ *
+ * Implements a serializer, and optionally a compressor.
+ */
+export type Encoder = {
+  serializer: Serializer;
+  compressor?: Compressor;
 };
 
-/** Serialized value entry */
-export type SerializedEntry = {
+/** Object that implements a serilize and deserilaize method */
+export type Serializer = {
+  serialize: SerializeFn;
+  deserialize: DeserializeFn;
+};
+
+/** Object that implements a compress and decompress method */
+export type Compressor = {
+  compress: CompressFn;
+  decompress: DecompressFn;
+};
+
+/** Function that serializes a KvValue as a Uint8Array */
+export type SerializeFn = (data: KvValue) => Uint8Array | Promise<Uint8Array>;
+
+/** Function that deserializes a KvValue from a Uint8Array */
+export type DeserializeFn = <T extends KvValue>(
+  data: Uint8Array,
+) => T | Promise<T>;
+
+/** Function that compresses data represented by a Uint8Array */
+export type CompressFn = (data: Uint8Array) => Uint8Array | Promise<Uint8Array>;
+
+/** Function that decompresses data represented by a Uint8Array */
+export type DecompressFn = (
+  compressedData: Uint8Array,
+) => Uint8Array | Promise<Uint8Array>;
+
+/** Encoded value entry */
+export type EncodedEntry = {
   isUint8Array: boolean;
   ids: KvId[];
 };
-
-/**
- * Serialize options.
- *
- * "v8" = built-in v8 serializer + brotli compression.
- *
- * "v8-uncompressed" = built-in v8 serializer and no compression.
- *
- * "json" = custom JSON serializer + brotli compression.
- *
- * "json-uncompressed" = custom JSON serializer and no compression (best runtime compatibility).
- *
- * If the serialize option is not set, or if a custom serialize configuration is used,
- * then JSON serialization is used by default for any unset serialize functions,
- * while brotli compression is used for any unset compress functions. V8 serialization and
- * Brotli compression rely on runtime implementations, and are therefore only
- * compatible with runtimes that implement them (Deno, Node.js).
- */
-export type SerializeOptions =
-  | "v8"
-  | "v8-uncompressed"
-  | "json"
-  | "json-uncompressed"
-  | Partial<Serializer>;
 
 /***************************/
 /*                         */
