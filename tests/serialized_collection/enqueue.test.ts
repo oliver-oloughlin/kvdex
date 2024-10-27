@@ -8,7 +8,7 @@ import {
 import { createHandlerId } from "../../src/utils.ts";
 import { assert } from "../test.deps.ts";
 import type { User } from "../models.ts";
-import { createResolver, useDb, useKv } from "../utils.ts";
+import { createResolver, testEncoder, useDb, useKv } from "../utils.ts";
 
 Deno.test("serialized_collection - enqueue", async (t) => {
   await t.step("Should enqueue message with string data", async () => {
@@ -17,7 +17,7 @@ Deno.test("serialized_collection - enqueue", async (t) => {
       const undeliveredId = "undelivered";
 
       const db = kvdex(kv, {
-        s_users: collection(model<User>(), { serialize: "json" }),
+        s_users: collection(model<User>(), { encoder: testEncoder }),
       });
 
       const sleeper = createResolver();

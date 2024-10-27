@@ -31,8 +31,8 @@ class BrotliCompressor implements Compressor {
     return new Uint8Array(buffer);
   }
 
-  decompress(compressedData: Uint8Array) {
-    const buffer = brotliDecompressSync(compressedData, {
+  decompress(data: Uint8Array) {
+    const buffer = brotliDecompressSync(data, {
       params: { [constants.BROTLI_PARAM_QUALITY]: this.quality },
     });
 

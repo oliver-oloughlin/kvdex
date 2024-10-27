@@ -6,7 +6,7 @@ import {
   KvValueSchema,
 } from "../../src/ext/zod/mod.ts";
 import { collection, kvdex } from "../../mod.ts";
-import { useKv } from "../utils.ts";
+import { testEncoder, useKv } from "../utils.ts";
 import { VALUES } from "../values.ts";
 
 const UserSchema = z.object({
@@ -50,7 +50,7 @@ Deno.test("ext - zod", async (t) => {
             age: "secondary",
           },
         }),
-        s_users: collection(UserSchema, { serialize: "json" }),
+        s_users: collection(UserSchema, { encoder: testEncoder }),
       });
 
       const cr1 = await db.users.add({

@@ -398,7 +398,7 @@ export type Serializer = {
 /** Object that implements a compress and decompress method */
 export type Compressor = {
   compress: CompressFn;
-  decompress: DecompressFn;
+  decompress: CompressFn;
 };
 
 /** Function that serializes a KvValue as a Uint8Array */
@@ -409,13 +409,8 @@ export type DeserializeFn = <T>(
   data: Uint8Array,
 ) => T | Promise<T>;
 
-/** Function that compresses data represented by a Uint8Array */
+/** Function that compresses/decompresses data represented by a Uint8Array */
 export type CompressFn = (data: Uint8Array) => Uint8Array | Promise<Uint8Array>;
-
-/** Function that decompresses data represented by a Uint8Array */
-export type DecompressFn = (
-  compressedData: Uint8Array,
-) => Uint8Array | Promise<Uint8Array>;
 
 /** Encoded value entry */
 export type EncodedEntry = {

@@ -1,14 +1,20 @@
 import { collection, type DenoKv, type DenoKvU64, kvdex } from "../mod.ts";
+import { brotliCompressor } from "../src/ext/encoding/brotli.ts";
+import { jsonEncoder } from "../src/ext/encoding/json.ts";
 import { MapKv } from "../src/ext/kv/map_kv.ts";
 import { model } from "../src/model.ts";
 import { TransformUserModel, type User, UserSchema } from "./models.ts";
+
+export const testEncoder = jsonEncoder({
+  compressor: brotliCompressor(),
+});
 
 // Create test db
 export function createDb(kv: DenoKv) {
   return kvdex(kv, {
     u64s: collection(model<DenoKvU64>()),
     s_u64s: collection(model<DenoKvU64>(), {
-      serialize: "json",
+      encoder: testEncoder,
     }),
     users: collection(model<User>()),
     i_users: collection(model<User>(), {
@@ -18,14 +24,14 @@ export function createDb(kv: DenoKv) {
       },
     }),
     s_users: collection(model<User>(), {
-      serialize: "json",
+      encoder: testEncoder,
     }),
     is_users: collection(model<User>(), {
       indices: {
         username: "primary",
         age: "secondary",
       },
-      serialize: "json",
+      encoder: testEncoder,
     }),
     z_users: collection(UserSchema),
     zi_users: collection(UserSchema, {
@@ -35,14 +41,14 @@ export function createDb(kv: DenoKv) {
       },
     }),
     zs_users: collection(UserSchema, {
-      serialize: "json",
+      encoder: testEncoder,
     }),
     zis_users: collection(UserSchema, {
       indices: {
         username: "primary",
         age: "secondary",
       },
-      serialize: "json",
+      encoder: testEncoder,
     }),
     a_users: collection(TransformUserModel),
     ai_users: collection(TransformUserModel, {
@@ -52,14 +58,14 @@ export function createDb(kv: DenoKv) {
       },
     }),
     as_users: collection(TransformUserModel, {
-      serialize: "json",
+      encoder: testEncoder,
     }),
     ais_users: collection(TransformUserModel, {
       indices: {
         name: "primary",
         decadeAge: "secondary",
       },
-      serialize: "json",
+      encoder: testEncoder,
     }),
   });
 }

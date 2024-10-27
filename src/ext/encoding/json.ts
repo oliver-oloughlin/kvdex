@@ -15,6 +15,9 @@ export function jsonEncoder(options?: JsonEncoderOptions): Encoder {
   };
 }
 
+const TEXT_ENCODER = new TextEncoder();
+const TEXT_DECODER = new TextDecoder();
+
 /**
  * Serialize a JSON-like value to a Uint8Array.
  *
@@ -34,7 +37,7 @@ export function jsonEncoder(options?: JsonEncoderOptions): Encoder {
  */
 export function jsonSerialize(value: unknown): Uint8Array {
   const str = jsonStringify(value);
-  return new TextEncoder().encode(str);
+  return TEXT_ENCODER.encode(str);
 }
 
 /**
@@ -57,7 +60,7 @@ export function jsonSerialize(value: unknown): Uint8Array {
  * @returns Deserialized value.
  */
 export function jsonDeserialize<T>(value: Uint8Array): T {
-  const str = new TextDecoder().decode(value);
+  const str = TEXT_DECODER.decode(value);
   return jsonParse<T>(str);
 }
 
