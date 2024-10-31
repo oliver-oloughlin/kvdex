@@ -1,15 +1,6 @@
-import type { Compressor } from "../../types.ts";
-import { brotliCompressSync, brotliDecompressSync, constants } from "node:zlib";
-
-/** Options for brotli compression. */
-export type BrotliCompressorOptions = {
-  /**
-   * Brolti compression quality.
-   *
-   * @default 1
-   */
-  quality?: number;
-};
+import type { Compressor } from "../../../types.ts";
+import { brotliCompressSync, brotliDecompressSync, constants } from "./deps.ts";
+import type { BrotliCompressorOptions } from "./types.ts";
 
 /**
  * Brotli compressor.
