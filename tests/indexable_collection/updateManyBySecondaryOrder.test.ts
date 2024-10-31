@@ -8,6 +8,7 @@ import {
 import { generateUsers, useDb } from "../utils.ts";
 import type { User } from "../models.ts";
 
+// TODO: fix this
 Deno.test.ignore(
   "indexable_collection - updateManyBySecondaryOrder",
   async (t) => {
