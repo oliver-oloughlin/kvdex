@@ -2,10 +2,22 @@ import type { Compressor, Encoder, KvObject } from "../../types.ts";
 import { isKvObject } from "../../utils.ts";
 import { deserialize, serialize } from "node:v8";
 
+/** Options for V8 encoding. */
 export type V8EncoderOptions = {
+  /** Optional compressor object. */
   compressor?: Compressor;
 };
 
+/**
+ * V8-encoder.
+ *
+ * Used for serializing and deserializing data as Uint8Array.
+ *
+ * Relies on `serialize()` and `deserialize()` from the node:v8 built-in module.
+ *
+ * @param options - V8 encoding options.
+ * @returns - An Encoder object.
+ */
 export function v8Encoder(options?: V8EncoderOptions): Encoder {
   return {
     serializer: {

@@ -1,10 +1,20 @@
 import type { Compressor, Encoder, KvObject, KvValue } from "../../types.ts";
 import { isKvObject } from "../../utils.ts";
 
+/** Options for JSON encoding. */
 export type JsonEncoderOptions = {
+  /** Optional compressor object. */
   compressor?: Compressor;
 };
 
+/**
+ * JSON-encoder.
+ *
+ * Used for serializing and deserializing data as Uint8Array.
+ *
+ * @param options - JSON encoding options.
+ * @returns - An Encoder object.
+ */
 export function jsonEncoder(options?: JsonEncoderOptions): Encoder {
   return {
     serializer: {

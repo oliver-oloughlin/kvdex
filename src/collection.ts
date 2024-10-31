@@ -88,6 +88,7 @@ import { concat, deepMerge, ulid } from "./deps.ts";
  * @example
  * ```ts
  * import { model, collection, kvdex } from "jsr:@olli/kvdex"
+ * import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json"
  *
  * type User = {
  *   username: string
@@ -98,7 +99,7 @@ import { concat, deepMerge, ulid } from "./deps.ts";
  *   numbers: collection(model<number>()),
  *   users: collection(model<User>(), {
  *     idGenerator: () => crypto.randomUUID(),
- *     serialize: "json",
+ *     encoder: jsonEncoder(),
  *     indices: {
  *       username: "primary",
  *       age: "secondary"
