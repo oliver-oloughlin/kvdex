@@ -285,8 +285,8 @@ encoder is specified, there is a tradeoff between speed and storage efficiency.
 ```ts
 import { kvdex, collection, model } from "jsr:@olli/kvdex"
 import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json"
-import { v8Encoder } from "jsr:@olli/kvdex/encoding/json"
-import { brotliCompression } from "jsr:@olli/kvdex/encoding/json"
+import { v8Encoder } from "jsr:@olli/kvdex/encoding/v8"
+import { brotliCompression } from "jsr:@olli/kvdex/encoding/brotli"
 
 const kv = await Deno.openKv()
 

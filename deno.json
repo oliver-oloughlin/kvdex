@@ -5,7 +5,10 @@
     ".": "./mod.ts",
     "./zod": "./src/ext/zod/mod.ts",
     "./migrate": "./src/ext/migrate/mod.ts",
-    "./kv": "./src/ext/kv/mod.ts"
+    "./kv": "./src/ext/kv/mod.ts",
+    "./encoding/json": "./src/ext/encoding/json.ts",
+    "./encoding/v8": "./src/ext/encoding/v8.ts",
+    "./encoding/brotli": "./src/ext/encoding/brotli.ts"
   },
   "tasks": {
     "check": "deno check **/*.ts",
