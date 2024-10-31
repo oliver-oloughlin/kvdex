@@ -1,6 +1,7 @@
 import type { Compressor } from "../../types.ts";
 import { brotliCompressSync, brotliDecompressSync, constants } from "node:zlib";
 
+/** Options for brotli compression. */
 export type BrotliCompressorOptions = {
   /**
    * Brolti compression quality.
@@ -10,6 +11,14 @@ export type BrotliCompressorOptions = {
   quality?: number;
 };
 
+/**
+ * Brotli compressor.
+ *
+ * Used for compressing and compressing data represented as a Uint8Array.
+ *
+ * @param options - Brolti compression options.
+ * @returns - A Compressor object.
+ */
 export function brotliCompressor(
   options?: BrotliCompressorOptions,
 ): Compressor {
