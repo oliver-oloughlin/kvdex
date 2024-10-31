@@ -183,13 +183,14 @@ instance and a schema definition as arguments.
 
 ```ts
 import { kvdex, model, collection } from "jsr:@olli/kvdex"
+import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json"
 
 const kv = await Deno.openKv()
 
 const db = kvdex(kv, {
   numbers: collection(model<number>()),
   serializedStrings: collection(model<string>(), {
-    serialize: "json"
+    encoder: jsonEncoder()
   }),
   users: collection(UserModel, {
     history: true,
@@ -208,8 +209,8 @@ const db = kvdex(kv, {
 The schema definition contains collection builders, or nested schema
 definitions. Collections can hold any type adhering to KvValue.
 
-**Note:** Index values are always serialized, using JSON-serialization by
-default.
+**Note:** Index values are always serialized, using the JSON-encoder by default,
+or alternatively your provided encoder.
 
 ## Collection Options
 
@@ -274,43 +275,46 @@ const db = kvdex(kv, {
 });
 ```
 
-### `serialize`
+### `encoder`
 
-Specify serialization for the collection. This lets large objects that exceed
-the native size limit of 64kb to be stored, by serializing, compressing and
-dividing the value across multiple key/value entries. When serialization is
-used, there is a tradeoff between speed and storage efficiency. If the serialize
-option is not set, or if a custom serialize configuration is used, then JSON
-serialization is used by default for any unset serialize functions, while Brotli
-compression is used for any unset compress functions. V8 serialization and
-Brotli compression rely on runtime implementations, and are therefore only
-compatible with runtimes that implement them (Deno, Node.js).
+Specify serialization and compression for the collection. This lets large
+objects that exceed the native size limit of 64kb to be stored, by serializing,
+compressing and dividing the value across multiple key/value entries. When an
+encoder is specified, there is a tradeoff between speed and storage efficiency.
 
 ```ts
 import { kvdex, collection, model } from "jsr:@olli/kvdex"
+import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json"
+import { v8Encoder } from "jsr:@olli/kvdex/encoding/json"
+import { brotliCompression } from "jsr:@olli/kvdex/encoding/json"
 
 const kv = await Deno.openKv()
 
 const db = kvdex(kv, {
   users: collection(model<User>(), {
-    // Custom JSON serializer + Brotli compression
-    serialize: "json",
+    // JSON-encoder without compression (best runtime compatibility)
+    encoder: jsonEncoder(),
 
-    // Custom JSON serializer and no compression (best runtime compatibility)
-    serialize: "json-uncompressed",
+    // JSON-encoder + Brotli compression (requires node:zlib built-in)
+    encoder: jsonEncoder({ compression: brotliCompression() }),
 
-    // Built-in V8 serializer + Brotli compression,
-    serialize: "v8",
+    // V8-encoder without brotli compression (requires node:v8 built-in)
+    encoder: v8Encoder()
 
-    // Built-in V8 serializer and no compression
-    serialize: "v8-uncompressed",
+    // V8-encoder + brotli compression (requires node:v8 and node:zlib built-in)
+    encoder: v8Encoder({ compression: brotliCompression() })
 
     // Set custom serialize, deserialize, compress and decompress functions
-    serialize: {
-      serialize: ...,
-      deserialize: ...,
-      compress: ...,
-      decompress: ...,
+    encoder: {
+      serializer: {
+        serialize: ...,
+        deserialize: ...,
+      },
+      // optional
+      compressor: {
+        compress: ...,
+        decompress: ...,
+      }
     }
   }),
 })
@@ -1278,14 +1282,13 @@ Deno.KvCommitResult object if successful, and Deno.KvCommitError if not.
 
 **_NOTE_:** Atomic operations are not available for serialized collections. For
 indexable collections, any operations performing deletes will not be truly
-atomic in the sense that it performs a single isolated operation. The reason for
-this being that the document data must be read before performing the initial
-delete operation, to then perform another delete operation for the index
-entries. If the initial operation fails, the index entries will not be deleted.
-To avoid collisions and errors related to indexing, an atomic operation will
-always fail if it is trying to delete and write to the same indexable
-collection. It will also fail if trying to set/add a document with colliding
-index entries.
+atomic in the sense that it performs a single isolated operation. This is
+because the document data must be read before performing the initial delete
+operation, to then perform another delete operation for the index entries. If
+the initial operation fails, the index entries will not be deleted. To avoid
+collisions and errors related to indexing, an atomic operation will always fail
+if it is trying to delete and write to the same indexable collection. It will
+also fail if trying to set/add a document with colliding index entries.
 
 ### Without checking
 
@@ -1548,10 +1551,11 @@ performance.
 
 ```ts
 import { collection, kvdex, model } from "jsr:@olli/kvdex"
+import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json"
 
 const kv = await Deno.openKv()
 const db = kvdex(kv, {
-  blobs: collection(model<Uint8Array>(), { serialize: "json" }),
+  blobs: collection(model<Uint8Array>(), { encoder: jsonEncoder() }),
 })
 
 const blob = // read from disk, etc.
