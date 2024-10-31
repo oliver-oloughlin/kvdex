@@ -1,4 +1,5 @@
 import { collection, kvdex, model } from "../../mod.ts";
+import { jsonEncoder } from "../../src/ext/encoding/json.ts";
 import { assert, assertEquals } from "../test.deps.ts";
 import { useKv } from "../utils.ts";
 import { VALUES } from "../values.ts";
@@ -12,7 +13,10 @@ Deno.test("serialized_collection - types", async (t) => {
           VALUES.map((
             val,
             i,
-          ) => [i, collection(model<typeof val>(), { serialize: "v8" })]),
+          ) => [
+            i,
+            collection(model<typeof val>(), { encoder: jsonEncoder() }),
+          ]),
         );
 
         const db = kvdex(kv, schema);

@@ -459,7 +459,6 @@ Deno.test("indexable_collection - properties", async (t) => {
         val20,
         val21,
         val22,
-        val23,
       };
       const val25 = new Set<KvValue>(val23);
       const val26 = new Map<KvValue, KvValue>([

@@ -1,10 +1,6 @@
+import { jsonDeserialize, jsonSerialize } from "../../src/ext/encoding/json.ts";
+import { v8Deserialize, v8Serialize } from "../../src/ext/encoding/v8.ts";
 import { obj } from "./_object.ts";
-import {
-  jsonDeserialize,
-  jsonSerialize,
-  v8Deserialize,
-  v8Serialize,
-} from "../../src/utils.ts";
 
 const js = jsonSerialize(obj);
 const ds = v8Serialize(obj);

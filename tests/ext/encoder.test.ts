@@ -1,8 +1,8 @@
-import { jsonDeserialize, jsonSerialize } from "../../src/utils.ts";
 import { assertEquals } from "../test.deps.ts";
 import { VALUES } from "../values.ts";
 import { assert } from "../test.deps.ts";
-import { v8Deserialize, v8Serialize } from "../../src/utils.ts";
+import { jsonDeserialize, jsonSerialize } from "../../src/ext/encoding/json.ts";
+import { v8Deserialize, v8Serialize } from "../../src/ext/encoding/v8.ts";
 
 Deno.test("ext - encoder", async (t) => {
   await t.step("json", async (t) => {

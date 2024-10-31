@@ -1,4 +1,5 @@
 import { collection, kvdex, model } from "../../mod.ts";
+import { jsonEncoder } from "../../src/ext/encoding/json.ts";
 import { assert, assertEquals } from "../test.deps.ts";
 import { useKv } from "../utils.ts";
 import { TObject } from "../values.ts";
@@ -10,7 +11,7 @@ Deno.test("serialized_indexable_collection - types", async (t) => {
       await useKv(async (kv) => {
         const db = kvdex(kv, {
           objects: collection(model<typeof TObject>(), {
-            serialize: "v8",
+            encoder: jsonEncoder(),
             indices: {
               TString: "primary",
               TNumber: "secondary",
