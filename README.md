@@ -35,7 +35,7 @@ _Supported Deno verisons:_ **^1.43.0**
   - [Collection Options](#collection-options)
     - [`idGenerator`](#idgenerator)
     - [`indices`](#indices)
-    - [`serialize`](#serialize)
+    - [`encoder`](#encoder)
     - [`history`](#history)
   - [Collection Methods](#collection-methods)
     - [find()](#find)
@@ -281,6 +281,8 @@ Specify serialization and compression for the collection. This lets large
 objects that exceed the native size limit of 64kb to be stored, by serializing,
 compressing and dividing the value across multiple key/value entries. When an
 encoder is specified, there is a tradeoff between speed and storage efficiency.
+For storing objects larger than the atomic operation size limit, see
+[Blob Storage](#blob-storage).
 
 ```ts
 import { kvdex, collection, model } from "jsr:@olli/kvdex"
