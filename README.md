@@ -934,12 +934,12 @@ const { result } = await db.users.map((doc) => doc.value.username, {
 });
 
 // Get a list of the usernames of the first 10 users in the KV store
-const { result } = await db.users.forEach((doc) => doc.value.username, {
+const { result } = await db.users.map((doc) => doc.value.username, {
   limit: 10,
 });
 
 // Get a list of the usernames of the last 10 users in the KV store
-const { result } = await db.users.forEach((doc) => doc.value.username, {
+const { result } = await db.users.map((doc) => doc.value.username, {
   limit: 10,
   reverse: true,
 });
