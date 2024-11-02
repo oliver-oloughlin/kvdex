@@ -2,7 +2,7 @@ import { collection, kvdex, model } from "../../mod.ts";
 import { assert } from "../test.deps.ts";
 import type { User } from "../models.ts";
 import { generateLargeUsers, generateUsers, useKv } from "../utils.ts";
-import { jsonEncoder } from "../../src/ext/encoding/json.ts";
+import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 Deno.test("db - deleteAll", async (t) => {
   await t.step(

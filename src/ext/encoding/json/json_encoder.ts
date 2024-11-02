@@ -11,11 +11,11 @@ import { jsonDeserialize, jsonSerialize } from "./utils.ts";
  * @returns - An Encoder object.
  */
 export function jsonEncoder(options?: JsonEncoderOptions): Encoder {
-    return {
-        serializer: {
-            serialize: jsonSerialize,
-            deserialize: jsonDeserialize,
-        },
-        compressor: options?.compressor,
-    };
+  return {
+    serializer: {
+      serialize: jsonSerialize,
+      deserialize: jsonDeserialize,
+    },
+    compressor: options?.compressor,
+  };
 }

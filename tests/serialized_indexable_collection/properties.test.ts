@@ -19,7 +19,7 @@ import { mockUser1 } from "../mocks.ts";
 import { mockUser2 } from "../mocks.ts";
 import { mockUser3 } from "../mocks.ts";
 import { sleep } from "../utils.ts";
-import { jsonEncoder } from "../../src/ext/encoding/json.ts";
+import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 const [user] = generateLargeUsers(1);
 

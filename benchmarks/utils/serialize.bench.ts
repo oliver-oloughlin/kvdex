@@ -1,5 +1,4 @@
-import { jsonSerialize } from "../../src/ext/encoding/json.ts";
-import { v8Serialize } from "../../src/ext/encoding/v8.ts";
+import { jsonSerialize, v8Serialize } from "../../src/ext/encoding/mod.ts";
 import { obj } from "./_object.ts";
 
 Deno.bench("utils - jsonSerialize", () => {

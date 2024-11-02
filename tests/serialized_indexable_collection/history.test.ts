@@ -3,7 +3,7 @@ import { assert } from "../test.deps.ts";
 import { generateLargeUsers, sleep, useKv } from "../utils.ts";
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts";
 import type { User } from "../models.ts";
-import { jsonEncoder } from "../../src/ext/encoding/json.ts";
+import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 Deno.test("serialized_indexable_collection - history", async (t) => {
   await t.step(

@@ -22,7 +22,7 @@ import type {
   WatchOptions,
 } from "./types.ts";
 import { ulid } from "./deps.ts";
-import { jsonEncoder } from "./ext/encoding/json.ts";
+import { jsonEncoder } from "./ext/encoding/mod.ts";
 
 /**
  * Generate a new document id.

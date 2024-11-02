@@ -11,7 +11,7 @@ import type { User } from "../models.ts";
 import { generateLargeUsers, useDb, useKv } from "../utils.ts";
 import { mockUser3 } from "../mocks.ts";
 import { sleep } from "../utils.ts";
-import { jsonEncoder } from "../../src/ext/encoding/json.ts";
+import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 Deno.test("serialized_collection - properties", async (t) => {
   await t.step("Keys should have the correct prefixes", async () => {

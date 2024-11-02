@@ -1,5 +1,5 @@
 import { collection, kvdex, model } from "../../mod.ts";
-import { jsonEncoder } from "../../src/ext/encoding/json.ts";
+import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 import { assert, assertEquals } from "../test.deps.ts";
 import { useKv } from "../utils.ts";
 import { TObject } from "../values.ts";

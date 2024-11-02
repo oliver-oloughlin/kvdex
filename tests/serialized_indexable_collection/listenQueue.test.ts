@@ -13,7 +13,7 @@ import { createHandlerId, extendKey } from "../../src/utils.ts";
 import { assert } from "../test.deps.ts";
 import type { User } from "../models.ts";
 import { createResolver, sleep, useKv } from "../utils.ts";
-import { jsonEncoder } from "../../src/ext/encoding/json.ts";
+import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 Deno.test("serialized_indexable_collection - listenQueue", async (t) => {
   await t.step("Should receive message with string data", async () => {

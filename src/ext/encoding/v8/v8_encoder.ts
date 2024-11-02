@@ -13,11 +13,11 @@ import { v8Deserialize, v8Serialize } from "./utils.ts";
  * @returns - An Encoder object.
  */
 export function v8Encoder(options?: V8EncoderOptions): Encoder {
-    return {
-        serializer: {
-            serialize: v8Serialize,
-            deserialize: v8Deserialize,
-        },
-        compressor: options?.compressor,
-    };
+  return {
+    serializer: {
+      serialize: v8Serialize,
+      deserialize: v8Deserialize,
+    },
+    compressor: options?.compressor,
+  };
 }
