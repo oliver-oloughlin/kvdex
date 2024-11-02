@@ -70,7 +70,7 @@ export class AtomicBuilder<
     operations?: Operations,
   ) {
     // Check for large collection
-    if (collection._isSerialized) {
+    if (collection._encoder) {
       throw new InvalidCollectionError(
         "Atomic operations are not supported for serialized collections",
       );

@@ -3,6 +3,7 @@ import { assert } from "../test.deps.ts";
 import { sleep, useKv } from "../utils.ts";
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts";
 import type { User } from "../models.ts";
+import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 Deno.test("serialized_collection - history", async (t) => {
   await t.step(
@@ -12,7 +13,7 @@ Deno.test("serialized_collection - history", async (t) => {
         const db = kvdex(kv, {
           users: collection(model<User>(), {
             history: true,
-            serialize: "json",
+            encoder: jsonEncoder(),
           }),
         });
 
@@ -43,7 +44,7 @@ Deno.test("serialized_collection - history", async (t) => {
         const db = kvdex(kv, {
           users: collection(model<User>(), {
             history: true,
-            serialize: "json",
+            encoder: jsonEncoder(),
           }),
         });
 
@@ -82,7 +83,7 @@ Deno.test("serialized_collection - history", async (t) => {
         const db = kvdex(kv, {
           users: collection(model<User>(), {
             history: true,
-            serialize: "json",
+            encoder: jsonEncoder(),
           }),
         });
 
@@ -113,7 +114,7 @@ Deno.test("serialized_collection - history", async (t) => {
         const db = kvdex(kv, {
           users: collection(model<User>(), {
             history: true,
-            serialize: "json",
+            encoder: jsonEncoder(),
           }),
         });
 
@@ -165,7 +166,7 @@ Deno.test("serialized_collection - history", async (t) => {
       const db = kvdex(kv, {
         users: collection(model<User>(), {
           history: true,
-          serialize: "json",
+          encoder: jsonEncoder(),
         }),
       });
 
@@ -205,7 +206,7 @@ Deno.test("serialized_collection - history", async (t) => {
     await useKv(async (kv) => {
       const db = kvdex(kv, {
         users: collection(model<User>(), {
-          serialize: "json",
+          encoder: jsonEncoder(),
           history: true,
         }),
       });

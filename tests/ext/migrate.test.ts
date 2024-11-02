@@ -34,6 +34,7 @@ import {
   TUint8ClampedArray,
   TUndefined,
 } from "../values.ts";
+import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 function createDb(kv: Deno.Kv) {
   return kvdex(kv, {
@@ -99,7 +100,7 @@ function createDb(kv: Deno.Kv) {
       indices: { TString: "primary", TNumber: "secondary" },
     }),
     is: collection(model<typeof TObject>(), {
-      serialize: "json",
+      encoder: jsonEncoder(),
       indices: { TString: "primary", TNumber: "secondary" },
     }),
   });

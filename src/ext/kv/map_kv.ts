@@ -13,11 +13,11 @@ import type {
   DenoKvStrictKey,
   DenoKvWatchOptions,
 } from "../../types.ts";
-import { jsonParse, jsonStringify } from "../../utils.ts";
 import { MapKvAtomicOperation } from "./atomic.ts";
 import { Watcher } from "./watcher.ts";
 import { createVersionstamp, keySort } from "./utils.ts";
 import type { BasicMap, MapKvOptions } from "./types.ts";
+import { jsonParse, jsonStringify } from "../encoding/mod.ts";
 
 /**
  * KV instance utilising a `BasicMap` as it's backend.

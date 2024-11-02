@@ -49,6 +49,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  * @example
  * ```ts
  * import { kvdex, model, collection } from "jsr:@olli/kvdex"
+ * import { jsonEncoder } from "jsr:@olli/kvdex"
  *
  * type User = {
  *   username: string
@@ -60,7 +61,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  * const db = kvdex(kv, {
  *   numbers: collection(model<number>()),
  *   u64s: collection(model<Deno.KvU64>()),
- *   serializedStrings: collection(model<string>(), { serialize: "json" }),
+ *   serializedStrings: collection(model<string>(), { encoder: jsonEncoder() }),
  *   users: collection(model<User>(), {
  *     indices: {
  *       username: "primary",
