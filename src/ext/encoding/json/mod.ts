@@ -1,7 +1,7 @@
 /**
  * @module # JSON
  *
- * JSON-encoder and JSON-utilities for stringifying and serializing data.
+ * JSON-encoder and utilities for stringifying and serializing data.
  *
  * @example
  * ```ts

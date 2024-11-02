@@ -98,12 +98,11 @@ _Supported Deno verisons:_ **^1.43.0**
     - [With checking](#with-checking)
   - [Document Methods](#document-methods)
     - [flat()](#flat)
-  - [Utility Functions](#utility-functions)
-    - [jsonSerialize()](#jsonserialize)
-    - [jsonDeserialize()](#jsondeserialize)
-    - [jsonStringify()](#jsonstringify)
-    - [jsonParse()](#jsonparse)
   - [Extensions](#extensions)
+    - [Encoding](#encoding)
+      - [JSON](#json)
+      - [V8](#v8)
+      - [Brotli](#brotli)
     - [Zod](#zod)
       - [Schemas](#schemas)
     - [Migrate](#migrate)
@@ -1390,76 +1389,104 @@ const flattened = doc.flat();
 // }
 ```
 
-## Utility Functions
-
-These are additional utility functions that are exposed and can be used outside
-of `kvdex`.
-
-### jsonSerialize()
-
-Serialize a JSON-like value to a Uint8Array.
-
-```ts
-import { jsonSerialize } from "@olli/kvdex";
-
-const serialized = jsonSerialize({
-  foo: "foo",
-  bar: "bar",
-  bigint: 10n,
-});
-```
-
-### jsonDeserialize()
-
-Deserialize a value that was serialized using `jsonSerialize()`.
-
-```ts
-import { jsonDeserialize, jsonSerialize } from "@olli/kvdex";
-
-const serialized = jsonSerialize({
-  foo: "foo",
-  bar: "bar",
-  bigint: 10n,
-});
-
-const value = jsonDeserialize(serialized);
-```
-
-### jsonStringify()
-
-Stringify a JSON-like value.
-
-```ts
-import { jsonStringify } from "@olli/kvdex";
-
-const str = jsonStringify({
-  foo: "foo",
-  bar: "bar",
-  bigint: 10n,
-});
-```
-
-### jsonParse()
-
-Parse a value that was stringified using `jsonStringify()`
-
-```ts
-import { jsonParse, jsonStringify } from "@olli/kvdex";
-
-const str = jsonStringify({
-  foo: "foo",
-  bar: "bar",
-  bigint: 10n,
-});
-
-const value = jsonParse(str);
-```
-
 ## Extensions
 
 Additional features outside of the basic functionality provided by `kvdex`.
-While the core functionalities are dependency-free, extended features may rely
-on some dependenices to enhance integration.
+While the core functionalities are free of third-party dependencies, extended
+features may rely on third-party dependenices or runtime-specific APIs to
+enhance integration.
+
+### Encoding
+
+Utilities for encoding data.
+
+#### JSON
+
+JSON-encoder and utilities for stringifying and serializing data.
+
+```ts
+import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json";
+
+// With default options (no compression)
+const encoder = jsonEncoder();
+```
+
+```ts
+import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json";
+import { brotliCompressor } from "jsr:@olli/kvdex/encoding/brotli";
+
+// With brotli compression
+const encoder = jsonEncoder({ compressor: brotliCompressor() });
+```
+
+```ts
+import { jsonParse, jsonStringify } from "jsr:@olli/kvdex/encoding/json";
+
+// Stringify value
+const json = jsonStringify({
+  foo: "bar",
+  big: 100n,
+});
+
+// Parse value
+const value = jsonParse(json);
+```
+
+```ts
+import { jsonDeserialize, jsonSerialize } from "jsr:@olli/kvdex/encoding/json";
+
+// Serialize value as Uint8Array
+const serialized = jsonSerialize({
+  foo: "bar",
+  big: 100n,
+});
+
+// Deserialize value from Uint8Array
+const value = jsonDeserialize(serialized);
+```
+
+#### V8
+
+V8-encoder and serialization utilities. Relies on the `node:v8` built-in.
+
+```ts
+import { v8Encoder } from "jsr:@olli/kvdex/encoding/v8";
+import { brotliCompressor } from "jsr:@olli/kvdex/encoding/brotli";
+
+// V8-encoder without compression
+const encoder = v8Encoder();
+
+// V8-encoder with brotli compression
+const encoder = v8Encoder({ compressor: brotliCompressor() });
+```
+
+```ts
+import { v8Deserialize, v8Serialize } from "jsr:@olli/kvdex/encoding/v8";
+
+// Serialize value as Uint8Array
+const serialized = v8Serialize({
+  foo: "bar",
+  big: 100n,
+});
+
+// Deserialize value from Uint8Array
+const value = v8Deserialize(serialized);
+```
+
+#### Brotli
+
+Easy to configure brotli compression for use with the `encoder` option for
+collections. Relies on the `node:zlib` built-in.
+
+```ts
+import { brotliCompressor } from "jsr:@olli/kvdex/encoding/brotli";
+
+// With default options
+const compressor = brotliCompressor();
+
+// Explicitly set quality level (default is 1)
+const compressor = brotliCompressor({ quality: 2 });
+```
 
 ### Zod
 
