@@ -130,7 +130,7 @@ type.
 Using the standard model strategy:
 
 ```ts
-import { model } from "jsr:@olli/kvdex";
+import { model } from "@olli/kvdex";
 
 type User = {
   username: string;
@@ -181,8 +181,8 @@ const UserModel = z.object({
 instance and a schema definition as arguments.
 
 ```ts
-import { kvdex, model, collection } from "jsr:@olli/kvdex"
-import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json"
+import { kvdex, model, collection } from "@olli/kvdex"
+import { jsonEncoder } from "@olli/kvdex/encoding/json"
 
 const kv = await Deno.openKv()
 
@@ -227,7 +227,7 @@ added, which can be useful to create derived ids. The default id generator uses
 Id created from the data being added:
 
 ```ts
-import { collection, kvdex, model } from "jsr:@olli/kvdex";
+import { collection, kvdex, model } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
@@ -241,7 +241,7 @@ const db = kvdex(kv, {
 Using randomely generated uuids:
 
 ```ts
-import { collection, kvdex, model } from "jsr:@olli/kvdex";
+import { collection, kvdex, model } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
@@ -260,7 +260,7 @@ querying data based on index values.
 **NOTE:** Index values are always serialized.
 
 ```ts
-import { collection, kvdex, model } from "jsr:@olli/kvdex";
+import { collection, kvdex, model } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
@@ -284,10 +284,10 @@ For storing objects larger than the atomic operation size limit, see
 [Blob Storage](#blob-storage).
 
 ```ts
-import { kvdex, collection, model } from "jsr:@olli/kvdex"
-import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json"
-import { v8Encoder } from "jsr:@olli/kvdex/encoding/v8"
-import { brotliCompression } from "jsr:@olli/kvdex/encoding/brotli"
+import { kvdex, collection, model } from "@olli/kvdex"
+import { jsonEncoder } from "@olli/kvdex/encoding/json"
+import { v8Encoder } from "@olli/kvdex/encoding/v8"
+import { brotliCompression } from "@olli/kvdex/encoding/brotli"
 
 const kv = await Deno.openKv()
 
@@ -326,7 +326,7 @@ const db = kvdex(kv, {
 Set to `true` to enable version history. Default is `false`.
 
 ```ts
-import { collection, kvdex, model } from "jsr:@olli/kvdex";
+import { collection, kvdex, model } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
@@ -1405,22 +1405,22 @@ Utilities for encoding data.
 JSON-encoder and utilities for stringifying and serializing data.
 
 ```ts
-import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json";
+import { jsonEncoder } from "@olli/kvdex/encoding/json";
 
 // With default options (no compression)
 const encoder = jsonEncoder();
 ```
 
 ```ts
-import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json";
-import { brotliCompressor } from "jsr:@olli/kvdex/encoding/brotli";
+import { jsonEncoder } from "@olli/kvdex/encoding/json";
+import { brotliCompressor } from "@olli/kvdex/encoding/brotli";
 
 // With brotli compression
 const encoder = jsonEncoder({ compressor: brotliCompressor() });
 ```
 
 ```ts
-import { jsonParse, jsonStringify } from "jsr:@olli/kvdex/encoding/json";
+import { jsonParse, jsonStringify } from "@olli/kvdex/encoding/json";
 
 // Stringify value
 const json = jsonStringify({
@@ -1433,7 +1433,7 @@ const value = jsonParse(json);
 ```
 
 ```ts
-import { jsonDeserialize, jsonSerialize } from "jsr:@olli/kvdex/encoding/json";
+import { jsonDeserialize, jsonSerialize } from "@olli/kvdex/encoding/json";
 
 // Serialize value as Uint8Array
 const serialized = jsonSerialize({
@@ -1450,8 +1450,8 @@ const value = jsonDeserialize(serialized);
 V8-encoder and serialization utilities. Relies on the `node:v8` built-in.
 
 ```ts
-import { v8Encoder } from "jsr:@olli/kvdex/encoding/v8";
-import { brotliCompressor } from "jsr:@olli/kvdex/encoding/brotli";
+import { v8Encoder } from "@olli/kvdex/encoding/v8";
+import { brotliCompressor } from "@olli/kvdex/encoding/brotli";
 
 // V8-encoder without compression
 const encoder = v8Encoder();
@@ -1461,7 +1461,7 @@ const encoder = v8Encoder({ compressor: brotliCompressor() });
 ```
 
 ```ts
-import { v8Deserialize, v8Serialize } from "jsr:@olli/kvdex/encoding/v8";
+import { v8Deserialize, v8Serialize } from "@olli/kvdex/encoding/v8";
 
 // Serialize value as Uint8Array
 const serialized = v8Serialize({
@@ -1479,7 +1479,7 @@ Easy to configure brotli compression for use with the `encoder` option for
 collections. Relies on the `node:zlib` built-in.
 
 ```ts
-import { brotliCompressor } from "jsr:@olli/kvdex/encoding/brotli";
+import { brotliCompressor } from "@olli/kvdex/encoding/brotli";
 
 // With default options
 const compressor = brotliCompressor();
@@ -1500,7 +1500,7 @@ schemas.
 
 ```ts
 import { z } from "npm:zod";
-import { KvIdSchema } from "jsr:@olli/kvdex/zod";
+import { KvIdSchema } from "@olli/kvdex/zod";
 
 const UserSchema = z.object({
   username: z.string(),
@@ -1534,7 +1534,7 @@ Use the migrate function and pass a source KV instance and a target KV instance.
 Optionally pass `all: true` to migrate all entries.
 
 ```ts
-import { migrate } from "jsr:@olli/kvdex/migrate";
+import { migrate } from "@olli/kvdex/migrate";
 
 const source = await Deno.openKv("./source.sqlite3");
 const target = await Deno.openKv("./target.sqlite3");
@@ -1579,8 +1579,8 @@ can be used. By default, batching is disabled to ensure consistency and improve
 performance.
 
 ```ts
-import { collection, kvdex, model } from "jsr:@olli/kvdex"
-import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json"
+import { collection, kvdex, model } from "@olli/kvdex"
+import { jsonEncoder } from "@olli/kvdex/encoding/json"
 
 const kv = await Deno.openKv()
 const db = kvdex(kv, {

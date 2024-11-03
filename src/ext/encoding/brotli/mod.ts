@@ -7,7 +7,7 @@
  *
  * @example
  * ```ts
- * import { brotliCompressor } from "jsr:@olli/kvdex/encoding/brotli"
+ * import { brotliCompressor } from "@olli/kvdex/encoding/brotli"
  *
  * // With default options
  * const compressor = brotliCompressor()

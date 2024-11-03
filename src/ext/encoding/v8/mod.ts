@@ -7,8 +7,8 @@
  *
  * @example
  * ```ts
- * import { v8Encoder } from "jsr:@olli/kvdex/encoding/v8"
- * import { brotliCompressor } from "jsr:@olli/kvdex/encoding/brotli"
+ * import { v8Encoder } from "@olli/kvdex/encoding/v8"
+ * import { brotliCompressor } from "@olli/kvdex/encoding/brotli"
  *
  * // V8-encoder without compression
  * const encoder = v8Encoder()
@@ -19,7 +19,7 @@
  *
  * @example
  * ```ts
- * import { v8Serialize, v8Deserialize } from "jsr:@olli/kvdex/encoding/v8"
+ * import { v8Serialize, v8Deserialize } from "@olli/kvdex/encoding/v8"
  *
  * // Serialize value as Uint8Array
  * const serialized = v8Serialize({
