@@ -5,7 +5,7 @@
  *
  * @example
  * ```ts
- * import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json"
+ * import { jsonEncoder } from "@olli/kvdex/encoding/json"
  *
  * // With default options (no compression)
  * const encoder = jsonEncoder()
@@ -13,8 +13,8 @@
  *
  * @example
  * ```ts
- * import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json"
- * import { brotliCompressor } from "jsr:@olli/kvdex/encoding/brotli"
+ * import { jsonEncoder } from "@olli/kvdex/encoding/json"
+ * import { brotliCompressor } from "@olli/kvdex/encoding/brotli"
  *
  * // With brotli compression
  * const encoder = jsonEncoder({ compressor: brotliCompressor() })
@@ -22,7 +22,7 @@
  *
  * @example
  * ```ts
- * import { jsonStringify, jsonParse } from "jsr:@olli/kvdex/encoding/json"
+ * import { jsonStringify, jsonParse } from "@olli/kvdex/encoding/json"
  *
  * // Stringify value
  * const json = jsonStringify({
@@ -36,7 +36,7 @@
  *
  * @example
  * ```ts
- * import { jsonSerialize, jsonDeserialize } from "jsr:@olli/kvdex/encoding/json"
+ * import { jsonSerialize, jsonDeserialize } from "@olli/kvdex/encoding/json"
  *
  * // Serialize value as Uint8Array
  * const serialized = jsonSerialize({

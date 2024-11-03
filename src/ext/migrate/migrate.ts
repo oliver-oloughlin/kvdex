@@ -6,7 +6,7 @@ import type { MigrateOptions } from "./types.ts";
  *
  * @example
  * ```ts
- * import { migrate } from "jsr:@olli/kvdex/ext/migrate"
+ * import { migrate } from "@olli/kvdex/ext/migrate"
  *
  * const source = await Deno.openKv("./source.sqlite3")
  * const target = await Deno.openKv("./target.sqlite3")

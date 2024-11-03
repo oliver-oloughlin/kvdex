@@ -87,8 +87,8 @@ import { concat, deepMerge, ulid } from "./deps.ts";
  *
  * @example
  * ```ts
- * import { model, collection, kvdex } from "jsr:@olli/kvdex"
- * import { jsonEncoder } from "jsr:@olli/kvdex/encoding/json"
+ * import { model, collection, kvdex } from "@olli/kvdex"
+ * import { jsonEncoder } from "@olli/kvdex/encoding/json"
  *
  * type User = {
  *   username: string

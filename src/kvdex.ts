@@ -48,8 +48,8 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  *
  * @example
  * ```ts
- * import { kvdex, model, collection } from "jsr:@olli/kvdex"
- * import { jsonEncoder } from "jsr:@olli/kvdex"
+ * import { kvdex, model, collection } from "@olli/kvdex"
+ * import { jsonEncoder } from "@olli/kvdex"
  *
  * type User = {
  *   username: string
