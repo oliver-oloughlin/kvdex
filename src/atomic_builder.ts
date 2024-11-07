@@ -535,7 +535,7 @@ export class AtomicBuilder<
 
       // Add set operation
       this.operations.atomic.set(idKey, parsed, options);
-      if (overwrite) {
+      if (!overwrite) {
         this.operations.atomic.check({ key: idKey, versionstamp: null });
       }
 
