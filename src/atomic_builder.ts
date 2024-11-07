@@ -12,6 +12,7 @@ import type {
   DenoKvCommitError,
   DenoKvCommitResult,
   DenoKvU64,
+  EmptyObject,
   EnqueueOptions,
   HistoryEntry,
   KvObject,
@@ -513,7 +514,10 @@ export class AtomicBuilder<
     value: TInput,
     options?: AtomicSetOptions<TOptions>,
   ) {
-    if (this.collection._isIndexable && options?.overwrite !== undefined) {
+    const overwrite = !!(options as AtomicSetOptions<EmptyObject> | undefined)
+      ?.overwrite;
+
+    if (this.collection._isIndexable && overwrite) {
       throw new InvalidCollectionError(
         "The overwrite property is not supported for indexable collections",
       );
@@ -531,7 +535,7 @@ export class AtomicBuilder<
 
       // Add set operation
       this.operations.atomic.set(idKey, parsed, options);
-      if (!options?.overwrite) {
+      if (overwrite) {
         this.operations.atomic.check({ key: idKey, versionstamp: null });
       }
 

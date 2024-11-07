@@ -76,7 +76,7 @@ Deno.test("db - atomic", async (t) => {
         assertThrows(() => {
           db
             .atomic((schema) => schema.i_users)
-            .set(cr1.id, mockUser2, { overwrite: true });
+            .set(cr1.id, mockUser2, { overwrite: true } as any);
         });
       });
     },

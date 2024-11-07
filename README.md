@@ -1278,8 +1278,9 @@ method expects a selector for selecting the collection that the subsequent
 mutation actions will be performed on. Mutations can be performed on documents
 from multiple collections in a single atomic operation by calling "select" at
 any point in the building chain to switch the collection context. To execute the
-operation, call "commit" at the end of the chain. An atomic operation returns a
-Deno.KvCommitResult object if successful, and Deno.KvCommitError if not.
+operation, call "commit" at the end of the chain. A committed atomic operation
+returns a promise resolving to either a Deno.KvCommitResult object if
+successful, or Deno.KvCommitError if not.
 
 **_NOTE_:** Atomic operations are not available for serialized collections. For
 indexable collections, any operations performing deletes will not be truly
@@ -1289,7 +1290,8 @@ operation, to then perform another delete operation for the index entries. If
 the initial operation fails, the index entries will not be deleted. To avoid
 collisions and errors related to indexing, an atomic operation will always fail
 if it is trying to delete and write to the same indexable collection. It will
-also fail if trying to set/add a document with colliding index entries.
+also fail if trying to set/add a document with colliding index entries, or if
+trying to set a document with the `overwrite` option.
 
 ### Without checking
 
