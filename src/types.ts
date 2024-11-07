@@ -66,6 +66,15 @@ export type IdGenerator<T1 extends KvValue, T2 extends KvId> = (
   data: T1,
 ) => T2 | Promise<T2>;
 
+/** Management of an active watcher. */
+export type WatchManager = {
+  /** The watcher promise, which is resolved either by closing the KV connection or by calling the watcher's `cancel()` function. */
+  promise: Promise<void>;
+
+  /** Stops the active watcher. */
+  cancel: () => Promise<void>;
+};
+
 /**********************/
 /*                    */
 /*   INTERVAL TYPES   */
