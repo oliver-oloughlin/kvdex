@@ -8,6 +8,11 @@ import type { Document } from "./document.ts";
 /*                   */
 /*********************/
 
+const EMPTY_OBJECT = {};
+
+/** Empty object type */
+export type EmptyObject = typeof EMPTY_OBJECT;
+
 /** Collection builder function */
 export type BuilderFn<
   TInput,
@@ -270,9 +275,10 @@ export type AtomicMutation<T1, T2 extends KvId> =
   );
 
 /** Options for atomic set operation */
-export type AtomicSetOptions = NonNullable<
-  Parameters<ReturnType<DenoKv["atomic"]>["set"]>["2"]
->;
+export type AtomicSetOptions<T extends CollectionOptions<any>> =
+  & DenoKvSetOptions
+  & (T extends { indices: IndexRecord<KvObject> } ? EmptyObject
+    : Pick<SetOptions, "overwrite">);
 
 /************************/
 /*                      */
