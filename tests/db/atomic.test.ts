@@ -6,7 +6,7 @@ import {
   type QueueMessage,
 } from "../../mod.ts";
 import { createHandlerId } from "../../src/utils.ts";
-import { assert } from "../test.deps.ts";
+import { assert, assertEquals, assertThrows } from "../test.deps.ts";
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
 import { sleep, useDb, useKv } from "../utils.ts";
 
@@ -42,6 +42,42 @@ Deno.test("db - atomic", async (t) => {
 
         const count = await db.users.count();
         assert(count === 1);
+      });
+    },
+  );
+
+  await t.step("Should overwrite document in standard collection", async () => {
+    await useDb(async (db) => {
+      const cr1 = await db.users.add(mockUser1);
+      assert(cr1.ok);
+
+      const cr2 = await db
+        .atomic((schema) => schema.users)
+        .set(cr1.id, mockUser2, { overwrite: true })
+        .commit();
+
+      assert(cr2.ok);
+
+      const count = await db.users.count();
+      assert(count === 1);
+
+      const doc = await db.users.find(cr1.id);
+      assertEquals(doc?.value, mockUser2);
+    });
+  });
+
+  await t.step(
+    "Should throw when trying to overwrite document in indexable collection",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.i_users.add(mockUser1);
+        assert(cr1.ok);
+
+        assertThrows(() => {
+          db
+            .atomic((schema) => schema.i_users)
+            .set(cr1.id, mockUser2, { overwrite: true });
+        });
       });
     },
   );

@@ -139,7 +139,7 @@ export class AtomicBuilder<
    */
   add(
     value: TInput,
-    options?: AtomicSetOptions,
+    options?: AtomicSetOptions<TOptions>,
   ): this {
     return this.setDocument(null, value, options);
   }
@@ -165,7 +165,7 @@ export class AtomicBuilder<
   set(
     id: ParseId<TOptions>,
     value: TInput,
-    options?: AtomicSetOptions,
+    options?: AtomicSetOptions<TOptions>,
   ): this {
     return this.setDocument(id, value, options);
   }
@@ -511,8 +511,14 @@ export class AtomicBuilder<
   private setDocument(
     id: ParseId<TOptions> | null,
     value: TInput,
-    options?: AtomicSetOptions,
+    options?: AtomicSetOptions<TOptions>,
   ) {
+    if (this.collection._isIndexable && options?.overwrite !== undefined) {
+      throw new InvalidCollectionError(
+        "The overwrite property is not supported for indexable collections",
+      );
+    }
+
     this.operations.asyncMutations.push(async () => {
       // Create id key from collection id key and id
       const collection = this.collection;
@@ -524,9 +530,10 @@ export class AtomicBuilder<
       const idKey = extendKey(collection._keys.id, docId);
 
       // Add set operation
-      this.operations.atomic
-        .check({ key: idKey, versionstamp: null })
-        .set(idKey, parsed, options);
+      this.operations.atomic.set(idKey, parsed, options);
+      if (!options?.overwrite) {
+        this.operations.atomic.check({ key: idKey, versionstamp: null });
+      }
 
       if (collection._isIndexable) {
         // Add collection id key for collision detection

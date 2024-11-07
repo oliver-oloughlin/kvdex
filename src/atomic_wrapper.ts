@@ -5,12 +5,12 @@ import {
   ATOMIC_OPERTION_CHECK_LIMIT,
 } from "./constants.ts";
 import type {
-  AtomicSetOptions,
   DenoAtomicCheck,
   DenoAtomicOperation,
   DenoKv,
   DenoKvCommitError,
   DenoKvCommitResult,
+  DenoKvSetOptions,
   DenoKvStrictKey,
 } from "./types.ts";
 
@@ -37,7 +37,7 @@ export class AtomicWrapper implements DenoAtomicOperation {
     this.currentKeySize = 0;
   }
 
-  set(key: DenoKvStrictKey, value: unknown, options?: AtomicSetOptions) {
+  set(key: DenoKvStrictKey, value: unknown, options?: DenoKvSetOptions) {
     this.addMutation((op) => op.set(key, value, options), 67, 2, false);
     return this;
   }

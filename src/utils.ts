@@ -1,11 +1,11 @@
 import { GET_MANY_KEY_LIMIT } from "./constants.ts";
 import type { Collection } from "./collection.ts";
 import type {
-  AtomicSetOptions,
   DenoAtomicOperation,
   DenoKv,
   DenoKvEntryMaybe,
   DenoKvListSelector,
+  DenoKvSetOptions,
   DenoKvStrictKey,
   Encoder,
   EnqueueOptions,
@@ -171,7 +171,7 @@ export async function setIndices(
   value: KvObject,
   atomic: DenoAtomicOperation,
   collection: Collection<any, any, any>,
-  options: AtomicSetOptions | undefined,
+  options: DenoKvSetOptions | undefined,
 ) {
   // Set primary indices using primary index list
   for (const index of collection._primaryIndexList) {
