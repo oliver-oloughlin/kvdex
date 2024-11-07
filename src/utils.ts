@@ -19,6 +19,7 @@ import type {
   ParsedQueueMessage,
   PreparedEnqueue,
   QueueMessage,
+  WatchManager,
   WatchOptions,
 } from "./types.ts";
 import { ulid } from "./deps.ts";
@@ -531,10 +532,7 @@ export function createWatcher(
   options: WatchOptions | undefined,
   keys: KvKey[],
   fn: (entries: DenoKvEntryMaybe[]) => unknown,
-): {
-  promise: Promise<void>;
-  cancel: () => Promise<void>;
-} {
+): WatchManager {
   // Create watch stream
   const stream = kv.watch(keys, options);
   const reader = stream.getReader();

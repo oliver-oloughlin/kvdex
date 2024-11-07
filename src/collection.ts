@@ -43,6 +43,7 @@ import type {
   UpdateOneOptions,
   UpdateOptions,
   UpdateStrategy,
+  WatchManager,
   WatchOptions,
 } from "./types.ts";
 import {
@@ -2132,10 +2133,7 @@ export class Collection<
     id: ParseId<TOptions>,
     fn: (doc: Document<TOutput, ParseId<TOptions>> | null) => unknown,
     options?: WatchOptions,
-  ): {
-    promise: Promise<void>;
-    cancel: () => Promise<void>;
-  } {
+  ): WatchManager {
     const key = extendKey(this._keys.id, id);
 
     return createWatcher(this.kv, options, [key], async (entries) => {
@@ -2193,10 +2191,7 @@ export class Collection<
     ids: ParseId<TOptions>[],
     fn: (doc: (Document<TOutput, ParseId<TOptions>> | null)[]) => unknown,
     options?: WatchOptions,
-  ): {
-    promise: Promise<void>;
-    cancel: () => Promise<void>;
-  } {
+  ): WatchManager {
     const keys = ids.map((id) => extendKey(this._keys.id, id));
 
     return createWatcher(this.kv, options, keys, async (entries) => {
