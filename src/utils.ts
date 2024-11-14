@@ -207,30 +207,17 @@ export async function checkIndices(
   atomic: DenoAtomicOperation,
   collection: Collection<any, any, any>,
 ) {
-  // Check primary indices using primary index list
-  for (const index of collection._primaryIndexList) {
-    // Get the index value from data, if undefined continue to next index
-    const indexValue = data[index] as KvId | undefined;
-    if (typeof indexValue === "undefined") {
-      continue;
-    }
-
-    // Serialize and compress
-    const encoded = await encodeData(indexValue, collection._encoder);
-
-    // Create the index key
-    const indexKey = extendKey(
-      collection._keys.primaryIndex,
-      index,
-      encoded,
-    );
-
-    // Check for existing index entry
-    atomic.check({
-      key: indexKey,
-      versionstamp: null,
-    });
-  }
+  await handleIndices(
+    null,
+    data,
+    collection,
+    (primaryIndexKey) => {
+      atomic.check({
+        key: primaryIndexKey,
+        versionstamp: null,
+      });
+    },
+  );
 }
 
 /**
@@ -248,46 +235,13 @@ export async function deleteIndices(
   atomic: DenoAtomicOperation,
   collection: Collection<any, any, any>,
 ) {
-  // Delete primary indices using primary index list
-  for (const index of collection._primaryIndexList) {
-    // Get the index value from data, if undefined continue to next index
-    const indexValue = data[index] as KvId | undefined;
-    if (typeof indexValue === "undefined") continue;
-
-    // Serialize and compress
-    const encoded = await encodeData(indexValue, collection._encoder);
-
-    // Create the index key
-    const indexKey = extendKey(
-      collection._keys.primaryIndex,
-      index,
-      encoded,
-    );
-
-    // Add index deletion to atomic operation
-    atomic.delete(indexKey);
-  }
-
-  // Delete seocndary indices using secondary index list
-  for (const index of collection._secondaryIndexList) {
-    // Get the index value from data, if undefined continue to next index
-    const indexValue = data[index] as KvId | undefined;
-    if (typeof indexValue === "undefined") continue;
-
-    // Serialize and compress
-    const encoded = await encodeData(indexValue, collection._encoder);
-
-    // Create the index key
-    const indexKey = extendKey(
-      collection._keys.secondaryIndex,
-      index,
-      encoded,
-      id,
-    );
-
-    // Add index deletion to atomic operation
-    atomic.delete(indexKey);
-  }
+  await handleIndices(
+    id,
+    data,
+    collection,
+    (primaryIndexKey) => atomic.delete(primaryIndexKey),
+    (secondaryIndexKey) => atomic.delete(secondaryIndexKey),
+  );
 }
 
 /**
@@ -534,12 +488,12 @@ export function createWatcher(
 }
 
 async function handleIndices(
-  id: KvId,
+  id: KvId | null,
   data: KvObject,
   collection: Collection<any, any, any>,
-  primary: (indexKey: KvKey) => unknown,
-  secondary?: (indexKey: KvKey) => unknown,
-) {
+  primary: (indexKey: KvKey) => void,
+  secondary?: (indexKey: KvKey) => void,
+): Promise<void> {
   // Handle primary indices
   for (const index of collection._primaryIndexList) {
     const indexValue = data[index] as KvId | undefined;
@@ -553,10 +507,10 @@ async function handleIndices(
       encoded,
     );
 
-    await primary(indexKey);
+    primary(indexKey);
   }
 
-  if (!secondary) {
+  if (!secondary || !id) {
     return;
   }
 
@@ -574,6 +528,6 @@ async function handleIndices(
       id,
     );
 
-    await secondary(indexKey);
+    secondary(indexKey);
   }
 }
