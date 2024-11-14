@@ -173,55 +173,25 @@ export async function setIndices(
   collection: Collection<any, any, any>,
   options: DenoKvSetOptions | undefined,
 ) {
-  // Set primary indices using primary index list
-  for (const index of collection._primaryIndexList) {
-    // Get the index value from data, if undefined continue to next index
-    const indexValue = data[index] as KvId | undefined;
-    if (typeof indexValue === "undefined") continue;
+  await handleIndices(
+    id,
+    data,
+    collection,
+    (primaryIndexKey) => {
+      const indexEntry: IndexDataEntry<KvObject> = {
+        ...value,
+        __id__: id,
+      };
 
-    // Serialize and compress
-    const encoded = await encodeData(indexValue, collection._encoder);
-
-    // Create the index key
-    const indexKey = extendKey(
-      collection._keys.primaryIndex,
-      index,
-      encoded,
-    );
-
-    // Create the index document value
-    const indexEntry: IndexDataEntry<KvObject> = {
-      ...value,
-      __id__: id,
-    };
-
-    // Add index insertion to atomic operation, check for exisitng indices
-    atomic.set(indexKey, indexEntry, options).check({
-      key: indexKey,
-      versionstamp: null,
-    });
-  }
-
-  // Set secondary indices using secondary index list
-  for (const index of collection._secondaryIndexList) {
-    // Get the index value from data, if undefined continue to next index
-    const indexValue = data[index] as KvId | undefined;
-    if (typeof indexValue === "undefined") continue;
-
-    // Serialize and compress
-    const encoded = await encodeData(indexValue, collection._encoder);
-
-    // Create the index key
-    const indexKey = extendKey(
-      collection._keys.secondaryIndex,
-      index,
-      encoded,
-      id,
-    );
-
-    // Add index insertion to atomic operation, check for exisitng indices
-    atomic.set(indexKey, value, options);
-  }
+      atomic.set(primaryIndexKey, indexEntry, options).check({
+        key: primaryIndexKey,
+        versionstamp: null,
+      });
+    },
+    (secondaryIndexKey) => {
+      atomic.set(secondaryIndexKey, value, options);
+    },
+  );
 }
 
 /**
@@ -561,4 +531,49 @@ export function createWatcher(
   }
 
   return { promise: promise(), cancel };
+}
+
+async function handleIndices(
+  id: KvId,
+  data: KvObject,
+  collection: Collection<any, any, any>,
+  primary: (indexKey: KvKey) => unknown,
+  secondary?: (indexKey: KvKey) => unknown,
+) {
+  // Handle primary indices
+  for (const index of collection._primaryIndexList) {
+    const indexValue = data[index] as KvId | undefined;
+    if (typeof indexValue === "undefined") continue;
+
+    const encoded = await encodeData(indexValue, collection._encoder);
+
+    const indexKey = extendKey(
+      collection._keys.primaryIndex,
+      index,
+      encoded,
+    );
+
+    await primary(indexKey);
+  }
+
+  if (!secondary) {
+    return;
+  }
+
+  // Handle secondary indices
+  for (const index of collection._secondaryIndexList) {
+    const indexValue = data[index] as KvId | undefined;
+    if (typeof indexValue === "undefined") continue;
+
+    const encoded = await encodeData(indexValue, collection._encoder);
+
+    const indexKey = extendKey(
+      collection._keys.secondaryIndex,
+      index,
+      encoded,
+      id,
+    );
+
+    await secondary(indexKey);
+  }
 }
