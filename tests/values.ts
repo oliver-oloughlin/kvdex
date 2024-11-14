@@ -1,7 +1,5 @@
 import type { DenoKvU64, KvValue } from "../mod.ts";
 
-// TODO: Remove comments when Float16Array is supported
-
 export const TUndefined = undefined;
 export const TNull = null;
 export const TNaN = NaN;
@@ -20,7 +18,7 @@ export const TUint16Array = new Uint16Array([10, 20, 30]);
 export const TUint32Array = new Uint32Array([10, 20, 30]);
 export const TBigUint64Array = new BigUint64Array([10n, 20n, 30n]);
 export const TUint8ClampedArray = new Uint8ClampedArray([10, 20, 30]);
-//export const TFloat16Array = new Float16Array([10.203423878293472837429384]);
+// TODO: export const TFloat16Array = new Float16Array([10.203423878293472837429384]);
 export const TFloat32Array = new Float32Array([10.203423878293472837429384]);
 export const TFloat64Array = new Float64Array([10.203423878293472837429384]);
 export const TBuffer = new Uint8Array([10, 20, 30]).buffer;
@@ -75,7 +73,7 @@ export const TObject = {
   TUint32Array,
   TBigUint64Array,
   TUint8ClampedArray,
-  //TFloat16Array,
+  // TODO: TFloat16Array,
   TFloat32Array,
   TFloat64Array,
   TBuffer,
@@ -108,7 +106,7 @@ export const VALUES = [
   TUint32Array,
   TBigUint64Array,
   TUint8ClampedArray,
-  //TFloat16Array,
+  // TODO: TFloat16Array,
   TFloat32Array,
   TFloat64Array,
   TBuffer,
