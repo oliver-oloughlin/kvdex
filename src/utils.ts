@@ -137,7 +137,7 @@ export function isKvObject(value: unknown) {
     value instanceof Uint32Array ||
     value instanceof BigUint64Array ||
     value instanceof Uint8ClampedArray ||
-    value instanceof Float16Array ||
+    // TODO: value instanceof Float16Array ||
     value instanceof Float32Array ||
     value instanceof Float64Array ||
     value instanceof ArrayBuffer ||
