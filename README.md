@@ -177,8 +177,8 @@ const UserModel = z.object({
 
 ## Database
 
-`kvdex()` is used for creating a new database instance. It takes a Deno KV
-instance and a schema definition as arguments.
+`kvdex()` is used for creating a new database instance. It takes an options
+object which expects a Deno KV instance and a schema definition.
 
 ```ts
 import { kvdex, model, collection } from "@olli/kvdex"
@@ -186,21 +186,24 @@ import { jsonEncoder } from "@olli/kvdex/encoding/json"
 
 const kv = await Deno.openKv()
 
-const db = kvdex(kv, {
-  numbers: collection(model<number>()),
-  serializedStrings: collection(model<string>(), {
-    encoder: jsonEncoder()
-  }),
-  users: collection(UserModel, {
-    history: true,
-    indices: {
-      username: "primary" // unique
-      age: "secondary" // non-unique
+const db = kvdex({
+  kv: kv,
+  schema: {
+    numbers: collection(model<number>()),
+    serializedStrings: collection(model<string>(), {
+      encoder: jsonEncoder()
+    }),
+    users: collection(UserModel, {
+      history: true,
+      indices: {
+        username: "primary" // unique
+        age: "secondary" // non-unique
+      }
+    }),
+    // Nested collections
+    nested: {
+      strings: collection(model<string>()),
     }
-  }),
-  // Nested collections
-  nested: {
-    strings: collection(model<string>()),
   }
 })
 ```
@@ -231,10 +234,13 @@ import { collection, kvdex, model } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
-const db = kvdex(kv, {
-  users: collection(model<User>(), {
-    idGenerator: (user) => user.username,
-  }),
+const db = kvdex({
+  kv: kv,
+  schema: {
+    users: collection(model<User>(), {
+      idGenerator: (user) => user.username,
+    }),
+  },
 });
 ```
 
@@ -245,10 +251,13 @@ import { collection, kvdex, model } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
-const db = kvdex(kv, {
-  users: collection(model<User>(), {
-    idGenerator: () => crypto.randomUUID(),
-  }),
+const db = kvdex({
+  kv: kv,
+  schema: {
+    users: collection(model<User>(), {
+      idGenerator: () => crypto.randomUUID(),
+    }),
+  },
 });
 ```
 
@@ -264,13 +273,16 @@ import { collection, kvdex, model } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
-const db = kvdex(kv, {
-  users: collection(model<User>(), {
-    indices: {
-      username: "primary", // unique
-      age: "secondary", // non-unique
-    },
-  }),
+const db = kvdex({
+  kv: kv,
+  schema: {
+    users: collection(model<User>(), {
+      indices: {
+        username: "primary", // unique
+        age: "secondary", // non-unique
+      },
+    }),
+  },
 });
 ```
 
@@ -291,33 +303,36 @@ import { brotliCompression } from "@olli/kvdex/encoding/brotli"
 
 const kv = await Deno.openKv()
 
-const db = kvdex(kv, {
-  users: collection(model<User>(), {
-    // JSON-encoder without compression (best runtime compatibility)
-    encoder: jsonEncoder(),
+const db = kvdex({
+  kv: kv,
+  schema: {
+    users: collection(model<User>(), {
+        // JSON-encoder without compression (best runtime compatibility)
+        encoder: jsonEncoder(),
 
-    // JSON-encoder + Brotli compression (requires node:zlib built-in)
-    encoder: jsonEncoder({ compression: brotliCompression() }),
+        // JSON-encoder + Brotli compression (requires node:zlib built-in)
+        encoder: jsonEncoder({ compression: brotliCompression() }),
 
-    // V8-encoder without brotli compression (requires node:v8 built-in)
-    encoder: v8Encoder()
+        // V8-encoder without brotli compression (requires node:v8 built-in)
+        encoder: v8Encoder()
 
-    // V8-encoder + brotli compression (requires node:v8 and node:zlib built-in)
-    encoder: v8Encoder({ compression: brotliCompression() })
+        // V8-encoder + brotli compression (requires node:v8 and node:zlib built-in)
+        encoder: v8Encoder({ compression: brotliCompression() })
 
-    // Set custom serialize, deserialize, compress and decompress functions
-    encoder: {
-      serializer: {
-        serialize: ...,
-        deserialize: ...,
-      },
-      // optional
-      compressor: {
-        compress: ...,
-        decompress: ...,
-      }
-    }
-  }),
+        // Set custom serialize, deserialize, compress and decompress functions
+        encoder: {
+          serializer: {
+            serialize: ...,
+            deserialize: ...,
+          },
+          // optional
+          compressor: {
+            compress: ...,
+            decompress: ...,
+          }
+        }
+      }),
+  }
 })
 ```
 
@@ -330,10 +345,13 @@ import { collection, kvdex, model } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
-const db = kvdex(kv, {
-  users: collection(model<User>(), {
-    history: true,
-  }),
+const db = kvdex({
+  kv: kv,
+  schema: {
+    users: collection(model<User>(), {
+      history: true,
+    }),
+  },
 });
 ```
 
@@ -1559,18 +1577,18 @@ import { MapKv } from "@olli/kvdex/kv";
 
 // Create a database from a `MapKv` instance, using `Map` as it's backend by default.
 const kv = new MapKv(); // Equivalent to `new MapKv({ map: new Map() })`
-const db = kvdex(kv, {});
+const db = kvdex({ kv });
 ```
 
 ```ts
 import { kvdex } from "@olli/kvdex";
 import { MapKv, StorageAdapter } from "@olli/kvdex/kv";
 
-// Create an ephimeral database from a `MapKv` instance,
+// Create a temporary database from a `MapKv` instance,
 // explicitly using `localStorage` as it's backend.
 const map = new StorageAdapter(localStorage);
 const kv = new MapKv({ map, clearOnClose: true });
-const db = kvdex(kv, {});
+const db = kvdex({ kv });
 ```
 
 ## Blob Storage
@@ -1585,8 +1603,11 @@ import { collection, kvdex, model } from "@olli/kvdex"
 import { jsonEncoder } from "@olli/kvdex/encoding/json"
 
 const kv = await Deno.openKv()
-const db = kvdex(kv, {
-  blobs: collection(model<Uint8Array>(), { encoder: jsonEncoder() }),
+const db = kvdex({
+  kv: kv,
+  schema: {
+    blobs: collection(model<Uint8Array>(), { encoder: jsonEncoder() }),
+  }
 })
 
 const blob = // read from disk, etc.

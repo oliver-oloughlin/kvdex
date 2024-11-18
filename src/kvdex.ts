@@ -59,16 +59,19 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  *
  * const kv = await Deno.openKv()
  *
- * const db = kvdex(kv, {
- *   numbers: collection(model<number>()),
- *   u64s: collection(model<Deno.KvU64>()),
- *   serializedStrings: collection(model<string>(), { encoder: jsonEncoder() }),
- *   users: collection(model<User>(), {
- *     indices: {
- *       username: "primary",
- *       age: "secondary"
- *     }
- *   })
+ * const db = kvdex({
+ *   kv: kv,
+ *   schema: {
+ *     numbers: collection(model<number>()),
+ *     u64s: collection(model<Deno.KvU64>()),
+ *     serializedStrings: collection(model<string>(), { encoder: jsonEncoder() }),
+ *     users: collection(model<User>(), {
+ *       indices: {
+ *         username: "primary",
+ *         age: "secondary"
+ *       }
+ *     })
+ *   }
  * })
  * ```
  *
