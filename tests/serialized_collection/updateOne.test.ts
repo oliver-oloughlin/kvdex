@@ -1,5 +1,5 @@
 import { collection, kvdex, model } from "../../mod.ts";
-import { assert, assertEquals, assertNotEquals } from "../test.deps.ts";
+import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUser3, mockUserInvalid } from "../mocks.ts";
 import {
   generateNumbers,

@@ -1,4 +1,4 @@
-import { z } from "./deps.ts";
+import { z } from "zod";
 import type { KvArray, KvId, KvObject, KvValue } from "../../types.ts";
 
 const LazyKvValueSchema = z.lazy(() => KvValueSchema);

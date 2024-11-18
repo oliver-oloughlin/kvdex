@@ -1,5 +1,5 @@
 import type { Collection } from "./collection.ts";
-import type { DeepMergeOptions } from "./deps.ts";
+import type { DeepMergeOptions } from "@std/collections/deep-merge";
 import type { Document } from "./document.ts";
 
 /*********************/

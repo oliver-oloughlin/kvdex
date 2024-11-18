@@ -1,6 +1,5 @@
-import { assertEquals } from "../test.deps.ts";
+import { assert, assertEquals } from "@std/assert";
 import { VALUES } from "../values.ts";
-import { assert } from "../test.deps.ts";
 import {
   jsonDeserialize,
   jsonSerialize,

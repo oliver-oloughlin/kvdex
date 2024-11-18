@@ -1,4 +1,4 @@
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { createResolver, useDb } from "../utils.ts";
 
 Deno.test("db - setInterval", async (t) => {

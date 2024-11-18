@@ -1,5 +1,5 @@
 import { collection, kvdex, model } from "../../mod.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import type { User } from "../models.ts";
 import { generateLargeUsers, generateUsers, useKv } from "../utils.ts";
 import { jsonEncoder } from "../../src/ext/encoding/mod.ts";

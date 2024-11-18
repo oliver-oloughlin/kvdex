@@ -81,7 +81,9 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
 import { AtomicPool } from "./atomic_pool.ts";
 import { Document } from "./document.ts";
 import { model as m } from "./model.ts";
-import { concat, deepMerge, ulid } from "./deps.ts";
+import { deepMerge } from "@std/collections/deep-merge";
+import { concat } from "@std/bytes/concat";
+import { ulid } from "@std/ulid";
 
 /**
  * Create a new collection within a database context.

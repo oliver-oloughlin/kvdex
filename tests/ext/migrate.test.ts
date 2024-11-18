@@ -2,7 +2,7 @@ import { migrate } from "../../src/ext/migrate/mod.ts";
 import { collection } from "../../src/collection.ts";
 import { kvdex } from "../../src/kvdex.ts";
 import { model } from "../../src/model.ts";
-import { assert, assertEquals } from "../test.deps.ts";
+import { assert, assertEquals } from "@std/assert";
 import {
   TArray,
   TBigint,

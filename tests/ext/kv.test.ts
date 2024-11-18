@@ -1,6 +1,6 @@
 import { MapKv } from "../../src/ext/kv/map_kv.ts";
 import { StorageAdapter } from "../../src/ext/kv/mod.ts";
-import { assert, assertEquals } from "../test.deps.ts";
+import { assert, assertEquals } from "@std/assert";
 import { sleep } from "../utils.ts";
 
 async function useStore(fn: (store: StorageAdapter<any, any>) => unknown) {
