@@ -19,7 +19,7 @@ Deno.test("serialized_collection - types", async (t) => {
           ]),
         );
 
-        const db = kvdex(kv, schema);
+        const db = kvdex({ kv, schema });
 
         const crs = await Promise.all(VALUES.map((val, i) => db[i].add(val)));
         assert(crs.every((cr) => cr.ok));

@@ -612,11 +612,11 @@ export type PrimaryIndexUpsert<
   update: UpdateData<TOutput, TStrategy>;
 };
 
-/********************/
-/*                  */
-/*   SCHEMA TYPES   */
-/*                  */
-/********************/
+/*******************/
+/*                 */
+/*   KVDEX TYPES   */
+/*                 */
+/*******************/
 
 /** Schema definition, containing builder functions and nested schema definitions. */
 export type SchemaDefinition = {
@@ -626,10 +626,17 @@ export type SchemaDefinition = {
 };
 
 /** Built schema from schema definition */
-export type Schema<T extends SchemaDefinition> = {
-  [K in keyof T]: T[K] extends SchemaDefinition ? Schema<T[K]>
-    : T[K] extends BuilderFnAny ? ReturnType<T[K]>
-    : never;
+export type Schema<T extends SchemaDefinition | undefined> = T extends undefined
+  ? EmptyObject
+  : {
+    [K in keyof T]: T[K] extends SchemaDefinition ? Schema<T[K]>
+      : T[K] extends BuilderFnAny ? ReturnType<T[K]>
+      : never;
+  };
+
+export type KvdexOptions = {
+  kv: DenoKv;
+  schema?: SchemaDefinition;
 };
 
 /*******************/

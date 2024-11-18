@@ -13,7 +13,7 @@
  *
  * // Create a database from a `MapKv` instance, using `Map` as it's backend by default.
  * const kv = new MapKv()
- * const db = kvdex(kv, {})
+ * const db = kvdex({ kv })
  * ```
  *
  * @example
@@ -23,7 +23,7 @@
  *
  * // Create a database from a `MapKv` instance, explicitly using `Map` as it's backend.
  * const kv = new MapKv({ map: new Map() })
- * const db = kvdex(kv, {})
+ * const db = kvdex({ kv })
  * ```
  *
  * @example
@@ -34,7 +34,7 @@
  * // Create a database from a `MapKv` instance, using `localStorage` as it's backend by default.
  * const map = new StorageAdapter()
  * const kv = new MapKv({ map })
- * const db = kvdex(kv, {})
+ * const db = kvdex({ kv })
  * ```
  *
  * @example
@@ -45,7 +45,7 @@
  * // Create an ephimeral database from a `MapKv` instance, explicitly using `localStorage` as it's backend.
  * const map = new StorageAdapter(localStorage)
  * const kv = new MapKv({ map, clearOnClose: true })
- * const db = kvdex(kv, {})
+ * const db = kvdex({ kv })
  * ```
  */
 

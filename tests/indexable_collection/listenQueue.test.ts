@@ -20,8 +20,9 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
       const data = "data";
       const undeliveredId = "id";
 
-      const db = kvdex(kv, {
-        i_users: collection(model<User>(), { indices: {} }),
+      const db = kvdex({
+        kv,
+        schema: { i_users: collection(model<User>(), { indices: {} }) },
       });
 
       const sleeper = createResolver();
@@ -60,8 +61,9 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
 
   await t.step("Should not receive db queue message", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        i_users: collection(model<User>(), { indices: {} }),
+      const db = kvdex({
+        kv,
+        schema: { i_users: collection(model<User>(), { indices: {} }) },
       });
 
       let assertion = true;

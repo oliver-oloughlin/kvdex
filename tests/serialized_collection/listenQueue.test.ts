@@ -20,8 +20,9 @@ Deno.test("serialized_collection - listenQueue", async (t) => {
       const data = "data";
       const undeliveredId = "id";
 
-      const db = kvdex(kv, {
-        s_users: collection(model<User>()),
+      const db = kvdex({
+        kv,
+        schema: { s_users: collection(model<User>()) },
       });
 
       const sleeper = createResolver();
@@ -61,8 +62,9 @@ Deno.test("serialized_collection - listenQueue", async (t) => {
 
   await t.step("Should not receive db queue message", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        l_users: collection(model<User>()),
+      const db = kvdex({
+        kv,
+        schema: { l_users: collection(model<User>()) },
       });
 
       let assertion = true;

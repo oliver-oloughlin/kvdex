@@ -9,6 +9,7 @@ import type {
   FindOptions,
   IntervalMessage,
   IntervalSetter,
+  KvdexOptions,
   KvId,
   KvKey,
   KvValue,
@@ -58,16 +59,19 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  *
  * const kv = await Deno.openKv()
  *
- * const db = kvdex(kv, {
- *   numbers: collection(model<number>()),
- *   u64s: collection(model<Deno.KvU64>()),
- *   serializedStrings: collection(model<string>(), { encoder: jsonEncoder() }),
- *   users: collection(model<User>(), {
- *     indices: {
- *       username: "primary",
- *       age: "secondary"
- *     }
- *   })
+ * const db = kvdex({
+ *   kv: kv,
+ *   schema: {
+ *     numbers: collection(model<number>()),
+ *     u64s: collection(model<Deno.KvU64>()),
+ *     serializedStrings: collection(model<string>(), { encoder: jsonEncoder() }),
+ *     users: collection(model<User>(), {
+ *       indices: {
+ *         username: "primary",
+ *         age: "secondary"
+ *       }
+ *     })
+ *   }
  * })
  * ```
  *
@@ -75,10 +79,9 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  * @param schemaDefinition - The schema definition used to build collections and create the database schema.
  * @returns A Kvdex instance with attached schema.
  */
-export function kvdex<const T extends SchemaDefinition>(
-  kv: DenoKv,
-  schemaDefinition: T,
-): Kvdex<Schema<T>> & Schema<T> {
+export function kvdex<const T extends KvdexOptions>(
+  options: T,
+): Kvdex<Schema<T["schema"]>> & Schema<T["schema"]> {
   // Set listener activated flag and queue handlers map
   let listener: Promise<void>;
   const queueHandlers = new Map<string, QueueMessageHandler<KvValue>[]>();
@@ -88,7 +91,7 @@ export function kvdex<const T extends SchemaDefinition>(
     // Create new queue listener if not already created
     if (!listener) {
       // Add queue listener
-      listener = kv.listenQueue(async (msg) => {
+      listener = options.kv.listenQueue(async (msg) => {
         // Parse queue message
         const parsed = parseQueueMessage(msg);
         if (!parsed.ok) {
@@ -110,14 +113,19 @@ export function kvdex<const T extends SchemaDefinition>(
 
   // Create schema
   const schema = _createSchema(
-    schemaDefinition,
-    kv,
+    options.schema ?? {},
+    options.kv,
     queueHandlers,
     idempotentListener,
-  ) as Schema<T>;
+  ) as Schema<T["schema"]>;
 
   // Create KvDex object
-  const db = new Kvdex(kv, schema, queueHandlers, idempotentListener);
+  const db = new Kvdex(
+    options.kv,
+    schema,
+    queueHandlers,
+    idempotentListener,
+  );
 
   // Return schema and db combination
   return Object.assign(db, schema);
@@ -589,13 +597,13 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
  * @param treeKey - The current tree key.
  * @returns
  */
-function _createSchema<const T extends SchemaDefinition>(
-  def: T,
+function _createSchema(
+  def: SchemaDefinition,
   kv: DenoKv,
   queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>,
   idempotentListener: () => Promise<void>,
   treeKey?: KvKey,
-): Schema<T> {
+): Schema<SchemaDefinition> {
   // Get all the definition entries
   const entries = Object.entries(def);
 
@@ -620,7 +628,7 @@ function _createSchema<const T extends SchemaDefinition>(
   const schema = Object.fromEntries(schemaEntries);
 
   // Return the built schema object
-  return schema as Schema<T>;
+  return schema;
 }
 
 /**

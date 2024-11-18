@@ -96,16 +96,21 @@ import { concat, deepMerge, ulid } from "./deps.ts";
  *   age: number
  * }
  *
- * const db = kvdex(kv, {
- *   numbers: collection(model<number>()),
- *   users: collection(model<User>(), {
- *     idGenerator: () => crypto.randomUUID(),
- *     encoder: jsonEncoder(),
- *     indices: {
- *       username: "primary",
- *       age: "secondary"
- *     }
- *   })
+ * const kv = await Deno.openKv()
+ *
+ * const db = kvdex({
+ *   kv: kv,
+ *   schema: {
+ *     numbers: collection(model<number>()),
+ *     users: collection(model<User>(), {
+ *       idGenerator: () => crypto.randomUUID(),
+ *       encoder: jsonEncoder(),
+ *       indices: {
+ *         username: "primary",
+ *         age: "secondary"
+ *       }
+ *     })
+ *   }
  * })
  * ```
  *

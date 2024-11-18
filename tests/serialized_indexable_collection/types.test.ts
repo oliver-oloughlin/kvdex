@@ -9,14 +9,17 @@ Deno.test("serialized_indexable_collection - types", async (t) => {
     "Should allow and properly store/retrieve all KvValue types",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          objects: collection(model<typeof TObject>(), {
-            encoder: jsonEncoder(),
-            indices: {
-              TString: "primary",
-              TNumber: "secondary",
-            },
-          }),
+        const db = kvdex({
+          kv,
+          schema: {
+            objects: collection(model<typeof TObject>(), {
+              encoder: jsonEncoder(),
+              indices: {
+                TString: "primary",
+                TNumber: "secondary",
+              },
+            }),
+          },
         });
 
         const cr = await db.objects.add(TObject);

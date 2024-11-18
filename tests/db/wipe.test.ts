@@ -9,21 +9,24 @@ Deno.test("db - wipe", async (t) => {
     "Should delete all kvdex entries from the database, including history entries",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          i_users: collection(model<User>(), {
-            history: true,
-            indices: {
-              username: "primary",
-              age: "secondary",
-            },
-          }),
-          s_users: collection(model<User>(), {
-            encoder: jsonEncoder(),
-            history: true,
-          }),
-          u64s: collection(model<Deno.KvU64>(), {
-            history: true,
-          }),
+        const db = kvdex({
+          kv,
+          schema: {
+            i_users: collection(model<User>(), {
+              history: true,
+              indices: {
+                username: "primary",
+                age: "secondary",
+              },
+            }),
+            s_users: collection(model<User>(), {
+              encoder: jsonEncoder(),
+              history: true,
+            }),
+            u64s: collection(model<Deno.KvU64>(), {
+              history: true,
+            }),
+          },
         });
 
         const users = generateUsers(100);
