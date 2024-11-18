@@ -42,15 +42,18 @@ const kvArray = ["test", 10, true, 10n];
 Deno.test("ext - zod", async (t) => {
   await t.step("Should correctly parse insert model", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        users: collection(UserSchema),
-        i_users: collection(UserSchema, {
-          indices: {
-            username: "primary",
-            age: "secondary",
-          },
-        }),
-        s_users: collection(UserSchema, { encoder: testEncoder }),
+      const db = kvdex({
+        kv,
+        schema: {
+          users: collection(UserSchema),
+          i_users: collection(UserSchema, {
+            indices: {
+              username: "primary",
+              age: "secondary",
+            },
+          }),
+          s_users: collection(UserSchema, { encoder: testEncoder }),
+        },
       });
 
       const cr1 = await db.users.add({
@@ -87,15 +90,18 @@ Deno.test("ext - zod", async (t) => {
     "Should use base model when typing selected documents",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          users: collection(UserSchema),
-          i_users: collection(UserSchema, {
-            indices: {
-              username: "primary",
-              age: "secondary",
-            },
-          }),
-          l_users: collection(UserSchema),
+        const db = kvdex({
+          kv,
+          schema: {
+            users: collection(UserSchema),
+            i_users: collection(UserSchema, {
+              indices: {
+                username: "primary",
+                age: "secondary",
+              },
+            }),
+            l_users: collection(UserSchema),
+          },
         });
 
         // Default values should not be inferred as optional when selecting

@@ -123,10 +123,13 @@ Deno.test("serialized_collection - updateMany", async (t) => {
     "Should update 1000 documents of type Array, Set and Map using merge",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          arrays: collection(model<number[]>()),
-          sets: collection(model<Set<number>>()),
-          maps: collection(model<Map<string, number>>()),
+        const db = kvdex({
+          kv,
+          schema: {
+            arrays: collection(model<number[]>()),
+            sets: collection(model<Set<number>>()),
+            maps: collection(model<Map<string, number>>()),
+          },
         });
 
         const val1 = [1, 2, 4];
@@ -197,10 +200,13 @@ Deno.test("serialized_collection - updateMany", async (t) => {
     "Should update 1000 documents of types primitive and built-in object using replace",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          numbers: collection(model<number>()),
-          strings: collection(model<string>()),
-          dates: collection(model<Date>()),
+        const db = kvdex({
+          kv,
+          schema: {
+            numbers: collection(model<number>()),
+            strings: collection(model<string>()),
+            dates: collection(model<Date>()),
+          },
         });
 
         const numbers = generateNumbers(1_000);

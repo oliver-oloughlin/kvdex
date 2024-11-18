@@ -37,7 +37,7 @@ Deno.test("db - loop", async (t) => {
     "Should run loop for 10 iterations and carry accumulated result",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {});
+        const db = kvdex({ kv });
         const { resolve, promise } = createResolver();
         let count = 0;
 

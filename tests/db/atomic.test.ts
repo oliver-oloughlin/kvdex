@@ -308,8 +308,9 @@ Deno.test("db - atomic", async (t) => {
       const data = "data";
       const undeliveredId = "undelivered";
 
-      const db = kvdex(kv, {
-        numbers: collection(model<number>()),
+      const db = kvdex({
+        kv,
+        schema: { numbers: collection(model<number>()) },
       });
 
       const handlerId = createHandlerId(db.numbers._keys.base, undefined);
@@ -409,8 +410,9 @@ Deno.test("db - atomic", async (t) => {
 
   await t.step("Should retain history in correct order", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        numbers: collection(model<number>(), { history: true }),
+      const db = kvdex({
+        kv,
+        schema: { numbers: collection(model<number>(), { history: true }) },
       });
 
       const id = "id";

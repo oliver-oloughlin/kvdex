@@ -11,62 +11,65 @@ export const testEncoder = jsonEncoder({
 
 // Create test db
 export function createDb(kv: DenoKv) {
-  return kvdex(kv, {
-    u64s: collection(model<DenoKvU64>()),
-    s_u64s: collection(model<DenoKvU64>(), {
-      encoder: testEncoder,
-    }),
-    users: collection(model<User>()),
-    i_users: collection(model<User>(), {
-      indices: {
-        username: "primary",
-        age: "secondary",
-      },
-    }),
-    s_users: collection(model<User>(), {
-      encoder: testEncoder,
-    }),
-    is_users: collection(model<User>(), {
-      indices: {
-        username: "primary",
-        age: "secondary",
-      },
-      encoder: testEncoder,
-    }),
-    z_users: collection(UserSchema),
-    zi_users: collection(UserSchema, {
-      indices: {
-        username: "primary",
-        age: "secondary",
-      },
-    }),
-    zs_users: collection(UserSchema, {
-      encoder: testEncoder,
-    }),
-    zis_users: collection(UserSchema, {
-      indices: {
-        username: "primary",
-        age: "secondary",
-      },
-      encoder: testEncoder,
-    }),
-    a_users: collection(TransformUserModel),
-    ai_users: collection(TransformUserModel, {
-      indices: {
-        name: "primary",
-        decadeAge: "secondary",
-      },
-    }),
-    as_users: collection(TransformUserModel, {
-      encoder: testEncoder,
-    }),
-    ais_users: collection(TransformUserModel, {
-      indices: {
-        name: "primary",
-        decadeAge: "secondary",
-      },
-      encoder: testEncoder,
-    }),
+  return kvdex({
+    kv,
+    schema: {
+      u64s: collection(model<DenoKvU64>()),
+      s_u64s: collection(model<DenoKvU64>(), {
+        encoder: testEncoder,
+      }),
+      users: collection(model<User>()),
+      i_users: collection(model<User>(), {
+        indices: {
+          username: "primary",
+          age: "secondary",
+        },
+      }),
+      s_users: collection(model<User>(), {
+        encoder: testEncoder,
+      }),
+      is_users: collection(model<User>(), {
+        indices: {
+          username: "primary",
+          age: "secondary",
+        },
+        encoder: testEncoder,
+      }),
+      z_users: collection(UserSchema),
+      zi_users: collection(UserSchema, {
+        indices: {
+          username: "primary",
+          age: "secondary",
+        },
+      }),
+      zs_users: collection(UserSchema, {
+        encoder: testEncoder,
+      }),
+      zis_users: collection(UserSchema, {
+        indices: {
+          username: "primary",
+          age: "secondary",
+        },
+        encoder: testEncoder,
+      }),
+      a_users: collection(TransformUserModel),
+      ai_users: collection(TransformUserModel, {
+        indices: {
+          name: "primary",
+          decadeAge: "secondary",
+        },
+      }),
+      as_users: collection(TransformUserModel, {
+        encoder: testEncoder,
+      }),
+      ais_users: collection(TransformUserModel, {
+        indices: {
+          name: "primary",
+          decadeAge: "secondary",
+        },
+        encoder: testEncoder,
+      }),
+    },
   });
 }
 

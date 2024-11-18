@@ -17,8 +17,9 @@ Deno.test("db - enqueue", async (t) => {
       const undeliveredId = "undelivered";
       const sleeper = createResolver();
 
-      const db = kvdex(kv, {
-        numbers: collection(model<number>()),
+      const db = kvdex({
+        kv,
+        schema: { numbers: collection(model<number>()) },
       });
 
       const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined);
@@ -51,8 +52,9 @@ Deno.test("db - enqueue", async (t) => {
       const topic = "topic";
       const sleeper = createResolver();
 
-      const db = kvdex(kv, {
-        numbers: collection(model<number>()),
+      const db = kvdex({
+        kv,
+        schema: { numbers: collection(model<number>()) },
       });
 
       let assertion1 = false;
@@ -88,8 +90,9 @@ Deno.test("db - enqueue", async (t) => {
       const undeliveredId = "undelivered";
       const sleeper = createResolver();
 
-      const db = kvdex(kv, {
-        numbers: collection(model<number>()),
+      const db = kvdex({
+        kv,
+        schema: { numbers: collection(model<number>()) },
       });
 
       const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined);

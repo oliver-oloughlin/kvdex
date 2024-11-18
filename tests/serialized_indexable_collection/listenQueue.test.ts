@@ -22,11 +22,14 @@ Deno.test("serialized_indexable_collection - listenQueue", async (t) => {
       const undeliveredId = "id";
       const sleeper = createResolver();
 
-      const db = kvdex(kv, {
-        is_users: collection(model<User>(), {
-          indices: {},
-          encoder: jsonEncoder(),
-        }),
+      const db = kvdex({
+        kv,
+        schema: {
+          is_users: collection(model<User>(), {
+            indices: {},
+            encoder: jsonEncoder(),
+          }),
+        },
       });
 
       const handlerId = createHandlerId(db.is_users._keys.base, undefined);
@@ -65,11 +68,14 @@ Deno.test("serialized_indexable_collection - listenQueue", async (t) => {
 
   await t.step("Should not receive db queue message", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        is_users: collection(model<User>(), {
-          indices: {},
-          encoder: jsonEncoder(),
-        }),
+      const db = kvdex({
+        kv,
+        schema: {
+          is_users: collection(model<User>(), {
+            indices: {},
+            encoder: jsonEncoder(),
+          }),
+        },
       });
 
       let assertion = true;

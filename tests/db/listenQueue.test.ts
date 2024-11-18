@@ -14,7 +14,7 @@ Deno.test("db - listenQueue", async (t) => {
   await t.step("Should receive message with string data", async () => {
     await useKv(async (kv) => {
       const data = "data";
-      const db = kvdex(kv, {});
+      const db = kvdex({ kv });
       const sleeper = createResolver();
 
       const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined);
@@ -45,8 +45,9 @@ Deno.test("db - listenQueue", async (t) => {
     await useKv(async (kv) => {
       const data = "data";
 
-      const db = kvdex(kv, {
-        numbers: collection(model<number>()),
+      const db = kvdex({
+        kv,
+        schema: { numbers: collection(model<number>()) },
       });
 
       let assertion = true;

@@ -20,8 +20,11 @@ Deno.test("collection - listenQueue", async (t) => {
       const undeliveredId = "id";
       const sleeper = createResolver();
 
-      const db = kvdex(kv, {
-        numbers: collection(model<number>()),
+      const db = kvdex({
+        kv,
+        schema: {
+          numbers: collection(model<number>()),
+        },
       });
 
       const handlerId = createHandlerId(db.numbers._keys.base, undefined);
@@ -60,8 +63,9 @@ Deno.test("collection - listenQueue", async (t) => {
 
   await t.step("Should not receive db queue message", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        numbers: collection(model<number>()),
+      const db = kvdex({
+        kv,
+        schema: { numbers: collection(model<number>()) },
       });
 
       let assertion = true;

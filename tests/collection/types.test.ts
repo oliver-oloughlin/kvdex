@@ -15,7 +15,7 @@ Deno.test("collection - types", async (t) => {
           ) => [i, collection(model<typeof val>())]),
         );
 
-        const db = kvdex(kv, schema);
+        const db = kvdex({ kv, schema });
 
         const crs = await Promise.all(VALUES.map((val, i) => db[i].add(val)));
         assert(crs.every((cr) => cr.ok));
