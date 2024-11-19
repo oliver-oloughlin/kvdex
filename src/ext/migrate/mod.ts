@@ -33,7 +33,7 @@
  */
 
 // Imports
-import { parseArgs } from "./deps.ts";
+import { parseArgs } from "@std/cli/parse-args";
 import { migrate } from "./migrate.ts";
 import { NoKvFoundError } from "./errors.ts";
 

@@ -1,5 +1,6 @@
 import { Document, model } from "../../mod.ts";
-import { assert, z } from "../test.deps.ts";
+import { assert } from "@std/assert";
+import { z } from "zod";
 
 Deno.test("document - properties", async (t) => {
   await t.step("Should create document with Model", () => {

@@ -1,6 +1,5 @@
-import { assertEquals } from "../test.deps.ts";
+import { assert, assertEquals } from "@std/assert";
 import { VALUES } from "../values.ts";
-import { assert } from "../test.deps.ts";
 import {
   jsonDeserialize,
   jsonSerialize,
@@ -21,9 +20,11 @@ Deno.test("ext - encoder", async (t) => {
     await t.step(
       "Should successfully deserialize all KvValue type values from Uint8Array",
       () => {
-        const serialized = VALUES.map(jsonSerialize);
-        const deserialized = serialized.map(jsonDeserialize);
-        assertEquals(VALUES, deserialized);
+        VALUES.forEach((val) => {
+          const seralized = jsonSerialize(val);
+          const deserialized = jsonDeserialize(seralized);
+          assertEquals(val, deserialized);
+        });
       },
     );
   });
@@ -48,15 +49,15 @@ Deno.test("ext - encoder", async (t) => {
     await t.step(
       "Should successfully deserialize all KvValue type values from Uint8Array",
       () => {
-        const serialized = VALUES.map(v8Serialize);
-        const deserialized = serialized.map((val) => {
+        VALUES.forEach((val) => {
+          const serialized = v8Serialize(val);
           try {
-            return v8Deserialize(val);
+            const deserialized = v8Deserialize(serialized);
+            assertEquals(val, deserialized);
           } catch (e) {
             throw new Error(`Failed to deserialize value: ${val}, Error: ${e}`);
           }
         });
-        assertEquals(VALUES, deserialized);
       },
     );
   });

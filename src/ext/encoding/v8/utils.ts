@@ -1,6 +1,6 @@
 import type { KvObject } from "../../../types.ts";
 import { isKvObject } from "../../../utils.ts";
-import { deserialize, serialize } from "./deps.ts";
+import { deserialize, serialize } from "node:v8";
 
 /**
  * Extended V8 serialize.

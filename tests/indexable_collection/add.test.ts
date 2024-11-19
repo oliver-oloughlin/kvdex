@@ -1,4 +1,4 @@
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { mockUser1, mockUserInvalid } from "../mocks.ts";
 import { useDb } from "../utils.ts";
 

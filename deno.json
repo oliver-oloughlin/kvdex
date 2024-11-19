@@ -1,6 +1,6 @@
 {
   "name": "@olli/kvdex",
-  "version": "3.0.0-rc.2",
+  "version": "3.0.0",
   "exports": {
     ".": "./mod.ts",
     "./zod": "./src/ext/zod/mod.ts",
@@ -29,5 +29,14 @@
   },
   "bench": {
     "include": ["./benchmarks"]
+  },
+  "imports": {
+    "@deno/kv": "npm:@deno/kv@^0.8.4",
+    "@std/assert": "jsr:@std/assert@1.0.7",
+    "@std/bytes": "jsr:@std/bytes@^1.0.4",
+    "@std/cli": "jsr:@std/cli@^1.0.6",
+    "@std/collections": "jsr:@std/collections@^1.0.9",
+    "@std/ulid": "jsr:@std/ulid@^1.0.0",
+    "zod": "npm:zod@^3.23.8"
   }
 }

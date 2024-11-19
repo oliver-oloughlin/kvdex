@@ -10,7 +10,8 @@ dependencies by default. It's purpose is to enhance the experience of using
 Deno's KV store through additional features such as indexing, strongly typed
 collections and serialization/compression, while maintaining as much of the
 native functionality as possible, like atomic operations, real-time data updates
-and queue listeners. Also works with other runtimes such as Node.js and Bun.
+and queue listeners. Also works with other runtimes such as Node.js and Bun, and
+has compatibility options for the browser.
 
 _Supported Deno verisons:_ **^1.43.0**
 

@@ -12,7 +12,7 @@ import {
   SECONDARY_INDEX_KEY_PREFIX,
 } from "../../src/constants.ts";
 import { extendKey, keyEq } from "../../src/utils.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import type { User } from "../models.ts";
 import { generateLargeUsers, useDb, useKv } from "../utils.ts";
 import { mockUser1 } from "../mocks.ts";

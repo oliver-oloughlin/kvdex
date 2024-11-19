@@ -22,7 +22,7 @@ import type {
   WatchManager,
   WatchOptions,
 } from "./types.ts";
-import { ulid } from "./deps.ts";
+import { ulid } from "@std/ulid";
 import { jsonEncoder } from "./ext/encoding/mod.ts";
 
 /**

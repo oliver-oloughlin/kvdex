@@ -6,7 +6,7 @@ import {
   type QueueMessage,
 } from "../../mod.ts";
 import { createHandlerId } from "../../src/utils.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { createResolver, useDb, useKv } from "../utils.ts";
 
 Deno.test("collection - enqueue", async (t) => {

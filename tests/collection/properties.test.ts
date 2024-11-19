@@ -1,7 +1,7 @@
 import { collection, type Document, kvdex, model } from "../../mod.ts";
 import { ID_KEY_PREFIX, KVDEX_KEY_PREFIX } from "../../src/constants.ts";
 import { extendKey, keyEq } from "../../src/utils.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts";
 import type { User } from "../models.ts";
 import { generateUsers, useDb, useKv } from "../utils.ts";

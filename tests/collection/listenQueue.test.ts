@@ -10,7 +10,7 @@ import {
   UNDELIVERED_KEY_PREFIX,
 } from "../../src/constants.ts";
 import { createHandlerId, extendKey } from "../../src/utils.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { createResolver, sleep, useKv } from "../utils.ts";
 
 Deno.test("collection - listenQueue", async (t) => {
