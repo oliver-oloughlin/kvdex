@@ -6,7 +6,7 @@ import {
   type QueueMessage,
 } from "../../mod.ts";
 import { createHandlerId } from "../../src/utils.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { createResolver, useDb, useKv } from "../utils.ts";
 
 Deno.test("collection - enqueue", async (t) => {
@@ -16,8 +16,9 @@ Deno.test("collection - enqueue", async (t) => {
       const undeliveredId = "undelivered";
       const sleeper = createResolver();
 
-      const db = kvdex(kv, {
-        numbers: collection(model<number>()),
+      const db = kvdex({
+        kv,
+        schema: { numbers: collection(model<number>()) },
       });
 
       const handlerId = createHandlerId(db.numbers._keys.base, undefined);

@@ -1,5 +1,5 @@
 import { collection, kvdex, model } from "../../mod.ts";
-import { assert, assertEquals } from "../test.deps.ts";
+import { assert, assertEquals } from "@std/assert";
 import { useKv } from "../utils.ts";
 import { VALUES } from "../values.ts";
 
@@ -15,7 +15,7 @@ Deno.test("collection - types", async (t) => {
           ) => [i, collection(model<typeof val>())]),
         );
 
-        const db = kvdex(kv, schema);
+        const db = kvdex({ kv, schema });
 
         const crs = await Promise.all(VALUES.map((val, i) => db[i].add(val)));
         assert(crs.every((cr) => cr.ok));

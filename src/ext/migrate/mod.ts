@@ -20,7 +20,7 @@
  * Optionally pass `all: true` to migrate all entries.
  *
  * ```ts
- * import { migrate } from "jsr:@olli/kvdex/migrate"
+ * import { migrate } from "@olli/kvdex/migrate"
  *
  * const source = await Deno.openKv("./source.sqlite3")
  * const target = await Deno.openKv("./target.sqlite3")
@@ -33,7 +33,7 @@
  */
 
 // Imports
-import { parseArgs } from "./deps.ts";
+import { parseArgs } from "@std/cli/parse-args";
 import { migrate } from "./migrate.ts";
 import { NoKvFoundError } from "./errors.ts";
 

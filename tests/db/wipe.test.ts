@@ -1,28 +1,32 @@
 import { collection, kvdex, model } from "../../mod.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import type { User } from "../models.ts";
 import { generateLargeUsers, generateUsers, useKv } from "../utils.ts";
+import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 Deno.test("db - wipe", async (t) => {
   await t.step(
     "Should delete all kvdex entries from the database, including history entries",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          i_users: collection(model<User>(), {
-            history: true,
-            indices: {
-              username: "primary",
-              age: "secondary",
-            },
-          }),
-          s_users: collection(model<User>(), {
-            serialize: "json",
-            history: true,
-          }),
-          u64s: collection(model<Deno.KvU64>(), {
-            history: true,
-          }),
+        const db = kvdex({
+          kv,
+          schema: {
+            i_users: collection(model<User>(), {
+              history: true,
+              indices: {
+                username: "primary",
+                age: "secondary",
+              },
+            }),
+            s_users: collection(model<User>(), {
+              encoder: jsonEncoder(),
+              history: true,
+            }),
+            u64s: collection(model<Deno.KvU64>(), {
+              history: true,
+            }),
+          },
         });
 
         const users = generateUsers(100);

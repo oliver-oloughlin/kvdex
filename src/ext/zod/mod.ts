@@ -11,7 +11,7 @@
  *
  * ```ts
  * import { z } from "npm:zod"
- * import { KvIdSchema } from "jsr:@olli/kvdex/zod"
+ * import { KvIdSchema } from "@olli/kvdex/zod"
  *
  * const UserSchema = z.object({
  *   username: z.string(),

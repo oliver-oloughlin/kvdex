@@ -1,4 +1,4 @@
-import { assert, assertEquals } from "../test.deps.ts";
+import { assert, assertEquals } from "@std/assert";
 import {
   mockUser1,
   mockUser2,
@@ -8,6 +8,7 @@ import {
 import { generateUsers, useDb } from "../utils.ts";
 import type { User } from "../models.ts";
 
+// TODO: fix update document deleting indices even when failing to update document
 Deno.test.ignore(
   "serialized_indexable_collection - updateManyBySecondaryOrder",
   async (t) => {

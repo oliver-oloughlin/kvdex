@@ -10,7 +10,7 @@ import {
   UNDELIVERED_KEY_PREFIX,
 } from "../../src/constants.ts";
 import { createHandlerId, extendKey } from "../../src/utils.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import type { User } from "../models.ts";
 import { createResolver, sleep, useKv } from "../utils.ts";
 
@@ -20,8 +20,9 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
       const data = "data";
       const undeliveredId = "id";
 
-      const db = kvdex(kv, {
-        i_users: collection(model<User>(), { indices: {} }),
+      const db = kvdex({
+        kv,
+        schema: { i_users: collection(model<User>(), { indices: {} }) },
       });
 
       const sleeper = createResolver();
@@ -60,8 +61,9 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
 
   await t.step("Should not receive db queue message", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        i_users: collection(model<User>(), { indices: {} }),
+      const db = kvdex({
+        kv,
+        schema: { i_users: collection(model<User>(), { indices: {} }) },
       });
 
       let assertion = true;

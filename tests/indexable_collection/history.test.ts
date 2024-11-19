@@ -1,5 +1,5 @@
 import { collection, kvdex, model } from "../../mod.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { generateUsers, sleep, useKv } from "../utils.ts";
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts";
 import type { User } from "../models.ts";
@@ -9,14 +9,17 @@ Deno.test("indexable_collection - history", async (t) => {
     "Should persist history of multiple inserts in correct order",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          users: collection(model<User>(), {
-            history: true,
-            indices: {
-              username: "primary",
-              age: "secondary",
-            },
-          }),
+        const db = kvdex({
+          kv,
+          schema: {
+            users: collection(model<User>(), {
+              history: true,
+              indices: {
+                username: "primary",
+                age: "secondary",
+              },
+            }),
+          },
         });
 
         const id = "id";
@@ -43,14 +46,17 @@ Deno.test("indexable_collection - history", async (t) => {
     "Should persist history of multiple inserts in correct order after deleting",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          users: collection(model<User>(), {
-            history: true,
-            indices: {
-              username: "primary",
-              age: "secondary",
-            },
-          }),
+        const db = kvdex({
+          kv,
+          schema: {
+            users: collection(model<User>(), {
+              history: true,
+              indices: {
+                username: "primary",
+                age: "secondary",
+              },
+            }),
+          },
         });
 
         const id = "id";
@@ -85,14 +91,17 @@ Deno.test("indexable_collection - history", async (t) => {
     "Should persist history of multiple inserts and updates in correct order",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          users: collection(model<User>(), {
-            history: true,
-            indices: {
-              username: "primary",
-              age: "secondary",
-            },
-          }),
+        const db = kvdex({
+          kv,
+          schema: {
+            users: collection(model<User>(), {
+              history: true,
+              indices: {
+                username: "primary",
+                age: "secondary",
+              },
+            }),
+          },
         });
 
         const id = "id";
@@ -119,14 +128,17 @@ Deno.test("indexable_collection - history", async (t) => {
     "Should persist version history of insert and delete by deleteMany()",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          users: collection(model<User>(), {
-            history: true,
-            indices: {
-              username: "primary",
-              age: "secondary",
-            },
-          }),
+        const db = kvdex({
+          kv,
+          schema: {
+            users: collection(model<User>(), {
+              history: true,
+              indices: {
+                username: "primary",
+                age: "secondary",
+              },
+            }),
+          },
         });
 
         const id = "id";
@@ -156,13 +168,16 @@ Deno.test("indexable_collection - history", async (t) => {
     "Should not find history",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          users: collection(model<User>(), {
-            indices: {
-              username: "primary",
-              age: "secondary",
-            },
-          }),
+        const db = kvdex({
+          kv,
+          schema: {
+            users: collection(model<User>(), {
+              indices: {
+                username: "primary",
+                age: "secondary",
+              },
+            }),
+          },
         });
 
         const id = "id";
@@ -179,14 +194,17 @@ Deno.test("indexable_collection - history", async (t) => {
 
   await t.step("Should find filtered history", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        users: collection(model<User>(), {
-          history: true,
-          indices: {
-            username: "primary",
-            age: "secondary",
-          },
-        }),
+      const db = kvdex({
+        kv,
+        schema: {
+          users: collection(model<User>(), {
+            history: true,
+            indices: {
+              username: "primary",
+              age: "secondary",
+            },
+          }),
+        },
       });
 
       const id = "id";
@@ -223,14 +241,17 @@ Deno.test("indexable_collection - history", async (t) => {
 
   await t.step("Should delete all document history", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        users: collection(model<User>(), {
-          history: true,
-          indices: {
-            username: "primary",
-            age: "secondary",
-          },
-        }),
+      const db = kvdex({
+        kv,
+        schema: {
+          users: collection(model<User>(), {
+            history: true,
+            indices: {
+              username: "primary",
+              age: "secondary",
+            },
+          }),
+        },
       });
 
       const id = "id";

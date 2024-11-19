@@ -1,4 +1,4 @@
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { TKvU64, TObject, VALUES } from "../values.ts";
 import { isKvObject } from "../../src/utils.ts";
 

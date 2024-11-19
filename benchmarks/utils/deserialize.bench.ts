@@ -1,10 +1,10 @@
-import { obj } from "./_object.ts";
 import {
   jsonDeserialize,
   jsonSerialize,
   v8Deserialize,
   v8Serialize,
-} from "../../src/utils.ts";
+} from "../../src/ext/encoding/mod.ts";
+import { obj } from "./_object.ts";
 
 const js = jsonSerialize(obj);
 const ds = v8Serialize(obj);

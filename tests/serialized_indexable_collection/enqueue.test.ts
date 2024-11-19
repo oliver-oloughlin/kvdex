@@ -6,7 +6,7 @@ import {
   type QueueMessage,
 } from "../../mod.ts";
 import { createHandlerId } from "../../src/utils.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import type { User } from "../models.ts";
 import { createResolver, useDb, useKv } from "../utils.ts";
 
@@ -17,8 +17,14 @@ Deno.test("serialized_indexable_collection - enqueue", async (t) => {
       const undeliveredId = "undelivered";
       const sleeper = createResolver();
 
-      const db = kvdex(kv, {
-        is_users: collection(model<User>(), { indices: {}, serialized: true }),
+      const db = kvdex({
+        kv,
+        schema: {
+          is_users: collection(model<User>(), {
+            indices: {},
+            serialized: true,
+          }),
+        },
       });
 
       const handlerId = createHandlerId(db.is_users._keys.base, undefined);

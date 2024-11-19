@@ -1,4 +1,4 @@
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { generateInvalidUsers, generateLargeUsers, useDb } from "../utils.ts";
 
 Deno.test("serialized_collection - addMany", async (t) => {

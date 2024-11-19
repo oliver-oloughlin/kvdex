@@ -1,6 +1,6 @@
 import { collection, kvdex, model } from "../../mod.ts";
 import { KVDEX_KEY_PREFIX } from "../../src/constants.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { useKv } from "../utils.ts";
 
 Deno.test("db - kvdex", async (t) => {
@@ -8,10 +8,13 @@ Deno.test("db - kvdex", async (t) => {
     "Should create unique keys for collections with equal name in different nestings",
     async () => {
       await useKv((kv) => {
-        const db = kvdex(kv, {
-          numbers: collection(model<number>()),
-          nested: {
+        const db = kvdex({
+          kv,
+          schema: {
             numbers: collection(model<number>()),
+            nested: {
+              numbers: collection(model<number>()),
+            },
           },
         });
 

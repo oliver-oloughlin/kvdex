@@ -12,7 +12,7 @@ import {
   SECONDARY_INDEX_KEY_PREFIX,
 } from "../../src/constants.ts";
 import { extendKey, keyEq } from "../../src/utils.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { mockUser1 } from "../mocks.ts";
 import type { User } from "../models.ts";
 import { generateUsers, sleep, useDb, useKv } from "../utils.ts";
@@ -41,15 +41,18 @@ Deno.test("indexable_collection - properties", async (t) => {
 
   await t.step("Should generate ids with custom id generator", async () => {
     await useKv((kv) => {
-      const db = kvdex(kv, {
-        users1: collection(model<User>(), {
-          idGenerator: () => Math.random(),
-          indices: {},
-        }),
-        users2: collection(model<User>(), {
-          idGenerator: (data) => data.username,
-          indices: {},
-        }),
+      const db = kvdex({
+        kv,
+        schema: {
+          users1: collection(model<User>(), {
+            idGenerator: () => Math.random(),
+            indices: {},
+          }),
+          users2: collection(model<User>(), {
+            idGenerator: (data) => data.username,
+            indices: {},
+          }),
+        },
       });
 
       const id1 = db.users1._idGenerator(mockUser1);
@@ -232,24 +235,27 @@ Deno.test("indexable_collection - properties", async (t) => {
 
   await t.step("Should allow optional indices", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        i: collection(
-          model<{
-            oblPrimary: string;
-            oblSecondary: number;
-            optPrimary?: string;
-            optSecondary?: number;
-            check?: Date;
-          }>(),
-          {
-            indices: {
-              oblPrimary: "primary",
-              oblSecondary: "secondary",
-              optPrimary: "primary",
-              optSecondary: "secondary",
+      const db = kvdex({
+        kv,
+        schema: {
+          i: collection(
+            model<{
+              oblPrimary: string;
+              oblSecondary: number;
+              optPrimary?: string;
+              optSecondary?: number;
+              check?: Date;
+            }>(),
+            {
+              indices: {
+                oblPrimary: "primary",
+                oblSecondary: "secondary",
+                optPrimary: "primary",
+                optSecondary: "secondary",
+              },
             },
-          },
-        ),
+          ),
+        },
       });
 
       const cr1 = await db.i.add({
@@ -459,7 +465,6 @@ Deno.test("indexable_collection - properties", async (t) => {
         val20,
         val21,
         val22,
-        val23,
       };
       const val25 = new Set<KvValue>(val23);
       const val26 = new Map<KvValue, KvValue>([
@@ -487,163 +492,166 @@ Deno.test("indexable_collection - properties", async (t) => {
         ["val22", val22],
       ]);
 
-      const db = kvdex(kv, {
-        val1: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val2: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val3: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val4: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val5: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val6: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val7: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val8: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val9: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val10: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val11: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val12: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val13: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val14: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val15: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val16: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val17: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val18: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val19: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val20: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val21: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val22: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val23: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val24: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val25: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
-        val26: collection(model<Data>(), {
-          indices: {
-            p: "primary",
-            s: "secondary",
-          },
-        }),
+      const db = kvdex({
+        kv,
+        schema: {
+          val1: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val2: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val3: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val4: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val5: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val6: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val7: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val8: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val9: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val10: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val11: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val12: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val13: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val14: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val15: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val16: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val17: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val18: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val19: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val20: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val21: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val22: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val23: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val24: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val25: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+          val26: collection(model<Data>(), {
+            indices: {
+              p: "primary",
+              s: "secondary",
+            },
+          }),
+        },
       });
 
       const cr1 = await db.val1.add({ p: val1, s: val1 });
@@ -891,20 +899,23 @@ Deno.test("indexable_collection - properties", async (t) => {
 
   await t.step("Should successfully generate id asynchronously", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        test: collection(model<User>(), {
-          indices: {
-            username: "primary",
-            age: "secondary",
-          },
-          idGenerator: async (user) => {
-            const buffer = await crypto.subtle.digest(
-              "SHA-256",
-              new ArrayBuffer(user.age),
-            );
-            return Math.random() * buffer.byteLength;
-          },
-        }),
+      const db = kvdex({
+        kv,
+        schema: {
+          test: collection(model<User>(), {
+            indices: {
+              username: "primary",
+              age: "secondary",
+            },
+            idGenerator: async (user) => {
+              const buffer = await crypto.subtle.digest(
+                "SHA-256",
+                new ArrayBuffer(user.age),
+              );
+              return Math.random() * buffer.byteLength;
+            },
+          }),
+        },
       });
 
       const cr1 = await db.test.add(mockUser1);

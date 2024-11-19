@@ -1,5 +1,5 @@
 import type { Collection } from "./collection.ts";
-import type { DeepMergeOptions } from "./deps.ts";
+import type { DeepMergeOptions } from "@std/collections/deep-merge";
 import type { Document } from "./document.ts";
 
 /*********************/
@@ -7,6 +7,11 @@ import type { Document } from "./document.ts";
 /*   UTILITY TYPES   */
 /*                   */
 /*********************/
+
+const EMPTY_OBJECT = {};
+
+/** Empty object type */
+export type EmptyObject = typeof EMPTY_OBJECT;
 
 /** Collection builder function */
 export type BuilderFn<
@@ -65,6 +70,15 @@ export type PaginationResult<T> = Pagination & {
 export type IdGenerator<T1 extends KvValue, T2 extends KvId> = (
   data: T1,
 ) => T2 | Promise<T2>;
+
+/** Management of an active watcher. */
+export type WatchManager = {
+  /** The watcher promise, which is resolved either by closing the KV connection or by calling the watcher's `cancel()` function. */
+  promise: Promise<void>;
+
+  /** Stops the active watcher. */
+  cancel: () => Promise<void>;
+};
 
 /**********************/
 /*                    */
@@ -261,9 +275,10 @@ export type AtomicMutation<T1, T2 extends KvId> =
   );
 
 /** Options for atomic set operation */
-export type AtomicSetOptions = NonNullable<
-  Parameters<ReturnType<DenoKv["atomic"]>["set"]>["2"]
->;
+export type AtomicSetOptions<T extends CollectionOptions<any>> =
+  & DenoKvSetOptions
+  & (T extends { indices: IndexRecord<KvObject> } ? EmptyObject
+    : Pick<SetOptions, "overwrite">);
 
 /************************/
 /*                      */
@@ -275,7 +290,7 @@ export type AtomicSetOptions = NonNullable<
 export type CollectionOptions<T extends KvValue> =
   & {
     idGenerator?: IdGenerator<T, KvId>;
-    serialize?: SerializeOptions;
+    encoder?: Encoder;
     history?: true;
   }
   & (
@@ -373,49 +388,50 @@ export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
   __id__: KvId;
 };
 
-/***********************/
-/*                     */
-/*   SERIALIZE TYPES   */
-/*                     */
-/***********************/
+/**********************/
+/*                    */
+/*   ENCODING TYPES   */
+/*                    */
+/**********************/
 
-/** Record of serializer functions */
-export type Serializer = {
-  serialize: <T>(data: T) => Uint8Array | Promise<Uint8Array>;
-  deserialize: <T>(data: Uint8Array) => T | Promise<T>;
-  compress: (data: Uint8Array) => Uint8Array | Promise<Uint8Array>;
-  decompress: (data: Uint8Array) => Uint8Array | Promise<Uint8Array>;
+/**
+ * Object containing logic for serialization and compression of KvValues.
+ *
+ * Implements a serializer, and optionally a compressor.
+ */
+export type Encoder = {
+  serializer: Serializer;
+  compressor?: Compressor;
 };
 
-/** Serialized value entry */
-export type SerializedEntry = {
+/** Object that implements a serilize and deserilaize method */
+export type Serializer = {
+  serialize: SerializeFn;
+  deserialize: DeserializeFn;
+};
+
+/** Object that implements a compress and decompress method */
+export type Compressor = {
+  compress: CompressFn;
+  decompress: CompressFn;
+};
+
+/** Function that serializes a KvValue as a Uint8Array */
+export type SerializeFn = (data: unknown) => Uint8Array | Promise<Uint8Array>;
+
+/** Function that deserializes a KvValue from a Uint8Array */
+export type DeserializeFn = <T>(
+  data: Uint8Array,
+) => T | Promise<T>;
+
+/** Function that compresses/decompresses data represented by a Uint8Array */
+export type CompressFn = (data: Uint8Array) => Uint8Array | Promise<Uint8Array>;
+
+/** Encoded value entry */
+export type EncodedEntry = {
   isUint8Array: boolean;
   ids: KvId[];
 };
-
-/**
- * Serialize options.
- *
- * "v8" = built-in v8 serializer + brotli compression.
- *
- * "v8-uncompressed" = built-in v8 serializer and no compression.
- *
- * "json" = custom JSON serializer + brotli compression.
- *
- * "json-uncompressed" = custom JSON serializer and no compression (best runtime compatibility).
- *
- * If the serialize option is not set, or if a custom serialize configuration is used,
- * then JSON serialization is used by default for any unset serialize functions,
- * while brotli compression is used for any unset compress functions. V8 serialization and
- * Brotli compression rely on runtime implementations, and are therefore only
- * compatible with runtimes that implement them (Deno, Node.js).
- */
-export type SerializeOptions =
-  | "v8"
-  | "v8-uncompressed"
-  | "json"
-  | "json-uncompressed"
-  | Partial<Serializer>;
 
 /***************************/
 /*                         */
@@ -596,11 +612,11 @@ export type PrimaryIndexUpsert<
   update: UpdateData<TOutput, TStrategy>;
 };
 
-/********************/
-/*                  */
-/*   SCHEMA TYPES   */
-/*                  */
-/********************/
+/*******************/
+/*                 */
+/*   KVDEX TYPES   */
+/*                 */
+/*******************/
 
 /** Schema definition, containing builder functions and nested schema definitions. */
 export type SchemaDefinition = {
@@ -610,10 +626,21 @@ export type SchemaDefinition = {
 };
 
 /** Built schema from schema definition */
-export type Schema<T extends SchemaDefinition> = {
-  [K in keyof T]: T[K] extends SchemaDefinition ? Schema<T[K]>
-    : T[K] extends BuilderFnAny ? ReturnType<T[K]>
-    : never;
+export type Schema<T extends SchemaDefinition | undefined> = T extends undefined
+  ? EmptyObject
+  : {
+    [K in keyof T]: T[K] extends SchemaDefinition ? Schema<T[K]>
+      : T[K] extends BuilderFnAny ? ReturnType<T[K]>
+      : never;
+  };
+
+/** Database options */
+export type KvdexOptions = {
+  /** The KV instance that will power the database. */
+  kv: DenoKv;
+
+  /** Schema definition containing the database collections */
+  schema?: SchemaDefinition;
 };
 
 /*******************/
@@ -722,7 +749,7 @@ export type KvValue =
   | Uint32Array
   | BigUint64Array
   | Uint8ClampedArray
-  | Float16Array
+  // TODO: | Float16Array
   | Float32Array
   | Float64Array
   | ArrayBuffer

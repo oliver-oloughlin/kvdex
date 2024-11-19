@@ -5,12 +5,13 @@ import {
   SEGMENT_KEY_PREFIX,
 } from "../../src/constants.ts";
 import { extendKey, keyEq } from "../../src/utils.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { mockUser1, mockUser2 } from "../mocks.ts";
 import type { User } from "../models.ts";
 import { generateLargeUsers, useDb, useKv } from "../utils.ts";
 import { mockUser3 } from "../mocks.ts";
 import { sleep } from "../utils.ts";
+import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 Deno.test("serialized_collection - properties", async (t) => {
   await t.step("Keys should have the correct prefixes", async () => {
@@ -28,15 +29,18 @@ Deno.test("serialized_collection - properties", async (t) => {
 
   await t.step("Should generate ids with custom id generator", async () => {
     await useKv((kv) => {
-      const db = kvdex(kv, {
-        users1: collection(model<User>(), {
-          serialize: "json",
-          idGenerator: () => Math.random(),
-        }),
-        users2: collection(model<User>(), {
-          serialize: "json",
-          idGenerator: (data) => data.username,
-        }),
+      const db = kvdex({
+        kv,
+        schema: {
+          users1: collection(model<User>(), {
+            encoder: jsonEncoder(),
+            idGenerator: () => Math.random(),
+          }),
+          users2: collection(model<User>(), {
+            encoder: jsonEncoder(),
+            idGenerator: (data) => data.username,
+          }),
+        },
       });
 
       const id1 = db.users1._idGenerator(mockUser1);
@@ -288,17 +292,20 @@ Deno.test("serialized_collection - properties", async (t) => {
 
   await t.step("Should successfully generate id asynchronously", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        test: collection(model<User>(), {
-          serialize: "json",
-          idGenerator: async (user) => {
-            const buffer = await crypto.subtle.digest(
-              "SHA-256",
-              new ArrayBuffer(user.age),
-            );
-            return Math.random() * buffer.byteLength;
-          },
-        }),
+      const db = kvdex({
+        kv,
+        schema: {
+          test: collection(model<User>(), {
+            encoder: jsonEncoder(),
+            idGenerator: async (user) => {
+              const buffer = await crypto.subtle.digest(
+                "SHA-256",
+                new ArrayBuffer(user.age),
+              );
+              return Math.random() * buffer.byteLength;
+            },
+          }),
+        },
       });
 
       const cr1 = await db.test.add(mockUser1);

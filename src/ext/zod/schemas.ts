@@ -1,4 +1,4 @@
-import { z } from "./deps.ts";
+import { z } from "zod";
 import type { KvArray, KvId, KvObject, KvValue } from "../../types.ts";
 
 const LazyKvValueSchema = z.lazy(() => KvValueSchema);
@@ -33,7 +33,7 @@ export const KvValueSchema: z.ZodType<KvValue> = z.undefined()
   .or(z.instanceof(Uint32Array))
   .or(z.instanceof(BigUint64Array))
   .or(z.instanceof(Uint8ClampedArray))
-  .or(z.instanceof(Float16Array))
+  // TODO: .or(z.instanceof(Float16Array))
   .or(z.instanceof(Float32Array))
   .or(z.instanceof(Float64Array))
   .or(z.instanceof(ArrayBuffer))

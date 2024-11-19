@@ -1,5 +1,5 @@
 import type { Document } from "../../mod.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import type { User } from "../models.ts";
 import { generateUsers, useDb } from "../utils.ts";
 

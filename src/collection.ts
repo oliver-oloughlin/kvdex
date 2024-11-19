@@ -9,6 +9,8 @@ import type {
   DenoKvCommitResult,
   DenoKvEntryMaybe,
   DenoKvStrictKey,
+  EncodedEntry,
+  Encoder,
   EnqueueOptions,
   FindManyOptions,
   FindOptions,
@@ -35,33 +37,30 @@ import type {
   QueueListenerOptions,
   QueueMessageHandler,
   SecondaryIndexKeys,
-  SerializedEntry,
-  Serializer,
   SetOptions,
   UpdateData,
   UpdateManyOptions,
   UpdateOneOptions,
   UpdateOptions,
   UpdateStrategy,
+  WatchManager,
   WatchOptions,
 } from "./types.ts";
 import {
   allFulfilled,
   checkIndices,
-  compress,
   createHandlerId,
   createListOptions,
   createListSelector,
   createSecondaryIndexKeyPrefix,
   createWatcher,
-  decompress,
+  decodeData,
   deleteIndices,
+  encodeData,
   extendKey,
   generateId,
   getDocumentId,
   isKvObject,
-  jsonDeserialize,
-  jsonSerialize,
   kvGetMany,
   prepareEnqueue,
   selectsAll,
@@ -82,32 +81,38 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
 import { AtomicPool } from "./atomic_pool.ts";
 import { Document } from "./document.ts";
 import { model as m } from "./model.ts";
-import { concat, deepMerge, ulid } from "./deps.ts";
-import { v8Serialize } from "./utils.ts";
-import { v8Deserialize } from "./utils.ts";
+import { deepMerge } from "@std/collections/deep-merge";
+import { concat } from "@std/bytes/concat";
+import { ulid } from "@std/ulid";
 
 /**
  * Create a new collection within a database context.
  *
  * @example
  * ```ts
- * import { model, collection, kvdex } from "jsr:@olli/kvdex"
+ * import { model, collection, kvdex } from "@olli/kvdex"
+ * import { jsonEncoder } from "@olli/kvdex/encoding/json"
  *
  * type User = {
  *   username: string
  *   age: number
  * }
  *
- * const db = kvdex(kv, {
- *   numbers: collection(model<number>()),
- *   users: collection(model<User>(), {
- *     idGenerator: () => crypto.randomUUID(),
- *     serialize: "json",
- *     indices: {
- *       username: "primary",
- *       age: "secondary"
- *     }
- *   })
+ * const kv = await Deno.openKv()
+ *
+ * const db = kvdex({
+ *   kv: kv,
+ *   schema: {
+ *     numbers: collection(model<number>()),
+ *     users: collection(model<User>(), {
+ *       idGenerator: () => crypto.randomUUID(),
+ *       encoder: jsonEncoder(),
+ *       indices: {
+ *         username: "primary",
+ *         age: "secondary"
+ *       }
+ *     })
+ *   }
  * })
  * ```
  *
@@ -154,9 +159,8 @@ export class Collection<
   readonly _secondaryIndexList: string[];
   readonly _keys: CollectionKeys;
   readonly _idGenerator: IdGenerator<TOutput, ParseId<TOptions>>;
-  readonly _serializer: Serializer;
+  readonly _encoder?: Encoder;
   readonly _isIndexable: boolean;
-  readonly _isSerialized: boolean;
   readonly _keepsHistory: boolean;
 
   constructor(
@@ -173,6 +177,7 @@ export class Collection<
     this.idempotentListener = idempotentListener;
     this._model = model;
     this._idGenerator = options?.idGenerator ?? generateId as any;
+    this._encoder = options?.encoder;
 
     // Set keys
     this._keys = {
@@ -229,47 +234,6 @@ export class Collection<
         this._secondaryIndexList.push(index);
       }
     });
-
-    // Set serialization
-    this._isSerialized = !!opts?.serialize;
-
-    if (opts?.serialize === "v8") {
-      this._serializer = {
-        serialize: v8Serialize,
-        deserialize: v8Deserialize,
-        compress,
-        decompress,
-      };
-    } else if (opts?.serialize === "v8-uncompressed") {
-      this._serializer = {
-        serialize: v8Serialize,
-        deserialize: v8Deserialize,
-        compress: (v) => v,
-        decompress: (v) => v,
-      };
-    } else if (opts?.serialize === "json") {
-      this._serializer = {
-        serialize: jsonSerialize,
-        deserialize: jsonDeserialize,
-        compress,
-        decompress,
-      };
-    } else if (opts?.serialize === "json-uncompressed") {
-      this._serializer = {
-        serialize: jsonSerialize,
-        deserialize: jsonDeserialize,
-        compress: (v) => v,
-        decompress: (v) => v,
-      };
-    } else {
-      this._serializer = {
-        serialize: jsonSerialize,
-        deserialize: jsonDeserialize,
-        compress,
-        decompress,
-        ...opts?.serialize,
-      };
-    }
 
     // Set isIndexable flag
     this._isIndexable = this._primaryIndexList.length > 0 ||
@@ -333,14 +297,13 @@ export class Collection<
     options?: FindOptions,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value);
-    const compressed = await this._serializer.compress(serialized);
+    const encoded = await encodeData(value, this._encoder);
 
     // Create the index key
     const key = extendKey(
       this._keys.primaryIndex,
       index as KvId,
-      compressed,
+      encoded,
     );
 
     // Get index entry
@@ -382,14 +345,13 @@ export class Collection<
     >,
   ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value);
-    const compressed = await this._serializer.compress(serialized);
+    const encoded = await encodeData(value, this._encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
-      compressed,
+      encoded,
     );
 
     // Add documents to result list by secondary index
@@ -494,8 +456,8 @@ export class Collection<
       let historyEntry = value as HistoryEntry<TOutput>;
 
       // Handle serialized entries
-      if (historyEntry.type === "write" && this._isSerialized) {
-        const { ids } = historyEntry.value as SerializedEntry;
+      if (historyEntry.type === "write" && this._encoder) {
+        const { ids } = historyEntry.value as EncodedEntry;
         const timeId = getDocumentId(key as DenoKvStrictKey)!;
 
         const keys = ids.map((segmentId) =>
@@ -508,15 +470,12 @@ export class Collection<
         const data = concat(entries.map((entry) => entry.value as Uint8Array));
 
         // Decompress and deserialize
-        const serialized = await this._serializer.decompress(data);
-        const deserialized = await this._serializer.deserialize<TOutput>(
-          serialized,
-        );
+        const decoded = await decodeData(data, this._encoder);
 
         // Set history entry
         historyEntry = {
           ...historyEntry,
-          value: this._model.parse?.(deserialized),
+          value: this._model.parse?.(decoded),
         };
       } else if (historyEntry.type === "write") {
         // Set history entry
@@ -627,14 +586,13 @@ export class Collection<
     options?: FindOptions,
   ): Promise<void> {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value);
-    const compressed = await this._serializer.compress(serialized);
+    const encoded = await encodeData(value, this._encoder);
 
     // Create index key
     const key = extendKey(
       this._keys.primaryIndex,
       index as KvId,
-      compressed,
+      encoded,
     );
 
     // Get index entry
@@ -684,14 +642,13 @@ export class Collection<
     >,
   ): Promise<Pagination> {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value);
-    const compressed = await this._serializer.compress(serialized);
+    const encoded = await encodeData(value, this._encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
-      compressed,
+      encoded,
     );
 
     // Delete documents by secondary index, return iterator cursor
@@ -847,14 +804,13 @@ export class Collection<
     >
   > {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value);
-    const compressed = await this._serializer.compress(serialized);
+    const encoded = await encodeData(value, this._encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
-      compressed,
+      encoded,
     );
 
     // Update each document by secondary index, add commit result to result list
@@ -1792,14 +1748,13 @@ export class Collection<
     >,
   ): Promise<PaginationResult<Awaited<T>>> {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value);
-    const compressed = await this._serializer.compress(serialized);
+    const encoded = await encodeData(value, this._encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
-      compressed,
+      encoded,
     );
 
     // Execute callback function for each document entry, return result and cursor
@@ -1919,14 +1874,13 @@ export class Collection<
     >,
   ): Promise<number> {
     // Serialize and compress index value
-    const serialized = await this._serializer.serialize(value);
-    const compressed = await this._serializer.compress(serialized);
+    const encoded = await encodeData(value, this._encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
       this._keys.secondaryIndex,
       index as KvId,
-      compressed,
+      encoded,
     );
 
     // Initialize count result
@@ -2186,10 +2140,7 @@ export class Collection<
     id: ParseId<TOptions>,
     fn: (doc: Document<TOutput, ParseId<TOptions>> | null) => unknown,
     options?: WatchOptions,
-  ): {
-    promise: Promise<void>;
-    cancel: () => Promise<void>;
-  } {
+  ): WatchManager {
     const key = extendKey(this._keys.id, id);
 
     return createWatcher(this.kv, options, [key], async (entries) => {
@@ -2247,10 +2198,7 @@ export class Collection<
     ids: ParseId<TOptions>[],
     fn: (doc: (Document<TOutput, ParseId<TOptions>> | null)[]) => unknown,
     options?: WatchOptions,
-  ): {
-    promise: Promise<void>;
-    cancel: () => Promise<void>;
-  } {
+  ): WatchManager {
     const keys = ids.map((id) => extendKey(this._keys.id, id));
 
     return createWatcher(this.kv, options, keys, async (entries) => {
@@ -2326,16 +2274,15 @@ export class Collection<
     }
 
     // Serialize if enabled
-    if (this._isSerialized) {
-      const serialized = isUint8Array
-        ? value
-        : await this._serializer.serialize(value);
-      const compressed = await this._serializer.compress(serialized);
+    if (this._encoder) {
+      const encoded = isUint8Array
+        ? await this._encoder.compressor?.compress(value) ?? value
+        : await encodeData(value, this._encoder);
 
       // Set segmented entries
       let index = 0;
-      for (let i = 0; i < compressed.length; i += UINT8ARRAY_LENGTH_LIMIT) {
-        const part = compressed.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT);
+      for (let i = 0; i < encoded.length; i += UINT8ARRAY_LENGTH_LIMIT) {
+        const part = encoded.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT);
         const key = extendKey(this._keys.segment, docId, index);
         ids.push(index);
 
@@ -2357,7 +2304,7 @@ export class Collection<
       }
 
       // Set serialized document value
-      const serializedEntry: SerializedEntry = {
+      const serializedEntry: EncodedEntry = {
         ids,
         isUint8Array,
       };
@@ -2430,8 +2377,8 @@ export class Collection<
           failedAtomic.delete(historyKey);
         }
 
-        if (this._isSerialized) {
-          const { ids } = docValue as SerializedEntry;
+        if (this._encoder) {
+          const { ids } = docValue as EncodedEntry;
           ids.forEach((id) =>
             failedAtomic.delete(extendKey(this._keys.segment, docId, id))
           );
@@ -2514,7 +2461,7 @@ export class Collection<
     }
 
     // If serialized, delete existing segment entries
-    if (this._isSerialized) {
+    if (this._encoder) {
       const atomic = new AtomicWrapper(this.kv);
       const keyPrefix = extendKey(this._keys.segment, id);
       const iter = this.kv.list({ prefix: keyPrefix });
@@ -2576,9 +2523,9 @@ export class Collection<
       return null;
     }
 
-    if (this._isSerialized) {
+    if (this._encoder) {
       // Get document parts
-      const { ids, isUint8Array } = value as SerializedEntry;
+      const { ids, isUint8Array } = value as EncodedEntry;
 
       const keys = ids.map((segId) =>
         extendKey(this._keys.segment, docId, segId)
@@ -2590,15 +2537,14 @@ export class Collection<
       const data = concat(docEntries.map((entry) => entry.value as Uint8Array));
 
       // Decompress and deserialize
-      const serialized = await this._serializer.decompress(data);
-      const deserialized = isUint8Array
-        ? serialized as TOutput
-        : await this._serializer.deserialize<TOutput>(serialized);
+      const decoded = isUint8Array
+        ? (await this._encoder?.compressor?.decompress(data) ?? data) as TOutput
+        : await decodeData<TOutput>(data, this._encoder);
 
       // Return parsed document
       return new Document<TOutput, ParseId<TOptions>>(this._model, {
         id: docId as ParseId<TOptions>,
-        value: deserialized,
+        value: decoded,
         versionstamp,
       });
     }
@@ -2725,7 +2671,7 @@ export class Collection<
       });
     }
 
-    if (this._isIndexable && this._isSerialized) {
+    if (this._isIndexable && this._encoder) {
       // Run delete operations for each id
       await allFulfilled(ids.map(async (id) => {
         // Create document id key, get entry and construct document
@@ -2737,7 +2683,7 @@ export class Collection<
         atomic.delete(idKey);
 
         if (entry.value) {
-          const keys = (entry.value as SerializedEntry).ids.map((segId) =>
+          const keys = (entry.value as EncodedEntry).ids.map((segId) =>
             extendKey(this._keys.segment, id, segId)
           );
 
@@ -2776,7 +2722,7 @@ export class Collection<
       return;
     }
 
-    if (this._isSerialized) {
+    if (this._encoder) {
       // Perform delete for each id
       await allFulfilled(ids.map(async (id) => {
         // Create document id key, get document value
@@ -2791,7 +2737,7 @@ export class Collection<
         // Delete document entries
         atomic.delete(idKey);
 
-        const keys = (value as SerializedEntry).ids.map((segId) =>
+        const keys = (value as EncodedEntry).ids.map((segId) =>
           extendKey(this._keys.segment, id, segId)
         );
 

@@ -1,9 +1,9 @@
 import type {
-  AtomicSetOptions,
   DenoAtomicCheck,
   DenoAtomicOperation,
   DenoKvCommitError,
   DenoKvCommitResult,
+  DenoKvSetOptions,
   DenoKvStrictKey,
 } from "./types.ts";
 
@@ -15,7 +15,7 @@ export class AtomicPool implements DenoAtomicOperation {
     this.pool = [];
   }
 
-  set(key: DenoKvStrictKey, value: unknown, options?: AtomicSetOptions) {
+  set(key: DenoKvStrictKey, value: unknown, options?: DenoKvSetOptions) {
     this.pool.push((op) => op.set(key, value, options));
     return this;
   }

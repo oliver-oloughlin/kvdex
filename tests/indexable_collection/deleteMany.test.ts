@@ -1,4 +1,4 @@
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { generateUsers, useDb } from "../utils.ts";
 
 Deno.test("indexable_collection - deleteMany", async (t) => {

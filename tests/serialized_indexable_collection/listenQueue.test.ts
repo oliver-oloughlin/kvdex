@@ -10,9 +10,10 @@ import {
   UNDELIVERED_KEY_PREFIX,
 } from "../../src/constants.ts";
 import { createHandlerId, extendKey } from "../../src/utils.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import type { User } from "../models.ts";
 import { createResolver, sleep, useKv } from "../utils.ts";
+import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 Deno.test("serialized_indexable_collection - listenQueue", async (t) => {
   await t.step("Should receive message with string data", async () => {
@@ -21,8 +22,14 @@ Deno.test("serialized_indexable_collection - listenQueue", async (t) => {
       const undeliveredId = "id";
       const sleeper = createResolver();
 
-      const db = kvdex(kv, {
-        is_users: collection(model<User>(), { indices: {}, serialize: "json" }),
+      const db = kvdex({
+        kv,
+        schema: {
+          is_users: collection(model<User>(), {
+            indices: {},
+            encoder: jsonEncoder(),
+          }),
+        },
       });
 
       const handlerId = createHandlerId(db.is_users._keys.base, undefined);
@@ -61,8 +68,14 @@ Deno.test("serialized_indexable_collection - listenQueue", async (t) => {
 
   await t.step("Should not receive db queue message", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        is_users: collection(model<User>(), { indices: {}, serialize: "json" }),
+      const db = kvdex({
+        kv,
+        schema: {
+          is_users: collection(model<User>(), {
+            indices: {},
+            encoder: jsonEncoder(),
+          }),
+        },
       });
 
       let assertion = true;

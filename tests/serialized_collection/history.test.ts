@@ -1,19 +1,23 @@
 import { collection, kvdex, model } from "../../mod.ts";
-import { assert } from "../test.deps.ts";
+import { assert } from "@std/assert";
 import { sleep, useKv } from "../utils.ts";
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts";
 import type { User } from "../models.ts";
+import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 Deno.test("serialized_collection - history", async (t) => {
   await t.step(
     "Should persist history of multiple inserts in correct order",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          users: collection(model<User>(), {
-            history: true,
-            serialize: "json",
-          }),
+        const db = kvdex({
+          kv,
+          schema: {
+            users: collection(model<User>(), {
+              history: true,
+              encoder: jsonEncoder(),
+            }),
+          },
         });
 
         const id = "id";
@@ -40,11 +44,14 @@ Deno.test("serialized_collection - history", async (t) => {
     "Should persist history of multiple inserts in correct order after deleting",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          users: collection(model<User>(), {
-            history: true,
-            serialize: "json",
-          }),
+        const db = kvdex({
+          kv,
+          schema: {
+            users: collection(model<User>(), {
+              history: true,
+              encoder: jsonEncoder(),
+            }),
+          },
         });
 
         const id = "id";
@@ -79,11 +86,14 @@ Deno.test("serialized_collection - history", async (t) => {
     "Should persist history of multiple inserts and updates in correct order",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          users: collection(model<User>(), {
-            history: true,
-            serialize: "json",
-          }),
+        const db = kvdex({
+          kv,
+          schema: {
+            users: collection(model<User>(), {
+              history: true,
+              encoder: jsonEncoder(),
+            }),
+          },
         });
 
         const id = "id";
@@ -110,11 +120,14 @@ Deno.test("serialized_collection - history", async (t) => {
     "Should persist version history of insert and delete by deleteMany()",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          users: collection(model<User>(), {
-            history: true,
-            serialize: "json",
-          }),
+        const db = kvdex({
+          kv,
+          schema: {
+            users: collection(model<User>(), {
+              history: true,
+              encoder: jsonEncoder(),
+            }),
+          },
         });
 
         const id = "id";
@@ -144,8 +157,9 @@ Deno.test("serialized_collection - history", async (t) => {
     "Should not find history",
     async () => {
       await useKv(async (kv) => {
-        const db = kvdex(kv, {
-          users: collection(model<User>()),
+        const db = kvdex({
+          kv,
+          schema: { users: collection(model<User>()) },
         });
 
         const id = "id";
@@ -162,11 +176,14 @@ Deno.test("serialized_collection - history", async (t) => {
 
   await t.step("Should find filtered history", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        users: collection(model<User>(), {
-          history: true,
-          serialize: "json",
-        }),
+      const db = kvdex({
+        kv,
+        schema: {
+          users: collection(model<User>(), {
+            history: true,
+            encoder: jsonEncoder(),
+          }),
+        },
       });
 
       const id = "id";
@@ -203,11 +220,14 @@ Deno.test("serialized_collection - history", async (t) => {
 
   await t.step("Should delete all document history", async () => {
     await useKv(async (kv) => {
-      const db = kvdex(kv, {
-        users: collection(model<User>(), {
-          serialize: "json",
-          history: true,
-        }),
+      const db = kvdex({
+        kv,
+        schema: {
+          users: collection(model<User>(), {
+            encoder: jsonEncoder(),
+            history: true,
+          }),
+        },
       });
 
       const id = "id";
