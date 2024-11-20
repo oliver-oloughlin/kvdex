@@ -635,12 +635,12 @@ export type Schema<T extends SchemaDefinition | undefined> = T extends undefined
   };
 
 /** Database options */
-export type KvdexOptions = {
+export type KvdexOptions<T extends SchemaDefinition> = {
   /** The KV instance that will power the database. */
   kv: DenoKv;
 
   /** Schema definition containing the database collections */
-  schema?: SchemaDefinition;
+  schema?: T;
 };
 
 /*******************/

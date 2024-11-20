@@ -79,9 +79,9 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  * @param schemaDefinition - The schema definition used to build collections and create the database schema.
  * @returns A Kvdex instance with attached schema.
  */
-export function kvdex<const T extends KvdexOptions>(
-  options: T,
-): Kvdex<Schema<T["schema"]>> & Schema<T["schema"]> {
+export function kvdex<const TSchema extends SchemaDefinition>(
+  options: KvdexOptions<TSchema>,
+): Kvdex<Schema<TSchema>> & Schema<TSchema> {
   // Set listener activated flag and queue handlers map
   let listener: Promise<void>;
   const queueHandlers = new Map<string, QueueMessageHandler<KvValue>[]>();
@@ -117,7 +117,7 @@ export function kvdex<const T extends KvdexOptions>(
     options.kv,
     queueHandlers,
     idempotentListener,
-  ) as Schema<T["schema"]>;
+  ) as Schema<TSchema>;
 
   // Create KvDex object
   const db = new Kvdex(
