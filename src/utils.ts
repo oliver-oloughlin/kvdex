@@ -407,12 +407,11 @@ export function createListSelector<T1, T2 extends KvId>(
     ? undefined!
     : prefixKey;
 
+  const selector = { prefix, start, end };
+  if (!selector.end) delete selector.end;
+  if (!selector.start) delete selector.start;
   // Return list selector
-  return {
-    prefix,
-    start,
-    end,
-  };
+  return selector;
 }
 
 /**
