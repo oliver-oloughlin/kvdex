@@ -1008,7 +1008,7 @@ export type DenoKv = {
   list(
     selector: DenoKvListSelector,
     options?: DenoKvListOptions,
-  ): DenoKvListIterator;
+  ): Promise<DenoKvListIterator> | DenoKvListIterator;
 
   listenQueue(handler: (value: unknown) => unknown): Promise<void>;
 
