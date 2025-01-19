@@ -11,12 +11,12 @@ async function useStore(fn: (store: StorageAdapter<any, any>) => unknown) {
 
 Deno.test("ext - kv", async (t) => {
   await t.step("set", async (t) => {
-    await t.step("Should set new entry", () => {
+    await t.step("Should set new entry", async () => {
       const kv = new MapKv();
       const key = ["test"];
 
-      const cr = kv.set(key, 10);
-      const entry = kv.get(key);
+      const cr = await kv.set(key, 10);
+      const entry = await kv.get(key);
       assert(cr.ok);
       assert(entry.value !== null);
       assert(entry.versionstamp !== null);
@@ -26,28 +26,28 @@ Deno.test("ext - kv", async (t) => {
       const kv = new MapKv();
       const key = ["test"];
 
-      const cr = kv.set(key, 10, { expireIn: 100 });
-      const entry1 = kv.get(key);
+      const cr = await kv.set(key, 10, { expireIn: 100 });
+      const entry1 = await kv.get(key);
       assert(cr.ok);
       assert(entry1.value !== null);
       assert(entry1.versionstamp !== null);
 
       await sleep(500);
 
-      const entry2 = kv.get(key);
+      const entry2 = await kv.get(key);
       assert(entry2.value === null);
       assert(entry2.versionstamp === null);
     });
   });
 
   await t.step("get", async (t) => {
-    await t.step("Should successfully get entry by key", () => {
+    await t.step("Should successfully get entry by key", async () => {
       const kv = new MapKv();
       const key = ["test"];
       const val = 10;
 
-      const cr = kv.set(key, val);
-      const entry = kv.get(key);
+      const cr = await kv.set(key, val);
+      const entry = await kv.get(key);
       assert(cr.ok);
       assert(entry.value === val);
       assert(entry.versionstamp !== null);
@@ -55,7 +55,7 @@ Deno.test("ext - kv", async (t) => {
   });
 
   await t.step("getMany", async (t) => {
-    await t.step("Should successfully get entries by keys", () => {
+    await t.step("Should successfully get entries by keys", async () => {
       const kv = new MapKv();
       const entries = [
         [["test", 1], 10],
@@ -63,10 +63,12 @@ Deno.test("ext - kv", async (t) => {
         [["test", 3], 30],
       ];
 
-      const crs = entries.map(([key, val]) => kv.set(key as any, val));
+      const crs = await Promise.all(
+        entries.map(([key, val]) => kv.set(key as any, val)),
+      );
       assert(crs.every((cr) => cr.ok));
 
-      const getEntries = kv.getMany(entries.map(([k]) => k as any));
+      const getEntries = await kv.getMany(entries.map(([k]) => k as any));
 
       getEntries.forEach((entry) => {
         assert(entries.some(([_, val]) => val === entry.value));
@@ -75,19 +77,19 @@ Deno.test("ext - kv", async (t) => {
   });
 
   await t.step("delete", async (t) => {
-    await t.step("Should successfully delete entry by key", () => {
+    await t.step("Should successfully delete entry by key", async () => {
       const kv = new MapKv();
       const key = ["test"];
 
-      const cr = kv.set(key, 10);
-      const entry1 = kv.get(key);
+      const cr = await kv.set(key, 10);
+      const entry1 = await kv.get(key);
       assert(cr.ok);
       assert(entry1.value !== null);
       assert(entry1.versionstamp !== null);
 
-      kv.delete(key);
+      await kv.delete(key);
 
-      const entry2 = kv.get(key);
+      const entry2 = await kv.get(key);
       assert(entry2.value === null);
       assert(entry2.versionstamp === null);
     });
@@ -102,10 +104,12 @@ Deno.test("ext - kv", async (t) => {
         [["test", 3], 30],
       ];
 
-      const crs = entries.map(([key, val]) => kv.set(key as any, val));
+      const crs = await Promise.all(
+        entries.map(([key, val]) => kv.set(key as any, val)),
+      );
       assert(crs.every((cr) => cr.ok));
 
-      const iter = kv.list({ prefix: [] });
+      const iter = await kv.list({ prefix: [] });
       const listEntries = await Array.fromAsync(iter);
 
       listEntries.forEach((entry, i) => {

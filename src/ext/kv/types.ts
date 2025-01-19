@@ -9,7 +9,7 @@ export type BasicMap<K, V> = {
    * @param value - Value of the entry.
    * @returns void
    */
-  set(key: K, value: V): void;
+  set(key: K, value: V): Promise<void | Map<any, any>> | void | Map<any, any>;
 
   /**
    * Get a key/value entry from the map.
@@ -17,7 +17,7 @@ export type BasicMap<K, V> = {
    * @param key - Key that identifies the entry.
    * @returns The entry value or undefined if it does not exist in the map.
    */
-  get(key: K): V | undefined;
+  get(key: K): Promise<V | undefined> | V | undefined;
 
   /**
    * Delete a key/value entry from the map.
@@ -25,17 +25,17 @@ export type BasicMap<K, V> = {
    * @param key - Key that identifies the entry.
    * @returns void
    */
-  delete(key: K): void;
+  delete(key: K): Promise<void | boolean> | void | boolean;
 
   /**
    * Get an iterator of the key/value entries in the map.
    *
    * @returns An IterableIterator of [key, value] entries.
    */
-  entries(): IterableIterator<[K, V]>;
+  entries(): AsyncIterableIterator<[K, V]> | IterableIterator<[K, V]>;
 
   /** Removes all key/value entries from the map. */
-  clear(): void;
+  clear(): Promise<void> | void;
 };
 
 /** Options when constructing a new MapKv instance. */
