@@ -77,7 +77,7 @@ export class MapKv implements DenoKv {
     if (this.clearOnClose) this.map.clear();
   }
 
-  delete(key: DenoKvStrictKey) {
+  delete(key: DenoKvStrictKey): void {
     this.map.delete(jsonStringify(key));
     this.watchers.forEach((w) => w.update(key));
   }
