@@ -19,6 +19,7 @@ import { createVersionstamp, keySort } from "./utils.ts";
 import type { BasicMap, MapKvOptions } from "./types.ts";
 import { jsonParse, jsonStringify } from "../encoding/json/utils.ts";
 import { allFulfilled } from "../../utils.ts";
+import { AsyncLock } from "./async_lock.ts";
 
 /**
  * KV instance utilising a `BasicMap` as it's backend.
@@ -50,6 +51,7 @@ export class MapKv implements DenoKv {
   private clearOnClose: boolean;
   private watchers: Watcher[];
   private listenHandlers: ((msg: unknown) => unknown)[];
+  private atomicLock: AsyncLock;
   private listener:
     | {
       promise: Promise<void>;
@@ -66,6 +68,7 @@ export class MapKv implements DenoKv {
     this.clearOnClose = clearOnClose;
     this.watchers = [];
     this.listenHandlers = [];
+    this.atomicLock = new AsyncLock();
 
     entries?.forEach(({ key, ...data }) =>
       this.map.set(jsonStringify(key), data)
@@ -75,6 +78,7 @@ export class MapKv implements DenoKv {
   async close(): Promise<void> {
     this.watchers.forEach((w) => w.cancel());
     this.listener?.resolve();
+    await this.atomicLock.cancel();
     if (this.clearOnClose) await this.map.clear();
   }
 
@@ -217,7 +221,7 @@ export class MapKv implements DenoKv {
   }
 
   atomic(): DenoAtomicOperation {
-    return new MapKvAtomicOperation(this);
+    return new MapKvAtomicOperation(this, this.atomicLock);
   }
 
   async _set(

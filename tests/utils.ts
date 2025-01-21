@@ -82,7 +82,7 @@ export async function useKv(
     : await Deno.openKv(":memory:");
 
   const result = await fn(kv);
-  kv.close();
+  await kv.close();
 
   if (typeof result === "function") {
     await result();

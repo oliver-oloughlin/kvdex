@@ -8,16 +8,19 @@ import type {
   DenoKvStrictKey,
 } from "../../types.ts";
 import { allFulfilled } from "../../utils.ts";
+import type { AsyncLock } from "./async_lock.ts";
 import type { MapKv } from "./map_kv.ts";
 import { createVersionstamp } from "./utils.ts";
 
 export class MapKvAtomicOperation implements DenoAtomicOperation {
   private kv: MapKv;
+  private lock: AsyncLock;
   private checks: (() => Promise<boolean>)[];
   private ops: ((versionstamp: string) => Promise<void>)[];
 
-  constructor(kv: MapKv) {
+  constructor(kv: MapKv, lock: AsyncLock) {
     this.kv = kv;
+    this.lock = lock;
     this.checks = [];
     this.ops = [];
   }
@@ -121,6 +124,8 @@ export class MapKvAtomicOperation implements DenoAtomicOperation {
   }
 
   async commit(): Promise<DenoKvCommitError | DenoKvCommitResult> {
+    await this.lock.lock();
+
     const checks = await Promise.allSettled(
       this.checks.map((check) => check()),
     );
@@ -137,6 +142,8 @@ export class MapKvAtomicOperation implements DenoAtomicOperation {
 
     const versionstamp = createVersionstamp();
     await allFulfilled(this.ops.map((op) => op(versionstamp)));
+
+    this.lock.release();
 
     return {
       ok: true,
