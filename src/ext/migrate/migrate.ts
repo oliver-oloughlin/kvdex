@@ -1,4 +1,5 @@
 import { KVDEX_KEY_PREFIX } from "../../constants.ts";
+import type { DenoKvStrictKey } from "../../types.ts";
 import type { MigrateOptions } from "./types.ts";
 
 /**
@@ -24,8 +25,8 @@ export async function migrate({
   target,
   all,
 }: MigrateOptions): Promise<void> {
-  const iter = source.list({ prefix: all ? [] : [KVDEX_KEY_PREFIX] });
+  const iter = await source.list({ prefix: all ? [] : [KVDEX_KEY_PREFIX] });
   for await (const { key, value } of iter) {
-    await target.set(key, value);
+    await target.set(key as DenoKvStrictKey, value);
   }
 }
