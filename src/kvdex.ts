@@ -224,7 +224,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    */
   async wipe(): Promise<void> {
     // Create iterator
-    const iter = this.kv.list({ prefix: [KVDEX_KEY_PREFIX] });
+    const iter = await this.kv.list({ prefix: [KVDEX_KEY_PREFIX] });
 
     // Collect all kvdex keys
     const keys: DenoKvStrictKey[] = [];

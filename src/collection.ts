@@ -439,7 +439,7 @@ export class Collection<
 
     // Create hsitory entries iterator
     const listOptions = createListOptions(options);
-    const iter = this.kv.list(selector, listOptions);
+    const iter = await this.kv.list(selector, listOptions);
 
     // Collect history entries
     let count = 0;
@@ -1258,7 +1258,7 @@ export class Collection<
     // Perform quick delete if all documents are to be deleted
     if (selectsAll(options)) {
       // Create list iterator and empty keys list, init atomic operation
-      const iter = this.kv.list({ prefix: this._keys.base }, options);
+      const iter = await this.kv.list({ prefix: this._keys.base }, options);
 
       const keys: DenoKvStrictKey[] = [];
       const atomic = new AtomicWrapper(this.kv);
@@ -1270,7 +1270,8 @@ export class Collection<
 
       // Set history entries if keeps history
       if (this._keepsHistory) {
-        for await (const { key } of this.kv.list({ prefix: this._keys.id })) {
+        const historyIter = await this.kv.list({ prefix: this._keys.id });
+        for await (const { key } of historyIter) {
           const id = getDocumentId(key as DenoKvStrictKey);
 
           if (!id) {
@@ -1836,7 +1837,7 @@ export class Collection<
 
     // Perform efficient count if counting all document entries
     if (selectsAll(options)) {
-      const iter = this.kv.list({ prefix: this._keys.id }, options);
+      const iter = await this.kv.list({ prefix: this._keys.id }, options);
       for await (const _ of iter) {
         result++;
       }
@@ -2073,8 +2074,8 @@ export class Collection<
     const atomic = new AtomicWrapper(this.kv);
     const historyKeyPrefix = extendKey(this._keys.history, id);
     const historySegmentKeyPrefix = extendKey(this._keys.historySegment, id);
-    const historyIter = this.kv.list({ prefix: historyKeyPrefix });
-    const historySegmentIter = this.kv.list({
+    const historyIter = await this.kv.list({ prefix: historyKeyPrefix });
+    const historySegmentIter = await this.kv.list({
       prefix: historySegmentKeyPrefix,
     });
 
@@ -2464,7 +2465,7 @@ export class Collection<
     if (this._encoder) {
       const atomic = new AtomicWrapper(this.kv);
       const keyPrefix = extendKey(this._keys.segment, id);
-      const iter = this.kv.list({ prefix: keyPrefix });
+      const iter = await this.kv.list({ prefix: keyPrefix });
 
       for await (const { key } of iter) {
         atomic.delete(key as DenoKvStrictKey);
@@ -2585,7 +2586,7 @@ export class Collection<
     // Create list iterator with given options
     const selector = createListSelector(prefixKey, options);
     const listOptions = createListOptions(options);
-    const iter = this.kv.list(selector, listOptions);
+    const iter = await this.kv.list(selector, listOptions);
 
     // Initiate lists
     const docs: Document<TOutput, ParseId<TOptions>>[] = [];

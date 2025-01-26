@@ -6,31 +6,29 @@ import type { MapKv } from "./map_kv.ts";
 export class Watcher {
   private kv: MapKv;
   private keys: DenoKvStrictKey[];
-  private options?: DenoKvWatchOptions;
+  private options: DenoKvWatchOptions;
   private listener: ReturnType<
     typeof Promise.withResolvers<DenoKvEntryMaybe[]>
   >;
-  private previousEntries: DenoKvEntryMaybe[];
   readonly stream: ReadableStream<DenoKvEntryMaybe[]>;
 
   constructor(
     kv: MapKv,
     keys: DenoKvStrictKey[],
-    options?: DenoKvWatchOptions,
+    options: DenoKvWatchOptions = {
+      raw: false,
+    },
   ) {
     this.kv = kv;
     this.keys = keys;
     this.options = options;
-
-    const previousEntries = kv.getMany(keys);
-    this.previousEntries = previousEntries;
-
     this.listener = Promise.withResolvers<DenoKvEntryMaybe[]>();
     const listener = this.listener;
 
     this.stream = new ReadableStream({
       async start(controller) {
-        controller.enqueue(previousEntries);
+        const initialEntries = await kv.getMany(keys);
+        controller.enqueue(initialEntries);
         while (true) {
           try {
             const entries = await listener.promise;
@@ -48,30 +46,15 @@ export class Watcher {
     });
   }
 
-  update(key: DenoKvStrictKey) {
-    const match = this.keys.some((k) =>
-      jsonStringify(k) === jsonStringify(key)
-    );
+  async update(key: string, prevValue: any, newValue: any) {
+    const match = this.keys.some((k) => jsonStringify(k) === key);
     if (!match) return;
 
-    const entries = this.kv.getMany(this.keys);
+    const entries = await this.kv.getMany(this.keys);
+    const hasChanged = prevValue !== newValue;
 
-    const previousEntry = this.previousEntries.find((entry) =>
-      jsonStringify(entry.key) === jsonStringify(key)
-    );
+    if (!hasChanged && !this.options.raw) return;
 
-    const newEntry = entries.find((entry) =>
-      jsonStringify(entry.key) === jsonStringify(key)
-    );
-
-    if (!previousEntry || !newEntry) return;
-
-    // if (
-    //   !options?.raw &&
-    //   previousEntry.versionstamp === newEntry.versionstamp
-    // ) return
-
-    this.previousEntries = entries;
     this.listener.resolve(entries);
 
     const { promise, resolve, reject } = Promise.withResolvers<

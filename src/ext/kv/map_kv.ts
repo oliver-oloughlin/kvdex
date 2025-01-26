@@ -17,7 +17,9 @@ import { MapKvAtomicOperation } from "./atomic.ts";
 import { Watcher } from "./watcher.ts";
 import { createVersionstamp, keySort } from "./utils.ts";
 import type { BasicMap, MapKvOptions } from "./types.ts";
-import { jsonParse, jsonStringify } from "../encoding/mod.ts";
+import { jsonParse, jsonStringify } from "../encoding/json/utils.ts";
+import { allFulfilled } from "../../utils.ts";
+import { AsyncLock } from "./async_lock.ts";
 
 /**
  * KV instance utilising a `BasicMap` as it's backend.
@@ -49,6 +51,7 @@ export class MapKv implements DenoKv {
   private clearOnClose: boolean;
   private watchers: Watcher[];
   private listenHandlers: ((msg: unknown) => unknown)[];
+  private atomicLock: AsyncLock;
   private listener:
     | {
       promise: Promise<void>;
@@ -65,25 +68,31 @@ export class MapKv implements DenoKv {
     this.clearOnClose = clearOnClose;
     this.watchers = [];
     this.listenHandlers = [];
+    this.atomicLock = new AsyncLock();
 
     entries?.forEach(({ key, ...data }) =>
       this.map.set(jsonStringify(key), data)
     );
   }
 
-  close(): void {
+  async close(): Promise<void> {
     this.watchers.forEach((w) => w.cancel());
     this.listener?.resolve();
-    if (this.clearOnClose) this.map.clear();
+    await this.atomicLock.close();
+    if (this.clearOnClose) await this.map.clear();
   }
 
-  delete(key: DenoKvStrictKey) {
-    this.map.delete(jsonStringify(key));
-    this.watchers.forEach((w) => w.update(key));
+  async delete(key: DenoKvStrictKey): Promise<void> {
+    const keyStr = jsonStringify(key);
+    const prev = await this.map.get(keyStr);
+    await this.map.delete(jsonStringify(key));
+    await allFulfilled(
+      this.watchers.map((w) => w.update(keyStr, prev?.value, undefined)),
+    );
   }
 
-  get(key: DenoKvStrictKey): DenoKvEntryMaybe {
-    const data = this.map.get(jsonStringify(key)) ?? {
+  async get(key: DenoKvStrictKey): Promise<DenoKvEntryMaybe> {
+    const data = await this.map.get(jsonStringify(key)) ?? {
       value: null,
       versionstamp: null,
     };
@@ -94,23 +103,23 @@ export class MapKv implements DenoKv {
     };
   }
 
-  getMany(keys: DenoKvStrictKey[]): DenoKvEntryMaybe[] {
-    return keys.map((key) => this.get(key));
+  async getMany(keys: DenoKvStrictKey[]): Promise<DenoKvEntryMaybe[]> {
+    return await allFulfilled(keys.map((key) => this.get(key)));
   }
 
-  set(
+  async set(
     key: DenoKvStrictKey,
     value: unknown,
     options?: DenoKvSetOptions,
-  ): DenoKvCommitResult {
-    return this._set(key, value, createVersionstamp(), options);
+  ): Promise<DenoKvCommitResult> {
+    return await this._set(key, value, createVersionstamp(), options);
   }
 
-  list(
+  async list(
     selector: DenoKvListSelector,
     options?: DenoKvListOptions,
-  ): DenoKvListIterator {
-    let entries = Array.from(this.map.entries());
+  ): Promise<DenoKvListIterator> {
+    let entries = await Array.fromAsync(this.map.entries());
     const start = (selector as any).start as DenoKvStrictKey | undefined;
     const end = (selector as any).end as DenoKvStrictKey | undefined;
     const prefix = (selector as any).prefix as DenoKvStrictKey | undefined;
@@ -212,24 +221,29 @@ export class MapKv implements DenoKv {
   }
 
   atomic(): DenoAtomicOperation {
-    return new MapKvAtomicOperation(this);
+    return new MapKvAtomicOperation(this, this.atomicLock);
   }
 
-  _set(
+  async _set(
     key: DenoKvStrictKey,
     value: unknown,
     versionstamp: string,
     options?: DenoKvSetOptions,
-  ): DenoKvCommitResult {
-    this.map.set(jsonStringify(key), {
+  ): Promise<DenoKvCommitResult> {
+    const keyStr = jsonStringify(key);
+    const prev = await this.map.get(keyStr);
+
+    await this.map.set(keyStr, {
       value,
       versionstamp: versionstamp,
     });
 
-    this.watchers.forEach((w) => w.update(key));
+    await allFulfilled(
+      this.watchers.map((w) => w.update(keyStr, prev?.value, value)),
+    );
 
     if (options?.expireIn !== undefined) {
-      setTimeout(() => this.delete(key), options.expireIn);
+      setTimeout(() => this.map.delete(keyStr), options.expireIn);
     }
 
     return {
