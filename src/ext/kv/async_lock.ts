@@ -5,22 +5,29 @@ export class AsyncLock {
     this.queue = [];
   }
 
-  async lock() {
+  async run<T>(fn: () => Promise<T>): Promise<T> {
+    await this.lock();
+    const result = await fn();
+    this.release();
+    return result;
+  }
+
+  async close() {
+    for (const lock of this.queue) {
+      lock.resolve();
+      await lock.promise;
+    }
+  }
+
+  private async lock() {
     const prev = this.queue.at(-1);
     const next = Promise.withResolvers<void>();
     this.queue.push(next);
     await prev?.promise;
   }
 
-  release() {
+  private release() {
     const lock = this.queue.shift();
     lock?.resolve();
-  }
-
-  async cancel() {
-    for (const lock of this.queue) {
-      lock.resolve();
-      await lock.promise;
-    }
   }
 }

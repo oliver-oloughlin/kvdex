@@ -124,30 +124,28 @@ export class MapKvAtomicOperation implements DenoAtomicOperation {
   }
 
   async commit(): Promise<DenoKvCommitError | DenoKvCommitResult> {
-    await this.lock.lock();
+    return await this.lock.run(async () => {
+      const checks = await Promise.allSettled(
+        this.checks.map((check) => check()),
+      );
 
-    const checks = await Promise.allSettled(
-      this.checks.map((check) => check()),
-    );
+      const passedChecks = checks.every((checkResult) =>
+        checkResult.status === "fulfilled" && checkResult.value
+      );
 
-    const passedChecks = checks.every((checkResult) =>
-      checkResult.status === "fulfilled" && checkResult.value
-    );
+      if (!passedChecks) {
+        return {
+          ok: false,
+        };
+      }
 
-    if (!passedChecks) {
+      const versionstamp = createVersionstamp();
+      await allFulfilled(this.ops.map((op) => op(versionstamp)));
+
       return {
-        ok: false,
+        ok: true,
+        versionstamp,
       };
-    }
-
-    const versionstamp = createVersionstamp();
-    await allFulfilled(this.ops.map((op) => op(versionstamp)));
-
-    this.lock.release();
-
-    return {
-      ok: true,
-      versionstamp,
-    };
+    });
   }
 }
