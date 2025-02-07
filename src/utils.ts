@@ -98,11 +98,11 @@ export async function createSecondaryIndexKeyPrefix(
   collection: Collection<any, any, any>,
 ) {
   // Serialize and compress index value
-  const encoded = await encodeData(value, collection._encoder);
+  const encoded = await encodeData(value, collection.一internal.encoder);
 
   // Create prefix key
   return extendKey(
-    collection._keys.secondaryIndex,
+    collection.一internal.keys.secondaryIndex,
     index as KvId,
     encoded,
   );
@@ -494,14 +494,14 @@ async function handleIndices(
   secondary?: (indexKey: KvKey) => void,
 ): Promise<void> {
   // Handle primary indices
-  for (const index of collection._primaryIndexList) {
+  for (const index of collection.一internal.primaryIndexList) {
     const indexValue = data[index] as KvId | undefined;
     if (typeof indexValue === "undefined") continue;
 
-    const encoded = await encodeData(indexValue, collection._encoder);
+    const encoded = await encodeData(indexValue, collection.一internal.encoder);
 
     const indexKey = extendKey(
-      collection._keys.primaryIndex,
+      collection.一internal.keys.primaryIndex,
       index,
       encoded,
     );
@@ -514,14 +514,14 @@ async function handleIndices(
   }
 
   // Handle secondary indices
-  for (const index of collection._secondaryIndexList) {
+  for (const index of collection.一internal.secondaryIndexList) {
     const indexValue = data[index] as KvId | undefined;
     if (typeof indexValue === "undefined") continue;
 
-    const encoded = await encodeData(indexValue, collection._encoder);
+    const encoded = await encodeData(indexValue, collection.一internal.encoder);
 
     const indexKey = extendKey(
-      collection._keys.secondaryIndex,
+      collection.一internal.keys.secondaryIndex,
       index,
       encoded,
       id,

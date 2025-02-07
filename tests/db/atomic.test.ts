@@ -313,7 +313,10 @@ Deno.test("db - atomic", async (t) => {
         schema: { numbers: collection(model<number>()) },
       });
 
-      const handlerId = createHandlerId(db.numbers._keys.base, undefined);
+      const handlerId = createHandlerId(
+        db.numbers.一internal.keys.base,
+        undefined,
+      );
 
       let assertion = false;
 
