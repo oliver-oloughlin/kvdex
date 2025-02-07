@@ -286,6 +286,22 @@ export type AtomicSetOptions<T extends CollectionOptions<any>> =
 /*                      */
 /************************/
 
+/** Used for internal workings, do not manipulate or rely on these properties. */
+export type CollectionInternals<
+  TInput,
+  TOutput extends KvValue,
+  TOptions extends CollectionOptions<TOutput>,
+> = {
+  readonly model: Model<TInput, TOutput>;
+  readonly primaryIndexList: string[];
+  readonly secondaryIndexList: string[];
+  readonly keys: CollectionKeys;
+  readonly idGenerator: IdGenerator<TOutput, ParseId<TOptions>>;
+  readonly encoder?: Encoder;
+  readonly isIndexable: boolean;
+  readonly keepsHistory: boolean;
+};
+
 /** Options for creating a new collection */
 export type CollectionOptions<T extends KvValue> =
   & {

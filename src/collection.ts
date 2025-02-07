@@ -1,7 +1,7 @@
 import type {
   BuilderFn,
   CheckKeyOf,
-  CollectionKeys,
+  CollectionInternals,
   CollectionOptions,
   CommitResult,
   DenoKv,
@@ -10,14 +10,12 @@ import type {
   DenoKvEntryMaybe,
   DenoKvStrictKey,
   EncodedEntry,
-  Encoder,
   EnqueueOptions,
   FindManyOptions,
   FindOptions,
   HandleOneOptions,
   HistoryEntry,
   IdempotentListener,
-  IdGenerator,
   IdUpsert,
   IndexDataEntry,
   KvId,
@@ -155,16 +153,7 @@ export class Collection<
   private idempotentListener: IdempotentListener;
 
   /** Used for internal workings, do not manipulate or rely on these properties. */
-  readonly 一internal: {
-    readonly model: Model<TInput, TOutput>;
-    readonly primaryIndexList: string[];
-    readonly secondaryIndexList: string[];
-    readonly keys: CollectionKeys;
-    readonly idGenerator: IdGenerator<TOutput, ParseId<TOptions>>;
-    readonly encoder?: Encoder;
-    readonly isIndexable: boolean;
-    readonly keepsHistory: boolean;
-  };
+  readonly 一internal: CollectionInternals<TInput, TOutput, TOptions>;
 
   constructor(
     kv: DenoKv,
