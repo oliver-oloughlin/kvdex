@@ -27,7 +27,10 @@ Deno.test("collection - listenQueue", async (t) => {
         },
       });
 
-      const handlerId = createHandlerId(db.numbers._keys.base, undefined);
+      const handlerId = createHandlerId(
+        db.numbers.一internal.keys.base,
+        undefined,
+      );
 
       let assertion = false;
 

@@ -22,7 +22,10 @@ Deno.test("indexable_collection - enqueue", async (t) => {
       });
 
       const sleeper = createResolver();
-      const handlerId = createHandlerId(db.i_users._keys.base, undefined);
+      const handlerId = createHandlerId(
+        db.i_users.一internal.keys.base,
+        undefined,
+      );
       let assertion = false;
 
       const listener = kv.listenQueue((msg) => {

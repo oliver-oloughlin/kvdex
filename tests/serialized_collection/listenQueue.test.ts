@@ -33,7 +33,10 @@ Deno.test("serialized_collection - listenQueue", async (t) => {
         sleeper.resolve();
       });
 
-      const handlerId = createHandlerId(db.s_users._keys.base, undefined);
+      const handlerId = createHandlerId(
+        db.s_users.一internal.keys.base,
+        undefined,
+      );
 
       const msg: QueueMessage<KvValue> = {
         __is_undefined__: false,

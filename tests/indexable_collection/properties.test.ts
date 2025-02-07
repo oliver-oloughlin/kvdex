@@ -22,10 +22,10 @@ import { mockUser3 } from "../mocks.ts";
 Deno.test("indexable_collection - properties", async (t) => {
   await t.step("Keys should have the correct prefixes", async () => {
     await useDb((db) => {
-      const baseKey = db.i_users._keys.base;
-      const idKey = db.i_users._keys.id;
-      const primaryIndexKey = db.i_users._keys.primaryIndex;
-      const secondaryIndexKey = db.i_users._keys.secondaryIndex;
+      const baseKey = db.i_users.一internal.keys.base;
+      const idKey = db.i_users.一internal.keys.id;
+      const primaryIndexKey = db.i_users.一internal.keys.primaryIndex;
+      const secondaryIndexKey = db.i_users.一internal.keys.secondaryIndex;
       const prefix = extendKey([KVDEX_KEY_PREFIX], "i_users");
 
       assert(keyEq(baseKey, prefix));
@@ -55,8 +55,8 @@ Deno.test("indexable_collection - properties", async (t) => {
         },
       });
 
-      const id1 = db.users1._idGenerator(mockUser1);
-      const id2 = db.users2._idGenerator(mockUser1);
+      const id1 = db.users1.一internal.idGenerator(mockUser1);
+      const id2 = db.users2.一internal.idGenerator(mockUser1);
 
       assert(typeof id1 === "number");
       assert(id2 === mockUser1.username);

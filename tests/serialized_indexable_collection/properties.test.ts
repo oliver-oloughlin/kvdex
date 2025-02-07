@@ -26,10 +26,10 @@ const [user] = generateLargeUsers(1);
 Deno.test("serialized_indexable_collection - properties", async (t) => {
   await t.step("Keys should have the correct prefixes", async () => {
     await useDb((db) => {
-      const baseKey = db.is_users._keys.base;
-      const idKey = db.is_users._keys.id;
-      const primaryIndexKey = db.is_users._keys.primaryIndex;
-      const secondaryIndexKey = db.is_users._keys.secondaryIndex;
+      const baseKey = db.is_users.一internal.keys.base;
+      const idKey = db.is_users.一internal.keys.id;
+      const primaryIndexKey = db.is_users.一internal.keys.primaryIndex;
+      const secondaryIndexKey = db.is_users.一internal.keys.secondaryIndex;
       const prefix = extendKey([KVDEX_KEY_PREFIX], "is_users");
 
       assert(keyEq(baseKey, prefix));
@@ -61,8 +61,8 @@ Deno.test("serialized_indexable_collection - properties", async (t) => {
         },
       });
 
-      const id1 = db.users1._idGenerator(user);
-      const id2 = db.users2._idGenerator(user);
+      const id1 = db.users1.一internal.idGenerator(user);
+      const id2 = db.users2.一internal.idGenerator(user);
 
       assert(typeof id1 === "number");
       assert(id2 === user.username);

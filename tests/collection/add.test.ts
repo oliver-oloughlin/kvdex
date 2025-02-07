@@ -7,7 +7,6 @@ Deno.test("collection - add", async (t) => {
     await useDb(async (db) => {
       const cr = await db.users.add(mockUser1);
       assert(cr.ok);
-
       const doc = await db.users.find(cr.id);
       assert(doc !== null);
       assert(doc.value.username === mockUser1.username);

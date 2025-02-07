@@ -27,7 +27,10 @@ Deno.test("serialized_indexable_collection - enqueue", async (t) => {
         },
       });
 
-      const handlerId = createHandlerId(db.is_users._keys.base, undefined);
+      const handlerId = createHandlerId(
+        db.is_users.一internal.keys.base,
+        undefined,
+      );
 
       let assertion = false;
 
