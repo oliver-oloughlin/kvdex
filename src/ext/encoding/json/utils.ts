@@ -102,7 +102,7 @@ export function jsonParse<T>(value: string): T {
  * @param value
  * @returns
  */
-function replacer(_key: string, value: unknown) {
+function replacer(_key: string, value: unknown): unknown {
   return _replacer(value);
 }
 
@@ -342,7 +342,7 @@ function _replacer(value: unknown): unknown {
  * @param value
  * @returns
  */
-function reviver(_key: string, value: unknown) {
+function reviver(_key: string, value: unknown): unknown {
   return _reviver(value);
 }
 
@@ -564,6 +564,6 @@ function postReviver<T>(value: T): T {
  * @param value - JSON value to map from.
  * @returns Mapped value.
  */
-function mapValue<T>(key: string, value: unknown) {
+function mapValue<T>(key: string, value: unknown): T {
   return (value as Record<string, T>)[key];
 }

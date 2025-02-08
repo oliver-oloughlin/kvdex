@@ -15,27 +15,27 @@ export class AtomicPool implements DenoAtomicOperation {
     this.pool = [];
   }
 
-  set(key: DenoKvStrictKey, value: unknown, options?: DenoKvSetOptions) {
+  set(key: DenoKvStrictKey, value: unknown, options?: DenoKvSetOptions): this {
     this.pool.push((op) => op.set(key, value, options));
     return this;
   }
 
-  delete(key: DenoKvStrictKey) {
+  delete(key: DenoKvStrictKey): this {
     this.pool.push((op) => op.delete(key));
     return this;
   }
 
-  check(...checks: DenoAtomicCheck[]) {
+  check(...checks: DenoAtomicCheck[]): this {
     this.pool.push((op) => op.check(...checks));
     return this;
   }
 
-  sum(key: DenoKvStrictKey, n: bigint) {
+  sum(key: DenoKvStrictKey, n: bigint): this {
     this.pool.push((op) => op.sum(key, n));
     return this;
   }
 
-  max(key: DenoKvStrictKey, n: bigint) {
+  max(key: DenoKvStrictKey, n: bigint): this {
     this.pool.push((op) => op.max(key, n));
     return this;
   }
@@ -51,7 +51,7 @@ export class AtomicPool implements DenoAtomicOperation {
       delay?: number | undefined;
       keysIfUndelivered?: DenoKvStrictKey[];
     },
-  ) {
+  ): this {
     this.pool.push((op) => op.enqueue(value, options));
     return this;
   }
@@ -60,7 +60,7 @@ export class AtomicPool implements DenoAtomicOperation {
     throw Error("Not Implemented");
   }
 
-  bindTo(atomic: DenoAtomicOperation) {
+  bindTo(atomic: DenoAtomicOperation): void {
     this.pool.forEach((mutation) => mutation(atomic));
   }
 }
