@@ -13,7 +13,7 @@ native functionality as possible, like atomic operations, real-time data updates
 and queue listeners. Also works with other runtimes such as Node.js and Bun, and
 has compatibility options for the browser.
 
-_Supported Deno verisons:_ **^1.43.0**
+_Supported Deno verisons:_ **^2.0.0**
 
 ## Highlights
 
