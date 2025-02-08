@@ -1,4 +1,4 @@
-name: Test
+name: Test minimum deno version
 
 on:
   push:
