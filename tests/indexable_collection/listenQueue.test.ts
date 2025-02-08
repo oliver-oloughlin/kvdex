@@ -26,10 +26,7 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
       });
 
       const sleeper = createResolver();
-      const handlerId = createHandlerId(
-        db.i_users.一internal.keys.base,
-        undefined,
-      );
+      const handlerId = createHandlerId(db.i_users["keys"].base, undefined);
       let assertion = false;
 
       const listener = db.i_users.listenQueue((msgData) => {

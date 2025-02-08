@@ -23,7 +23,7 @@ class BrotliCompressor implements Compressor {
     this.quality = quality;
   }
 
-  compress(data: Uint8Array) {
+  compress(data: Uint8Array): Uint8Array {
     const buffer = brotliCompressSync(data, {
       params: { [constants.BROTLI_PARAM_QUALITY]: this.quality },
     });
@@ -31,7 +31,7 @@ class BrotliCompressor implements Compressor {
     return new Uint8Array(buffer);
   }
 
-  decompress(data: Uint8Array) {
+  decompress(data: Uint8Array): Uint8Array {
     const buffer = brotliDecompressSync(data, {
       params: { [constants.BROTLI_PARAM_QUALITY]: this.quality },
     });

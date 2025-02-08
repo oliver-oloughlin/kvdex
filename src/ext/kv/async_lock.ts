@@ -12,21 +12,21 @@ export class AsyncLock {
     return result;
   }
 
-  async close() {
+  async close(): Promise<void> {
     for (const lock of this.queue) {
       lock.resolve();
       await lock.promise;
     }
   }
 
-  private async lock() {
+  private async lock(): Promise<void> {
     const prev = this.queue.at(-1);
     const next = Promise.withResolvers<void>();
     this.queue.push(next);
     await prev?.promise;
   }
 
-  private release() {
+  private release(): void {
     const lock = this.queue.shift();
     lock?.resolve();
   }

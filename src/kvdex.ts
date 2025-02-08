@@ -2,6 +2,7 @@ import type {
   CollectionOptions,
   CollectionSelector,
   CountAllOptions,
+  Database,
   DenoKv,
   DenoKvCommitResult,
   DenoKvStrictKey,
@@ -81,7 +82,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  */
 export function kvdex<const TSchema extends SchemaDefinition>(
   options: KvdexOptions<TSchema>,
-): Kvdex<Schema<TSchema>> & Schema<TSchema> {
+): Database<TSchema> {
   // Set listener activated flag and queue handlers map
   let listener: Promise<void>;
   const queueHandlers = new Map<string, QueueMessageHandler<KvValue>[]>();

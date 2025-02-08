@@ -1,7 +1,7 @@
 import type {
   BuilderFn,
   CheckKeyOf,
-  CollectionInternals,
+  CollectionKeys,
   CollectionOptions,
   CommitResult,
   DenoKv,
@@ -10,12 +10,14 @@ import type {
   DenoKvEntryMaybe,
   DenoKvStrictKey,
   EncodedEntry,
+  Encoder,
   EnqueueOptions,
   FindManyOptions,
   FindOptions,
   HandleOneOptions,
   HistoryEntry,
   IdempotentListener,
+  IdGenerator,
   IdUpsert,
   IndexDataEntry,
   KvId,
@@ -151,9 +153,14 @@ export class Collection<
   private kv: DenoKv;
   private queueHandlers: QueueHandlers;
   private idempotentListener: IdempotentListener;
-
-  /** Used for internal workings, do not manipulate or rely on these properties. */
-  readonly 一internal: CollectionInternals<TInput, TOutput, TOptions>;
+  private model: Model<TInput, TOutput>;
+  private primaryIndexList: string[];
+  private secondaryIndexList: string[];
+  private keys: CollectionKeys;
+  private idGenerator: IdGenerator<TOutput, ParseId<TOptions>>;
+  private encoder?: Encoder;
+  private isIndexable: boolean;
+  private keepsHistory: boolean;
 
   constructor(
     kv: DenoKv,
@@ -167,9 +174,12 @@ export class Collection<
     this.kv = kv;
     this.queueHandlers = queueHandlers;
     this.idempotentListener = idempotentListener;
+    this.model = model;
+    this.idGenerator = options?.idGenerator ?? generateId as any;
+    this.encoder = options?.encoder;
 
     // Set keys
-    const keys = {
+    this.keys = {
       base: extendKey([KVDEX_KEY_PREFIX], ...key),
       id: extendKey(
         [KVDEX_KEY_PREFIX],
@@ -213,31 +223,23 @@ export class Collection<
     const opts = (options ?? {}) as PossibleCollectionOptions;
 
     // Set index lists
-    const primaryIndexList: string[] = [];
-    const secondaryIndexList: string[] = [];
+    this.primaryIndexList = [];
+    this.secondaryIndexList = [];
 
     Object.entries(opts?.indices ?? {}).forEach(([index, value]) => {
       if (value === "primary") {
-        primaryIndexList.push(index);
+        this.primaryIndexList.push(index);
       } else {
-        secondaryIndexList.push(index);
+        this.secondaryIndexList.push(index);
       }
     });
 
     // Set isIndexable flag
-    const isIndexable = primaryIndexList.length > 0 ||
-      secondaryIndexList.length > 0;
+    this.isIndexable = this.primaryIndexList.length > 0 ||
+      this.secondaryIndexList.length > 0;
 
-    this.一internal = {
-      model,
-      idGenerator: options?.idGenerator ?? generateId as any,
-      encoder: options?.encoder,
-      keys,
-      primaryIndexList,
-      secondaryIndexList,
-      isIndexable,
-      keepsHistory: options?.history ?? false,
-    };
+    // Set keepsHistory flag
+    this.keepsHistory = options?.history ?? false;
   }
 
   /**********************/
@@ -267,7 +269,7 @@ export class Collection<
     options?: FindOptions,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
     // Create document key, get document entry
-    const key = extendKey(this.一internal.keys.id, id);
+    const key = extendKey(this.keys.id, id);
     const entry = await this.kv.get(key, options);
     return await this.constructDocument(entry);
   }
@@ -294,11 +296,11 @@ export class Collection<
     options?: FindOptions,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this.一internal.encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create the index key
     const key = extendKey(
-      this.一internal.keys.primaryIndex,
+      this.keys.primaryIndex,
       index as KvId,
       encoded,
     );
@@ -342,11 +344,11 @@ export class Collection<
     >,
   ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this.一internal.encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
-      this.一internal.keys.secondaryIndex,
+      this.keys.secondaryIndex,
       index as KvId,
       encoded,
     );
@@ -383,7 +385,7 @@ export class Collection<
     options?: FindManyOptions,
   ): Promise<Document<TOutput, ParseId<TOptions>>[]> {
     // Create document keys, get document entries
-    const keys = ids.map((id) => extendKey(this.一internal.keys.id, id));
+    const keys = ids.map((id) => extendKey(this.keys.id, id));
     const entries = await kvGetMany(keys, this.kv, options);
 
     // Create empty result list
@@ -431,7 +433,7 @@ export class Collection<
   ): Promise<PaginationResult<HistoryEntry<TOutput>>> {
     // Initialize result list and create history key prefix
     const result: HistoryEntry<TOutput>[] = [];
-    const keyPrefix = extendKey(this.一internal.keys.history, id);
+    const keyPrefix = extendKey(this.keys.history, id);
     const selector = createListSelector(keyPrefix, options);
 
     // Create hsitory entries iterator
@@ -453,12 +455,12 @@ export class Collection<
       let historyEntry = value as HistoryEntry<TOutput>;
 
       // Handle serialized entries
-      if (historyEntry.type === "write" && this.一internal.encoder) {
+      if (historyEntry.type === "write" && this.encoder) {
         const { ids } = historyEntry.value as EncodedEntry;
         const timeId = getDocumentId(key as DenoKvStrictKey)!;
 
         const keys = ids.map((segmentId) =>
-          extendKey(this.一internal.keys.historySegment, id, timeId, segmentId)
+          extendKey(this.keys.historySegment, id, timeId, segmentId)
         );
 
         const entries = await kvGetMany(keys, this.kv);
@@ -467,18 +469,18 @@ export class Collection<
         const data = concat(entries.map((entry) => entry.value as Uint8Array));
 
         // Decompress and deserialize
-        const decoded = await decodeData(data, this.一internal.encoder);
+        const decoded = await decodeData(data, this.encoder);
 
         // Set history entry
         historyEntry = {
           ...historyEntry,
-          value: this.一internal.model.parse?.(decoded),
+          value: this.model.parse?.(decoded),
         };
       } else if (historyEntry.type === "write") {
         // Set history entry
         historyEntry = {
           ...historyEntry,
-          value: this.一internal.model.parse?.(historyEntry.value),
+          value: this.model.parse?.(historyEntry.value),
         };
       }
 
@@ -558,7 +560,7 @@ export class Collection<
    * @returns A promise that resovles to void.
    */
   async delete(...ids: ParseId<TOptions>[]): Promise<void> {
-    await this.deleteDocuments(ids, this.一internal.keepsHistory);
+    await this.deleteDocuments(ids, this.keepsHistory);
   }
 
   /**
@@ -583,11 +585,11 @@ export class Collection<
     options?: FindOptions,
   ): Promise<void> {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this.一internal.encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create index key
     const key = extendKey(
-      this.一internal.keys.primaryIndex,
+      this.keys.primaryIndex,
       index as KvId,
       encoded,
     );
@@ -606,7 +608,7 @@ export class Collection<
       & Pick<IndexDataEntry<KvObject>, "__id__">;
 
     // Delete document by id
-    await this.deleteDocuments([__id__], this.一internal.keepsHistory);
+    await this.deleteDocuments([__id__], this.keepsHistory);
   }
 
   /**
@@ -639,11 +641,11 @@ export class Collection<
     >,
   ): Promise<Pagination> {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this.一internal.encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
-      this.一internal.keys.secondaryIndex,
+      this.keys.secondaryIndex,
       index as KvId,
       encoded,
     );
@@ -651,7 +653,7 @@ export class Collection<
     // Delete documents by secondary index, return iterator cursor
     const { cursor } = await this.handleMany(
       prefixKey,
-      (doc) => this.deleteDocuments([doc.id], this.一internal.keepsHistory),
+      (doc) => this.deleteDocuments([doc.id], this.keepsHistory),
       options,
     );
 
@@ -801,11 +803,11 @@ export class Collection<
     >
   > {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this.一internal.encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
-      this.一internal.keys.secondaryIndex,
+      this.keys.secondaryIndex,
       index as KvId,
       encoded,
     );
@@ -978,7 +980,7 @@ export class Collection<
   > {
     // Update each document, add commit result to result list
     return await this.handleMany(
-      this.一internal.keys.id,
+      this.keys.id,
       (doc) => this.updateDocument(doc, value, options),
       options,
     );
@@ -1014,10 +1016,7 @@ export class Collection<
     >
   > {
     // Create prefix key
-    const prefixKey = extendKey(
-      this.一internal.keys.secondaryIndex,
-      order as KvId,
-    );
+    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
     // Update each document by secondary index, add commit result to result list
     return await this.handleMany(
@@ -1060,7 +1059,7 @@ export class Collection<
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Update a single document
     const { result } = await this.handleMany(
-      this.一internal.keys.id,
+      this.keys.id,
       (doc) => this.updateDocument(doc, data, options),
       { ...options, take: 1 },
     );
@@ -1153,10 +1152,7 @@ export class Collection<
     options?: T,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Create prefix key
-    const prefixKey = extendKey(
-      this.一internal.keys.secondaryIndex,
-      order as KvId,
-    );
+    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
     // Update a single document
     const { result } = await this.handleMany(
@@ -1261,10 +1257,7 @@ export class Collection<
     // Perform quick delete if all documents are to be deleted
     if (selectsAll(options)) {
       // Create list iterator and empty keys list, init atomic operation
-      const iter = await this.kv.list(
-        { prefix: this.一internal.keys.base },
-        options,
-      );
+      const iter = await this.kv.list({ prefix: this.keys.base }, options);
 
       const keys: DenoKvStrictKey[] = [];
       const atomic = new AtomicWrapper(this.kv);
@@ -1275,10 +1268,8 @@ export class Collection<
       }
 
       // Set history entries if keeps history
-      if (this.一internal.keepsHistory) {
-        const historyIter = await this.kv.list({
-          prefix: this.一internal.keys.id,
-        });
+      if (this.keepsHistory) {
+        const historyIter = await this.kv.list({ prefix: this.keys.id });
         for await (const { key } of historyIter) {
           const id = getDocumentId(key as DenoKvStrictKey);
 
@@ -1286,11 +1277,7 @@ export class Collection<
             continue;
           }
 
-          const historyKey = extendKey(
-            this.一internal.keys.history,
-            id,
-            ulid(),
-          );
+          const historyKey = extendKey(this.keys.history, id, ulid());
 
           const historyEntry: HistoryEntry<TOutput> = {
             type: "delete",
@@ -1308,8 +1295,8 @@ export class Collection<
 
     // Execute delete operation for each document entry
     const { cursor } = await this.handleMany(
-      this.一internal.keys.id,
-      (doc) => this.deleteDocuments([doc.id], this.一internal.keepsHistory),
+      this.keys.id,
+      (doc) => this.deleteDocuments([doc.id], this.keepsHistory),
       options,
     );
 
@@ -1344,15 +1331,12 @@ export class Collection<
     >,
   ): Promise<Pagination> {
     // Create prefix key
-    const prefixKey = extendKey(
-      this.一internal.keys.secondaryIndex,
-      order as KvId,
-    );
+    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
     // Delete documents by secondary index, return iterator cursor
     const { cursor } = await this.handleMany(
       prefixKey,
-      (doc) => this.deleteDocuments([doc.id], this.一internal.keepsHistory),
+      (doc) => this.deleteDocuments([doc.id], this.keepsHistory),
       options,
     );
 
@@ -1387,7 +1371,7 @@ export class Collection<
   ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
     // Get each document, return result list and current iterator cursor
     return await this.handleMany(
-      this.一internal.keys.id,
+      this.keys.id,
       (doc) => doc,
       options,
     );
@@ -1423,10 +1407,7 @@ export class Collection<
       ParseId<TOptions>
     >,
   ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
-    const prefixKey = extendKey(
-      this.一internal.keys.secondaryIndex,
-      order as KvId,
-    );
+    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
     return await this.handleMany(
       prefixKey,
       (doc) => doc,
@@ -1464,7 +1445,7 @@ export class Collection<
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
     // Get result list with one item
     const { result } = await this.handleMany(
-      this.一internal.keys.id,
+      this.keys.id,
       (doc) => doc,
       { ...options, take: 1 },
     );
@@ -1550,10 +1531,7 @@ export class Collection<
     >,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
     // Create prefix key
-    const prefixKey = extendKey(
-      this.一internal.keys.secondaryIndex,
-      order as KvId,
-    );
+    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
     // Get result list with one item
     const { result } = await this.handleMany(
@@ -1595,7 +1573,7 @@ export class Collection<
   ): Promise<Pagination> {
     // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
-      this.一internal.keys.id,
+      this.keys.id,
       async (doc) => await fn(doc),
       options,
     );
@@ -1684,10 +1662,7 @@ export class Collection<
     >,
   ): Promise<Pagination> {
     // Create prefix key
-    const prefixKey = extendKey(
-      this.一internal.keys.secondaryIndex,
-      order as KvId,
-    );
+    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
     // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
@@ -1731,7 +1706,7 @@ export class Collection<
   ): Promise<PaginationResult<Awaited<T>>> {
     // Execute callback function for each document entry, return result and cursor
     return await this.handleMany(
-      this.一internal.keys.id,
+      this.keys.id,
       (doc) => fn(doc),
       options,
     );
@@ -1773,11 +1748,11 @@ export class Collection<
     >,
   ): Promise<PaginationResult<Awaited<T>>> {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this.一internal.encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
-      this.一internal.keys.secondaryIndex,
+      this.keys.secondaryIndex,
       index as KvId,
       encoded,
     );
@@ -1823,10 +1798,7 @@ export class Collection<
     >,
   ): Promise<PaginationResult<Awaited<T>>> {
     // Create prefix key
-    const prefixKey = extendKey(
-      this.一internal.keys.secondaryIndex,
-      order as KvId,
-    );
+    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
     // Execute callback function for each document entry, return result and cursor
     return await this.handleMany(
@@ -1864,10 +1836,7 @@ export class Collection<
 
     // Perform efficient count if counting all document entries
     if (selectsAll(options)) {
-      const iter = await this.kv.list(
-        { prefix: this.一internal.keys.id },
-        options,
-      );
+      const iter = await this.kv.list({ prefix: this.keys.id }, options);
       for await (const _ of iter) {
         result++;
       }
@@ -1875,7 +1844,7 @@ export class Collection<
     }
 
     // Perform count using many documents handler
-    await this.handleMany(this.一internal.keys.id, () => result++, options);
+    await this.handleMany(this.keys.id, () => result++, options);
     return result;
   }
 
@@ -1905,11 +1874,11 @@ export class Collection<
     >,
   ): Promise<number> {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this.一internal.encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
-      this.一internal.keys.secondaryIndex,
+      this.keys.secondaryIndex,
       index as KvId,
       encoded,
     );
@@ -1955,10 +1924,7 @@ export class Collection<
     >,
   ): Promise<number> {
     // Create prefix key
-    const prefixKey = extendKey(
-      this.一internal.keys.secondaryIndex,
-      order as KvId,
-    );
+    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
     // Initialize count result
     let result = 0;
@@ -2002,8 +1968,8 @@ export class Collection<
   ): Promise<DenoKvCommitResult> {
     // Prepare message and options for enqueue
     const prep = prepareEnqueue(
-      this.一internal.keys.base,
-      this.一internal.keys.undelivered,
+      this.keys.base,
+      this.keys.undelivered,
       data,
       options,
     );
@@ -2044,10 +2010,7 @@ export class Collection<
     options?: QueueListenerOptions,
   ): Promise<void> {
     // Create handler id
-    const handlerId = createHandlerId(
-      this.一internal.keys.base,
-      options?.topic,
-    );
+    const handlerId = createHandlerId(this.keys.base, options?.topic);
 
     // Add new handler to specified handlers
     const handlers = this.queueHandlers.get(handlerId) ?? [];
@@ -2079,7 +2042,7 @@ export class Collection<
     options?: FindOptions,
   ): Promise<Document<T, KvId> | null> {
     // Create document key, get document entry
-    const key = extendKey(this.一internal.keys.undelivered, id);
+    const key = extendKey(this.keys.undelivered, id);
     const result = await this.kv.get(key, options);
 
     // If no entry exists, return null
@@ -2108,11 +2071,8 @@ export class Collection<
   async deleteHistory(id: ParseId<TOptions>): Promise<void> {
     // Initialize atomic operation and create iterators
     const atomic = new AtomicWrapper(this.kv);
-    const historyKeyPrefix = extendKey(this.一internal.keys.history, id);
-    const historySegmentKeyPrefix = extendKey(
-      this.一internal.keys.historySegment,
-      id,
-    );
+    const historyKeyPrefix = extendKey(this.keys.history, id);
+    const historySegmentKeyPrefix = extendKey(this.keys.historySegment, id);
     const historyIter = await this.kv.list({ prefix: historyKeyPrefix });
     const historySegmentIter = await this.kv.list({
       prefix: historySegmentKeyPrefix,
@@ -2143,7 +2103,7 @@ export class Collection<
    * @param id - Id of undelivered document.
    */
   async deleteUndelivered(id: KvId): Promise<void> {
-    const key = extendKey(this.一internal.keys.undelivered, id);
+    const key = extendKey(this.keys.undelivered, id);
     await this.kv.delete(key);
   }
 
@@ -2181,7 +2141,7 @@ export class Collection<
     fn: (doc: Document<TOutput, ParseId<TOptions>> | null) => unknown,
     options?: WatchOptions,
   ): WatchManager {
-    const key = extendKey(this.一internal.keys.id, id);
+    const key = extendKey(this.keys.id, id);
 
     return createWatcher(this.kv, options, [key], async (entries) => {
       const entry = entries.at(0);
@@ -2239,7 +2199,7 @@ export class Collection<
     fn: (doc: (Document<TOutput, ParseId<TOptions>> | null)[]) => unknown,
     options?: WatchOptions,
   ): WatchManager {
-    const keys = ids.map((id) => extendKey(this.一internal.keys.id, id));
+    const keys = ids.map((id) => extendKey(this.keys.id, id));
 
     return createWatcher(this.kv, options, keys, async (entries) => {
       // Construct documents
@@ -2273,11 +2233,11 @@ export class Collection<
     options: SetOptions | undefined,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Create id, document key and parse document value
-    const parsed = this.一internal.model._transform?.(value as TInput) ??
-      this.一internal.model.parse(value);
+    const parsed = this.model._transform?.(value as TInput) ??
+      this.model.parse(value);
 
-    const docId = id ?? await this.一internal.idGenerator(parsed);
-    const idKey = extendKey(this.一internal.keys.id, docId);
+    const docId = id ?? await this.idGenerator(parsed);
+    const idKey = extendKey(this.keys.id, docId);
     return await this.setDoc(docId, idKey, parsed, options);
   }
 
@@ -2314,24 +2274,24 @@ export class Collection<
     }
 
     // Serialize if enabled
-    if (this.一internal.encoder) {
+    if (this.encoder) {
       const encoded = isUint8Array
-        ? await this.一internal.encoder.compressor?.compress(value) ?? value
-        : await encodeData(value, this.一internal.encoder);
+        ? await this.encoder.compressor?.compress(value) ?? value
+        : await encodeData(value, this.encoder);
 
       // Set segmented entries
       let index = 0;
       for (let i = 0; i < encoded.length; i += UINT8ARRAY_LENGTH_LIMIT) {
         const part = encoded.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT);
-        const key = extendKey(this.一internal.keys.segment, docId, index);
+        const key = extendKey(this.keys.segment, docId, index);
         ids.push(index);
 
         operationPool.set(key, part, options);
 
         // Set history segments if keeps history
-        if (this.一internal.keepsHistory) {
+        if (this.keepsHistory) {
           const historySegmentKey = extendKey(
-            this.一internal.keys.historySegment,
+            this.keys.historySegment,
             docId,
             timeId,
             index,
@@ -2356,8 +2316,8 @@ export class Collection<
     operationPool.set(idKey, docValue, options);
 
     // Set history entry if keeps history
-    if (this.一internal.keepsHistory) {
-      const historyKey = extendKey(this.一internal.keys.history, docId, timeId);
+    if (this.keepsHistory) {
+      const historyKey = extendKey(this.keys.history, docId, timeId);
 
       const historyEntry: HistoryEntry<any> = {
         type: "write",
@@ -2369,7 +2329,7 @@ export class Collection<
     }
 
     // Set indices if is indexable
-    if (this.一internal.isIndexable) {
+    if (this.isIndexable) {
       await setIndices(
         docId,
         value as KvObject,
@@ -2412,25 +2372,19 @@ export class Collection<
       if (options?.batched && indexCheck) {
         const failedAtomic = new AtomicWrapper(this.kv);
 
-        if (this.一internal.keepsHistory) {
-          const historyKey = extendKey(
-            this.一internal.keys.history,
-            docId,
-            timeId,
-          );
+        if (this.keepsHistory) {
+          const historyKey = extendKey(this.keys.history, docId, timeId);
           failedAtomic.delete(historyKey);
         }
 
-        if (this.一internal.encoder) {
+        if (this.encoder) {
           const { ids } = docValue as EncodedEntry;
           ids.forEach((id) =>
-            failedAtomic.delete(
-              extendKey(this.一internal.keys.segment, docId, id),
-            )
+            failedAtomic.delete(extendKey(this.keys.segment, docId, id))
           );
         }
 
-        if (this.一internal.isIndexable) {
+        if (this.isIndexable) {
           await deleteIndices(
             docId,
             value as KvObject,
@@ -2481,7 +2435,7 @@ export class Collection<
     const { value, id } = doc;
 
     // If indexable, check for index collisions and delete exisitng index entries
-    if (this.一internal.isIndexable) {
+    if (this.isIndexable) {
       const atomic = this.kv.atomic();
 
       await checkIndices(
@@ -2507,9 +2461,9 @@ export class Collection<
     }
 
     // If serialized, delete existing segment entries
-    if (this.一internal.encoder) {
+    if (this.encoder) {
       const atomic = new AtomicWrapper(this.kv);
-      const keyPrefix = extendKey(this.一internal.keys.segment, id);
+      const keyPrefix = extendKey(this.keys.segment, id);
       const iter = await this.kv.list({ prefix: keyPrefix });
 
       for await (const { key } of iter) {
@@ -2534,12 +2488,12 @@ export class Collection<
       : deepMerge({ value }, { value: data }, options?.mergeOptions).value;
 
     // Parse updated value
-    const parsed = this.一internal.model.parse(updated as any);
+    const parsed = this.model.parse(updated as any);
 
     // Set new document value
     return await this.setDoc(
       id,
-      extendKey(this.一internal.keys.id, id),
+      extendKey(this.keys.id, id),
       parsed,
       {
         ...options,
@@ -2569,12 +2523,12 @@ export class Collection<
       return null;
     }
 
-    if (this.一internal.encoder) {
+    if (this.encoder) {
       // Get document parts
       const { ids, isUint8Array } = value as EncodedEntry;
 
       const keys = ids.map((segId) =>
-        extendKey(this.一internal.keys.segment, docId, segId)
+        extendKey(this.keys.segment, docId, segId)
       );
 
       const docEntries = await kvGetMany(keys, this.kv);
@@ -2584,12 +2538,11 @@ export class Collection<
 
       // Decompress and deserialize
       const decoded = isUint8Array
-        ? (await this.一internal.encoder?.compressor?.decompress(data) ??
-          data) as TOutput
-        : await decodeData<TOutput>(data, this.一internal.encoder);
+        ? (await this.encoder?.compressor?.decompress(data) ?? data) as TOutput
+        : await decodeData<TOutput>(data, this.encoder);
 
       // Return parsed document
-      return new Document<TOutput, ParseId<TOptions>>(this.一internal.model, {
+      return new Document<TOutput, ParseId<TOptions>>(this.model, {
         id: docId as ParseId<TOptions>,
         value: decoded,
         versionstamp,
@@ -2599,7 +2552,7 @@ export class Collection<
     // Remove id from value and return parsed document if indexed entry
     if (typeof indexedDocId !== "undefined") {
       const { __id__, ...val } = value as any;
-      return new Document<TOutput, ParseId<TOptions>>(this.一internal.model, {
+      return new Document<TOutput, ParseId<TOptions>>(this.model, {
         id: docId as ParseId<TOptions>,
         value: val as TOutput,
         versionstamp,
@@ -2607,7 +2560,7 @@ export class Collection<
     }
 
     // Return parsed document
-    return new Document<TOutput, ParseId<TOptions>>(this.一internal.model, {
+    return new Document<TOutput, ParseId<TOptions>>(this.model, {
       id: docId as ParseId<TOptions>,
       value: value as TOutput,
       versionstamp,
@@ -2707,7 +2660,7 @@ export class Collection<
     // Set delete history entry if recordHistory is true
     if (recordHistory) {
       ids.forEach((id) => {
-        const historyKey = extendKey(this.一internal.keys.history, id, ulid());
+        const historyKey = extendKey(this.keys.history, id, ulid());
 
         const historyEntry: HistoryEntry<TOutput> = {
           type: "delete",
@@ -2718,11 +2671,11 @@ export class Collection<
       });
     }
 
-    if (this.一internal.isIndexable && this.一internal.encoder) {
+    if (this.isIndexable && this.encoder) {
       // Run delete operations for each id
       await allFulfilled(ids.map(async (id) => {
         // Create document id key, get entry and construct document
-        const idKey = extendKey(this.一internal.keys.id, id);
+        const idKey = extendKey(this.keys.id, id);
         const entry = await this.kv.get(idKey);
         const doc = await this.constructDocument(entry);
 
@@ -2731,7 +2684,7 @@ export class Collection<
 
         if (entry.value) {
           const keys = (entry.value as EncodedEntry).ids.map((segId) =>
-            extendKey(this.一internal.keys.segment, id, segId)
+            extendKey(this.keys.segment, id, segId)
           );
 
           keys.forEach((key) => atomic.delete(key));
@@ -2747,11 +2700,11 @@ export class Collection<
       return;
     }
 
-    if (this.一internal.isIndexable) {
+    if (this.isIndexable) {
       // Run delete operations for each id
       await allFulfilled(ids.map(async (id) => {
         // Create idKey, get document value
-        const idKey = extendKey(this.一internal.keys.id, id);
+        const idKey = extendKey(this.keys.id, id);
         const { value } = await this.kv.get(idKey);
 
         // If no value, abort delete
@@ -2769,11 +2722,11 @@ export class Collection<
       return;
     }
 
-    if (this.一internal.encoder) {
+    if (this.encoder) {
       // Perform delete for each id
       await allFulfilled(ids.map(async (id) => {
         // Create document id key, get document value
-        const idKey = extendKey(this.一internal.keys.id, id);
+        const idKey = extendKey(this.keys.id, id);
         const { value } = await this.kv.get(idKey);
 
         // If no value, abort delete
@@ -2785,7 +2738,7 @@ export class Collection<
         atomic.delete(idKey);
 
         const keys = (value as EncodedEntry).ids.map((segId) =>
-          extendKey(this.一internal.keys.segment, id, segId)
+          extendKey(this.keys.segment, id, segId)
         );
 
         keys.forEach((key) => atomic.delete(key));
@@ -2797,7 +2750,7 @@ export class Collection<
     }
 
     // Perform delete for each id and commit the operation
-    ids.forEach((id) => atomic.delete(extendKey(this.一internal.keys.id, id)));
+    ids.forEach((id) => atomic.delete(extendKey(this.keys.id, id)));
     await atomic.commit();
   }
 }

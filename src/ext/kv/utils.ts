@@ -1,7 +1,7 @@
 import { ulid } from "@std/ulid";
 import type { DenoKvStrictKey, DenoKvStrictKeyPart } from "../../types.ts";
 
-export function createVersionstamp() {
+export function createVersionstamp(): string {
   return ulid();
 }
 
@@ -63,7 +63,7 @@ function sortByType(
 function sortByValue(
   part1: DenoKvStrictKeyPart,
   part2: DenoKvStrictKeyPart,
-) {
+): number {
   if (typeof part2 !== typeof part2) {
     throw Error("Cannot compare values of different type");
   }
@@ -95,7 +95,7 @@ function sortByValue(
   }
 }
 
-function sortByUint8Array(u1: Uint8Array, u2: Uint8Array) {
+function sortByUint8Array(u1: Uint8Array, u2: Uint8Array): number {
   for (let i = 0; i < Math.min(u1.length, u2.length); i++) {
     const b1 = u1.at(i);
     const b2 = u2.at(i);

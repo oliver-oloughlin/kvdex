@@ -1,6 +1,7 @@
 import type { Collection } from "./collection.ts";
 import type { DeepMergeOptions } from "@std/collections/deep-merge";
 import type { Document } from "./document.ts";
+import type { Kvdex } from "./kvdex.ts";
 
 /*********************/
 /*                   */
@@ -285,22 +286,6 @@ export type AtomicSetOptions<T extends CollectionOptions<any>> =
 /*   COLLECTION TYPES   */
 /*                      */
 /************************/
-
-/** Used for internal workings, do not manipulate or rely on these properties. */
-export type CollectionInternals<
-  TInput,
-  TOutput extends KvValue,
-  TOptions extends CollectionOptions<TOutput>,
-> = {
-  readonly model: Model<TInput, TOutput>;
-  readonly primaryIndexList: string[];
-  readonly secondaryIndexList: string[];
-  readonly keys: CollectionKeys;
-  readonly idGenerator: IdGenerator<TOutput, ParseId<TOptions>>;
-  readonly encoder?: Encoder;
-  readonly isIndexable: boolean;
-  readonly keepsHistory: boolean;
-};
 
 /** Options for creating a new collection */
 export type CollectionOptions<T extends KvValue> =
@@ -633,6 +618,14 @@ export type PrimaryIndexUpsert<
 /*   KVDEX TYPES   */
 /*                 */
 /*******************/
+
+/**
+ * Kvdex database object.
+ * Contains configured collections and provides methods for database-level functionalitites.
+ */
+export type Database<TSchema extends SchemaDefinition> =
+  & Kvdex<Schema<TSchema>>
+  & Schema<TSchema>;
 
 /** Schema definition, containing builder functions and nested schema definitions. */
 export type SchemaDefinition = {

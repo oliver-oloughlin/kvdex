@@ -37,29 +37,29 @@ export class AtomicWrapper implements DenoAtomicOperation {
     this.currentKeySize = 0;
   }
 
-  set(key: DenoKvStrictKey, value: unknown, options?: DenoKvSetOptions) {
+  set(key: DenoKvStrictKey, value: unknown, options?: DenoKvSetOptions): this {
     this.addMutation((op) => op.set(key, value, options), 67, 2, false);
     return this;
   }
 
-  delete(key: DenoKvStrictKey) {
+  delete(key: DenoKvStrictKey): this {
     this.addMutation((op) => op.delete(key), 3, 2, false);
     return this;
   }
 
-  check(...checks: DenoAtomicCheck[]) {
+  check(...checks: DenoAtomicCheck[]): this {
     checks.forEach((check) =>
       this.addMutation((op) => op.check(check), 3, 2, true)
     );
     return this;
   }
 
-  sum(key: DenoKvStrictKey, n: bigint) {
+  sum(key: DenoKvStrictKey, n: bigint): this {
     this.addMutation((op) => op.sum(key, n), 3, 2, false);
     return this;
   }
 
-  max(key: DenoKvStrictKey, n: bigint) {
+  max(key: DenoKvStrictKey, n: bigint): this {
     this.addMutation((op) => op.max(key, n), 3, 2, false);
     return this;
   }
@@ -75,7 +75,7 @@ export class AtomicWrapper implements DenoAtomicOperation {
       delay?: number | undefined;
       keysIfUndelivered?: DenoKvStrictKey[] | undefined;
     } | undefined,
-  ) {
+  ): this {
     this.addMutation(
       (op) => op.enqueue(value, options),
       96,
@@ -128,7 +128,7 @@ export class AtomicWrapper implements DenoAtomicOperation {
     size: number,
     keySize: number,
     isCheck: boolean,
-  ) {
+  ): void {
     this.currentSize += size;
     this.currentKeySize += keySize;
     this.currentCount++;

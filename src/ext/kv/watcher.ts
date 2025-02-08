@@ -66,7 +66,7 @@ export class Watcher {
     this.listener.reject = reject;
   }
 
-  cancel() {
+  cancel(): void {
     this.listener.reject();
   }
 }
