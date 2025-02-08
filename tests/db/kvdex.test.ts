@@ -18,8 +18,8 @@ Deno.test("db - kvdex", async (t) => {
           },
         });
 
-        const key1 = JSON.stringify(db.numbers.一internal.keys.base);
-        const key2 = JSON.stringify(db.nested.numbers.一internal.keys.base);
+        const key1 = JSON.stringify(db.numbers._keys.base);
+        const key2 = JSON.stringify(db.nested.numbers._keys.base);
 
         assert(key1 !== key2);
         assert(key1 === `["${KVDEX_KEY_PREFIX}","numbers"]`);

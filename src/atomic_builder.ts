@@ -71,7 +71,7 @@ export class AtomicBuilder<
     operations?: Operations,
   ) {
     // Check for large collection
-    if (collection.一internal.encoder) {
+    if (collection._encoder) {
       throw new InvalidCollectionError(
         "Atomic operations are not supported for serialized collections",
       );
@@ -187,17 +187,15 @@ export class AtomicBuilder<
   delete(id: ParseId<TOptions>): this {
     // Create id key from id and collection id key
     const collection = this.collection;
-    const idKey = extendKey(collection.一internal.keys.id, id);
+    const idKey = extendKey(collection._keys.id, id);
 
     // Add delete operation
     this.operations.atomic.delete(idKey);
 
     // If collection is indexable, handle indexing
-    if (this.collection.一internal.isIndexable) {
+    if (this.collection._isIndexable) {
       // Add collection key for collision detection
-      this.operations.indexDeleteCollectionKeys.push(
-        collection.一internal.keys.base,
-      );
+      this.operations.indexDeleteCollectionKeys.push(collection._keys.base);
 
       // Add delete preperation function to prepeare delete functions list
       this.operations.prepareDeleteFns.push(async (kv) => {
@@ -211,12 +209,8 @@ export class AtomicBuilder<
     }
 
     // Set history entry if keeps history
-    if (this.collection.一internal.keepsHistory) {
-      const historyKey = extendKey(
-        this.collection.一internal.keys.history,
-        id,
-        ulid(),
-      );
+    if (this.collection._keepsHistory) {
+      const historyKey = extendKey(this.collection._keys.history, id, ulid());
 
       const historyEntry: HistoryEntry<TOutput> = {
         type: "delete",
@@ -250,7 +244,7 @@ export class AtomicBuilder<
     // Create Denoatomic checks from atomci checks input list
     const checks: DenoAtomicCheck[] = atomicChecks.map(
       ({ id, versionstamp }) => {
-        const key = extendKey(this.collection.一internal.keys.id, id);
+        const key = extendKey(this.collection._keys.id, id);
         return {
           key,
           versionstamp,
@@ -284,7 +278,7 @@ export class AtomicBuilder<
     id: ParseId<TOptions>,
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
-    const idKey = extendKey(this.collection.一internal.keys.id, id);
+    const idKey = extendKey(this.collection._keys.id, id);
     this.operations.atomic.sum(idKey, value);
     return this;
   }
@@ -309,7 +303,7 @@ export class AtomicBuilder<
     id: ParseId<TOptions>,
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
-    const idKey = extendKey(this.collection.一internal.keys.id, id);
+    const idKey = extendKey(this.collection._keys.id, id);
     this.operations.atomic.min(idKey, value);
     return this;
   }
@@ -334,7 +328,7 @@ export class AtomicBuilder<
     id: ParseId<TOptions>,
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
-    const idKey = extendKey(this.collection.一internal.keys.id, id);
+    const idKey = extendKey(this.collection._keys.id, id);
     this.operations.atomic.max(idKey, value);
     return this;
   }
@@ -424,8 +418,8 @@ export class AtomicBuilder<
   enqueue(data: KvValue, options?: EnqueueOptions): this {
     // Prepare and add enqueue operation
     const prep = prepareEnqueue(
-      this.collection.一internal.keys.base,
-      this.collection.一internal.keys.undelivered,
+      this.collection._keys.base,
+      this.collection._keys.undelivered,
       data,
       options,
     );
@@ -523,7 +517,7 @@ export class AtomicBuilder<
     const overwrite = !!(options as AtomicSetOptions<EmptyObject> | undefined)
       ?.overwrite;
 
-    if (this.collection.一internal.isIndexable && overwrite) {
+    if (this.collection._isIndexable && overwrite) {
       throw new InvalidCollectionError(
         "The overwrite property is not supported for indexable collections",
       );
@@ -533,12 +527,11 @@ export class AtomicBuilder<
       // Create id key from collection id key and id
       const collection = this.collection;
 
-      const parsed =
-        collection.一internal.model._transform?.(value as TInput) ??
-          collection.一internal.model.parse(value);
+      const parsed = collection._model._transform?.(value as TInput) ??
+        collection._model.parse(value);
 
-      const docId = id ?? await collection.一internal.idGenerator(parsed);
-      const idKey = extendKey(collection.一internal.keys.id, docId);
+      const docId = id ?? await collection._idGenerator(parsed);
+      const idKey = extendKey(collection._keys.id, docId);
 
       // Add set operation
       this.operations.atomic.set(idKey, parsed, options);
@@ -546,11 +539,9 @@ export class AtomicBuilder<
         this.operations.atomic.check({ key: idKey, versionstamp: null });
       }
 
-      if (collection.一internal.isIndexable) {
+      if (collection._isIndexable) {
         // Add collection id key for collision detection
-        this.operations.indexAddCollectionKeys.push(
-          collection.一internal.keys.base,
-        );
+        this.operations.indexAddCollectionKeys.push(collection._keys.base);
 
         // Add indexing operations
         await setIndices(
@@ -564,9 +555,9 @@ export class AtomicBuilder<
       }
 
       // Set history entry if keeps history
-      if (this.collection.一internal.keepsHistory) {
+      if (this.collection._keepsHistory) {
         const historyKey = extendKey(
-          this.collection.一internal.keys.history,
+          this.collection._keys.history,
           docId,
           ulid(),
         );

@@ -10,8 +10,8 @@ import { sleep } from "../utils.ts";
 Deno.test("collection - properties", async (t) => {
   await t.step("Keys should have the correct prefixes", async () => {
     await useDb((db) => {
-      const baseKey = db.users.一internal.keys.base;
-      const idKey = db.users.一internal.keys.id;
+      const baseKey = db.users._keys.base;
+      const idKey = db.users._keys.id;
       const prefix = extendKey([KVDEX_KEY_PREFIX], "users");
 
       assert(keyEq(baseKey, prefix));
@@ -36,8 +36,8 @@ Deno.test("collection - properties", async (t) => {
         },
       });
 
-      const id1 = db.users1.一internal.idGenerator(mockUser1);
-      const id2 = db.users2.一internal.idGenerator(mockUser1);
+      const id1 = db.users1._idGenerator(mockUser1);
+      const id2 = db.users2._idGenerator(mockUser1);
 
       assert(typeof id1 === "number");
       assert(id2 === mockUser1.username);
