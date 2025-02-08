@@ -158,8 +158,8 @@ export class Collection<
   private secondaryIndexList: string[];
   private keys: CollectionKeys;
   private idGenerator: IdGenerator<TOutput, ParseId<TOptions>>;
-  readonly _encoder?: Encoder;
-  readonly _isIndexable: boolean;
+  private encoder?: Encoder;
+  private isIndexable: boolean;
   readonly _keepsHistory: boolean;
 
   constructor(
@@ -176,7 +176,7 @@ export class Collection<
     this.idempotentListener = idempotentListener;
     this.model = model;
     this.idGenerator = options?.idGenerator ?? generateId as any;
-    this._encoder = options?.encoder;
+    this.encoder = options?.encoder;
 
     // Set keys
     this.keys = {
@@ -235,7 +235,7 @@ export class Collection<
     });
 
     // Set isIndexable flag
-    this._isIndexable = this.primaryIndexList.length > 0 ||
+    this.isIndexable = this.primaryIndexList.length > 0 ||
       this.secondaryIndexList.length > 0;
 
     // Set keepsHistory flag
@@ -296,7 +296,7 @@ export class Collection<
     options?: FindOptions,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this._encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create the index key
     const key = extendKey(
@@ -344,7 +344,7 @@ export class Collection<
     >,
   ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this._encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -455,7 +455,7 @@ export class Collection<
       let historyEntry = value as HistoryEntry<TOutput>;
 
       // Handle serialized entries
-      if (historyEntry.type === "write" && this._encoder) {
+      if (historyEntry.type === "write" && this.encoder) {
         const { ids } = historyEntry.value as EncodedEntry;
         const timeId = getDocumentId(key as DenoKvStrictKey)!;
 
@@ -469,7 +469,7 @@ export class Collection<
         const data = concat(entries.map((entry) => entry.value as Uint8Array));
 
         // Decompress and deserialize
-        const decoded = await decodeData(data, this._encoder);
+        const decoded = await decodeData(data, this.encoder);
 
         // Set history entry
         historyEntry = {
@@ -585,7 +585,7 @@ export class Collection<
     options?: FindOptions,
   ): Promise<void> {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this._encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create index key
     const key = extendKey(
@@ -641,7 +641,7 @@ export class Collection<
     >,
   ): Promise<Pagination> {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this._encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -803,7 +803,7 @@ export class Collection<
     >
   > {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this._encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1748,7 +1748,7 @@ export class Collection<
     >,
   ): Promise<PaginationResult<Awaited<T>>> {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this._encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1874,7 +1874,7 @@ export class Collection<
     >,
   ): Promise<number> {
     // Serialize and compress index value
-    const encoded = await encodeData(value, this._encoder);
+    const encoded = await encodeData(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -2274,10 +2274,10 @@ export class Collection<
     }
 
     // Serialize if enabled
-    if (this._encoder) {
+    if (this.encoder) {
       const encoded = isUint8Array
-        ? await this._encoder.compressor?.compress(value) ?? value
-        : await encodeData(value, this._encoder);
+        ? await this.encoder.compressor?.compress(value) ?? value
+        : await encodeData(value, this.encoder);
 
       // Set segmented entries
       let index = 0;
@@ -2329,7 +2329,7 @@ export class Collection<
     }
 
     // Set indices if is indexable
-    if (this._isIndexable) {
+    if (this.isIndexable) {
       await setIndices(
         docId,
         value as KvObject,
@@ -2377,14 +2377,14 @@ export class Collection<
           failedAtomic.delete(historyKey);
         }
 
-        if (this._encoder) {
+        if (this.encoder) {
           const { ids } = docValue as EncodedEntry;
           ids.forEach((id) =>
             failedAtomic.delete(extendKey(this.keys.segment, docId, id))
           );
         }
 
-        if (this._isIndexable) {
+        if (this.isIndexable) {
           await deleteIndices(
             docId,
             value as KvObject,
@@ -2435,7 +2435,7 @@ export class Collection<
     const { value, id } = doc;
 
     // If indexable, check for index collisions and delete exisitng index entries
-    if (this._isIndexable) {
+    if (this.isIndexable) {
       const atomic = this.kv.atomic();
 
       await checkIndices(
@@ -2461,7 +2461,7 @@ export class Collection<
     }
 
     // If serialized, delete existing segment entries
-    if (this._encoder) {
+    if (this.encoder) {
       const atomic = new AtomicWrapper(this.kv);
       const keyPrefix = extendKey(this.keys.segment, id);
       const iter = await this.kv.list({ prefix: keyPrefix });
@@ -2523,7 +2523,7 @@ export class Collection<
       return null;
     }
 
-    if (this._encoder) {
+    if (this.encoder) {
       // Get document parts
       const { ids, isUint8Array } = value as EncodedEntry;
 
@@ -2538,8 +2538,8 @@ export class Collection<
 
       // Decompress and deserialize
       const decoded = isUint8Array
-        ? (await this._encoder?.compressor?.decompress(data) ?? data) as TOutput
-        : await decodeData<TOutput>(data, this._encoder);
+        ? (await this.encoder?.compressor?.decompress(data) ?? data) as TOutput
+        : await decodeData<TOutput>(data, this.encoder);
 
       // Return parsed document
       return new Document<TOutput, ParseId<TOptions>>(this.model, {
@@ -2671,7 +2671,7 @@ export class Collection<
       });
     }
 
-    if (this._isIndexable && this._encoder) {
+    if (this.isIndexable && this.encoder) {
       // Run delete operations for each id
       await allFulfilled(ids.map(async (id) => {
         // Create document id key, get entry and construct document
@@ -2700,7 +2700,7 @@ export class Collection<
       return;
     }
 
-    if (this._isIndexable) {
+    if (this.isIndexable) {
       // Run delete operations for each id
       await allFulfilled(ids.map(async (id) => {
         // Create idKey, get document value
@@ -2722,7 +2722,7 @@ export class Collection<
       return;
     }
 
-    if (this._encoder) {
+    if (this.encoder) {
       // Perform delete for each id
       await allFulfilled(ids.map(async (id) => {
         // Create document id key, get document value
