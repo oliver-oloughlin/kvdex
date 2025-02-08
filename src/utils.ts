@@ -494,7 +494,7 @@ async function handleIndices(
   secondary?: (indexKey: KvKey) => void,
 ): Promise<void> {
   // Handle primary indices
-  for (const index of collection._primaryIndexList) {
+  for (const index of collection["primaryIndexList"]) {
     const indexValue = data[index] as KvId | undefined;
     if (typeof indexValue === "undefined") continue;
 
@@ -514,7 +514,7 @@ async function handleIndices(
   }
 
   // Handle secondary indices
-  for (const index of collection._secondaryIndexList) {
+  for (const index of collection["secondaryIndexList"]) {
     const indexValue = data[index] as KvId | undefined;
     if (typeof indexValue === "undefined") continue;
 

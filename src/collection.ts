@@ -154,8 +154,8 @@ export class Collection<
   private queueHandlers: QueueHandlers;
   private idempotentListener: IdempotentListener;
   private model: Model<TInput, TOutput>;
-  readonly _primaryIndexList: string[];
-  readonly _secondaryIndexList: string[];
+  private primaryIndexList: string[];
+  private secondaryIndexList: string[];
   readonly _keys: CollectionKeys;
   readonly _idGenerator: IdGenerator<TOutput, ParseId<TOptions>>;
   readonly _encoder?: Encoder;
@@ -223,20 +223,20 @@ export class Collection<
     const opts = (options ?? {}) as PossibleCollectionOptions;
 
     // Set index lists
-    this._primaryIndexList = [];
-    this._secondaryIndexList = [];
+    this.primaryIndexList = [];
+    this.secondaryIndexList = [];
 
     Object.entries(opts?.indices ?? {}).forEach(([index, value]) => {
       if (value === "primary") {
-        this._primaryIndexList.push(index);
+        this.primaryIndexList.push(index);
       } else {
-        this._secondaryIndexList.push(index);
+        this.secondaryIndexList.push(index);
       }
     });
 
     // Set isIndexable flag
-    this._isIndexable = this._primaryIndexList.length > 0 ||
-      this._secondaryIndexList.length > 0;
+    this._isIndexable = this.primaryIndexList.length > 0 ||
+      this.secondaryIndexList.length > 0;
 
     // Set keepsHistory flag
     this._keepsHistory = options?.history ?? false;
