@@ -3,13 +3,13 @@ import { kvdex } from "../../mod.ts";
 
 Deno.test("db - properties", async (t) => {
   await t.step("Should allow native Deno KV type", async () => {
-    const kv = await Deno.openKv();
+    const kv = await Deno.openKv(":memory:");
     kvdex({ kv });
     kv.close();
   });
 
   await t.step("Should allow NPM Deno KV type", async () => {
-    const kv = await openKv();
+    const kv = await openKv(":memory:");
     kvdex({ kv });
     kv.close();
   });

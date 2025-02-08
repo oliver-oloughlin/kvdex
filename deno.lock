@@ -8,7 +8,7 @@
     "jsr:@std/bytes@^1.0.4": "1.0.4",
     "jsr:@std/cli@0.217": "0.217.0",
     "jsr:@std/cli@0.220": "0.220.1",
-    "jsr:@std/cli@^1.0.6": "1.0.6",
+    "jsr:@std/cli@1.0.12": "1.0.12",
     "jsr:@std/collections@^1.0.2": "1.0.5",
     "jsr:@std/collections@^1.0.9": "1.0.9",
     "jsr:@std/fmt@0.217": "0.217.0",
@@ -58,8 +58,8 @@
         "jsr:@std/assert@~0.220.1"
       ]
     },
-    "@std/cli@1.0.6": {
-      "integrity": "d22d8b38c66c666d7ad1f2a66c5b122da1704f985d3c47f01129f05abb6c5d3d"
+    "@std/cli@1.0.12": {
+      "integrity": "e5cfb7814d189da174ecd7a34fbbd63f3513e24a1b307feb2fcd5da47a070d90"
     },
     "@std/collections@1.0.2": {
       "integrity": "cb1834be534f967e86495f6c64fa06f6b3debdaab5b860c2d3194db59cd30157"
@@ -137,7 +137,7 @@
     "dependencies": [
       "jsr:@std/assert@1.0.7",
       "jsr:@std/bytes@^1.0.4",
-      "jsr:@std/cli@^1.0.6",
+      "jsr:@std/cli@1.0.12",
       "jsr:@std/collections@^1.0.9",
       "jsr:@std/ulid@1",
       "npm:@deno/kv@~0.8.4",
