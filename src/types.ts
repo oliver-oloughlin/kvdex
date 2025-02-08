@@ -1,6 +1,7 @@
 import type { Collection } from "./collection.ts";
 import type { DeepMergeOptions } from "@std/collections/deep-merge";
 import type { Document } from "./document.ts";
+import type { Kvdex } from "./kvdex.ts";
 
 /*********************/
 /*                   */
@@ -617,6 +618,14 @@ export type PrimaryIndexUpsert<
 /*   KVDEX TYPES   */
 /*                 */
 /*******************/
+
+/**
+ * Kvdex database object.
+ * Contains configured collections and provides methods for database-level functionalitites.
+ */
+export type Database<TSchema extends SchemaDefinition> =
+  & Kvdex<Schema<TSchema>>
+  & Schema<TSchema>;
 
 /** Schema definition, containing builder functions and nested schema definitions. */
 export type SchemaDefinition = {
