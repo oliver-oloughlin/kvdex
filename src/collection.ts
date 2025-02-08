@@ -160,7 +160,7 @@ export class Collection<
   private idGenerator: IdGenerator<TOutput, ParseId<TOptions>>;
   private encoder?: Encoder;
   private isIndexable: boolean;
-  readonly _keepsHistory: boolean;
+  private keepsHistory: boolean;
 
   constructor(
     kv: DenoKv,
@@ -239,7 +239,7 @@ export class Collection<
       this.secondaryIndexList.length > 0;
 
     // Set keepsHistory flag
-    this._keepsHistory = options?.history ?? false;
+    this.keepsHistory = options?.history ?? false;
   }
 
   /**********************/
@@ -560,7 +560,7 @@ export class Collection<
    * @returns A promise that resovles to void.
    */
   async delete(...ids: ParseId<TOptions>[]): Promise<void> {
-    await this.deleteDocuments(ids, this._keepsHistory);
+    await this.deleteDocuments(ids, this.keepsHistory);
   }
 
   /**
@@ -608,7 +608,7 @@ export class Collection<
       & Pick<IndexDataEntry<KvObject>, "__id__">;
 
     // Delete document by id
-    await this.deleteDocuments([__id__], this._keepsHistory);
+    await this.deleteDocuments([__id__], this.keepsHistory);
   }
 
   /**
@@ -653,7 +653,7 @@ export class Collection<
     // Delete documents by secondary index, return iterator cursor
     const { cursor } = await this.handleMany(
       prefixKey,
-      (doc) => this.deleteDocuments([doc.id], this._keepsHistory),
+      (doc) => this.deleteDocuments([doc.id], this.keepsHistory),
       options,
     );
 
@@ -1268,7 +1268,7 @@ export class Collection<
       }
 
       // Set history entries if keeps history
-      if (this._keepsHistory) {
+      if (this.keepsHistory) {
         const historyIter = await this.kv.list({ prefix: this.keys.id });
         for await (const { key } of historyIter) {
           const id = getDocumentId(key as DenoKvStrictKey);
@@ -1296,7 +1296,7 @@ export class Collection<
     // Execute delete operation for each document entry
     const { cursor } = await this.handleMany(
       this.keys.id,
-      (doc) => this.deleteDocuments([doc.id], this._keepsHistory),
+      (doc) => this.deleteDocuments([doc.id], this.keepsHistory),
       options,
     );
 
@@ -1336,7 +1336,7 @@ export class Collection<
     // Delete documents by secondary index, return iterator cursor
     const { cursor } = await this.handleMany(
       prefixKey,
-      (doc) => this.deleteDocuments([doc.id], this._keepsHistory),
+      (doc) => this.deleteDocuments([doc.id], this.keepsHistory),
       options,
     );
 
@@ -2289,7 +2289,7 @@ export class Collection<
         operationPool.set(key, part, options);
 
         // Set history segments if keeps history
-        if (this._keepsHistory) {
+        if (this.keepsHistory) {
           const historySegmentKey = extendKey(
             this.keys.historySegment,
             docId,
@@ -2316,7 +2316,7 @@ export class Collection<
     operationPool.set(idKey, docValue, options);
 
     // Set history entry if keeps history
-    if (this._keepsHistory) {
+    if (this.keepsHistory) {
       const historyKey = extendKey(this.keys.history, docId, timeId);
 
       const historyEntry: HistoryEntry<any> = {
@@ -2372,7 +2372,7 @@ export class Collection<
       if (options?.batched && indexCheck) {
         const failedAtomic = new AtomicWrapper(this.kv);
 
-        if (this._keepsHistory) {
+        if (this.keepsHistory) {
           const historyKey = extendKey(this.keys.history, docId, timeId);
           failedAtomic.delete(historyKey);
         }

@@ -193,7 +193,7 @@ export class AtomicBuilder<
     this.operations.atomic.delete(idKey);
 
     // If collection is indexable, handle indexing
-    if (this.collection._isIndexable) {
+    if (this.collection["isIndexable"]) {
       // Add collection key for collision detection
       this.operations.indexDeleteCollectionKeys.push(collection["keys"].base);
 
@@ -209,7 +209,7 @@ export class AtomicBuilder<
     }
 
     // Set history entry if keeps history
-    if (this.collection._keepsHistory) {
+    if (this.collection["keepsHistory"]) {
       const historyKey = extendKey(this.collection["keys"].history, id, ulid());
 
       const historyEntry: HistoryEntry<TOutput> = {
@@ -517,7 +517,7 @@ export class AtomicBuilder<
     const overwrite = !!(options as AtomicSetOptions<EmptyObject> | undefined)
       ?.overwrite;
 
-    if (this.collection._isIndexable && overwrite) {
+    if (this.collection["isIndexable"] && overwrite) {
       throw new InvalidCollectionError(
         "The overwrite property is not supported for indexable collections",
       );
@@ -539,7 +539,7 @@ export class AtomicBuilder<
         this.operations.atomic.check({ key: idKey, versionstamp: null });
       }
 
-      if (collection._isIndexable) {
+      if (collection["isIndexable"]) {
         // Add collection id key for collision detection
         this.operations.indexAddCollectionKeys.push(collection["keys"].base);
 
@@ -555,7 +555,7 @@ export class AtomicBuilder<
       }
 
       // Set history entry if keeps history
-      if (this.collection._keepsHistory) {
+      if (this.collection["keepsHistory"]) {
         const historyKey = extendKey(
           this.collection["keys"].history,
           docId,
