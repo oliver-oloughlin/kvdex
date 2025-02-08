@@ -527,8 +527,8 @@ export class AtomicBuilder<
       // Create id key from collection id key and id
       const collection = this.collection;
 
-      const parsed = collection._model._transform?.(value as TInput) ??
-        collection._model.parse(value);
+      const parsed = collection["model"]._transform?.(value as TInput) ??
+        collection["model"].parse(value);
 
       const docId = id ?? await collection._idGenerator(parsed);
       const idKey = extendKey(collection._keys.id, docId);

@@ -153,8 +153,7 @@ export class Collection<
   private kv: DenoKv;
   private queueHandlers: QueueHandlers;
   private idempotentListener: IdempotentListener;
-
-  readonly _model: Model<TInput, TOutput>;
+  private model: Model<TInput, TOutput>;
   readonly _primaryIndexList: string[];
   readonly _secondaryIndexList: string[];
   readonly _keys: CollectionKeys;
@@ -175,7 +174,7 @@ export class Collection<
     this.kv = kv;
     this.queueHandlers = queueHandlers;
     this.idempotentListener = idempotentListener;
-    this._model = model;
+    this.model = model;
     this._idGenerator = options?.idGenerator ?? generateId as any;
     this._encoder = options?.encoder;
 
@@ -475,13 +474,13 @@ export class Collection<
         // Set history entry
         historyEntry = {
           ...historyEntry,
-          value: this._model.parse?.(decoded),
+          value: this.model.parse?.(decoded),
         };
       } else if (historyEntry.type === "write") {
         // Set history entry
         historyEntry = {
           ...historyEntry,
-          value: this._model.parse?.(historyEntry.value),
+          value: this.model.parse?.(historyEntry.value),
         };
       }
 
@@ -2234,8 +2233,8 @@ export class Collection<
     options: SetOptions | undefined,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Create id, document key and parse document value
-    const parsed = this._model._transform?.(value as TInput) ??
-      this._model.parse(value);
+    const parsed = this.model._transform?.(value as TInput) ??
+      this.model.parse(value);
 
     const docId = id ?? await this._idGenerator(parsed);
     const idKey = extendKey(this._keys.id, docId);
@@ -2489,7 +2488,7 @@ export class Collection<
       : deepMerge({ value }, { value: data }, options?.mergeOptions).value;
 
     // Parse updated value
-    const parsed = this._model.parse(updated as any);
+    const parsed = this.model.parse(updated as any);
 
     // Set new document value
     return await this.setDoc(
@@ -2543,7 +2542,7 @@ export class Collection<
         : await decodeData<TOutput>(data, this._encoder);
 
       // Return parsed document
-      return new Document<TOutput, ParseId<TOptions>>(this._model, {
+      return new Document<TOutput, ParseId<TOptions>>(this.model, {
         id: docId as ParseId<TOptions>,
         value: decoded,
         versionstamp,
@@ -2553,7 +2552,7 @@ export class Collection<
     // Remove id from value and return parsed document if indexed entry
     if (typeof indexedDocId !== "undefined") {
       const { __id__, ...val } = value as any;
-      return new Document<TOutput, ParseId<TOptions>>(this._model, {
+      return new Document<TOutput, ParseId<TOptions>>(this.model, {
         id: docId as ParseId<TOptions>,
         value: val as TOutput,
         versionstamp,
@@ -2561,7 +2560,7 @@ export class Collection<
     }
 
     // Return parsed document
-    return new Document<TOutput, ParseId<TOptions>>(this._model, {
+    return new Document<TOutput, ParseId<TOptions>>(this.model, {
       id: docId as ParseId<TOptions>,
       value: value as TOutput,
       versionstamp,
