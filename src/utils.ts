@@ -102,7 +102,7 @@ export async function createSecondaryIndexKeyPrefix(
 
   // Create prefix key
   return extendKey(
-    collection._keys.secondaryIndex,
+    collection["keys"].secondaryIndex,
     index as KvId,
     encoded,
   );
@@ -501,7 +501,7 @@ async function handleIndices(
     const encoded = await encodeData(indexValue, collection._encoder);
 
     const indexKey = extendKey(
-      collection._keys.primaryIndex,
+      collection["keys"].primaryIndex,
       index,
       encoded,
     );
@@ -521,7 +521,7 @@ async function handleIndices(
     const encoded = await encodeData(indexValue, collection._encoder);
 
     const indexKey = extendKey(
-      collection._keys.secondaryIndex,
+      collection["keys"].secondaryIndex,
       index,
       encoded,
       id,

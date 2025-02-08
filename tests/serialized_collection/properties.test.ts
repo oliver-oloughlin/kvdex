@@ -16,9 +16,9 @@ import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 Deno.test("serialized_collection - properties", async (t) => {
   await t.step("Keys should have the correct prefixes", async () => {
     await useDb((db) => {
-      const baseKey = db.s_users._keys.base;
-      const idKey = db.s_users._keys.id;
-      const segmentKey = db.s_users._keys.segment;
+      const baseKey = db.s_users["keys"].base;
+      const idKey = db.s_users["keys"].id;
+      const segmentKey = db.s_users["keys"].segment;
       const prefix = extendKey([KVDEX_KEY_PREFIX], "s_users");
 
       assert(keyEq(baseKey, prefix));
@@ -43,8 +43,8 @@ Deno.test("serialized_collection - properties", async (t) => {
         },
       });
 
-      const id1 = db.users1._idGenerator(mockUser1);
-      const id2 = db.users2._idGenerator(mockUser1);
+      const id1 = db.users1["idGenerator"](mockUser1);
+      const id2 = db.users2["idGenerator"](mockUser1);
 
       assert(typeof id1 === "number");
       assert(id2 === mockUser1.username);

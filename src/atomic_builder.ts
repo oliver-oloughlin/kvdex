@@ -187,7 +187,7 @@ export class AtomicBuilder<
   delete(id: ParseId<TOptions>): this {
     // Create id key from id and collection id key
     const collection = this.collection;
-    const idKey = extendKey(collection._keys.id, id);
+    const idKey = extendKey(collection["keys"].id, id);
 
     // Add delete operation
     this.operations.atomic.delete(idKey);
@@ -195,7 +195,7 @@ export class AtomicBuilder<
     // If collection is indexable, handle indexing
     if (this.collection._isIndexable) {
       // Add collection key for collision detection
-      this.operations.indexDeleteCollectionKeys.push(collection._keys.base);
+      this.operations.indexDeleteCollectionKeys.push(collection["keys"].base);
 
       // Add delete preperation function to prepeare delete functions list
       this.operations.prepareDeleteFns.push(async (kv) => {
@@ -210,7 +210,7 @@ export class AtomicBuilder<
 
     // Set history entry if keeps history
     if (this.collection._keepsHistory) {
-      const historyKey = extendKey(this.collection._keys.history, id, ulid());
+      const historyKey = extendKey(this.collection["keys"].history, id, ulid());
 
       const historyEntry: HistoryEntry<TOutput> = {
         type: "delete",
@@ -244,7 +244,7 @@ export class AtomicBuilder<
     // Create Denoatomic checks from atomci checks input list
     const checks: DenoAtomicCheck[] = atomicChecks.map(
       ({ id, versionstamp }) => {
-        const key = extendKey(this.collection._keys.id, id);
+        const key = extendKey(this.collection["keys"].id, id);
         return {
           key,
           versionstamp,
@@ -278,7 +278,7 @@ export class AtomicBuilder<
     id: ParseId<TOptions>,
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
-    const idKey = extendKey(this.collection._keys.id, id);
+    const idKey = extendKey(this.collection["keys"].id, id);
     this.operations.atomic.sum(idKey, value);
     return this;
   }
@@ -303,7 +303,7 @@ export class AtomicBuilder<
     id: ParseId<TOptions>,
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
-    const idKey = extendKey(this.collection._keys.id, id);
+    const idKey = extendKey(this.collection["keys"].id, id);
     this.operations.atomic.min(idKey, value);
     return this;
   }
@@ -328,7 +328,7 @@ export class AtomicBuilder<
     id: ParseId<TOptions>,
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
-    const idKey = extendKey(this.collection._keys.id, id);
+    const idKey = extendKey(this.collection["keys"].id, id);
     this.operations.atomic.max(idKey, value);
     return this;
   }
@@ -418,8 +418,8 @@ export class AtomicBuilder<
   enqueue(data: KvValue, options?: EnqueueOptions): this {
     // Prepare and add enqueue operation
     const prep = prepareEnqueue(
-      this.collection._keys.base,
-      this.collection._keys.undelivered,
+      this.collection["keys"].base,
+      this.collection["keys"].undelivered,
       data,
       options,
     );
@@ -530,8 +530,8 @@ export class AtomicBuilder<
       const parsed = collection["model"]._transform?.(value as TInput) ??
         collection["model"].parse(value);
 
-      const docId = id ?? await collection._idGenerator(parsed);
-      const idKey = extendKey(collection._keys.id, docId);
+      const docId = id ?? await collection["idGenerator"](parsed);
+      const idKey = extendKey(collection["keys"].id, docId);
 
       // Add set operation
       this.operations.atomic.set(idKey, parsed, options);
@@ -541,7 +541,7 @@ export class AtomicBuilder<
 
       if (collection._isIndexable) {
         // Add collection id key for collision detection
-        this.operations.indexAddCollectionKeys.push(collection._keys.base);
+        this.operations.indexAddCollectionKeys.push(collection["keys"].base);
 
         // Add indexing operations
         await setIndices(
@@ -557,7 +557,7 @@ export class AtomicBuilder<
       // Set history entry if keeps history
       if (this.collection._keepsHistory) {
         const historyKey = extendKey(
-          this.collection._keys.history,
+          this.collection["keys"].history,
           docId,
           ulid(),
         );

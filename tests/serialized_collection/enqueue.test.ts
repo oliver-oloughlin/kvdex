@@ -24,7 +24,7 @@ Deno.test("serialized_collection - enqueue", async (t) => {
       });
 
       const sleeper = createResolver();
-      const handlerId = createHandlerId(db.s_users._keys.base, undefined);
+      const handlerId = createHandlerId(db.s_users["keys"].base, undefined);
       let assertion = false;
 
       const listener = kv.listenQueue((msg) => {
