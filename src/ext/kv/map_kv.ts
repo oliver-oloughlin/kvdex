@@ -78,7 +78,7 @@ export class MapKv implements DenoKv {
   async close(): Promise<void> {
     this.watchers.forEach((w) => w.cancel());
     this.listener?.resolve();
-    await this.atomicLock.close();
+    this.atomicLock.cancel();
     if (this.clearOnClose) await this.map.clear();
   }
 

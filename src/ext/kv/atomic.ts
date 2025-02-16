@@ -124,7 +124,7 @@ export class MapKvAtomicOperation implements DenoAtomicOperation {
   }
 
   async commit(): Promise<DenoKvCommitError | DenoKvCommitResult> {
-    return await this.lock.run(async () => {
+    const taskResult = await this.lock.run(async () => {
       const checks = await Promise.allSettled(
         this.checks.map((check) => check()),
       );
@@ -147,5 +147,7 @@ export class MapKvAtomicOperation implements DenoAtomicOperation {
         versionstamp,
       };
     });
+
+    return taskResult.status === "fulfilled" ? taskResult.value : { ok: false };
   }
 }
