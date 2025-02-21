@@ -2,9 +2,9 @@ name: Test minimum deno version
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "release/**/*"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "release/**/*"]
 
 permissions:
   contents: read
