@@ -2,9 +2,9 @@ name: Test minimum deno version
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "release/**/*"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "release/**/*"]
 
 permissions:
   contents: read
@@ -21,7 +21,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.0.0
+          deno-version: v2.2.0
 
       - name: Check Types
         run: deno task check

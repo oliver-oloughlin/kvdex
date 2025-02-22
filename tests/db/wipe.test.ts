@@ -1,5 +1,5 @@
 import { collection, kvdex, model } from "../../mod.ts";
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import type { User } from "../models.ts";
 import { generateLargeUsers, generateUsers, useKv } from "../utils.ts";
 import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
@@ -49,7 +49,7 @@ Deno.test("db - wipe", async (t) => {
         const { result: docs3 } = await db.u64s.getMany({ limit: 1 });
 
         const count1 = await db.countAll();
-        assert(count1 === users.length + largeUsers.length + u64s.length);
+        assertEquals(count1, users.length + largeUsers.length + u64s.length);
 
         await db.wipe();
 
