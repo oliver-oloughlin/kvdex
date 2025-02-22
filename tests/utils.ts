@@ -82,7 +82,7 @@ export async function useKv(
 
   const kv = kvArg === "map"
     ? new MapKv({ clearOnClose: true })
-    : kvArg === "map-localstorage"
+    : kvArg === "map-local"
     ? new MapKv({ map: new StorageAdapter(localStorage), clearOnClose: true })
     : await Deno.openKv(":memory:");
 
