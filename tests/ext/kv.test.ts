@@ -165,7 +165,7 @@ Deno.test("ext - kv", async (t) => {
       });
     });
 
-    await t.step("Should delete entry by key", async () => {
+    await t.step("Should delete all entries", async () => {
       await useStore((store) => {
         const entries = [
           ["1", 10],

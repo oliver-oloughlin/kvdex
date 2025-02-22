@@ -112,7 +112,7 @@ export class MapKv implements DenoKv {
     value: unknown,
     options?: DenoKvSetOptions,
   ): Promise<DenoKvCommitResult> {
-    return await this._set(key, value, createVersionstamp(), options);
+    return await this.setDocument(key, value, createVersionstamp(), options);
   }
 
   async list(
@@ -208,7 +208,7 @@ export class MapKv implements DenoKv {
     value: unknown,
     options?: DenoKvEnqueueOptions,
   ): Promise<DenoKvCommitResult> | DenoKvCommitResult {
-    return this._enqueue(value, createVersionstamp(), options);
+    return this.enqueueValue(value, createVersionstamp(), options);
   }
 
   watch(
@@ -224,7 +224,7 @@ export class MapKv implements DenoKv {
     return new MapKvAtomicOperation(this, this.atomicLock);
   }
 
-  async _set(
+  private async setDocument(
     key: DenoKvStrictKey,
     value: unknown,
     versionstamp: string,
@@ -252,7 +252,7 @@ export class MapKv implements DenoKv {
     };
   }
 
-  _enqueue(
+  private enqueueValue(
     value: unknown,
     versionstamp: string,
     options?: DenoKvEnqueueOptions,

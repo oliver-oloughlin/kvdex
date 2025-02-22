@@ -1,5 +1,5 @@
 import type { Compressor } from "../../../types.ts";
-import { brotliCompressSync, brotliDecompressSync, constants } from "node:zlib";
+import { brotliCompress, brotliDecompress, constants } from "node:zlib";
 import type { BrotliCompressorOptions } from "./types.ts";
 
 /**
@@ -23,19 +23,35 @@ class BrotliCompressor implements Compressor {
     this.quality = quality;
   }
 
-  compress(data: Uint8Array): Uint8Array {
-    const buffer = brotliCompressSync(data, {
+  compress(data: Uint8Array): Promise<Uint8Array> {
+    const { promise, resolve, reject } = Promise.withResolvers<Uint8Array>();
+
+    brotliCompress(data, {
       params: { [constants.BROTLI_PARAM_QUALITY]: this.quality },
+    }, (err, result) => {
+      if (err) {
+        reject(err);
+      }
+
+      resolve(new Uint8Array(result));
     });
 
-    return new Uint8Array(buffer);
+    return promise;
   }
 
-  decompress(data: Uint8Array): Uint8Array {
-    const buffer = brotliDecompressSync(data, {
+  decompress(data: Uint8Array): Promise<Uint8Array> {
+    const { promise, resolve, reject } = Promise.withResolvers<Uint8Array>();
+
+    brotliDecompress(data, {
       params: { [constants.BROTLI_PARAM_QUALITY]: this.quality },
+    }, (err, result) => {
+      if (err) {
+        reject(err);
+      }
+
+      resolve(new Uint8Array(result));
     });
 
-    return new Uint8Array(buffer);
+    return promise;
   }
 }
