@@ -234,12 +234,12 @@ export type Operations = {
 };
 
 /** Kvdex atomic check */
-export type AtomicCheck<T1 extends KvValue, T2 extends KvId> = {
+export type AtomicCheck<T extends KvId> = {
   /** Id of document to check */
-  id: Document<T1, T2>["id"];
+  id: T;
 
   /** Versionstamp of document to check */
-  versionstamp: Document<T1, T2>["versionstamp"];
+  versionstamp: DenoAtomicCheck["versionstamp"];
 };
 
 /** Atomic mutation object */

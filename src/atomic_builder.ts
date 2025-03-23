@@ -240,7 +240,7 @@ export class AtomicBuilder<
    * @param atomicChecks - AtomicCheck objects containing a document id and versionstamp.
    * @returns Current AtomicBuilder instance.
    */
-  check(...atomicChecks: AtomicCheck<TOutput, ParseId<TOptions>>[]): this {
+  check(...atomicChecks: AtomicCheck<ParseId<TOptions>>[]): this {
     // Create Denoatomic checks from atomci checks input list
     const checks: DenoAtomicCheck[] = atomicChecks.map(
       ({ id, versionstamp }) => {
