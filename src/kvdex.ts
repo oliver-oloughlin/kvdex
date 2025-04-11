@@ -7,7 +7,7 @@ import type {
   DenoKvCommitResult,
   DenoKvStrictKey,
   EnqueueOptions,
-  FindOptions,
+  FindUndeliveredOptions,
   IntervalMessage,
   IntervalSetter,
   KvdexOptions,
@@ -28,6 +28,7 @@ import {
   allFulfilled,
   createHandlerId,
   extendKey,
+  parse,
   parseQueueMessage,
   prepareEnqueue,
 } from "./utils.ts";
@@ -40,7 +41,6 @@ import {
   MIN_LOOP_START_DELAY,
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts";
-import { model } from "./model.ts";
 import { AtomicWrapper } from "./atomic_wrapper.ts";
 
 /**
@@ -331,10 +331,13 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    * @param options - Find options, optional.
    * @returns Document if found, null if not.
    */
-  async findUndelivered<const T1 extends KvValue, const T2 extends KvId>(
-    id: T2,
-    options?: FindOptions,
-  ): Promise<Document<T1, T2> | null> {
+  async findUndelivered<
+    TId extends KvId,
+    TOutput extends KvValue = KvValue,
+  >(
+    id: TId,
+    options?: FindUndeliveredOptions<TOutput>,
+  ): Promise<Document<TOutput, TId> | null> {
     // Create document key, get document entry
     const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id);
     const result = await this.kv.get(key, options);
@@ -344,11 +347,15 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
       return null;
     }
 
+    const value = options?.model !== undefined
+      ? await parse(options.model, result.value)
+      : result.value as TOutput;
+
     // Return document
-    return new Document(model<T1, T1>(), {
+    return new Document({
       id,
       versionstamp: result.versionstamp,
-      value: result.value as T1,
+      value,
     });
   }
 

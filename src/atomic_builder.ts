@@ -27,6 +27,7 @@ import {
   deleteIndices,
   extendKey,
   keyEq,
+  parse,
   prepareEnqueue,
   setIndices,
 } from "./utils.ts";
@@ -527,8 +528,9 @@ export class AtomicBuilder<
       // Create id key from collection id key and id
       const collection = this.collection;
 
-      const parsed = collection["model"]._transform?.(value as TInput) ??
-        collection["model"].parse(value);
+      const parsed =
+        collection["model"]["~kvdex"]?.transform?.(value as TInput) ??
+          await parse(collection["model"], value);
 
       const docId = id ?? await collection["idGenerator"](parsed);
       const idKey = extendKey(collection["keys"].id, docId);

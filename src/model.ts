@@ -33,8 +33,15 @@ export function model<
   transform?: (data: TInput) => TOutput,
 ): Model<TInput, TOutput> {
   return {
-    parse: (data) => data as TOutput,
-    _transform: transform,
-    _input: null as TInput,
+    "~kvdex": {
+      transform: transform,
+    },
+    "~standard": {
+      version: 1,
+      vendor: "@olli/kvdex",
+      validate(value) {
+        return { value: value as TOutput };
+      },
+    },
   };
 }
