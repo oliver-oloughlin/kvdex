@@ -3,7 +3,6 @@ import { model } from "../../mod.ts";
 import { assertEquals } from "@std/assert/equals";
 import { assertNotEquals } from "@std/assert/not-equals";
 import { z } from "zod";
-import { assertThrows } from "@std/assert/throws";
 import { assert } from "node:console";
 
 Deno.test("utils - parse", async (t) => {

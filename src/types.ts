@@ -1038,7 +1038,7 @@ export interface Model<
   TOutput extends KvValue = TInput extends KvValue ? TInput : never,
 > extends StandardSchemaV1<TInput, TOutput> {
   "~kvdex"?: {
-    transform?(input: TInput): TOutput;
+    transform?(input: TInput): TOutput | Promise<TOutput>;
   };
 }
 

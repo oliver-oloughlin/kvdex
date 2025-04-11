@@ -67,6 +67,7 @@ import {
   prepareEnqueue,
   selectsAll,
   setIndices,
+  transform,
 } from "./utils.ts";
 import {
   DEFAULT_UPDATE_STRATEGY,
@@ -2242,7 +2243,7 @@ export class Collection<
     options: SetOptions | undefined,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Create id, document key and parse document value
-    const parsed = this.model["~kvdex"]?.transform?.(value as TInput) ??
+    const parsed = await transform(this.model, value) ??
       await parse(this.model, value);
 
     const docId = id ?? await this.idGenerator(parsed);
