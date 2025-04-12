@@ -6,20 +6,26 @@
 [![License](https://img.shields.io/github/license/oliver-oloughlin/kvdex)](https://github.com/oliver-oloughlin/kvdex/blob/main/LICENSE)
 
 `kvdex` is a high-level abstraction layer for Deno KV with zero third-party
-dependencies by default. It's purpose is to enhance the experience of using
-Deno's KV store through additional features such as indexing, strongly typed
+dependencies by default. Its goal is to enhance the experience of using Deno's
+KV store through additional features such as indexing, strongly typed
 collections and serialization/compression, while maintaining as much of the
 native functionality as possible, like atomic operations, real-time data updates
 and queue listeners. Also works with other runtimes such as Node.js and Bun, and
-has compatibility options for the browser.
+has compatibility options for the browser. `kvdex` accepts
+[Standard Schema](https://github.com/standard-schema/standard-schema) compliant
+models, which means you can bring your favourite validation library, or use the
+built-in inference-only model.
 
-_Supported Deno verisons:_ **^2.2.0**
+_Supported Deno versions:_ **^2.2.0**
 
 ## Highlights
 
 - Strongly typed CRUD operations for selected and ranged documents.
 - Primary (unique) and secondary (non-unique) indexing.
-- Extensible model strategy (Zod supported).
+- Support for
+  [Standard Schema](https://github.com/standard-schema/standard-schema) models
+  ([Zod](https://zod.dev), [ArkType](https://zod.dev),
+  [Valibot](https://valibot.dev) and more)
 - Serialized, compressed and segmented storage for large objects.
 - Listen to real-time data updates.
 - Support for pagination and filtering.
@@ -117,16 +123,18 @@ _Supported Deno verisons:_ **^2.2.0**
 ## Models
 
 Collections are typed using models. Standard models can be defined using the
-`model()` function. Alternatively, any object that is compatible with the Model
-type can be used as a model. Zod is therefore supported, without being a
-dependency. The standard model uses type casting only, and does not validate any
-data when parsing. Asymmetric models can be created by passing a transform
-function which maps from an input type to an output type. Asymmetric models are
-useful for storing derived values or filling default values. It is up to the
-developer to choose the strategy that fits their use case the best.
+`model()` function. Alternatively, any
+[Standard Schema](https://github.com/standard-schema/standard-schema) compliant
+model can be used, meaning validation libraries such as [Zod](https://zod.dev)
+is supported without being a dependency. The standard model uses type casting
+only, and does not perform any runtime validation. Asymmetric models can be
+created by passing a transform function which maps from an input type to an
+output type. Asymmetric models are useful for storing derived values or filling
+default values. It is up to the developer to choose the strategy that fits their
+use case the best.
 
-**_NOTE_:** When using interfaces instead of types, they must extend the KvValue
-type.
+**_NOTE_:** When using interfaces instead of types, they must extend the
+`KvValue` type.
 
 Using the standard model strategy:
 
@@ -156,7 +164,7 @@ const UserModel = model((user: User) => ({
 }));
 ```
 
-Using Zod instead:
+Using [Zod](https://zod.dev) instead:
 
 ```ts
 import { z } from "npm:zod";
@@ -212,8 +220,8 @@ const db = kvdex({
 The schema definition contains collection builders, or nested schema
 definitions. Collections can hold any type adhering to KvValue.
 
-**Note:** Index values are always serialized, using the JSON-encoder by default,
-or alternatively your provided encoder.
+**_Note:_** Index values are always serialized, using the JSON-encoder by
+default, or alternatively your provided encoder.
 
 ## Collection Options
 
@@ -223,7 +231,7 @@ defining collections of documents. All collection options are optional.
 ### `idGenerator`
 
 Override the default id generator, which is used to automatically generate an id
-when adding a new document. The id generatror gets called with the data being
+when adding a new document. The id generator gets called with the data being
 added, which can be useful to create derived ids. The default id generator uses
 [`ulid()`](https://deno.land/std/ulid/mod.ts) from Deno's
 [standard library.](https://deno.land/std/ulid/mod.ts)
@@ -245,7 +253,7 @@ const db = kvdex({
 });
 ```
 
-Using randomely generated uuids:
+Using randomly generated uuids:
 
 ```ts
 import { collection, kvdex, model } from "@olli/kvdex";
@@ -267,7 +275,7 @@ const db = kvdex({
 Define indices for collections of objects. Used to optimize operations by
 querying data based on index values.
 
-**NOTE:** Index values are always serialized.
+**_NOTE:_** Index values are always serialized.
 
 ```ts
 import { collection, kvdex, model } from "@olli/kvdex";
@@ -1365,16 +1373,19 @@ const result3 = await db
 ```ts
 // Only adds 10 to the value when it has not been changed since being read
 let result = null;
+const id = "id";
+
 while (!result || !result.ok) {
-  const { id, versionstamp, value } = await db.numbers.find("id");
+  const doc = await db.numbers.find(id);
+  if (!doc) break;
 
   result = await db
     .atomic((schema) => schema.numbers)
     .check({
       id,
-      versionstamp,
+      versionstamp: doc.versionstamp,
     })
-    .set(id, value + 10)
+    .set(id, doc.value + 10)
     .commit();
 }
 ```
@@ -1634,7 +1645,7 @@ tests to ensure those features remain stable.
 The goal of kvdex is to provide a type safe, higher-level API to Deno KV, while
 retaining as much of the native functionality as possible. Additionally, the
 core functionality (excluding extensions) should not rely on any third-party
-dependencies. Please kleep this in mind when making any contributions.
+dependencies. Please keep this in mind when making any contributions.
 
 ## License
 
