@@ -80,7 +80,7 @@ export async function transform<TInput, TOutput extends KvValue>(
   return result;
 }
 
-export async function parse<TInput, TOutput extends KvValue>(
+export async function validate<TInput, TOutput extends KvValue>(
   schema: StandardSchemaV1<TInput, TOutput>,
   data: unknown,
 ): Promise<TOutput> {

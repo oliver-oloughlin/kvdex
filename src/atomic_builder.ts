@@ -27,10 +27,10 @@ import {
   deleteIndices,
   extendKey,
   keyEq,
-  parse,
   prepareEnqueue,
   setIndices,
   transform,
+  validate,
 } from "./utils.ts";
 
 /**
@@ -530,7 +530,7 @@ export class AtomicBuilder<
       const collection = this.collection;
 
       const parsed = await transform(collection["model"], value) ??
-        await parse(collection["model"], value);
+        await validate(collection["model"], value);
 
       const docId = id ?? await collection["idGenerator"](parsed);
       const idKey = extendKey(collection["keys"].id, docId);

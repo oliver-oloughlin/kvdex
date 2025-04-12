@@ -63,11 +63,11 @@ import {
   getDocumentId,
   isKvObject,
   kvGetMany,
-  parse,
   prepareEnqueue,
   selectsAll,
   setIndices,
   transform,
+  validate,
 } from "./utils.ts";
 import {
   DEFAULT_UPDATE_STRATEGY,
@@ -477,13 +477,13 @@ export class Collection<
         // Set history entry
         historyEntry = {
           ...historyEntry,
-          value: await parse(this.model, decoded),
+          value: await validate(this.model, decoded),
         };
       } else if (historyEntry.type === "write") {
         // Set history entry
         historyEntry = {
           ...historyEntry,
-          value: await parse(this.model, historyEntry.value),
+          value: await validate(this.model, historyEntry.value),
         };
       }
 
@@ -2057,7 +2057,7 @@ export class Collection<
     }
 
     const value = options?.model !== undefined
-      ? await parse(options.model, result.value)
+      ? await validate(options.model, result.value)
       : result.value as TOutput;
 
     // Return document
@@ -2244,7 +2244,7 @@ export class Collection<
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Create id, document key and parse document value
     const parsed = await transform(this.model, value) ??
-      await parse(this.model, value);
+      await validate(this.model, value);
 
     const docId = id ?? await this.idGenerator(parsed);
     const idKey = extendKey(this.keys.id, docId);
@@ -2498,7 +2498,7 @@ export class Collection<
       : deepMerge({ value }, { value: data }, options?.mergeOptions).value;
 
     // Parse updated value
-    const parsed = await parse(this.model, updated);
+    const parsed = await validate(this.model, updated);
 
     // Set new document value
     return await this.setDoc(
@@ -2551,7 +2551,7 @@ export class Collection<
         ? (await this.encoder?.compressor?.decompress(data) ?? data) as TOutput
         : await decodeData<TOutput>(data, this.encoder);
 
-      const parsed = await parse(this.model, decoded);
+      const parsed = await validate(this.model, decoded);
 
       // Return parsed document
       return new Document<TOutput, ParseId<TOptions>>({
@@ -2564,7 +2564,7 @@ export class Collection<
     // Remove id from value and return parsed document if indexed entry
     if (typeof indexedDocId !== "undefined") {
       const { __id__, ...val } = value as any;
-      const parsed = await parse(this.model, val);
+      const parsed = await validate(this.model, val);
 
       return new Document<TOutput, ParseId<TOptions>>({
         id: docId as ParseId<TOptions>,
@@ -2573,7 +2573,7 @@ export class Collection<
       });
     }
 
-    const parsed = await parse(this.model, value);
+    const parsed = await validate(this.model, value);
 
     // Return parsed document
     return new Document<TOutput, ParseId<TOptions>>({

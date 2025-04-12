@@ -1,4 +1,4 @@
-import { parse } from "../../src/utils.ts";
+import { validate } from "../../src/utils.ts";
 import { model } from "../../mod.ts";
 import { assertEquals } from "@std/assert/equals";
 import { assertNotEquals } from "@std/assert/not-equals";
@@ -12,7 +12,7 @@ Deno.test("utils - parse", async (t) => {
       const m = model<string>();
       const val = "test";
 
-      const parsed = await parse(m, val);
+      const parsed = await validate(m, val);
       assertEquals(parsed, val);
     },
   );
@@ -23,7 +23,7 @@ Deno.test("utils - parse", async (t) => {
       const m = model<string>();
       const val = "test";
 
-      const parsed = await parse(m, null);
+      const parsed = await validate(m, null);
       assertNotEquals(parsed, val);
     },
   );
@@ -34,7 +34,7 @@ Deno.test("utils - parse", async (t) => {
       const m = z.string();
       const val = "test";
 
-      const parsed = await parse(m, val);
+      const parsed = await validate(m, val);
       assertEquals(parsed, val);
     },
   );
@@ -46,7 +46,7 @@ Deno.test("utils - parse", async (t) => {
       const val = 10;
 
       try {
-        await parse(m, val);
+        await validate(m, val);
         assert(false);
       } catch (_) {
         assert(true);

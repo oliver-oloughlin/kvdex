@@ -28,9 +28,9 @@ import {
   allFulfilled,
   createHandlerId,
   extendKey,
-  parse,
   parseQueueMessage,
   prepareEnqueue,
+  validate,
 } from "./utils.ts";
 import { AtomicBuilder } from "./atomic_builder.ts";
 import {
@@ -348,7 +348,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     }
 
     const value = options?.model !== undefined
-      ? await parse(options.model, result.value)
+      ? await validate(options.model, result.value)
       : result.value as TOutput;
 
     // Return document
