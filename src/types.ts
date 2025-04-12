@@ -759,7 +759,7 @@ export type KvValue =
 
 /********************/
 /*                  */
-/*  DenoKV TYPES    */
+/*   DenoKV TYPES   */
 /*                  */
 /********************/
 
@@ -1025,10 +1025,10 @@ export type DenoKv = {
 };
 
 /*****************************/
-/*                  */
-/*  STANDARD SCHEMA TYPES    */
-/*                  */
-/********************/
+/*                           */
+/*   STANDARD SCHEMA TYPES   */
+/*                           */
+/*****************************/
 
 // REFERENCE: https://github.com/standard-schema/standard-schema
 
