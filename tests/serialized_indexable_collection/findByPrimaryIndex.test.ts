@@ -1,6 +1,7 @@
 import { assert } from "@std/assert";
-import { TransformUserModel } from "../models.ts";
 import { generateLargeUsers, useDb } from "../utils.ts";
+import { validate } from "../../src/utils.ts";
+import { TransformUserModel } from "../models.ts";
 
 const [user] = generateLargeUsers(1);
 
@@ -36,7 +37,7 @@ Deno.test("serialized_indexable_collection - findByPrimaryIndex", async (t) => {
     "Should find document by asymmetric model primary index",
     async () => {
       await useDb(async (db) => {
-        const transformed = TransformUserModel.parse(user);
+        const transformed = await validate(TransformUserModel, user);
 
         const cr = await db.ais_users.add(user);
         assert(cr.ok);

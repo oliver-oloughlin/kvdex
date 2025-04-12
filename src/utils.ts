@@ -16,9 +16,11 @@ import type {
   KvObject,
   KvValue,
   ListOptions,
+  Model,
   ParsedQueueMessage,
   PreparedEnqueue,
   QueueMessage,
+  StandardSchemaV1,
   WatchManager,
   WatchOptions,
 } from "./types.ts";
@@ -64,6 +66,34 @@ export function extendKey(key: KvKey, ...keyParts: KvKey) {
  */
 export function keyEq(k1: KvKey, k2: KvKey) {
   return JSON.stringify(k1) === JSON.stringify(k2);
+}
+
+export async function transform<TInput, TOutput extends KvValue>(
+  model: Model<TInput, TOutput>,
+  input: TInput,
+): Promise<TOutput | undefined> {
+  let result = model["~kvdex"]?.transform?.(input);
+  if (result instanceof Promise) {
+    result = await result;
+  }
+
+  return result;
+}
+
+export async function validate<TInput, TOutput extends KvValue>(
+  schema: StandardSchemaV1<TInput, TOutput>,
+  data: unknown,
+): Promise<TOutput> {
+  let result = schema["~standard"].validate(data);
+  if (result instanceof Promise) {
+    result = await result;
+  }
+
+  if (result.issues) {
+    throw new Error(JSON.stringify(result.issues, null, 2));
+  }
+
+  return result.value;
 }
 
 export async function encodeData(

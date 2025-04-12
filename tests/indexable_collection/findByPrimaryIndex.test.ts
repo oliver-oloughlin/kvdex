@@ -2,6 +2,7 @@ import { assert } from "@std/assert";
 import { mockUser1 } from "../mocks.ts";
 import { TransformUserModel } from "../models.ts";
 import { useDb } from "../utils.ts";
+import { validate } from "../../src/utils.ts";
 
 Deno.test("indexable_collection - findByPrimaryIndex", async (t) => {
   await t.step("Should find document by primary index", async () => {
@@ -34,7 +35,7 @@ Deno.test("indexable_collection - findByPrimaryIndex", async (t) => {
     "Should find document by asymmetric model primary index",
     async () => {
       await useDb(async (db) => {
-        const transformed = TransformUserModel.parse(mockUser1);
+        const transformed = await validate(TransformUserModel, mockUser1);
 
         const cr = await db.ai_users.add(mockUser1);
         assert(cr.ok);

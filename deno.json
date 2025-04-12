@@ -1,6 +1,6 @@
 {
   "name": "@olli/kvdex",
-  "version": "3.2.1",
+  "version": "3.3.0",
   "exports": {
     ".": "./mod.ts",
     "./zod": "./src/ext/zod/mod.ts",
@@ -16,7 +16,7 @@
     "test": "deno test --allow-write --allow-read --allow-ffi --allow-sys --unstable-kv --trace-leaks",
     "bench": "deno bench --unstable-kv",
     "prep": "deno task check && deno fmt && deno lint && deno publish --dry-run --allow-dirty && deno task test",
-    "cache": "deno cache -r mod.ts && deno cache -r ext/zod.ts && deno cache -r ext/migrate.ts"
+    "cache": "deno cache -r ./**/*.ts"
   },
   "lint": {
     "rules": {
@@ -37,6 +37,6 @@
     "@std/cli": "jsr:@std/cli@1.0.12",
     "@std/collections": "jsr:@std/collections@^1.0.9",
     "@std/ulid": "jsr:@std/ulid@^1.0.0",
-    "zod": "npm:zod@^3.23.8"
+    "zod": "npm:zod@^3.24.0"
   }
 }

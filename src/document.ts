@@ -4,7 +4,6 @@ import type {
   KvId,
   KvObject,
   KvValue,
-  Model,
 } from "./types.ts";
 import { isKvObject } from "./utils.ts";
 
@@ -15,12 +14,11 @@ export class Document<const TOutput extends KvValue, const TId extends KvId> {
   readonly value: TOutput;
 
   constructor(
-    model: Model<any, TOutput>,
     { id, versionstamp, value }: DocumentData<TOutput, TId>,
   ) {
     this.id = id;
     this.versionstamp = versionstamp;
-    this.value = model.parse(value);
+    this.value = value;
   }
 
   /**

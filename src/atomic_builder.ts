@@ -29,6 +29,8 @@ import {
   keyEq,
   prepareEnqueue,
   setIndices,
+  transform,
+  validate,
 } from "./utils.ts";
 
 /**
@@ -527,8 +529,8 @@ export class AtomicBuilder<
       // Create id key from collection id key and id
       const collection = this.collection;
 
-      const parsed = collection["model"]._transform?.(value as TInput) ??
-        collection["model"].parse(value);
+      const parsed = await transform(collection["model"], value) ??
+        await validate(collection["model"], value);
 
       const docId = id ?? await collection["idGenerator"](parsed);
       const idKey = extendKey(collection["keys"].id, docId);

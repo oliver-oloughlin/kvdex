@@ -18,8 +18,7 @@
     "npm:@deno/kv@*": "0.7.0",
     "npm:@deno/kv@~0.8.4": "0.8.4",
     "npm:@types/node@*": "18.16.19",
-    "npm:zod@^3.22.0": "3.23.8",
-    "npm:zod@^3.23.8": "3.23.8"
+    "npm:zod@^3.24.0": "3.24.2"
   },
   "jsr": {
     "@std/assert@0.217.0": {
@@ -129,8 +128,8 @@
     "@types/node@18.16.19": {
       "integrity": "sha512-IXl7o+R9iti9eBW4Wg2hx1xQDig183jj7YLn8F7udNceyfkbn1ZxmzZXuak20gR40D7pIkIY1kYGx5VIGbaHKA=="
     },
-    "zod@3.23.8": {
-      "integrity": "sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g=="
+    "zod@3.24.2": {
+      "integrity": "sha512-lY7CDW43ECgW9u1TcT3IoXHflywfVqDYze4waEz812jR/bZ8FHDsl7pFQoSZTz5N+2NqRXs8GBwnAwo3ZNxqhQ=="
     }
   },
   "workspace": {
@@ -141,7 +140,7 @@
       "jsr:@std/collections@^1.0.9",
       "jsr:@std/ulid@1",
       "npm:@deno/kv@~0.8.4",
-      "npm:zod@^3.23.8"
+      "npm:zod@^3.24.0"
     ]
   }
 }

@@ -321,23 +321,6 @@ export type CollectionKeys = {
   historySegment: KvKey;
 };
 
-/**
- * Model describing the input and output type of data.
- * Contains a parse function, and optionally a `__validate()` function used instead of parse upon reading data.
- */
-export type Model<TInput, TOutput extends KvValue> = {
-  /** A parse function that takes data as an argument and returns the parsed output */
-  parse(data: unknown): TOutput;
-
-  /**
-   * An optional transform function that takes an input value as argument and returns the output type.
-   */
-  _transform?(input: TInput): TOutput;
-
-  /** Used to determine the input type */
-  _input: TInput;
-};
-
 /** Historic write entry */
 export type WriteHistoryEntry<T> = {
   type: "write";
@@ -503,6 +486,11 @@ export type HandleOneOptions<T1, T2 extends KvId> = Omit<
 
 /** Options for finding a single document */
 export type FindOptions = NonNullable<Parameters<DenoKv["get"]>[1]>;
+
+/** Options for finding a single undelivered document */
+export type FindUndeliveredOptions<TOutput extends KvValue> =
+  & FindOptions
+  & { model?: Model<unknown, TOutput> };
 
 /** Options for finding many documents */
 export type FindManyOptions = NonNullable<Parameters<DenoKv["getMany"]>[1]>;
@@ -771,7 +759,7 @@ export type KvValue =
 
 /********************/
 /*                  */
-/*  DenoKV TYPES    */
+/*   DenoKV TYPES   */
 /*                  */
 /********************/
 
@@ -1035,3 +1023,92 @@ export type DenoKv = {
     options?: DenoKvWatchOptions,
   ): ReadableStream<DenoKvEntryMaybe[]>;
 };
+
+/*****************************/
+/*                           */
+/*   STANDARD SCHEMA TYPES   */
+/*                           */
+/*****************************/
+
+// REFERENCE: https://github.com/standard-schema/standard-schema
+
+/**  */
+export interface Model<
+  TInput = unknown,
+  TOutput extends KvValue = TInput extends KvValue ? TInput : never,
+> extends StandardSchemaV1<TInput, TOutput> {
+  "~kvdex"?: {
+    transform?(input: TInput): TOutput | Promise<TOutput>;
+  };
+}
+
+/** The Standard Schema interface. */
+export interface StandardSchemaV1<Input = unknown, Output = Input> {
+  /** The Standard Schema properties. */
+  readonly "~standard": StandardSchemaV1.Props<Input, Output>;
+}
+
+export declare namespace StandardSchemaV1 {
+  /** The Standard Schema properties interface. */
+  export interface Props<Input = unknown, Output = Input> {
+    /** The version number of the standard. */
+    readonly version: 1;
+    /** The vendor name of the schema library. */
+    readonly vendor: string;
+    /** Validates unknown input values. */
+    readonly validate: (
+      value: unknown,
+    ) => Result<Output> | Promise<Result<Output>>;
+    /** Inferred types associated with the schema. */
+    readonly types?: Types<Input, Output> | undefined;
+  }
+
+  /** The result interface of the validate function. */
+  export type Result<Output> = SuccessResult<Output> | FailureResult;
+
+  /** The result interface if validation succeeds. */
+  export interface SuccessResult<Output> {
+    /** The typed output value. */
+    readonly value: Output;
+    /** The non-existent issues. */
+    readonly issues?: undefined;
+  }
+
+  /** The result interface if validation fails. */
+  export interface FailureResult {
+    /** The issues of failed validation. */
+    readonly issues: ReadonlyArray<Issue>;
+  }
+
+  /** The issue interface of the failure output. */
+  export interface Issue {
+    /** The error message of the issue. */
+    readonly message: string;
+    /** The path of the issue, if any. */
+    readonly path?: ReadonlyArray<PropertyKey | PathSegment> | undefined;
+  }
+
+  /** The path segment interface of the issue. */
+  export interface PathSegment {
+    /** The key representing a path segment. */
+    readonly key: PropertyKey;
+  }
+
+  /** The Standard Schema types interface. */
+  export interface Types<Input = unknown, Output = Input> {
+    /** The input type of the schema. */
+    readonly input: Input;
+    /** The output type of the schema. */
+    readonly output: Output;
+  }
+
+  /** Infers the input type of a Standard Schema. */
+  export type InferInput<Schema extends StandardSchemaV1> = NonNullable<
+    Schema["~standard"]["types"]
+  >["input"];
+
+  /** Infers the output type of a Standard Schema. */
+  export type InferOutput<Schema extends StandardSchemaV1> = NonNullable<
+    Schema["~standard"]["types"]
+  >["output"];
+}

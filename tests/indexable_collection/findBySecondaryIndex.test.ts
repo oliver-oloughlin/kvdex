@@ -2,6 +2,7 @@ import { assert } from "@std/assert";
 import { mockUser1, mockUser2 } from "../mocks.ts";
 import { TransformUserModel } from "../models.ts";
 import { useDb } from "../utils.ts";
+import { validate } from "../../src/utils.ts";
 
 Deno.test("indexable_collection - findBySecondaryIndex", async (t) => {
   await t.step("Should find documents by secondary index", async () => {
@@ -43,8 +44,8 @@ Deno.test("indexable_collection - findBySecondaryIndex", async (t) => {
     "Should find documents by asymmetric model secondary index",
     async () => {
       await useDb(async (db) => {
-        const t1 = TransformUserModel.parse(mockUser1);
-        const t2 = TransformUserModel.parse(mockUser2);
+        const t1 = await validate(TransformUserModel, mockUser1);
+        const t2 = await validate(TransformUserModel, mockUser2);
 
         const cr = await db.ai_users.addMany([mockUser1, mockUser2]);
         assert(cr.ok);

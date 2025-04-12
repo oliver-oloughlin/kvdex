@@ -1,14 +1,13 @@
-import { Document, model } from "../../mod.ts";
+import { Document } from "../../mod.ts";
 import { assert } from "@std/assert";
 import { mockUser1 } from "../mocks.ts";
-import type { User } from "../models.ts";
 
 Deno.test("document - flat", async (t) => {
   await t.step("Should flatten document of Model type", () => {
     const id = "id";
     const versionstamp = "000";
 
-    const doc = new Document(model<User>(), {
+    const doc = new Document({
       id,
       versionstamp,
       value: mockUser1,
@@ -25,7 +24,7 @@ Deno.test("document - flat", async (t) => {
     const versionstamp = "000";
     const value = 100;
 
-    const doc = new Document(model<number>(), {
+    const doc = new Document({
       id,
       versionstamp,
       value,
@@ -42,7 +41,7 @@ Deno.test("document - flat", async (t) => {
     const versionstamp = "000";
     const value = new Date();
 
-    const doc = new Document(model<Date>(), {
+    const doc = new Document({
       id,
       versionstamp,
       value,

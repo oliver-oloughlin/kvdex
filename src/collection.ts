@@ -14,6 +14,7 @@ import type {
   EnqueueOptions,
   FindManyOptions,
   FindOptions,
+  FindUndeliveredOptions,
   HandleOneOptions,
   HistoryEntry,
   IdempotentListener,
@@ -65,6 +66,8 @@ import {
   prepareEnqueue,
   selectsAll,
   setIndices,
+  transform,
+  validate,
 } from "./utils.ts";
 import {
   DEFAULT_UPDATE_STRATEGY,
@@ -474,13 +477,13 @@ export class Collection<
         // Set history entry
         historyEntry = {
           ...historyEntry,
-          value: this.model.parse?.(decoded),
+          value: await validate(this.model, decoded),
         };
       } else if (historyEntry.type === "write") {
         // Set history entry
         historyEntry = {
           ...historyEntry,
-          value: this.model.parse?.(historyEntry.value),
+          value: await validate(this.model, historyEntry.value),
         };
       }
 
@@ -2037,10 +2040,13 @@ export class Collection<
    * @param options - Find options, optional.
    * @returns Document if found, null if not.
    */
-  async findUndelivered<T extends KvValue = KvValue>(
-    id: KvId,
-    options?: FindOptions,
-  ): Promise<Document<T, KvId> | null> {
+  async findUndelivered<
+    TId extends KvId,
+    TOutput extends KvValue = KvValue,
+  >(
+    id: TId,
+    options?: FindUndeliveredOptions<TOutput>,
+  ): Promise<Document<TOutput, TId> | null> {
     // Create document key, get document entry
     const key = extendKey(this.keys.undelivered, id);
     const result = await this.kv.get(key, options);
@@ -2050,11 +2056,15 @@ export class Collection<
       return null;
     }
 
+    const value = options?.model !== undefined
+      ? await validate(options.model, result.value)
+      : result.value as TOutput;
+
     // Return document
-    return new Document(m<T, T>(), {
+    return new Document<TOutput, TId>({
       id,
       versionstamp: result.versionstamp,
-      value: result.value as T,
+      value,
     });
   }
 
@@ -2233,8 +2243,8 @@ export class Collection<
     options: SetOptions | undefined,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Create id, document key and parse document value
-    const parsed = this.model._transform?.(value as TInput) ??
-      this.model.parse(value);
+    const parsed = await transform(this.model, value) ??
+      await validate(this.model, value);
 
     const docId = id ?? await this.idGenerator(parsed);
     const idKey = extendKey(this.keys.id, docId);
@@ -2488,7 +2498,7 @@ export class Collection<
       : deepMerge({ value }, { value: data }, options?.mergeOptions).value;
 
     // Parse updated value
-    const parsed = this.model.parse(updated as any);
+    const parsed = await validate(this.model, updated);
 
     // Set new document value
     return await this.setDoc(
@@ -2541,10 +2551,12 @@ export class Collection<
         ? (await this.encoder?.compressor?.decompress(data) ?? data) as TOutput
         : await decodeData<TOutput>(data, this.encoder);
 
+      const parsed = await validate(this.model, decoded);
+
       // Return parsed document
-      return new Document<TOutput, ParseId<TOptions>>(this.model, {
+      return new Document<TOutput, ParseId<TOptions>>({
         id: docId as ParseId<TOptions>,
-        value: decoded,
+        value: parsed,
         versionstamp,
       });
     }
@@ -2552,17 +2564,21 @@ export class Collection<
     // Remove id from value and return parsed document if indexed entry
     if (typeof indexedDocId !== "undefined") {
       const { __id__, ...val } = value as any;
-      return new Document<TOutput, ParseId<TOptions>>(this.model, {
+      const parsed = await validate(this.model, val);
+
+      return new Document<TOutput, ParseId<TOptions>>({
         id: docId as ParseId<TOptions>,
-        value: val as TOutput,
+        value: parsed,
         versionstamp,
       });
     }
 
+    const parsed = await validate(this.model, value);
+
     // Return parsed document
-    return new Document<TOutput, ParseId<TOptions>>(this.model, {
+    return new Document<TOutput, ParseId<TOptions>>({
       id: docId as ParseId<TOptions>,
-      value: value as TOutput,
+      value: parsed,
       versionstamp,
     });
   }
