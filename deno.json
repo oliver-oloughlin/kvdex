@@ -6,10 +6,12 @@
     "./zod": "./src/ext/zod/mod.ts",
     "./migrate": "./src/ext/migrate/mod.ts",
     "./kv": "./src/ext/kv/mod.ts",
+    "./kv/map": "./src/ext/kv/map/mod.ts",
     "./encoding": "./src/ext/encoding/mod.ts",
     "./encoding/json": "./src/ext/encoding/json/mod.ts",
     "./encoding/v8": "./src/ext/encoding/v8/mod.ts",
-    "./encoding/brotli": "./src/ext/encoding/brotli/mod.ts"
+    "./encoding/brotli": "./src/ext/encoding/brotli/mod.ts",
+    "./encoding/brotli-sync": "./src/ext/encoding/brotli_sync/mod.ts"
   },
   "tasks": {
     "check": "deno check **/*.ts",

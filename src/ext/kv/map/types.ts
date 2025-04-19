@@ -1,4 +1,4 @@
-import type { DenoKvEntry } from "../../types.ts";
+import type { DenoKvEntry } from "../../../types.ts";
 
 /** Interface for basic map methods */
 export type BasicMap<K, V> = {

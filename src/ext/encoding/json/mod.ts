@@ -50,10 +50,6 @@
  */
 
 export { jsonEncoder } from "./json_encoder.ts";
-export {
-  jsonDeserialize,
-  jsonParse,
-  jsonSerialize,
-  jsonStringify,
-} from "./utils.ts";
+export { jsonDeserialize, jsonSerialize } from "./utils.ts";
+export { jsonParse, jsonStringify } from "../../_shared/json.ts";
 export type * from "./types.ts";

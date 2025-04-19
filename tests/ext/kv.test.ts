@@ -1,4 +1,4 @@
-import { MapKv } from "../../src/ext/kv/map_kv.ts";
+import { MapKv } from "../../src/ext/kv/map/mod.ts";
 import { StorageAdapter } from "../../src/ext/kv/mod.ts";
 import { assert, assertEquals } from "@std/assert";
 import { sleep } from "../utils.ts";

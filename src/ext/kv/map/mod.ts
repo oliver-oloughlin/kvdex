@@ -1,12 +1,5 @@
 /**
- * @module # KV
- *
- * Support for alternative KV backends, such as `Map` and `localStorage`.
- *
- * Can be used to employ `kvdex` in the browser or other environments where Deno's KV store is not available,
- * or to adapt other database backends.
- *
- * ## Map
+ * @module # Map
  *
  * Support for `Map` as KV backend.
  * Also provides a storage adapter, extending backend support to the `Storage` interface (e.g. `localStorage`).
@@ -33,4 +26,7 @@
  * ```
  */
 
-export * from "./map/mod.ts";
+export { MapKv } from "./map_kv.ts";
+export { StorageAdapter } from "./storage_adapter.ts";
+export { MapKvAtomicOperation } from "./atomic.ts";
+export type * from "./types.ts";
