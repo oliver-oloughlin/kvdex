@@ -5,7 +5,7 @@ import type { BrotliCompressorOptions } from "./types.ts";
 /**
  * Brotli compressor.
  *
- * Used for compressing and compressing data represented as a Uint8Array.
+ * Used for compressing and decompressing data represented as a Uint8Array.
  *
  * @param options - Brolti compression options.
  * @returns - A Compressor object.

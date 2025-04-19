@@ -110,6 +110,7 @@ _Supported Deno versions:_ **^2.2.0**
       - [JSON](#json)
       - [V8](#v8)
       - [Brotli](#brotli)
+      - [Brolit Sync](#brotli-sync)
     - [Zod](#zod)
       - [Schemas](#schemas)
     - [Migrate](#migrate)
@@ -1518,6 +1519,21 @@ const compressor = brotliCompressor();
 
 // Explicitly set quality level (default is 1)
 const compressor = brotliCompressor({ quality: 2 });
+```
+
+#### Brotli Sync
+
+Easy to configure synchronous brotli compression for use with the `encoder`
+option for collections. Relies on the `node:zlib` built-in.
+
+```ts
+import { brotliCompressorSync } from "@olli/kvdex/encoding/brotli-sync";
+
+// With default options
+const compressor = brotliCompressorSync();
+
+// Explicitly set quality level (default is 1)
+const compressor = brotliCompressorSync({ quality: 2 });
 ```
 
 ### Zod
