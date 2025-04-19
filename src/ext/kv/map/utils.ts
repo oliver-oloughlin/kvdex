@@ -1,5 +1,5 @@
 import { ulid } from "@std/ulid";
-import type { DenoKvStrictKey, DenoKvStrictKeyPart } from "../../types.ts";
+import type { DenoKvStrictKey, DenoKvStrictKeyPart } from "../../../types.ts";
 
 export function createVersionstamp(): string {
   return ulid();

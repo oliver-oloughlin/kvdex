@@ -6,8 +6,8 @@ import type {
   DenoKvEnqueueOptions,
   DenoKvSetOptions,
   DenoKvStrictKey,
-} from "../../types.ts";
-import { allFulfilled } from "../../utils.ts";
+} from "../../../types.ts";
+import { allFulfilled } from "../../../utils.ts";
 import type { AsyncLock } from "./async_lock.ts";
 import type { MapKv } from "./map_kv.ts";
 import { createVersionstamp } from "./utils.ts";

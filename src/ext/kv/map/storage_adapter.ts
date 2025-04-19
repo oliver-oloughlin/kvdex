@@ -1,4 +1,4 @@
-import { jsonParse, jsonStringify } from "../encoding/mod.ts";
+import { jsonParse, jsonStringify } from "../../_shared/json.ts";
 import type { BasicMap } from "./types.ts";
 
 /**
