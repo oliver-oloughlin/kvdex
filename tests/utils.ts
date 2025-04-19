@@ -1,7 +1,7 @@
 import { collection, type DenoKv, type DenoKvU64, kvdex } from "../mod.ts";
 import { brotliCompressor } from "../src/ext/encoding/brotli/brotli_compressor.ts";
 import { jsonEncoder } from "../src/ext/encoding/mod.ts";
-import { MapKv } from "../src/ext/kv/map_kv.ts";
+import { MapKv } from "../src/ext/kv/map/mod.ts";
 import { StorageAdapter } from "../src/ext/kv/mod.ts";
 import { model } from "../src/model.ts";
 import { TransformUserModel, type User, UserSchema } from "./models.ts";
