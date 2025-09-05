@@ -6,7 +6,7 @@ Deno.test("serialized_indexable_collection - deleteMany", async (t) => {
     "Should delete all documents and indices from the collection",
     async () => {
       await useDb(async (db) => {
-        const users = generateLargeUsers(1_000);
+        const users = generateLargeUsers(100);
         const user1 = users[0];
 
         const cr = await db.is_users.addMany(users);

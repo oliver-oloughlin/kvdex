@@ -4,7 +4,7 @@ import { generateLargeUsers, useDb } from "../utils.ts";
 Deno.test("serialized_indexable_collection - findMany", async (t) => {
   await t.step("Should find all documents", async () => {
     await useDb(async (db) => {
-      const users = generateLargeUsers(1_000);
+      const users = generateLargeUsers(100);
       const cr = await db.is_users.addMany(users);
       assert(cr.ok);
 

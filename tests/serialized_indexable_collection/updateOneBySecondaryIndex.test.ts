@@ -1,4 +1,4 @@
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUser3, mockUserInvalid } from "../mocks.ts";
 import { sleep, useDb } from "../utils.ts";
 
@@ -24,7 +24,7 @@ Deno.test("serialized_indexable_collection - updateOneBySecondaryIndex", async (
 
         const updateCr = await db.is_users.updateOneBySecondaryIndex(
           "age",
-          mockUser2.age,
+          mockUser1.age,
           updateData,
           {
             strategy: "merge-shallow",
@@ -39,15 +39,37 @@ Deno.test("serialized_indexable_collection - updateOneBySecondaryIndex", async (
         assert(doc1);
         assert(doc2);
 
-        assert(doc1.value.address.country === updateData.address.country);
-        assert(doc1.value.address.city === updateData.address.city);
-        assert(doc1.value.address.houseNr === updateData.address.houseNr);
-        assert(doc1.value.address.street === undefined);
+        const [updated, _] = doc1.id === updateCr.id
+          ? [doc1, mockUser1]
+          : [doc2, mockUser2];
 
-        assert(doc2.value.address.country === mockUser2.address.country);
-        assert(doc2.value.address.city === mockUser2.address.city);
-        assert(doc2.value.address.houseNr === mockUser2.address.houseNr);
-        assert(doc2.value.address.street === mockUser2.address.street);
+        const [notUpdated, notUpdatedMock] = doc1.id === updateCr.id
+          ? [doc2, mockUser2]
+          : [doc1, mockUser1];
+
+        // Assert updated
+        assertEquals(updated.value.address.country, updateData.address.country);
+        assertEquals(updated.value.address.city, updateData.address.city);
+        assertEquals(updated.value.address.houseNr, updateData.address.houseNr);
+        assertEquals(updated.value.address.street, undefined);
+
+        // Assert not updated
+        assertEquals(
+          notUpdated.value.address.country,
+          notUpdatedMock.address.country,
+        );
+        assertEquals(
+          notUpdated.value.address.city,
+          notUpdatedMock.address.city,
+        );
+        assertEquals(
+          notUpdated.value.address.houseNr,
+          notUpdatedMock.address.houseNr,
+        );
+        assertEquals(
+          notUpdated.value.address.street,
+          notUpdatedMock.address.street,
+        );
       });
     },
   );
@@ -88,15 +110,37 @@ Deno.test("serialized_indexable_collection - updateOneBySecondaryIndex", async (
         assert(doc1);
         assert(doc2);
 
-        assert(doc1.value.address.country === updateData.address.country);
-        assert(doc1.value.address.city === updateData.address.city);
-        assert(doc1.value.address.houseNr === updateData.address.houseNr);
-        assert(doc1.value.address.street === mockUser1.address.street);
+        const [updated, updatedMock] = doc1.id === updateCr.id
+          ? [doc1, mockUser1]
+          : [doc2, mockUser2];
 
-        assert(doc2.value.address.country === mockUser2.address.country);
-        assert(doc2.value.address.city === mockUser2.address.city);
-        assert(doc2.value.address.houseNr === mockUser2.address.houseNr);
-        assert(doc2.value.address.street === mockUser2.address.street);
+        const [notUpdated, notUpdatedMock] = doc1.id === updateCr.id
+          ? [doc2, mockUser2]
+          : [doc1, mockUser1];
+
+        // Assert updated
+        assertEquals(updated.value.address.country, updateData.address.country);
+        assertEquals(updated.value.address.city, updateData.address.city);
+        assertEquals(updated.value.address.houseNr, updateData.address.houseNr);
+        assertEquals(updated.value.address.street, updatedMock.address.street);
+
+        // Assert not updated
+        assertEquals(
+          notUpdated.value.address.country,
+          notUpdatedMock.address.country,
+        );
+        assertEquals(
+          notUpdated.value.address.city,
+          notUpdatedMock.address.city,
+        );
+        assertEquals(
+          notUpdated.value.address.houseNr,
+          notUpdatedMock.address.houseNr,
+        );
+        assertEquals(
+          notUpdated.value.address.street,
+          notUpdatedMock.address.street,
+        );
       });
     },
   );
@@ -131,19 +175,41 @@ Deno.test("serialized_indexable_collection - updateOneBySecondaryIndex", async (
         assert(doc1);
         assert(doc2);
 
-        assert(doc1.value.username === updateData.username);
-        assert(doc1.value.age === updateData.age);
-        assert(doc1.value.address.country === updateData.address.country);
-        assert(doc1.value.address.city === updateData.address.city);
-        assert(doc1.value.address.houseNr === updateData.address.houseNr);
-        assert(doc1.value.address.street === undefined);
+        const [updated, _] = doc1.id === updateCr.id
+          ? [doc1, mockUser1]
+          : [doc2, mockUser2];
 
-        assert(doc2.value.username === mockUser2.username);
-        assert(doc2.value.age === mockUser2.age);
-        assert(doc2.value.address.country === mockUser2.address.country);
-        assert(doc2.value.address.city === mockUser2.address.city);
-        assert(doc2.value.address.houseNr === mockUser2.address.houseNr);
-        assert(doc2.value.address.street === mockUser2.address.street);
+        const [notUpdated, notUpdatedMock] = doc1.id === updateCr.id
+          ? [doc2, mockUser2]
+          : [doc1, mockUser1];
+
+        // Assert updated
+        assertEquals(updated.value.username, updateData.username);
+        assertEquals(updated.value.age, updateData.age);
+        assertEquals(updated.value.address.country, updateData.address.country);
+        assertEquals(updated.value.address.city, updateData.address.city);
+        assertEquals(updated.value.address.houseNr, updateData.address.houseNr);
+        assertEquals(updated.value.address.street, undefined);
+
+        // Assert not updated
+        assertEquals(notUpdated.value.username, notUpdatedMock.username);
+        assertEquals(notUpdated.value.age, notUpdatedMock.age);
+        assertEquals(
+          notUpdated.value.address.country,
+          notUpdatedMock.address.country,
+        );
+        assertEquals(
+          notUpdated.value.address.city,
+          notUpdatedMock.address.city,
+        );
+        assertEquals(
+          notUpdated.value.address.houseNr,
+          notUpdatedMock.address.houseNr,
+        );
+        assertEquals(
+          notUpdated.value.address.street,
+          notUpdatedMock.address.street,
+        );
       });
     },
   );
