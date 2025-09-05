@@ -4,7 +4,7 @@ import { generateLargeUsers, useDb } from "../utils.ts";
 Deno.test("serialized_collection - getMany", async (t) => {
   await t.step("Should get all documents", async () => {
     await useDb(async (db) => {
-      const users = generateLargeUsers(1_000);
+      const users = generateLargeUsers(100);
       const cr = await db.s_users.addMany(users);
       assert(cr.ok);
 

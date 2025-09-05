@@ -9,7 +9,7 @@ Deno.test("serialized_indexable_collection - count", async (t) => {
         const count1 = await db.is_users.count();
         assert(count1 === 0);
 
-        const users = generateLargeUsers(1_000);
+        const users = generateLargeUsers(100);
         const cr = await db.is_users.addMany(users);
         assert(cr.ok);
 

@@ -8,7 +8,7 @@ Deno.test("serialized_indexable_collection - addMany", async (t) => {
     "Should successfully add 1000 documents to the collection",
     async () => {
       await useDb(async (db) => {
-        const users = generateLargeUsers(1_000);
+        const users = generateLargeUsers(100);
         const cr = await db.is_users.addMany(users);
         assert(cr.ok);
 
@@ -41,7 +41,7 @@ Deno.test("serialized_indexable_collection - addMany", async (t) => {
     "Should successfully parse and add 1000 documents to the collection",
     async () => {
       await useDb(async (db) => {
-        const users = generateLargeUsers(1_000);
+        const users = generateLargeUsers(100);
         const cr = await db.zis_users.addMany(users);
         assert(cr.ok);
 

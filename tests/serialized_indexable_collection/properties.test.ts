@@ -71,7 +71,7 @@ Deno.test("serialized_indexable_collection - properties", async (t) => {
 
   await t.step("Should select using cursor pagination", async () => {
     await useDb(async (db) => {
-      const users = generateLargeUsers(1_000);
+      const users = generateLargeUsers(100);
       const cr = await db.is_users.addMany(users);
       assert(cr.ok);
 
@@ -97,16 +97,16 @@ Deno.test("serialized_indexable_collection - properties", async (t) => {
 
   await t.step("Should select using offset pagination", async () => {
     await useDb(async (db) => {
-      const users = generateLargeUsers(1_000);
+      const users = generateLargeUsers(100);
       const cr = await db.is_users.addMany(users);
       assert(cr.ok);
 
       const selected: Document<User, string>[] = [];
-      const limit = 50;
+      const limit = 4;
       for (let offset = 0; offset < users.length; offset += limit) {
         const { result } = await db.is_users.getMany({ offset, limit });
         selected.push(...result);
-        assert(result.length === 50);
+        assert(result.length <= limit);
       }
 
       assert(

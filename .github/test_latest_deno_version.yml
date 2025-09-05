@@ -1,0 +1,79 @@
+name: Test on latest deno version
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # once per day at 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Setup
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up latest Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: vx.x.x
+
+      - name: Get installed Deno version
+        id: deno
+        run: |
+          VERSION=$(deno -V)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Restore last tested version
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: .deno_last_version
+          key: deno-last-version
+
+      # Compare deno versions
+      - name: Check if already tested
+        id: check
+        run: |
+          if [ -f .deno_last_version ] && [ "$(cat .deno_last_version)" = "${{ steps.deno.outputs.version }}" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Run tests if new version
+      - name: Check Types
+        if: steps.check.outputs.skip == 'false'
+        run: deno task check
+
+      - name: Check formatting
+        if: steps.check.outputs.skip == 'false'
+        run: deno fmt --check
+
+      - name: Run linter
+        if: steps.check.outputs.skip == 'false'
+        run: deno lint
+
+      - name: "Test publish"
+        if: steps.check.outputs.skip == 'false'
+        run: deno publish --dry-run
+
+      - name: Run tests
+        if: steps.check.outputs.skip == 'false'
+        run: deno task test
+
+      - name: Run tests with map
+        if: steps.check.outputs.skip == 'false'
+        run: deno task test -- map
+
+      # Save the last tested version
+      - name: Save tested version
+        if: steps.check.outputs.skip == 'false'
+        run: echo "${{ steps.deno.outputs.version }}" > .deno_last_version
+
+      - name: Update cache
+        if: steps.check.outputs.skip == 'false'
+        uses: actions/cache@v4
+        with:
+          path: .deno_last_version
+          key: deno-last-version

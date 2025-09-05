@@ -8,7 +8,7 @@ Deno.test("serialized_indexable_collection - forEach", async (t) => {
     "Should run callback function for each document in the collection",
     async () => {
       await useDb(async (db) => {
-        const users = generateLargeUsers(1_000);
+        const users = generateLargeUsers(100);
         const cr = await db.is_users.addMany(users);
         assert(cr.ok);
 

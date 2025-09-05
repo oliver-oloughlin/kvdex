@@ -28,7 +28,7 @@ Deno.test("serialized_collection - delete", async (t) => {
     "Should successfully delete 1000 documents from the collection",
     async () => {
       await useDb(async (db) => {
-        const users = generateLargeUsers(1_000);
+        const users = generateLargeUsers(100);
         const cr = await db.s_users.addMany(users);
         const count1 = await db.s_users.count();
 

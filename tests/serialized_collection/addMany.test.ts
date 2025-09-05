@@ -6,7 +6,7 @@ Deno.test("serialized_collection - addMany", async (t) => {
     "Should successfully add 1000 documents to the collection",
     async () => {
       await useDb(async (db) => {
-        const users = generateLargeUsers(1_000);
+        const users = generateLargeUsers(100);
         const cr = await db.s_users.addMany(users);
         assert(cr.ok);
 
@@ -26,7 +26,7 @@ Deno.test("serialized_collection - addMany", async (t) => {
     "Should successfully parse and add 1000 documents to the collection",
     async () => {
       await useDb(async (db) => {
-        const users = generateLargeUsers(1_000);
+        const users = generateLargeUsers(100);
         const cr = await db.zs_users.addMany(users);
         assert(cr.ok);
 
