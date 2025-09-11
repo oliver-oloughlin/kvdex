@@ -1,4 +1,4 @@
-import { openKv } from "npm:@deno/kv";
+import { openKv } from "@deno/kv";
 import { kvdex } from "../../mod.ts";
 
 Deno.test("db - properties", async (t) => {
