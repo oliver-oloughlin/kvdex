@@ -56,7 +56,7 @@ jobs:
 
       - name: "Test publish"
         if: steps.check.outputs.skip == 'false'
-        run: deno publish --dry-run
+        run: deno publish --dry-run --allow-dirty
 
       - name: Run tests
         if: steps.check.outputs.skip == 'false'
