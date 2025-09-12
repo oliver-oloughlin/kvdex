@@ -31,7 +31,7 @@ jobs:
         run: deno lint
 
       - name: "Test publish"
-        run: deno publish --dry-run
+        run: deno publish --dry-run --allow-dirty
 
       - name: Run tests
         run: deno task test
