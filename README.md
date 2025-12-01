@@ -1,9 +1,10 @@
 # kvdex
 
-[![Release](https://img.shields.io/github/release/oliver-oloughlin/kvdex)](https://github.com/oliver-oloughlin/kvdex/releases)
-[![Score](https://jsr.io/badges/@olli/kvdex/score)](https://jsr.io/@olli/kvdex/score)
-[![Tests](https://img.shields.io/github/actions/workflow/status/oliver-oloughlin/kvdex/test.yml?label=tests)](https://github.com/oliver-oloughlin/kvdex/actions/workflows/test.yml)
+[![Score](https://jsr.io/badges/@olli/kvdex/score?labelColor=bd0f3b&logoColor=white&color=00334d)](https://jsr.io/@olli/kvdex/score)
+[![Score](https://jsr.io/badges/@olli/kvdex/total-downloads?labelColor=bd0f3b&logoColor=white&color=00334d)](https://jsr.io/@olli/kvdex/score)
+[![Score](https://jsr.io/badges/@olli/kvdex/weekly-downloads?labelColor=bd0f3b&logoColor=white&color=00334d)](https://jsr.io/@olli/kvdex/score)
 [![License](https://img.shields.io/github/license/oliver-oloughlin/kvdex)](https://github.com/oliver-oloughlin/kvdex/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/release/oliver-oloughlin/kvdex)](https://github.com/oliver-oloughlin/kvdex/releases)
 
 `kvdex` is a high-level abstraction layer for Deno KV with zero third-party
 dependencies by default. Its goal is to enhance the experience of using Deno's
@@ -110,13 +111,14 @@ _Supported Deno versions:_ **^2.2.0**
       - [JSON](#json)
       - [V8](#v8)
       - [Brotli](#brotli)
-      - [Brolit Sync](#brotli-sync)
+      - [Brotli Sync](#brotli-sync)
     - [Zod](#zod)
       - [Schemas](#schemas)
     - [Migrate](#migrate)
       - [Script](#script)
       - [Function](#function)
     - [KV](#kv)
+      - [Map](#map-1)
   - [Blob Storage](#blob-storage)
   - [Development](#development)
   - [License](#license)
