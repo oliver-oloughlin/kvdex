@@ -1,8 +1,8 @@
 # kvdex
 
-[![Score](https://jsr.io/badges/@olli/kvdex/score?labelColor=hsl(345,85%,40%)&logoColor=white&color=hsl(200,100%,15%))](https://jsr.io/@olli/kvdex/score)
-[![Score](https://jsr.io/badges/@olli/kvdex/total-downloads?labelColor=hsl(345,85%,40%)&logoColor=white&color=hsl(200,100%,15%))](https://jsr.io/@olli/kvdex/score)
-[![Score](https://jsr.io/badges/@olli/kvdex/weekly-downloads?labelColor=hsl(345,85%,40%)&logoColor=white&color=hsl(200,100%,15%))](https://jsr.io/@olli/kvdex/score)
+[![Score](https://jsr.io/badges/@olli/kvdex/score?labelColor=bd0f3b&logoColor=white&color=00334d)](https://jsr.io/@olli/kvdex/score)
+[![Score](https://jsr.io/badges/@olli/kvdex/total-downloads?labelColor=bd0f3b&logoColor=white&color=00334d)](https://jsr.io/@olli/kvdex/score)
+[![Score](https://jsr.io/badges/@olli/kvdex/weekly-downloads?labelColor=bd0f3b&logoColor=white&color=00334d)](https://jsr.io/@olli/kvdex/score)
 [![License](https://img.shields.io/github/license/oliver-oloughlin/kvdex)](https://github.com/oliver-oloughlin/kvdex/blob/main/LICENSE)
 [![Release](https://img.shields.io/github/release/oliver-oloughlin/kvdex)](https://github.com/oliver-oloughlin/kvdex/releases)
 
