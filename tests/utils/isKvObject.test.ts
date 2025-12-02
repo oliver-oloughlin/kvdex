@@ -11,8 +11,8 @@ Deno.test("utils - isKvObject", async (t) => {
   await t.step(
     "Should return false for all non-normal objects and primtives",
     () => {
-      const objIndex = VALUES.indexOf(TObject);
-      const u64Index = VALUES.indexOf(TKvU64);
+      const objIndex = VALUES.findIndex(([, val]) => val === TObject);
+      const u64Index = VALUES.findIndex(([, val]) => val === TKvU64);
       const filtered = VALUES.filter((_, i) =>
         i !== objIndex && i !== u64Index
       );
