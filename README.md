@@ -17,7 +17,7 @@ has compatibility options for the browser. `kvdex` accepts
 models, which means you can bring your favourite validation library, or use the
 built-in inference-only model.
 
-_Supported Deno versions:_ **^2.2.0**
+_Supported Deno versions:_ **^2.3.0**
 
 ## Highlights
 
