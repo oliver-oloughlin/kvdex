@@ -1,5 +1,8 @@
-import type { KvObject, KvValue } from "../../types.ts";
-import { isKvObject } from "../../utils.ts";
+import type { KvObject, KvValue } from "../types.ts";
+import { isKvObject } from "../utils.ts";
+import { replaceDataView, reviveDataView } from "./data_view.ts";
+import { mapValue } from "./map_value.ts";
+import { TypeKey } from "./type_key.ts";
 
 /**
  * Stringify a JSON-like value.
@@ -63,32 +66,6 @@ type JSONError = {
   cause?: unknown;
   stack?: string;
 };
-
-enum TypeKey {
-  Undefined = "__undefined__",
-  BigInt = "__bigint__",
-  Int8Array = "__int8array__",
-  Int16Array = "__int16array__",
-  Int32Array = "__int32array__",
-  BigInt64Array = "__bigint64array__",
-  Uint8Array = "__uint8array__",
-  Uint16Array = "__uint16array__",
-  Uint32Array = "__uint32array__",
-  BigUint64Array = "__biguint64array__",
-  Uint8ClampedArray = "__uint8clampedarray__",
-  // TODO: Float16Array = "__float16array__",
-  Float32Array = "__float32array__",
-  Float64Array = "__float64array__",
-  ArrayBuffer = "__arraybuffer__",
-  Date = "__date__",
-  Set = "__set__",
-  Map = "__map__",
-  RegExp = "__regexp__",
-  DataView = "__dataview__",
-  Error = "__error__",
-  NaN = "__nan__",
-  Infinity = "__infinity__",
-}
 
 /**
  * Inner replacer function.
@@ -269,14 +246,7 @@ function _replacer(value: unknown): unknown {
 
   // DataView
   if (value instanceof DataView) {
-    const { buffer, byteOffset, byteLength } = value;
-    return {
-      [TypeKey.DataView]: {
-        data: Array.from(new Uint8Array(buffer)),
-        byteOffset,
-        byteLength,
-      },
-    };
+    return replaceDataView(value);
   }
 
   // KvObject
@@ -433,13 +403,7 @@ function _reviver(value: unknown): unknown {
 
   // DataView
   if (TypeKey.DataView in value) {
-    const { data, byteOffset, byteLength } = mapValue<
-      { data: Array<number>; byteOffset: number; byteLength: number }
-    >(TypeKey.DataView, value);
-
-    const uint8Array = Uint8Array.from(data);
-
-    return new DataView(uint8Array.buffer, byteOffset, byteLength);
+    return reviveDataView(value);
   }
 
   // Set
@@ -516,15 +480,4 @@ function postReviver<T>(value: T): T {
   }
 
   return value;
-}
-
-/**
- * Map from special type entry to value.
- *
- * @param key - Type key.
- * @param value - JSON value to map from.
- * @returns Mapped value.
- */
-function mapValue<T>(key: string, value: unknown): T {
-  return (value as Record<string, T>)[key];
 }
