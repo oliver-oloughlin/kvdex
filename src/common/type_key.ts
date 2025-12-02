@@ -1,3 +1,4 @@
+/** Keys of specially handled types. */
 export enum TypeKey {
   Undefined = "__undefined__",
   BigInt = "__bigint__",

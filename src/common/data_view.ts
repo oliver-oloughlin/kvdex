@@ -11,6 +11,13 @@ type ReplacedDataViewEntry = {
   [TypeKey.DataView]: ReplacedDataView;
 };
 
+/**
+ * Replacer function for data view.
+ * Stores data safely for JSON and V8 parse/serialize.
+ *
+ * @param dataView
+ * @returns A ReplacedDataViewEntry object.
+ */
 export function replaceDataView(dataView: DataView): ReplacedDataViewEntry {
   const { buffer, byteOffset, byteLength } = dataView;
 
@@ -23,6 +30,13 @@ export function replaceDataView(dataView: DataView): ReplacedDataViewEntry {
   };
 }
 
+/**
+ * Reviver function for replaced data view.
+ * Reconstructs DataView object from safely stored data.
+ *
+ * @param entry
+ * @returns - A reconstructed DataView.
+ */
 export function reviveDataView(
   entry: unknown,
 ): DataView {
