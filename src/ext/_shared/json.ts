@@ -60,14 +60,13 @@ function replacer(_key: string, value: unknown): unknown {
 type JSONError = {
   message: string;
   name: string;
-  cause?: string;
+  cause?: unknown;
   stack?: string;
 };
 
 enum TypeKey {
   Undefined = "__undefined__",
   BigInt = "__bigint__",
-  KvU64 = "__kvu64__",
   Int8Array = "__int8array__",
   Int16Array = "__int16array__",
   Int32Array = "__int32array__",
@@ -167,8 +166,9 @@ function _replacer(value: unknown): unknown {
       message: value.message,
       name: value.name,
       stack: value.stack,
-      cause: jsonStringify(value.cause),
+      ...(value.cause ? { cause: _replacer(value.cause) } : {}),
     };
+
     return {
       [TypeKey.Error]: jsonError,
     };
@@ -269,8 +269,13 @@ function _replacer(value: unknown): unknown {
 
   // DataView
   if (value instanceof DataView) {
+    const { buffer, byteOffset, byteLength } = value;
     return {
-      [TypeKey.DataView]: Array.from(new Uint8Array(value.buffer)),
+      [TypeKey.DataView]: {
+        data: Array.from(new Uint8Array(buffer)),
+        byteOffset,
+        byteLength,
+      },
     };
   }
 
@@ -340,15 +345,15 @@ function _reviver(value: unknown): unknown {
 
   // Error
   if (TypeKey.Error in value) {
-    const { message, stack, cause, ...rest } = mapValue<JSONError>(
+    const { message, stack, cause } = mapValue<JSONError>(
       TypeKey.Error,
       value,
     );
 
-    const error = new Error(message, {
-      cause: cause ? jsonParse(cause) : undefined,
-      ...rest,
-    });
+    const error = new Error(
+      message,
+      cause ? { cause } : undefined,
+    );
 
     error.stack = stack;
     return error;
@@ -428,8 +433,13 @@ function _reviver(value: unknown): unknown {
 
   // DataView
   if (TypeKey.DataView in value) {
-    const uint8array = Uint8Array.from(mapValue(TypeKey.DataView, value));
-    return new DataView(uint8array.buffer);
+    const { data, byteOffset, byteLength } = mapValue<
+      { data: Array<number>; byteOffset: number; byteLength: number }
+    >(TypeKey.DataView, value);
+
+    const uint8Array = Uint8Array.from(data);
+
+    return new DataView(uint8Array.buffer, byteOffset, byteLength);
   }
 
   // Set

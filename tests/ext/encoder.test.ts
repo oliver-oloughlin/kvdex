@@ -12,7 +12,7 @@ Deno.test("ext - encoder", async (t) => {
     await t.step(
       "Should successfully serialize all KvValue type values",
       () => {
-        const serialized = VALUES.map(jsonSerialize);
+        const serialized = VALUES.map(([, val]) => jsonSerialize(val));
         assert(serialized.every((val) => val instanceof Uint8Array));
       },
     );
@@ -20,10 +20,10 @@ Deno.test("ext - encoder", async (t) => {
     await t.step(
       "Should successfully deserialize all KvValue type values from Uint8Array",
       () => {
-        VALUES.forEach((val) => {
+        VALUES.forEach(([label, val]) => {
           const seralized = jsonSerialize(val);
           const deserialized = jsonDeserialize(seralized);
-          assertEquals(val, deserialized);
+          assertEquals(val, deserialized, `Type: ${label}`);
         });
       },
     );
