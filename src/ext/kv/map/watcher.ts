@@ -1,5 +1,5 @@
-import type { DenoKvWatchOptions } from "../../../../mod.ts";
-import type { DenoKvEntryMaybe, DenoKvStrictKey } from "../../../types.ts";
+import type { DenoKvWatchOptions } from "../../../core/types.ts";
+import type { DenoKvEntryMaybe, DenoKvStrictKey } from "../../../core/types.ts";
 import { jsonStringify } from "../../encoding/mod.ts";
 import type { MapKv } from "../map/map_kv.ts";
 

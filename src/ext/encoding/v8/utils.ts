@@ -1,7 +1,7 @@
 import { replaceDataView, reviveDataView } from "../../../common/data_view.ts";
 import { TypeKey } from "../../../common/type_key.ts";
-import type { KvObject } from "../../../types.ts";
-import { isKvObject } from "../../../utils.ts";
+import type { KvObject } from "../../../core/types.ts";
+import { isKvObject } from "../../../core/utils.ts";
 import { deserialize, serialize } from "node:v8";
 
 /**

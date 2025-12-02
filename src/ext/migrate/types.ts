@@ -1,4 +1,4 @@
-import type { DenoKv } from "../../types.ts";
+import type { DenoKv } from "../../core/types.ts";
 
 /** Options for migrating entries from a source KV instance to a target KV instance */
 export type MigrateOptions = {

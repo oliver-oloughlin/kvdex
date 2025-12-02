@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { KvArray, KvId, KvObject, KvValue } from "../../types.ts";
+import type { KvArray, KvId, KvObject, KvValue } from "../../core/types.ts";
 
 const LazyKvValueSchema = z.lazy(() => KvValueSchema);
 

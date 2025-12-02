@@ -5,7 +5,7 @@ import {
   model,
   type QueueMessage,
 } from "../../mod.ts";
-import { createHandlerId } from "../../src/utils.ts";
+import { createHandlerId } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
 import type { User } from "../models.ts";
 import { createResolver, testEncoder, useDb, useKv } from "../utils.ts";

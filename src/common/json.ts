@@ -1,5 +1,5 @@
-import type { KvObject, KvValue } from "../types.ts";
-import { isKvObject } from "../utils.ts";
+import type { KvObject, KvValue } from "../core/types.ts";
+import { isKvObject } from "../core/utils.ts";
 import { replaceDataView, reviveDataView } from "./data_view.ts";
 import { mapValue } from "./map_value.ts";
 import { TypeKey } from "./type_key.ts";

@@ -1,4 +1,4 @@
-import type { Compressor } from "../../../types.ts";
+import type { Compressor } from "../../../core/types.ts";
 import { brotliCompress, brotliDecompress, constants } from "node:zlib";
 import type { BrotliCompressorOptions } from "./types.ts";
 

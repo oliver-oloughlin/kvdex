@@ -3,8 +3,8 @@ import {
   ID_KEY_PREFIX,
   KVDEX_KEY_PREFIX,
   SEGMENT_KEY_PREFIX,
-} from "../../src/constants.ts";
-import { extendKey, keyEq } from "../../src/utils.ts";
+} from "../../src/core/constants.ts";
+import { extendKey, keyEq } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
 import { mockUser1, mockUser2 } from "../mocks.ts";
 import type { User } from "../models.ts";

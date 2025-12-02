@@ -1,4 +1,4 @@
-import type { Encoder } from "../../../types.ts";
+import type { Encoder } from "../../../core/types.ts";
 import type { JsonEncoderOptions } from "./types.ts";
 import { jsonDeserialize, jsonSerialize } from "./utils.ts";
 

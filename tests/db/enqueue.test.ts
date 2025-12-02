@@ -5,8 +5,8 @@ import {
   model,
   type QueueMessage,
 } from "../../mod.ts";
-import { KVDEX_KEY_PREFIX } from "../../src/constants.ts";
-import { createHandlerId } from "../../src/utils.ts";
+import { KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
+import { createHandlerId } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
 import { createResolver, useKv } from "../utils.ts";
 

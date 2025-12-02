@@ -10,8 +10,8 @@ import {
   KVDEX_KEY_PREFIX,
   PRIMARY_INDEX_KEY_PREFIX,
   SECONDARY_INDEX_KEY_PREFIX,
-} from "../../src/constants.ts";
-import { extendKey, keyEq } from "../../src/utils.ts";
+} from "../../src/core/constants.ts";
+import { extendKey, keyEq } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
 import type { User } from "../models.ts";
 import { generateLargeUsers, useDb, useKv } from "../utils.ts";

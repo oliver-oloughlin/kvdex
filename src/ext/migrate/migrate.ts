@@ -1,5 +1,5 @@
-import { KVDEX_KEY_PREFIX } from "../../constants.ts";
-import type { DenoKvStrictKey } from "../../types.ts";
+import { KVDEX_KEY_PREFIX } from "../../core/constants.ts";
+import type { DenoKvStrictKey } from "../../core/types.ts";
 import type { MigrateOptions } from "./types.ts";
 
 /**

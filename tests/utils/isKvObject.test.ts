@@ -1,6 +1,6 @@
 import { assert } from "@std/assert";
 import { TKvU64, TObject, VALUES } from "../values.ts";
-import { isKvObject } from "../../src/utils.ts";
+import { isKvObject } from "../../src/core/utils.ts";
 
 Deno.test("utils - isKvObject", async (t) => {
   await t.step("Should return true for normal objects", () => {

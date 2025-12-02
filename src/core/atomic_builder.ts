@@ -1,6 +1,6 @@
-import type { Collection } from "./collection.ts";
+import type { Collection } from "../core/collection.ts";
 import { ulid } from "@std/ulid";
-import { InvalidCollectionError } from "./errors.ts";
+import { InvalidCollectionError } from "../core/errors.ts";
 import type {
   AtomicCheck,
   AtomicMutation,
@@ -21,7 +21,7 @@ import type {
   ParseId,
   Schema,
   SchemaDefinition,
-} from "./types.ts";
+} from "../core/types.ts";
 import {
   allFulfilled,
   deleteIndices,
@@ -31,7 +31,7 @@ import {
   setIndices,
   transform,
   validate,
-} from "./utils.ts";
+} from "../core/utils.ts";
 
 /**
  * Builder object for creating and executing atomic operations in the KV store.

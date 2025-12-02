@@ -3,7 +3,7 @@ import { brotliCompressor } from "../src/ext/encoding/brotli/brotli_compressor.t
 import { jsonEncoder } from "../src/ext/encoding/mod.ts";
 import { MapKv } from "../src/ext/kv/map/mod.ts";
 import { StorageAdapter } from "../src/ext/kv/mod.ts";
-import { model } from "../src/model.ts";
+import { model } from "../src/core/model.ts";
 import { TransformUserModel, type User, UserSchema } from "./models.ts";
 
 export const testEncoder = jsonEncoder({

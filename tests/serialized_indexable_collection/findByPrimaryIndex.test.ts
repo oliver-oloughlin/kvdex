@@ -1,6 +1,6 @@
 import { assert } from "@std/assert";
 import { generateLargeUsers, useDb } from "../utils.ts";
-import { validate } from "../../src/utils.ts";
+import { validate } from "../../src/core/utils.ts";
 import { TransformUserModel } from "../models.ts";
 
 const [user] = generateLargeUsers(1);

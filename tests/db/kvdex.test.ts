@@ -1,5 +1,5 @@
 import { collection, kvdex, model } from "../../mod.ts";
-import { KVDEX_KEY_PREFIX } from "../../src/constants.ts";
+import { KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
 import { assert } from "@std/assert";
 import { useKv } from "../utils.ts";
 
