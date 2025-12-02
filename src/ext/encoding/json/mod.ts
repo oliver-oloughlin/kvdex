@@ -49,7 +49,11 @@
  * ```
  */
 
-export { jsonEncoder } from "./json_encoder.ts";
-export { jsonDeserialize, jsonSerialize } from "./utils.ts";
-export { jsonParse, jsonStringify } from "../../../common/json.ts";
-export type * from "./types.ts";
+export {
+  jsonDeserialize,
+  jsonEncoder,
+  jsonParse,
+  jsonSerialize,
+  jsonStringify,
+} from "../../../common/json.ts";
+export type { JsonEncoderOptions } from "../../../common/json.ts";

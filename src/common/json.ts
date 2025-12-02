@@ -1,8 +1,81 @@
-import type { KvObject, KvValue } from "../core/types.ts";
+import type { Compressor, Encoder, KvObject, KvValue } from "../core/types.ts";
 import { isKvObject } from "../core/utils.ts";
 import { replaceDataView, reviveDataView } from "./data_view.ts";
 import { mapValue } from "./map_value.ts";
 import { TypeKey } from "./type_key.ts";
+
+const TEXT_ENCODER = new TextEncoder();
+const TEXT_DECODER = new TextDecoder();
+
+/** Options for JSON encoding. */
+export type JsonEncoderOptions = {
+  /** Optional compressor object. */
+  compressor?: Compressor;
+};
+
+/**
+ * JSON-encoder.
+ *
+ * Used for serializing and deserializing data as Uint8Array.
+ *
+ * @param options - JSON encoding options.
+ * @returns - An Encoder object.
+ */
+export function jsonEncoder(options?: JsonEncoderOptions): Encoder {
+  return {
+    serializer: {
+      serialize: jsonSerialize,
+      deserialize: jsonDeserialize,
+    },
+    compressor: options?.compressor,
+  };
+}
+
+/**
+ * Serialize a JSON-like value to a Uint8Array.
+ *
+ * @example
+ * ```ts
+ * import { jsonSerialize } from "@olli/kvdex"
+ *
+ * const serialized = jsonSerialize({
+ *   foo: "foo",
+ *   bar: "bar",
+ *   bigint: 10n
+ * })
+ * ```
+ *
+ * @param value - Value to be serialized.
+ * @returns Serialized value.
+ */
+export function jsonSerialize(value: unknown): Uint8Array {
+  const str = jsonStringify(value);
+  return TEXT_ENCODER.encode(str);
+}
+
+/**
+ * Deserialize a value that was serialized using `jsonSerialize()`.
+ *
+ * @example
+ * ```ts
+ * import { jsonSerialize, jsonDeserialize } from "@olli/kvdex"
+ *
+ * const serialized = jsonSerialize({
+ *   foo: "foo",
+ *   bar: "bar",
+ *   bigint: 10n
+ * })
+ *
+ * const value = jsonDeserialize(serialized)
+ * ```
+ *
+ * @param value - Value to be deserialize.
+ * @returns Deserialized value.
+ */
+export function jsonDeserialize<T>(value: Uint8Array): T {
+  const str = TEXT_DECODER.decode(value);
+  return jsonParse<T>(str);
+}
 
 /**
  * Stringify a JSON-like value.
