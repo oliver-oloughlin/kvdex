@@ -1,4 +1,4 @@
-import { GET_MANY_KEY_LIMIT } from "../common/constants.ts";
+import { GET_MANY_KEY_LIMIT } from "./constants.ts";
 import type { Collection } from "./collection.ts";
 import type {
   DenoAtomicOperation,
@@ -23,7 +23,7 @@ import type {
   StandardSchemaV1,
   WatchManager,
   WatchOptions,
-} from "../common/types.ts";
+} from "./types.ts";
 import { ulid } from "@std/ulid";
 import { jsonEncoder } from "../ext/encoding/mod.ts";
 
