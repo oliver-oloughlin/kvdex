@@ -2,7 +2,7 @@ import { assert } from "@std/assert";
 import { mockUser1 } from "../mocks.ts";
 import { TransformUserModel } from "../models.ts";
 import { useDb } from "../utils.ts";
-import { validate } from "../../src/utils.ts";
+import { validate } from "../../src/core/utils.ts";
 
 Deno.test("indexable_collection - findByPrimaryIndex", async (t) => {
   await t.step("Should find document by primary index", async () => {

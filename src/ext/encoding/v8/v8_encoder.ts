@@ -1,4 +1,4 @@
-import type { Encoder } from "../../../types.ts";
+import type { Encoder } from "../../../core/types.ts";
 import type { V8EncoderOptions } from "./types.ts";
 import { v8Deserialize, v8Serialize } from "./utils.ts";
 

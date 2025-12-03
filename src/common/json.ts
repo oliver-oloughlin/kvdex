@@ -1,5 +1,81 @@
-import type { KvObject, KvValue } from "../../types.ts";
-import { isKvObject } from "../../utils.ts";
+import type { Compressor, Encoder, KvObject, KvValue } from "../core/types.ts";
+import { isKvObject } from "../core/utils.ts";
+import { replaceDataView, reviveDataView } from "./data_view.ts";
+import { mapValue } from "./map_value.ts";
+import { TypeKey } from "./type_key.ts";
+
+const TEXT_ENCODER = new TextEncoder();
+const TEXT_DECODER = new TextDecoder();
+
+/** Options for JSON encoding. */
+export type JsonEncoderOptions = {
+  /** Optional compressor object. */
+  compressor?: Compressor;
+};
+
+/**
+ * JSON-encoder.
+ *
+ * Used for serializing and deserializing data as Uint8Array.
+ *
+ * @param options - JSON encoding options.
+ * @returns - An Encoder object.
+ */
+export function jsonEncoder(options?: JsonEncoderOptions): Encoder {
+  return {
+    serializer: {
+      serialize: jsonSerialize,
+      deserialize: jsonDeserialize,
+    },
+    compressor: options?.compressor,
+  };
+}
+
+/**
+ * Serialize a JSON-like value to a Uint8Array.
+ *
+ * @example
+ * ```ts
+ * import { jsonSerialize } from "@olli/kvdex"
+ *
+ * const serialized = jsonSerialize({
+ *   foo: "foo",
+ *   bar: "bar",
+ *   bigint: 10n
+ * })
+ * ```
+ *
+ * @param value - Value to be serialized.
+ * @returns Serialized value.
+ */
+export function jsonSerialize(value: unknown): Uint8Array {
+  const str = jsonStringify(value);
+  return TEXT_ENCODER.encode(str);
+}
+
+/**
+ * Deserialize a value that was serialized using `jsonSerialize()`.
+ *
+ * @example
+ * ```ts
+ * import { jsonSerialize, jsonDeserialize } from "@olli/kvdex"
+ *
+ * const serialized = jsonSerialize({
+ *   foo: "foo",
+ *   bar: "bar",
+ *   bigint: 10n
+ * })
+ *
+ * const value = jsonDeserialize(serialized)
+ * ```
+ *
+ * @param value - Value to be deserialize.
+ * @returns Deserialized value.
+ */
+export function jsonDeserialize<T>(value: Uint8Array): T {
+  const str = TEXT_DECODER.decode(value);
+  return jsonParse<T>(str);
+}
 
 /**
  * Stringify a JSON-like value.
@@ -60,36 +136,9 @@ function replacer(_key: string, value: unknown): unknown {
 type JSONError = {
   message: string;
   name: string;
-  cause?: string;
+  cause?: unknown;
   stack?: string;
 };
-
-enum TypeKey {
-  Undefined = "__undefined__",
-  BigInt = "__bigint__",
-  KvU64 = "__kvu64__",
-  Int8Array = "__int8array__",
-  Int16Array = "__int16array__",
-  Int32Array = "__int32array__",
-  BigInt64Array = "__bigint64array__",
-  Uint8Array = "__uint8array__",
-  Uint16Array = "__uint16array__",
-  Uint32Array = "__uint32array__",
-  BigUint64Array = "__biguint64array__",
-  Uint8ClampedArray = "__uint8clampedarray__",
-  // TODO: Float16Array = "__float16array__",
-  Float32Array = "__float32array__",
-  Float64Array = "__float64array__",
-  ArrayBuffer = "__arraybuffer__",
-  Date = "__date__",
-  Set = "__set__",
-  Map = "__map__",
-  RegExp = "__regexp__",
-  DataView = "__dataview__",
-  Error = "__error__",
-  NaN = "__nan__",
-  Infinity = "__infinity__",
-}
 
 /**
  * Inner replacer function.
@@ -167,8 +216,9 @@ function _replacer(value: unknown): unknown {
       message: value.message,
       name: value.name,
       stack: value.stack,
-      cause: jsonStringify(value.cause),
+      ...(value.cause ? { cause: _replacer(value.cause) } : {}),
     };
+
     return {
       [TypeKey.Error]: jsonError,
     };
@@ -269,9 +319,7 @@ function _replacer(value: unknown): unknown {
 
   // DataView
   if (value instanceof DataView) {
-    return {
-      [TypeKey.DataView]: Array.from(new Uint8Array(value.buffer)),
-    };
+    return replaceDataView(value);
   }
 
   // KvObject
@@ -340,15 +388,15 @@ function _reviver(value: unknown): unknown {
 
   // Error
   if (TypeKey.Error in value) {
-    const { message, stack, cause, ...rest } = mapValue<JSONError>(
+    const { message, stack, cause } = mapValue<JSONError>(
       TypeKey.Error,
       value,
     );
 
-    const error = new Error(message, {
-      cause: cause ? jsonParse(cause) : undefined,
-      ...rest,
-    });
+    const error = new Error(
+      message,
+      cause ? { cause } : undefined,
+    );
 
     error.stack = stack;
     return error;
@@ -428,8 +476,7 @@ function _reviver(value: unknown): unknown {
 
   // DataView
   if (TypeKey.DataView in value) {
-    const uint8array = Uint8Array.from(mapValue(TypeKey.DataView, value));
-    return new DataView(uint8array.buffer);
+    return reviveDataView(value);
   }
 
   // Set
@@ -506,15 +553,4 @@ function postReviver<T>(value: T): T {
   }
 
   return value;
-}
-
-/**
- * Map from special type entry to value.
- *
- * @param key - Type key.
- * @param value - JSON value to map from.
- * @returns Mapped value.
- */
-function mapValue<T>(key: string, value: unknown): T {
-  return (value as Record<string, T>)[key];
 }

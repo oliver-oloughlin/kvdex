@@ -1,4 +1,4 @@
-import { validate } from "../../src/utils.ts";
+import { validate } from "../../src/core/utils.ts";
 import { model } from "../../mod.ts";
 import { assertEquals } from "@std/assert/equals";
 import { assertNotEquals } from "@std/assert/not-equals";

@@ -8,8 +8,8 @@ import {
 import {
   KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
-} from "../../src/constants.ts";
-import { createHandlerId, extendKey } from "../../src/utils.ts";
+} from "../../src/core/constants.ts";
+import { createHandlerId, extendKey } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
 import type { User } from "../models.ts";
 import { createResolver, sleep, useKv } from "../utils.ts";

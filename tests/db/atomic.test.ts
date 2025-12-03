@@ -5,7 +5,7 @@ import {
   model,
   type QueueMessage,
 } from "../../mod.ts";
-import { createHandlerId } from "../../src/utils.ts";
+import { createHandlerId } from "../../src/core/utils.ts";
 import { assert, assertEquals, assertThrows } from "@std/assert";
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
 import { sleep, useDb, useKv } from "../utils.ts";

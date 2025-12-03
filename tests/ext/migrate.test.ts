@@ -1,7 +1,7 @@
 import { migrate } from "../../src/ext/migrate/mod.ts";
-import { collection } from "../../src/collection.ts";
-import { kvdex } from "../../src/kvdex.ts";
-import { model } from "../../src/model.ts";
+import { collection } from "../../src/core/collection.ts";
+import { kvdex } from "../../src/core/kvdex.ts";
+import { model } from "../../src/core/model.ts";
 import { assert, assertEquals } from "@std/assert";
 import {
   TArray,

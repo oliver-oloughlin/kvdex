@@ -150,8 +150,8 @@ Deno.test("ext - zod", async (t) => {
   await t.step(
     "KvValueSchema should only successfully parse values according to KvValue",
     () => {
-      VALUES.forEach((val) => {
-        assert(KvValueSchema.safeParse(val).success);
+      VALUES.forEach(([label, val]) => {
+        assert(KvValueSchema.safeParse(val).success, `Type: ${label}`);
       });
 
       notKvValues.forEach(

@@ -1,9 +1,9 @@
 # kvdex
 
 [![Score](https://jsr.io/badges/@olli/kvdex/score?labelColor=004d26&logoColor=white&color=00334d)](https://jsr.io/@olli/kvdex/score)
-[![Score](https://jsr.io/badges/@olli/kvdex/total-downloads?labelColor=004d26&logoColor=white&color=00334d)](https://jsr.io/@olli/kvdex/score)
-[![Score](https://jsr.io/badges/@olli/kvdex/weekly-downloads?labelColor=004d26&logoColor=white&color=00334d)](https://jsr.io/@olli/kvdex/score)
-[![Score](https://jsr.io/badges/@olli/kvdex?labelColor=004d26&logoColor=white&color=00334d)](https://jsr.io/@olli/kvdex)
+[![Total Downloads](https://jsr.io/badges/@olli/kvdex/total-downloads?labelColor=004d26&logoColor=white&color=00334d)](https://jsr.io/@olli/kvdex)
+[![Weekly Downloads](https://jsr.io/badges/@olli/kvdex/weekly-downloads?labelColor=004d26&logoColor=white&color=00334d)](https://jsr.io/@olli/kvdex)
+[![Version](https://jsr.io/badges/@olli/kvdex?labelColor=004d26&logoColor=white&color=00334d)](https://jsr.io/@olli/kvdex)
 [![License](https://img.shields.io/github/license/oliver-oloughlin/kvdex?labelColor=004d26&logoColor=white&color=00334d)](https://github.com/oliver-oloughlin/kvdex/blob/main/LICENSE)
 
 `kvdex` is a high-level abstraction layer for Deno KV with zero third-party
@@ -17,7 +17,7 @@ has compatibility options for the browser. `kvdex` accepts
 models, which means you can bring your favourite validation library, or use the
 built-in inference-only model.
 
-_Supported Deno versions:_ **^2.2.0**
+_Supported Deno versions:_ **^2.3.0**
 
 ## Highlights
 

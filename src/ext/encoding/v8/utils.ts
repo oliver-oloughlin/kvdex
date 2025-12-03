@@ -1,5 +1,7 @@
-import type { KvObject } from "../../../types.ts";
-import { isKvObject } from "../../../utils.ts";
+import { replaceDataView, reviveDataView } from "../../../common/data_view.ts";
+import { TypeKey } from "../../../common/type_key.ts";
+import type { KvObject } from "../../../core/types.ts";
+import { isKvObject } from "../../../core/utils.ts";
 import { deserialize, serialize } from "node:v8";
 
 /**
@@ -31,6 +33,11 @@ export function v8Deserialize<T>(
  * @returns
  */
 function beforeV8Serialize(value: unknown): unknown {
+  // DataView
+  if (value instanceof DataView) {
+    return replaceDataView(value);
+  }
+
   // KvObject
   if (isKvObject(value)) {
     return Object.fromEntries(
@@ -78,6 +85,11 @@ function afterV8Serialize(value: unknown): unknown {
     typeof value !== "object"
   ) {
     return value;
+  }
+
+  // DataView
+  if (TypeKey.DataView in value) {
+    return reviveDataView(value);
   }
 
   // KvObject

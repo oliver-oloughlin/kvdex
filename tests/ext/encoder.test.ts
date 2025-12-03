@@ -1,4 +1,4 @@
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertInstanceOf } from "@std/assert";
 import { VALUES } from "../values.ts";
 import {
   jsonDeserialize,
@@ -12,7 +12,7 @@ Deno.test("ext - encoder", async (t) => {
     await t.step(
       "Should successfully serialize all KvValue type values",
       () => {
-        const serialized = VALUES.map(jsonSerialize);
+        const serialized = VALUES.map(([, val]) => jsonSerialize(val));
         assert(serialized.every((val) => val instanceof Uint8Array));
       },
     );
@@ -20,10 +20,10 @@ Deno.test("ext - encoder", async (t) => {
     await t.step(
       "Should successfully deserialize all KvValue type values from Uint8Array",
       () => {
-        VALUES.forEach((val) => {
+        VALUES.forEach(([label, val]) => {
           const seralized = jsonSerialize(val);
           const deserialized = jsonDeserialize(seralized);
-          assertEquals(val, deserialized);
+          assertEquals(val, deserialized, `Type: ${label}`);
         });
       },
     );
@@ -33,30 +33,20 @@ Deno.test("ext - encoder", async (t) => {
     await t.step(
       "Should successfully serialize all KvValue type values",
       () => {
-        const serialized = VALUES.map((val) => {
-          try {
-            return v8Serialize(val);
-          } catch (e) {
-            throw new Error(
-              `Failed to serialize value: ${val}, Error: ${e}`,
-            );
-          }
+        VALUES.forEach(([label, val]) => {
+          const serialized = v8Serialize(val);
+          assertInstanceOf(serialized, Uint8Array, `Type: ${label}`);
         });
-        assert(serialized.every((val) => val instanceof Uint8Array));
       },
     );
 
     await t.step(
       "Should successfully deserialize all KvValue type values from Uint8Array",
       () => {
-        VALUES.forEach((val) => {
+        VALUES.forEach(([label, val]) => {
           const serialized = v8Serialize(val);
-          try {
-            const deserialized = v8Deserialize(serialized);
-            assertEquals(val, deserialized);
-          } catch (e) {
-            throw new Error(`Failed to deserialize value: ${val}, Error: ${e}`);
-          }
+          const deserialized = v8Deserialize(serialized);
+          assertEquals(val, deserialized, `Type: ${label}`);
         });
       },
     );

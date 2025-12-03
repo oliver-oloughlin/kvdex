@@ -12,13 +12,13 @@ import type {
   DenoKvSetOptions,
   DenoKvStrictKey,
   DenoKvWatchOptions,
-} from "../../../types.ts";
+} from "../../../core/types.ts";
 import { MapKvAtomicOperation } from "./atomic.ts";
 import { Watcher } from "./watcher.ts";
 import { createVersionstamp, keySort } from "./utils.ts";
 import type { BasicMap, MapKvOptions } from "./types.ts";
-import { jsonParse, jsonStringify } from "../../_shared/json.ts";
-import { allFulfilled } from "../../../utils.ts";
+import { jsonParse, jsonStringify } from "../../../common/json.ts";
+import { allFulfilled } from "../../../core/utils.ts";
 import { AsyncLock } from "./async_lock.ts";
 
 /**

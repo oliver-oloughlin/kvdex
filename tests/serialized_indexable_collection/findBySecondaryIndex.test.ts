@@ -2,7 +2,7 @@ import { assert } from "@std/assert";
 import { mockUser1, mockUser2 } from "../mocks.ts";
 import { TransformUserModel } from "../models.ts";
 import { useDb } from "../utils.ts";
-import { validate } from "../../src/utils.ts";
+import { validate } from "../../src/core/utils.ts";
 
 Deno.test("serialized_indexable_collection - findBySecondaryIndex", async (t) => {
   await t.step("Should find documents by secondary index", async () => {
