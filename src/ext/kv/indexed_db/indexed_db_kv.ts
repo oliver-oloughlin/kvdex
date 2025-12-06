@@ -1,4 +1,3 @@
-import { jsonStringify } from "../../../common/json.ts";
 import type {
   DenoAtomicOperation,
   DenoKv,
@@ -6,8 +5,6 @@ import type {
   DenoKvCommitResult,
   DenoKvEnqueueOptions,
   DenoKvEntryMaybe,
-  DenoKvGetOptions,
-  DenoKvLaxKey,
   DenoKvListIterator,
   DenoKvListOptions,
   DenoKvListSelector,
@@ -15,21 +12,35 @@ import type {
   DenoKvStrictKey,
   DenoKvWatchOptions,
 } from "../../../core/types.ts";
-import { setEntry } from "../common/entry_handlers.ts";
+import { allFulfilled } from "../../../core/utils.ts";
+import { getEntry, KvEntry, setEntry } from "../common/entry_handlers.ts";
 import { createVersionstamp } from "../common/utils.ts";
 import { Watcher } from "../common/watcher.ts";
 
+type IndexedDbOptions = {
+  db: IDBDatabase;
+  storeName?: string;
+};
+
 export class IndexedDbKv implements DenoKv {
-  private objStore: IDBObjectStore;
+  private db: IDBDatabase;
+  private storeName: string;
   private watchers: Watcher[];
 
-  constructor(objStore: IDBObjectStore) {
-    this.objStore = objStore;
+  private get objStore(): IDBObjectStore {
+    return this.db.transaction(this.storeName, "readwrite").objectStore(
+      this.storeName,
+    );
+  }
+
+  constructor({ db, storeName = "__kvdex_store__" }: IndexedDbOptions) {
+    this.db = db;
+    this.storeName = storeName;
     this.watchers = [];
   }
 
   delete(key: DenoKvStrictKey): Promise<void> | void {
-    this.objStore.delete(jsonStringify(key));
+    throw new Error("Method not implemented.");
   }
 
   set(
@@ -37,26 +48,31 @@ export class IndexedDbKv implements DenoKv {
     value: unknown,
     options?: DenoKvSetOptions,
   ): Promise<DenoKvCommitResult | DenoKvCommitError> {
-    return this.setDocument(key, value, createVersionstamp(), options);
+    return setEntry({
+      key,
+      value,
+      versionstamp: createVersionstamp(),
+      get: (keyStr) => this.getDbEntry(keyStr),
+      set: (keyStr, entry) => this.setDbEntry(keyStr, entry),
+      watchers: this.watchers,
+      options,
+    });
   }
 
-  get(key: DenoKvStrictKey): DenoKvEntryMaybe {
-    const data = this.objStore.get(jsonStringify(key)) ?? {
-      value: null,
-      versionstamp: null,
-    };
-
-    return {
-      ...data,
-      key: key as DenoKvLaxKey,
-    };
+  async get(
+    key: DenoKvStrictKey,
+  ): Promise<DenoKvEntryMaybe> {
+    return await getEntry({
+      key,
+      get: (keyStr) => this.getDbEntry(keyStr),
+      delete: (keyStr) => this.deleteDbEntry(keyStr),
+    });
   }
 
   getMany(
     keys: DenoKvStrictKey[],
-    options?: DenoKvGetOptions,
   ): Promise<DenoKvEntryMaybe[]> | DenoKvEntryMaybe[] {
-    throw new Error("Method not implemented.");
+    return allFulfilled(keys.map((key) => this.get(key)));
   }
 
   list(
@@ -92,20 +108,33 @@ export class IndexedDbKv implements DenoKv {
     this.db.close();
   }
 
-  private async setDocument(
-    key: DenoKvStrictKey,
-    value: unknown,
-    versionstamp: string,
-    options: DenoKvSetOptions | undefined,
-  ): Promise<DenoKvCommitResult> {
-    return await setEntry({
-      key,
-      value,
-      versionstamp,
-      options,
-      watchers: this.watchers,
-      get: (keyStr) => this.objStore.get(keyStr).result,
-      set: (keyStr, entry) => this.objStore.put(entry, keyStr),
-    });
+  private getDbEntry(key: string): Promise<KvEntry | null> {
+    const { promise, reject, resolve } = Promise.withResolvers<KvEntry>();
+
+    const req = this.objStore.get(key);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => resolve(req.result);
+
+    return promise;
+  }
+
+  private setDbEntry(key: string, entry: KvEntry): Promise<void> {
+    const { promise, reject, resolve } = Promise.withResolvers<void>();
+
+    const req = this.objStore.put(entry, key);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => resolve();
+
+    return promise;
+  }
+
+  private deleteDbEntry(key: string): Promise<void> {
+    const { promise, reject, resolve } = Promise.withResolvers<void>();
+
+    const req = this.objStore.delete(key);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => resolve();
+
+    return promise;
   }
 }
