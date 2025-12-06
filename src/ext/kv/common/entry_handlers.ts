@@ -11,7 +11,7 @@ import type {
 import { allFulfilled } from "../../../core/utils.ts";
 import type { Watcher } from "./watcher.ts";
 
-type KvEntry = {
+export type KvEntry = {
   value: unknown;
   versionstamp: string;
   expireAt: number | null;
@@ -28,12 +28,11 @@ export async function setEntry({
 }: {
   key: DenoKvStrictKey;
   value: unknown;
-  prevValue: unknown;
   versionstamp: string;
   get: (
     key: string,
   ) => KvEntry | undefined | null | Promise<KvEntry | undefined | null>;
-  set: (key: string, value: unknown) => unknown;
+  set: (key: string, entry: KvEntry) => unknown;
   watchers: Watcher[];
   options?: DenoKvSetOptions;
 }): Promise<DenoKvCommitResult> {

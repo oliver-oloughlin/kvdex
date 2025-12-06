@@ -3,7 +3,6 @@ import type {
   DenoKv,
   DenoKvCommitResult,
   DenoKvEnqueueOptions,
-  DenoKvEntry,
   DenoKvEntryMaybe,
   DenoKvLaxKey,
   DenoKvListIterator,
@@ -14,12 +13,13 @@ import type {
   DenoKvWatchOptions,
 } from "../../../core/types.ts";
 import { MapKvAtomicOperation } from "./atomic.ts";
-import { Watcher } from "./watcher.ts";
+import { Watcher } from "../common/watcher.ts";
 import { createVersionstamp, keySort } from "./utils.ts";
 import type { BasicMap, MapKvOptions } from "./types.ts";
 import { jsonParse, jsonStringify } from "../../../common/json.ts";
 import { allFulfilled } from "../../../core/utils.ts";
 import { AsyncLock } from "./async_lock.ts";
+import { getEntry, type KvEntry, setEntry } from "../common/entry_handlers.ts";
 
 /**
  * KV instance utilising a `BasicMap` as it's backend.
@@ -47,7 +47,7 @@ import { AsyncLock } from "./async_lock.ts";
  * ```
  */
 export class MapKv implements DenoKv {
-  private map: BasicMap<string, Omit<DenoKvEntry, "key">>;
+  private map: BasicMap<string, KvEntry>;
   private clearOnClose: boolean;
   private watchers: Watcher[];
   private listenHandlers: ((msg: unknown) => unknown)[];
@@ -71,7 +71,7 @@ export class MapKv implements DenoKv {
     this.atomicLock = new AsyncLock();
 
     entries?.forEach(({ key, ...data }) =>
-      this.map.set(jsonStringify(key), data)
+      this.setDocument(key as DenoKvStrictKey, data.value, data.versionstamp)
     );
   }
 
@@ -92,15 +92,11 @@ export class MapKv implements DenoKv {
   }
 
   async get(key: DenoKvStrictKey): Promise<DenoKvEntryMaybe> {
-    const data = await this.map.get(jsonStringify(key)) ?? {
-      value: null,
-      versionstamp: null,
-    };
-
-    return {
-      ...data,
-      key: key as DenoKvLaxKey,
-    };
+    return await getEntry({
+      key,
+      get: (keyStr) => this.map.get(keyStr),
+      delete: (keyStr) => this.map.delete(keyStr),
+    });
   }
 
   async getMany(keys: DenoKvStrictKey[]): Promise<DenoKvEntryMaybe[]> {
@@ -230,26 +226,15 @@ export class MapKv implements DenoKv {
     versionstamp: string,
     options?: DenoKvSetOptions,
   ): Promise<DenoKvCommitResult> {
-    const keyStr = jsonStringify(key);
-    const prev = await this.map.get(keyStr);
-
-    await this.map.set(keyStr, {
+    return await setEntry({
+      key,
       value,
-      versionstamp: versionstamp,
-    });
-
-    await allFulfilled(
-      this.watchers.map((w) => w.update(keyStr, prev?.value, value)),
-    );
-
-    if (options?.expireIn !== undefined) {
-      setTimeout(() => this.map.delete(keyStr), options.expireIn);
-    }
-
-    return {
-      ok: true,
       versionstamp,
-    };
+      get: (keyStr) => this.map.get(keyStr),
+      set: (keyStr, entry) => this.map.set(keyStr, entry),
+      watchers: this.watchers,
+      options,
+    });
   }
 
   private enqueueValue(
