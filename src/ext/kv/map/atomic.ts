@@ -10,7 +10,7 @@ import type {
 import { allFulfilled } from "../../../core/utils.ts";
 import type { AsyncLock } from "./async_lock.ts";
 import type { MapKv } from "./map_kv.ts";
-import { createVersionstamp } from "./utils.ts";
+import { createVersionstamp } from "../common/utils.ts";
 
 export class MapKvAtomicOperation implements DenoAtomicOperation {
   private kv: MapKv;
@@ -45,7 +45,13 @@ export class MapKvAtomicOperation implements DenoAtomicOperation {
     this.ops.push(async (versionstamp) => {
       const { value } = await this.kv.get(key);
       if (!value) {
-        await this.kv["setDocument"](key, { value: n }, versionstamp);
+        await this.kv["setDocument"](
+          key,
+          { value: n },
+          versionstamp,
+          undefined,
+        );
+
         return;
       }
 
@@ -54,9 +60,14 @@ export class MapKvAtomicOperation implements DenoAtomicOperation {
         throw new Error("Min operation can only be performed on KvU64 value");
       }
 
-      await this.kv["setDocument"](key, {
-        value: n < val ? n : val,
-      }, versionstamp);
+      await this.kv["setDocument"](
+        key,
+        {
+          value: n < val ? n : val,
+        },
+        versionstamp,
+        undefined,
+      );
     });
 
     return this;
@@ -66,7 +77,13 @@ export class MapKvAtomicOperation implements DenoAtomicOperation {
     this.ops.push(async (versionstamp) => {
       const { value } = await this.kv.get(key);
       if (!value) {
-        await this.kv["setDocument"](key, { value: n }, versionstamp);
+        await this.kv["setDocument"](
+          key,
+          { value: n },
+          versionstamp,
+          undefined,
+        );
+
         return;
       }
 
@@ -75,9 +92,14 @@ export class MapKvAtomicOperation implements DenoAtomicOperation {
         throw new Error("Max operation can only be performed on KvU64 value");
       }
 
-      await this.kv["setDocument"](key, {
-        value: n > val ? n : val,
-      }, versionstamp);
+      await this.kv["setDocument"](
+        key,
+        {
+          value: n > val ? n : val,
+        },
+        versionstamp,
+        undefined,
+      );
     });
 
     return this;
@@ -87,7 +109,13 @@ export class MapKvAtomicOperation implements DenoAtomicOperation {
     this.ops.push(async (versionstamp) => {
       const { value } = await this.kv.get(key);
       if (!value) {
-        await this.kv["setDocument"](key, { value: n }, versionstamp);
+        await this.kv["setDocument"](
+          key,
+          { value: n },
+          versionstamp,
+          undefined,
+        );
+
         return;
       }
 
@@ -96,9 +124,14 @@ export class MapKvAtomicOperation implements DenoAtomicOperation {
         throw new Error("Sum operation can only be performed on KvU64 value");
       }
 
-      await this.kv["setDocument"](key, {
-        value: n + val,
-      }, versionstamp);
+      await this.kv["setDocument"](
+        key,
+        {
+          value: n + val,
+        },
+        versionstamp,
+        undefined,
+      );
     });
 
     return this;

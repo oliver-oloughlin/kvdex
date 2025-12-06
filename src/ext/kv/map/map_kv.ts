@@ -14,7 +14,7 @@ import type {
 } from "../../../core/types.ts";
 import { MapKvAtomicOperation } from "./atomic.ts";
 import { Watcher } from "../common/watcher.ts";
-import { createVersionstamp, keySort } from "./utils.ts";
+import { createVersionstamp, keySort } from "../common/utils.ts";
 import type { BasicMap, MapKvOptions } from "./types.ts";
 import { jsonParse, jsonStringify } from "../../../common/json.ts";
 import { allFulfilled } from "../../../core/utils.ts";
@@ -71,7 +71,12 @@ export class MapKv implements DenoKv {
     this.atomicLock = new AsyncLock();
 
     entries?.forEach(({ key, ...data }) =>
-      this.setDocument(key as DenoKvStrictKey, data.value, data.versionstamp)
+      this.setDocument(
+        key as DenoKvStrictKey,
+        data.value,
+        data.versionstamp,
+        undefined,
+      )
     );
   }
 
@@ -224,7 +229,7 @@ export class MapKv implements DenoKv {
     key: DenoKvStrictKey,
     value: unknown,
     versionstamp: string,
-    options?: DenoKvSetOptions,
+    options: DenoKvSetOptions | undefined,
   ): Promise<DenoKvCommitResult> {
     return await setEntry({
       key,
