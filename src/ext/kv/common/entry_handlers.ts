@@ -96,6 +96,27 @@ export async function getEntry({
   };
 }
 
+export async function deleteEntry({
+  key,
+  watchers,
+  get,
+  delete: del,
+}: {
+  key: DenoKvStrictKey;
+  watchers: Watcher[];
+  get: (
+    key: string,
+  ) => KvEntry | undefined | null | Promise<KvEntry | undefined | null>;
+  delete: (key: string) => unknown;
+}) {
+  const keyStr = jsonStringify(key);
+  const prev = await get(keyStr);
+  await del(keyStr);
+  await allFulfilled(
+    watchers.map((w) => w.update(keyStr, prev?.value, undefined)),
+  );
+}
+
 function hasExpireIn(
   options: DenoKvSetOptions | undefined,
 ): options is { expireIn: number } {

@@ -13,7 +13,12 @@ import type {
   DenoKvWatchOptions,
 } from "../../../core/types.ts";
 import { allFulfilled } from "../../../core/utils.ts";
-import { getEntry, KvEntry, setEntry } from "../common/entry_handlers.ts";
+import {
+  deleteEntry,
+  getEntry,
+  KvEntry,
+  setEntry,
+} from "../common/entry_handlers.ts";
 import { createVersionstamp } from "../common/utils.ts";
 import { Watcher } from "../common/watcher.ts";
 
@@ -39,8 +44,13 @@ export class IndexedDbKv implements DenoKv {
     this.watchers = [];
   }
 
-  delete(key: DenoKvStrictKey): Promise<void> | void {
-    throw new Error("Method not implemented.");
+  async delete(key: DenoKvStrictKey): Promise<void> {
+    await deleteEntry({
+      key,
+      watchers: this.watchers,
+      get: (keyStr) => this.getDbEntry(keyStr),
+      delete: (keyStr) => this.deleteDbEntry(keyStr),
+    });
   }
 
   set(
