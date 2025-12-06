@@ -107,7 +107,9 @@ export class IndexedDbKv implements DenoKv {
     keys: DenoKvStrictKey[],
     options?: DenoKvWatchOptions,
   ): ReadableStream<DenoKvEntryMaybe[]> {
-    throw new Error("Method not implemented.");
+    const watcher = new Watcher(this, keys, options);
+    this.watchers.push(watcher);
+    return watcher.stream;
   }
 
   atomic(): DenoAtomicOperation {

@@ -1,10 +1,9 @@
-import type { DenoKvWatchOptions } from "../../../core/types.ts";
+import type { DenoKv, DenoKvWatchOptions } from "../../../core/types.ts";
 import type { DenoKvEntryMaybe, DenoKvStrictKey } from "../../../core/types.ts";
 import { jsonStringify } from "../../encoding/mod.ts";
-import type { MapKv } from "../map/map_kv.ts";
 
 export class Watcher {
-  private kv: MapKv;
+  private kv: DenoKv;
   private keys: DenoKvStrictKey[];
   private options: DenoKvWatchOptions;
   private listener: ReturnType<
@@ -13,7 +12,7 @@ export class Watcher {
   readonly stream: ReadableStream<DenoKvEntryMaybe[]>;
 
   constructor(
-    kv: MapKv,
+    kv: DenoKv,
     keys: DenoKvStrictKey[],
     options: DenoKvWatchOptions = {
       raw: false,
