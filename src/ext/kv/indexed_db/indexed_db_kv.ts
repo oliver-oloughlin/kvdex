@@ -53,12 +53,12 @@ export class IndexedDbKv implements DenoKv {
     });
   }
 
-  set(
+  async set(
     key: DenoKvStrictKey,
     value: unknown,
     options?: DenoKvSetOptions,
   ): Promise<DenoKvCommitResult | DenoKvCommitError> {
-    return setEntry({
+    return await setEntry({
       key,
       value,
       versionstamp: createVersionstamp(),
@@ -79,10 +79,10 @@ export class IndexedDbKv implements DenoKv {
     });
   }
 
-  getMany(
+  async getMany(
     keys: DenoKvStrictKey[],
-  ): Promise<DenoKvEntryMaybe[]> | DenoKvEntryMaybe[] {
-    return allFulfilled(keys.map((key) => this.get(key)));
+  ): Promise<DenoKvEntryMaybe[]> {
+    return await allFulfilled(keys.map((key) => this.get(key)));
   }
 
   list(
