@@ -115,12 +115,21 @@ export async function useStore(
   store.clear();
 }
 
+export async function useIndexedDbKv(fn: (kv: IndexedDbKv) => unknown) {
+  const db = await createIndexedDb();
+  const kv = new IndexedDbKv({ db });
+  await fn(kv);
+  kv.close();
+}
+
 export async function createIndexedDb() {
   const request = indexedDB.open("kvdex_test_db", 1);
 
   return await new Promise<IDBDatabase>((resolve, reject) => {
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = () =>
+      request.result.createObjectStore("__kvdex_store__");
   });
 }
 

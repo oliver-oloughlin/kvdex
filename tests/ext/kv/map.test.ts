@@ -1,8 +1,8 @@
-import { MapKv } from "../../src/ext/kv/map/mod.ts";
+import { MapKv } from "../../../src/ext/kv/map/mod.ts";
 import { assert, assertEquals } from "@std/assert";
-import { sleep, useStore } from "../utils.ts";
+import { sleep, useStore } from "../../utils.ts";
 
-Deno.test("ext - kv", async (t) => {
+Deno.test("ext - kv - map", async (t) => {
   await t.step("set", async (t) => {
     await t.step("Should set new entry", async () => {
       const kv = new MapKv();
