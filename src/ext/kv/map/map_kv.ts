@@ -1,6 +1,7 @@
 import type {
   DenoAtomicOperation,
   DenoKv,
+  DenoKvCommitError,
   DenoKvCommitResult,
   DenoKvEnqueueOptions,
   DenoKvEntryMaybe,
@@ -51,7 +52,7 @@ export class MapKv implements DenoKv {
   private clearOnClose: boolean;
   private watchers: Watcher[];
   private listenHandlers: ((msg: unknown) => unknown)[];
-  private atomicLock: AsyncLock;
+  private asyncLock: AsyncLock;
   private listener:
     | {
       promise: Promise<void>;
@@ -68,7 +69,7 @@ export class MapKv implements DenoKv {
     this.clearOnClose = clearOnClose;
     this.watchers = [];
     this.listenHandlers = [];
-    this.atomicLock = new AsyncLock();
+    this.asyncLock = new AsyncLock();
 
     entries?.forEach(({ key, ...data }) =>
       this.setDocument(
@@ -76,6 +77,7 @@ export class MapKv implements DenoKv {
         data.value,
         data.versionstamp,
         undefined,
+        true,
       )
     );
   }
@@ -83,25 +85,16 @@ export class MapKv implements DenoKv {
   async close(): Promise<void> {
     this.watchers.forEach((w) => w.cancel());
     this.listener?.resolve();
-    this.atomicLock.cancel();
+    this.asyncLock.cancel();
     if (this.clearOnClose) await this.map.clear();
   }
 
   async delete(key: DenoKvStrictKey): Promise<void> {
-    const keyStr = jsonStringify(key);
-    const prev = await this.map.get(keyStr);
-    await this.map.delete(jsonStringify(key));
-    await allFulfilled(
-      this.watchers.map((w) => w.update(keyStr, prev?.value, undefined)),
-    );
+    await this.deleteDocument(key, true);
   }
 
   async get(key: DenoKvStrictKey): Promise<DenoKvEntryMaybe> {
-    return await getEntry({
-      key,
-      get: (keyStr) => this.map.get(keyStr),
-      delete: (keyStr) => this.map.delete(keyStr),
-    });
+    return await this.getDocument(key, true);
   }
 
   async getMany(keys: DenoKvStrictKey[]): Promise<DenoKvEntryMaybe[]> {
@@ -112,8 +105,14 @@ export class MapKv implements DenoKv {
     key: DenoKvStrictKey,
     value: unknown,
     options?: DenoKvSetOptions,
-  ): Promise<DenoKvCommitResult> {
-    return await this.setDocument(key, value, createVersionstamp(), options);
+  ): Promise<DenoKvCommitError | DenoKvCommitResult> {
+    return await this.setDocument(
+      key,
+      value,
+      createVersionstamp(),
+      options,
+      true,
+    );
   }
 
   async list(
@@ -222,7 +221,29 @@ export class MapKv implements DenoKv {
   }
 
   atomic(): DenoAtomicOperation {
-    return new MapKvAtomicOperation(this, this.atomicLock);
+    return new MapKvAtomicOperation(this, this.asyncLock);
+  }
+
+  private async getDocument(
+    key: DenoKvStrictKey,
+    lock: boolean,
+  ): Promise<DenoKvEntryMaybe> {
+    const fn = async () => {
+      return await getEntry({
+        key,
+        get: (keyStr) => this.map.get(keyStr),
+        delete: (keyStr) => this.map.delete(keyStr),
+      });
+    };
+
+    if (lock) {
+      const result = await this.asyncLock.run(fn);
+      return result.status === "fulfilled"
+        ? result.value
+        : { key, value: null, versionstamp: null };
+    }
+
+    return await fn();
   }
 
   private async setDocument(
@@ -230,16 +251,42 @@ export class MapKv implements DenoKv {
     value: unknown,
     versionstamp: string,
     options: DenoKvSetOptions | undefined,
-  ): Promise<DenoKvCommitResult> {
-    return await setEntry({
-      key,
-      value,
-      versionstamp,
-      get: (keyStr) => this.map.get(keyStr),
-      set: (keyStr, entry) => this.map.set(keyStr, entry),
-      watchers: this.watchers,
-      options,
-    });
+    lock: boolean,
+  ): Promise<DenoKvCommitError | DenoKvCommitResult> {
+    const fn = async () => {
+      return await setEntry({
+        key,
+        value,
+        versionstamp,
+        get: (keyStr) => this.map.get(keyStr),
+        set: (keyStr, entry) => this.map.set(keyStr, entry),
+        watchers: this.watchers,
+        options,
+      });
+    };
+
+    if (lock) {
+      const result = await this.asyncLock.run(fn);
+      return result.status === "fulfilled" ? result.value : { ok: false };
+    }
+
+    return await fn();
+  }
+
+  private async deleteDocument(
+    key: DenoKvStrictKey,
+    lock: boolean,
+  ): Promise<void> {
+    const fn = async () => {
+      const keyStr = jsonStringify(key);
+      const prev = await this.map.get(keyStr);
+      await this.map.delete(jsonStringify(key));
+      await allFulfilled(
+        this.watchers.map((w) => w.update(keyStr, prev?.value, undefined)),
+      );
+    };
+
+    lock ? await this.asyncLock.run(fn) : await fn();
   }
 
   private enqueueValue(
