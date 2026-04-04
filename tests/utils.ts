@@ -7,6 +7,7 @@ import { model } from "../src/core/model.ts";
 import { TransformUserModel, type User, UserSchema } from "./models.ts";
 import { IndexedDbKv } from "../src/ext/kv/indexed_db/indexed_db_kv.ts";
 import "fake-indexeddb/auto";
+import { openIndexedDb } from "../src/ext/kv/indexed_db/utils.ts";
 
 export const testEncoder = jsonEncoder({
   compressor: brotliCompressor(),
@@ -123,13 +124,9 @@ export async function useIndexedDbKv(fn: (kv: IndexedDbKv) => unknown) {
 }
 
 export async function createIndexedDb() {
-  const request = indexedDB.open("kvdex_test_db", 1);
-
-  return await new Promise<IDBDatabase>((resolve, reject) => {
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    request.onupgradeneeded = () =>
-      request.result.createObjectStore("__kvdex_store__");
+  return await openIndexedDb({
+    name: "kvdex_test_db",
+    stores: { "__kvdex_store__": null },
   });
 }
 
