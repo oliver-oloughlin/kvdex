@@ -8,14 +8,14 @@ import {
 import { KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
 import { createHandlerId } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
-import { createResolver, sleep, useKv } from "../utils.ts";
+import { sleep, useKv } from "../utils.ts";
 
 Deno.test("db - listenQueue", async (t) => {
   await t.step("Should receive message with string data", async () => {
     await useKv(async (kv) => {
       const data = "data";
       const db = kvdex({ kv });
-      const sleeper = createResolver();
+      const sleeper = Promise.withResolvers<void>();
 
       const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined);
 

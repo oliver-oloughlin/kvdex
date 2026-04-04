@@ -8,14 +8,14 @@ import {
 import { createHandlerId } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
 import type { User } from "../models.ts";
-import { createResolver, useDb, useKv } from "../utils.ts";
+import { useDb, useKv } from "../utils.ts";
 
 Deno.test("serialized_indexable_collection - enqueue", async (t) => {
   await t.step("Should enqueue message with string data", async () => {
     await useKv(async (kv) => {
       const data = "data";
       const undeliveredId = "undelivered";
-      const sleeper = createResolver();
+      const sleeper = Promise.withResolvers<void>();
 
       const db = kvdex({
         kv,
@@ -55,7 +55,7 @@ Deno.test("serialized_indexable_collection - enqueue", async (t) => {
       const data = "data";
       const undeliveredId = "undelivered";
       const topic = "topic";
-      const sleeper = createResolver();
+      const sleeper = Promise.withResolvers<void>();
 
       let assertion1 = false;
       let assertion2 = true;
@@ -86,7 +86,7 @@ Deno.test("serialized_indexable_collection - enqueue", async (t) => {
     await useDb(async (db) => {
       const data = undefined;
       const undeliveredId = "undelivered";
-      const sleeper = createResolver();
+      const sleeper = Promise.withResolvers<void>();
 
       let assertion = false;
 

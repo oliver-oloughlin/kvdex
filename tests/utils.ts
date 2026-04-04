@@ -200,12 +200,3 @@ export function generateNumbers(n: number) {
 export async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
-
-export function createResolver() {
-  let resolve = (_?: unknown) => {};
-  const promise = new Promise((r) => resolve = r);
-  return {
-    resolve,
-    promise,
-  };
-}
