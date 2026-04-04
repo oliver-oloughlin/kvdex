@@ -1,13 +1,6 @@
 import { MapKv } from "../../src/ext/kv/map/mod.ts";
-import { StorageAdapter } from "../../src/ext/kv/mod.ts";
 import { assert, assertEquals } from "@std/assert";
-import { sleep } from "../utils.ts";
-
-async function useStore(fn: (store: StorageAdapter<any, any>) => unknown) {
-  const store = new StorageAdapter(localStorage);
-  await fn(store);
-  store.clear();
-}
+import { sleep, useStore } from "../utils.ts";
 
 Deno.test("ext - kv", async (t) => {
   await t.step("set", async (t) => {

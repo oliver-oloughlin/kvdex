@@ -16,7 +16,7 @@ import { allFulfilled } from "../../../core/utils.ts";
 import {
   deleteEntry,
   getEntry,
-  KvEntry,
+  type KvEntry,
   setEntry,
 } from "../common/entry_handlers.ts";
 import { createVersionstamp } from "../common/utils.ts";
@@ -117,6 +117,7 @@ export class IndexedDbKv implements DenoKv {
   }
 
   close(): void {
+    this.watchers.forEach((watcher) => watcher.cancel());
     this.db.close();
   }
 
