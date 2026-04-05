@@ -21,6 +21,7 @@ import {
 } from "../common/entry_handlers.ts";
 import { createVersionstamp } from "../common/utils.ts";
 import { Watcher } from "../common/watcher.ts";
+import { AsyncLock } from "../map/async_lock.ts";
 
 type IndexedDbOptions = {
   db: IDBDatabase;
@@ -31,6 +32,7 @@ export class IndexedDbKv implements DenoKv {
   private db: IDBDatabase;
   private storeName: string;
   private watchers: Watcher[];
+  private asyncLock: AsyncLock;
 
   private get objStore(): IDBObjectStore {
     return this.db.transaction(this.storeName, "readwrite").objectStore(
@@ -42,6 +44,7 @@ export class IndexedDbKv implements DenoKv {
     this.db = db;
     this.storeName = storeName;
     this.watchers = [];
+    this.asyncLock = new AsyncLock();
   }
 
   async delete(key: DenoKvStrictKey): Promise<void> {
@@ -50,7 +53,7 @@ export class IndexedDbKv implements DenoKv {
       watchers: this.watchers,
       get: (keyStr) => this.getDbEntry(keyStr),
       delete: (keyStr) => this.deleteDbEntry(keyStr),
-      lock: null, // TODO
+      lock: this.asyncLock,
     });
   }
 
@@ -68,7 +71,7 @@ export class IndexedDbKv implements DenoKv {
       delete: (keyStr) => this.deleteDbEntry(keyStr),
       watchers: this.watchers,
       options,
-      lock: null, // TODO
+      lock: this.asyncLock,
     });
   }
 
@@ -119,7 +122,7 @@ export class IndexedDbKv implements DenoKv {
         watchers: [],
         get: (keyStr) => this.getDbEntry(keyStr),
         delete: (keyStr) => this.deleteDbEntry(keyStr),
-        lock: null, // TODO
+        lock: null,
         checkExpire: false,
       });
     };
@@ -138,33 +141,25 @@ export class IndexedDbKv implements DenoKv {
     this.db.close();
   }
 
-  private getDbEntry(key: string): Promise<KvEntry | null> {
-    const { promise, reject, resolve } = Promise.withResolvers<KvEntry>();
-
+  private async getDbEntry(key: string): Promise<KvEntry | null> {
     const req = this.objStore.get(key);
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => resolve(req.result);
-
-    return promise;
+    return await this.handleDbRequest(req);
   }
 
-  private setDbEntry(key: string, entry: KvEntry): Promise<void> {
-    const { promise, reject, resolve } = Promise.withResolvers<void>();
-
+  private async setDbEntry(key: string, entry: KvEntry): Promise<void> {
     const req = this.objStore.put(entry, key);
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => resolve();
-
-    return promise;
+    await this.handleDbRequest(req);
   }
 
-  private deleteDbEntry(key: string): Promise<void> {
-    const { promise, reject, resolve } = Promise.withResolvers<void>();
-
+  private async deleteDbEntry(key: string): Promise<void> {
     const req = this.objStore.delete(key);
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => resolve();
+    await this.handleDbRequest(req);
+  }
 
-    return promise;
+  private handleDbRequest<T>(request: IDBRequest<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
   }
 }
