@@ -50,6 +50,7 @@ export class IndexedDbKv implements DenoKv {
       watchers: this.watchers,
       get: (keyStr) => this.getDbEntry(keyStr),
       delete: (keyStr) => this.deleteDbEntry(keyStr),
+      lock: null, // TODO
     });
   }
 
@@ -64,8 +65,10 @@ export class IndexedDbKv implements DenoKv {
       versionstamp: createVersionstamp(),
       get: (keyStr) => this.getDbEntry(keyStr),
       set: (keyStr, entry) => this.setDbEntry(keyStr, entry),
+      delete: (keyStr) => this.deleteDbEntry(keyStr),
       watchers: this.watchers,
       options,
+      lock: null, // TODO
     });
   }
 
@@ -74,8 +77,11 @@ export class IndexedDbKv implements DenoKv {
   ): Promise<DenoKvEntryMaybe> {
     return await getEntry({
       key,
+      watchers: this.watchers,
       get: (keyStr) => this.getDbEntry(keyStr),
       delete: (keyStr) => this.deleteDbEntry(keyStr),
+      lock: null, // TODO
+      checkExpire: true,
     });
   }
 
@@ -107,7 +113,18 @@ export class IndexedDbKv implements DenoKv {
     keys: DenoKvStrictKey[],
     options?: DenoKvWatchOptions,
   ): ReadableStream<DenoKvEntryMaybe[]> {
-    const watcher = new Watcher(this, keys, options);
+    const getter = (key: DenoKvStrictKey) => {
+      return getEntry({
+        key,
+        watchers: [],
+        get: (keyStr) => this.getDbEntry(keyStr),
+        delete: (keyStr) => this.deleteDbEntry(keyStr),
+        lock: null, // TODO
+        checkExpire: false,
+      });
+    };
+
+    const watcher = new Watcher(keys, options, getter);
     this.watchers.push(watcher);
     return watcher.stream;
   }

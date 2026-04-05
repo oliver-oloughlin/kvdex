@@ -20,7 +20,12 @@ import type { BasicMap, MapKvOptions } from "./types.ts";
 import { jsonParse, jsonStringify } from "../../../common/json.ts";
 import { allFulfilled } from "../../../core/utils.ts";
 import { AsyncLock } from "./async_lock.ts";
-import { getEntry, type KvEntry, setEntry } from "../common/entry_handlers.ts";
+import {
+  deleteEntry,
+  getEntry,
+  type KvEntry,
+  setEntry,
+} from "../common/entry_handlers.ts";
 
 /**
  * KV instance utilising a `BasicMap` as it's backend.
@@ -215,7 +220,18 @@ export class MapKv implements DenoKv {
     keys: DenoKvStrictKey[],
     options?: DenoKvWatchOptions,
   ): ReadableStream<DenoKvEntryMaybe[]> {
-    const watcher = new Watcher(this, keys, options);
+    const getter = (key: DenoKvStrictKey) => {
+      return getEntry({
+        key,
+        watchers: [],
+        get: (keyStr) => this.map.get(keyStr),
+        delete: (keyStr) => this.map.delete(keyStr),
+        lock: null,
+        checkExpire: false,
+      });
+    };
+
+    const watcher = new Watcher(keys, options, getter);
     this.watchers.push(watcher);
     return watcher.stream;
   }
@@ -228,22 +244,14 @@ export class MapKv implements DenoKv {
     key: DenoKvStrictKey,
     lock: boolean,
   ): Promise<DenoKvEntryMaybe> {
-    const fn = async () => {
-      return await getEntry({
-        key,
-        get: (keyStr) => this.map.get(keyStr),
-        delete: (keyStr) => this.map.delete(keyStr),
-      });
-    };
-
-    if (lock) {
-      const result = await this.asyncLock.run(fn);
-      return result.status === "fulfilled"
-        ? result.value
-        : { key, value: null, versionstamp: null };
-    }
-
-    return await fn();
+    return await getEntry({
+      key,
+      watchers: this.watchers,
+      get: (keyStr) => this.map.get(keyStr),
+      delete: (keyStr) => this.map.delete(keyStr),
+      lock: lock ? this.asyncLock : null,
+      checkExpire: true,
+    });
   }
 
   private async setDocument(
@@ -253,40 +261,30 @@ export class MapKv implements DenoKv {
     options: DenoKvSetOptions | undefined,
     lock: boolean,
   ): Promise<DenoKvCommitError | DenoKvCommitResult> {
-    const fn = async () => {
-      return await setEntry({
-        key,
-        value,
-        versionstamp,
-        get: (keyStr) => this.map.get(keyStr),
-        set: (keyStr, entry) => this.map.set(keyStr, entry),
-        watchers: this.watchers,
-        options,
-      });
-    };
-
-    if (lock) {
-      const result = await this.asyncLock.run(fn);
-      return result.status === "fulfilled" ? result.value : { ok: false };
-    }
-
-    return await fn();
+    return await setEntry({
+      key,
+      value,
+      versionstamp,
+      get: (keyStr) => this.map.get(keyStr),
+      set: (keyStr, entry) => this.map.set(keyStr, entry),
+      delete: (keyStr) => this.map.delete(keyStr),
+      watchers: this.watchers,
+      options,
+      lock: lock ? this.asyncLock : null,
+    });
   }
 
   private async deleteDocument(
     key: DenoKvStrictKey,
     lock: boolean,
   ): Promise<void> {
-    const fn = async () => {
-      const keyStr = jsonStringify(key);
-      const prev = await this.map.get(keyStr);
-      await this.map.delete(jsonStringify(key));
-      await allFulfilled(
-        this.watchers.map((w) => w.update(keyStr, prev?.value, undefined)),
-      );
-    };
-
-    lock ? await this.asyncLock.run(fn) : await fn();
+    await deleteEntry({
+      key,
+      watchers: this.watchers,
+      get: (keyStr) => this.map.get(keyStr),
+      delete: (keyStr) => this.map.delete(keyStr),
+      lock: lock ? this.asyncLock : null,
+    });
   }
 
   private enqueueValue(
