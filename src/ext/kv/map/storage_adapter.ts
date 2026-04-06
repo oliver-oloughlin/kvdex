@@ -2,9 +2,9 @@ import { jsonParse, jsonStringify } from "../../../common/json.ts";
 import type { BasicMap } from "./types.ts";
 
 /**
- * BasicMap adapter for Storage.
+ * BasicMap adapter for `Storage`.
  *
- * Enables a Storage object, such as `localStorage`, to be utilized as a basic map.
+ * Enables a `Storage` object, such as `localStorage`, to be utilized as a basic map.
  *
  * Wraps `localStorage` by default.
  *

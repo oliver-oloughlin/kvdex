@@ -2,19 +2,34 @@ import {
   DEFAULT_INDEXED_DB_NAME,
   DEFAULT_INDEXED_DB_STORE_NAME,
 } from "../../../core/constants.ts";
-import type { BasicMap } from "./types.ts";
+import type {
+  BasicMap,
+  CreateIndexedDbAdapterOptions,
+  IndexedDbAdapterOptions,
+} from "./types.ts";
 
-type IndexedDbAdapterOptions = {
-  db: IDBDatabase;
-  storeName: string;
-};
-
-type CreateIndexedDbAdapterOptions = {
-  name?: string;
-  storeName?: string;
-  version?: number;
-};
-
+/**
+ * Helper function for opening an IndexedDB database instance
+ * and creating a BasicMap adapter for `IndexedDB`.
+ *
+ * Enables an `IndexedDB` database to be utilized as a basic map.
+ *
+ * @param options - Optional configuration for the IndexedDB database and store.
+ *
+ * @return - A promise that resolves to an `IndexedDbAdapter` instance, which is a BasicMap adapter for the specified IndexedDB database and store.
+ *
+ * @example
+ * ```ts
+ * // Creates a new BasicMap, wrapping an IndexedDB database with default name and store
+ * const map = await indexedDbAdapter()
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Creates a new BasicMap, wrapping an IndexedDB database configured by the provided options
+ * const map = await indexedDbAdapter({ name: "my-db", storeName: "my-store", version: 1 })
+ * ```
+ */
 export async function indexedDbAdapter(
   { name, storeName, version }: CreateIndexedDbAdapterOptions = {},
 ): Promise<IndexedDbAdapter<IDBValidKey, unknown>> {
@@ -35,6 +50,27 @@ export async function indexedDbAdapter(
   });
 }
 
+/**
+ * BasicMap adapter for `IndexedDB`.
+ *
+ * Enables an `IndexedDB` database to be utilized as a basic map.
+ *
+ * @example
+ * ```ts
+ * const request = indexedDB.open("my-db");
+ *
+ * const db = await new Promise<IDBDatabase>((resolve, reject) => {
+ *   request.onerror = () => reject(request.error);
+ *   request.onsuccess = () => resolve(request.result);
+ *   request.onupgradeneeded = () => {
+ *     request.result.createObjectStore("my-store");
+ *  };
+ * });
+ *
+ * // Creates a new BasicMap, wrapping an IndexedDB database
+ * const map = new IndexedDbAdapter({ db, storeName: "my-store" })
+ * ```
+ */
 export class IndexedDbAdapter<K extends IDBValidKey, V>
   implements BasicMap<K, V> {
   private db: IDBDatabase;

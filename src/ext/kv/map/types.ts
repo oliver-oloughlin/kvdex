@@ -57,3 +57,35 @@ export type MapKvOptions = {
    */
   clearOnClose?: boolean;
 };
+
+/** Options when creating a new IndexedDbAdapter instance. */
+export type IndexedDbAdapterOptions = {
+  /** IndexedDB database instance. */
+  db: IDBDatabase;
+  /** Name of the object store within the IndexedDB database. */
+  storeName: string;
+};
+
+/** Options when creating a new IndexedDbAdapter instance using the `indexedDbAdapter` helper function. */
+export type CreateIndexedDbAdapterOptions = {
+  /**
+   * Name of the IndexedDB database.
+   *
+   * @default "__kvdex_db__"
+   */
+  name?: string;
+
+  /**
+   * Name of the object store within the IndexedDB database.
+   *
+   * @default "__kvdex_store__"
+   */
+  storeName?: string;
+
+  /**
+   * Version of the IndexedDB database.
+   *
+   * @default `undefined`
+   */
+  version?: number;
+};
