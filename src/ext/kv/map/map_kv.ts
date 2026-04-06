@@ -103,11 +103,12 @@ export class MapKv implements DenoKv {
     this.listener?.resolve();
     this.asyncLock.cancel();
     this.timerIds.forEach((id) => clearTimeout(id));
-    await this.map.close?.();
 
     if (this.clearOnClose) {
       await this.map.clear();
     }
+
+    await this.map.close?.();
   }
 
   async delete(key: DenoKvStrictKey): Promise<void> {

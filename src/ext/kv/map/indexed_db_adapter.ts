@@ -39,8 +39,13 @@ export async function indexedDbAdapter(
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
     request.onupgradeneeded = () => {
+      const objectStoreName = storeName ?? DEFAULT_INDEXED_DB_STORE_NAME;
       const db = request.result;
-      db.createObjectStore(storeName ?? DEFAULT_INDEXED_DB_STORE_NAME);
+      if (db.objectStoreNames.contains(objectStoreName)) {
+        return;
+      }
+
+      db.createObjectStore(objectStoreName);
     };
   });
 
