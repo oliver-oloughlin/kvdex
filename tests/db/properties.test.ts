@@ -1,9 +1,8 @@
 import { openKv } from "@deno/kv";
 import { kvdex } from "../../mod.ts";
-import { MapKv, StorageAdapter } from "@olli/kvdex/kv";
-import { IndexedDbKv } from "../../src/ext/kv/indexed_db/indexed_db_kv.ts";
-import { openIndexedDb } from "../../src/ext/kv/indexed_db/utils.ts";
+import { IndexedDbAdapter, MapKv, StorageAdapter } from "@olli/kvdex/kv";
 import "fake-indexeddb/auto";
+import { indexedDbAdapter } from "../../src/ext/kv/map/indexed_db_adapter.ts";
 
 Deno.test("db - properties", async (t) => {
   await t.step("Should allow native Deno KV type", async () => {
@@ -30,14 +29,10 @@ Deno.test("db - properties", async (t) => {
     await kv.close();
   });
 
-  await t.step("Should allow IndexedDB KV type", async () => {
-    const db = await openIndexedDb({
-      name: "kvdex_test_db",
-      stores: { "__kvdex_store__": null },
-    });
-
-    const kv = new IndexedDbKv({ db });
+  await t.step("Should allow IndexedDB Map KV type", async () => {
+    const map = await indexedDbAdapter();
+    const kv = new MapKv({ map });
     kvdex({ kv });
-    kv.close();
+    await kv.close();
   });
 });

@@ -37,6 +37,10 @@ export const DEFAULT_LOOP_RETRY = 10;
 
 export const DEFAULT_UPDATE_STRATEGY: UpdateStrategy = "merge";
 
+export const DEFAULT_INDEXED_DB_NAME = "__kvdex_db__";
+
+export const DEFAULT_INDEXED_DB_STORE_NAME = "__kvdex_store__";
+
 // Misc
 export const MIN_INTERVAL_START_DELAY = 1_000;
 

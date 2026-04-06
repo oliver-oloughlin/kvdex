@@ -5,9 +5,12 @@ import { MapKv } from "../src/ext/kv/map/mod.ts";
 import { StorageAdapter } from "../src/ext/kv/mod.ts";
 import { model } from "../src/core/model.ts";
 import { TransformUserModel, type User, UserSchema } from "./models.ts";
-import { IndexedDbKv } from "../src/ext/kv/indexed_db/indexed_db_kv.ts";
 import "fake-indexeddb/auto";
 import { openIndexedDb } from "../src/ext/kv/indexed_db/utils.ts";
+import {
+  IndexedDbAdapter,
+  indexedDbAdapter,
+} from "../src/ext/kv/map/indexed_db_adapter.ts";
 
 export const testEncoder = jsonEncoder({
   compressor: brotliCompressor(),
@@ -87,8 +90,11 @@ export async function useKv(
     ? new MapKv({ clearOnClose: true })
     : kvArg === "map_local"
     ? new MapKv({ map: new StorageAdapter(localStorage), clearOnClose: true })
-    : kvArg === "indexed_db"
-    ? new IndexedDbKv({ db: await createIndexedDb() })
+    : kvArg === "map_indexed_db"
+    ? new MapKv({
+      map: await indexedDbAdapter(),
+      clearOnClose: true,
+    })
     : await Deno.openKv(":memory:");
 
   const result = await fn(kv);
@@ -114,20 +120,6 @@ export async function useStore(
   const store = new StorageAdapter(localStorage);
   await fn(store);
   store.clear();
-}
-
-export async function useIndexedDbKv(fn: (kv: IndexedDbKv) => unknown) {
-  const db = await createIndexedDb();
-  const kv = new IndexedDbKv({ db });
-  await fn(kv);
-  kv.close();
-}
-
-export async function createIndexedDb() {
-  return await openIndexedDb({
-    name: "kvdex_test_db",
-    stores: { "__kvdex_store__": null },
-  });
 }
 
 // Generator functions

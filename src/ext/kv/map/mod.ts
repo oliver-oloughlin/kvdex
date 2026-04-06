@@ -29,4 +29,5 @@
 export { MapKv } from "./map_kv.ts";
 export { StorageAdapter } from "./storage_adapter.ts";
 export { MapKvAtomicOperation } from "./atomic.ts";
+export { IndexedDbAdapter, indexedDbAdapter } from "./indexed_db_adapter.ts";
 export type * from "./types.ts";
