@@ -59,6 +59,7 @@ export class MapKv implements DenoKv {
   private watchers: Watcher[];
   private listenHandlers: ((msg: unknown) => unknown)[];
   private asyncLock: AsyncLock;
+  private timerIds: Set<number>;
   private listener:
     | {
       promise: Promise<void>;
@@ -76,6 +77,7 @@ export class MapKv implements DenoKv {
     this.watchers = [];
     this.listenHandlers = [];
     this.asyncLock = new AsyncLock();
+    this.timerIds = new Set();
 
     entries?.forEach(({ key, ...data }) =>
       this.setDocument(
@@ -92,6 +94,7 @@ export class MapKv implements DenoKv {
       getEntries: () => this.getEntries(),
       get: (keyStr) => this.map.get(keyStr),
       delete: (keyStr) => this.map.delete(keyStr),
+      timerIds: this.timerIds,
     });
   }
 
@@ -99,7 +102,11 @@ export class MapKv implements DenoKv {
     this.watchers.forEach((w) => w.cancel());
     this.listener?.resolve();
     this.asyncLock.cancel();
-    if (this.clearOnClose) await this.map.clear();
+    this.timerIds.forEach((id) => clearTimeout(id));
+
+    if (this.clearOnClose) {
+      await this.map.clear();
+    }
   }
 
   async delete(key: DenoKvStrictKey): Promise<void> {
@@ -244,6 +251,7 @@ export class MapKv implements DenoKv {
       get: (keyStr) => this.map.get(keyStr),
       set: (keyStr, entry) => this.map.set(keyStr, entry),
       delete: (keyStr) => this.map.delete(keyStr),
+      timerIds: this.timerIds,
     });
   }
 

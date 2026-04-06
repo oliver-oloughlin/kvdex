@@ -202,6 +202,7 @@ export async function enqueueValue({
   get,
   set,
   delete: del,
+  timerIds,
 }: {
   value: unknown;
   versionstamp: string;
@@ -210,6 +211,7 @@ export async function enqueueValue({
   get: Getter;
   set: Setter;
   delete: Deleter;
+  timerIds: Set<number>;
 }): Promise<DenoKvCommitResult> {
   const timestamp = Date.now() + (options?.delay ?? 0);
   const id = ulid();
@@ -231,7 +233,7 @@ export async function enqueueValue({
     lock: null,
   });
 
-  setTimeout(async () => {
+  const timerId = setTimeout(async () => {
     await allFulfilled(listenHandlers.flatMap((handler) => [
       deleteEntry({
         key,
@@ -244,6 +246,8 @@ export async function enqueueValue({
     ]));
   }, options?.delay ?? 0);
 
+  timerIds.add(timerId);
+
   return {
     ok: true,
     versionstamp: cr.ok ? cr.versionstamp : createVersionstamp(),
@@ -255,11 +259,13 @@ export async function activateQueuedValues({
   getEntries,
   get,
   delete: del,
+  timerIds,
 }: {
   listenHandlers: ((value: unknown) => unknown)[];
   getEntries: EntriesGetter;
   get: Getter;
   delete: Deleter;
+  timerIds: Set<number>;
 }) {
   const iter = await listEntries({
     selector: { prefix: [KVDEX_QUEUE_KEY_PREFIX] },
@@ -275,7 +281,7 @@ export async function activateQueuedValues({
     const { value, timestamp } = entry.value as QueueEntryValue;
     const delay = Math.max(timestamp - Date.now(), 0);
 
-    setTimeout(async () => {
+    const timerId = setTimeout(async () => {
       await allFulfilled(listenHandlers.flatMap((handler) => [
         deleteEntry({
           key: entry.key as DenoKvStrictKey,
@@ -287,6 +293,8 @@ export async function activateQueuedValues({
         safeAwait(handler(value)),
       ]));
     }, delay);
+
+    timerIds.add(timerId);
   }
 }
 

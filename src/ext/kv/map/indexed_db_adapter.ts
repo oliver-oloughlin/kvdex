@@ -107,6 +107,10 @@ export class IndexedDbAdapter<K extends IDBValidKey, V>
     await this.handleDbRequest(req);
   }
 
+  close(): void {
+    this.db.close();
+  }
+
   async *entries(): AsyncIterableIterator<[K, V]> {
     const req = this.store.openCursor();
 

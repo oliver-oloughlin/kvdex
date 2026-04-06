@@ -113,6 +113,14 @@ export async function useDb(
   });
 }
 
+export async function useMapKv(
+  fn: (kv: MapKv) => unknown,
+) {
+  const mapKv = new MapKv({ clearOnClose: true });
+  await fn(mapKv);
+  await mapKv.close();
+}
+
 export async function useStorageMap(
   fn: (store: StorageAdapter<any, any>) => unknown,
 ) {
@@ -127,6 +135,7 @@ export async function useIndexedDbMap(
   const map = await indexedDbAdapter();
   await fn(map);
   await map.clear();
+  map.close();
 }
 
 // Generator functions
