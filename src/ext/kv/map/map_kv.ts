@@ -144,7 +144,6 @@ export class MapKv implements DenoKv {
       options,
       watchers: this.watchers,
       getEntries: () => this.getEntries(),
-      get: (keyStr) => this.map.get(keyStr),
       delete: (keyStr) => this.map.delete(keyStr),
       lock: this.asyncLock,
     });
@@ -218,7 +217,6 @@ export class MapKv implements DenoKv {
       versionstamp,
       get: (keyStr) => this.map.get(keyStr),
       set: (keyStr, entry) => this.map.set(keyStr, entry),
-      delete: (keyStr) => this.map.delete(keyStr),
       watchers: this.watchers,
       options,
       lock: lock ? this.asyncLock : null,
