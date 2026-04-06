@@ -1,4 +1,4 @@
-name: Test KV map
+name: Test MapKv - Map
 
 on:
   push:
