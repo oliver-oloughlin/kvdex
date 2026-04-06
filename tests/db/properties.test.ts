@@ -1,6 +1,6 @@
 import { openKv } from "@deno/kv";
 import { kvdex } from "../../mod.ts";
-import { IndexedDbAdapter, MapKv, StorageAdapter } from "@olli/kvdex/kv";
+import { MapKv, StorageAdapter } from "@olli/kvdex/kv";
 import "fake-indexeddb/auto";
 import { indexedDbAdapter } from "../../src/ext/kv/map/indexed_db_adapter.ts";
 

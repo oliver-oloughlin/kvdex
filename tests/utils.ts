@@ -6,11 +6,7 @@ import { StorageAdapter } from "../src/ext/kv/mod.ts";
 import { model } from "../src/core/model.ts";
 import { TransformUserModel, type User, UserSchema } from "./models.ts";
 import "fake-indexeddb/auto";
-import { openIndexedDb } from "../src/ext/kv/indexed_db/utils.ts";
-import {
-  IndexedDbAdapter,
-  indexedDbAdapter,
-} from "../src/ext/kv/map/indexed_db_adapter.ts";
+import { indexedDbAdapter } from "../src/ext/kv/map/indexed_db_adapter.ts";
 
 export const testEncoder = jsonEncoder({
   compressor: brotliCompressor(),
