@@ -15,6 +15,8 @@ export const UNDELIVERED_KEY_PREFIX = "__undelivered__";
 
 export const HISTORY_KEY_PREFIX = "__history__";
 
+export const KVDEX_QUEUE_KEY_PREFIX = "__kvdex_queue__";
+
 // Fixed limits
 export const ATOMIC_OPERATION_MUTATION_LIMIT = 1_000;
 
@@ -34,6 +36,10 @@ export const DEFAULT_INTERVAL_RETRY = 10;
 export const DEFAULT_LOOP_RETRY = 10;
 
 export const DEFAULT_UPDATE_STRATEGY: UpdateStrategy = "merge";
+
+export const DEFAULT_INDEXED_DB_NAME = "__kvdex_db__";
+
+export const DEFAULT_INDEXED_DB_STORE_NAME = "__kvdex_store__";
 
 // Misc
 export const MIN_INTERVAL_START_DELAY = 1_000;

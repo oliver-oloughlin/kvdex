@@ -36,6 +36,9 @@ export type BasicMap<K, V> = {
 
   /** Removes all key/value entries from the map. */
   clear(): Promise<void> | void;
+
+  /** Closes the map and releases any resources. */
+  close?(): Promise<void> | void;
 };
 
 /** Options when constructing a new MapKv instance. */
@@ -58,22 +61,34 @@ export type MapKvOptions = {
   clearOnClose?: boolean;
 };
 
-/**
- * Result object of a queued task.
- *
- * `status` - indicates the state of the task result.
- * Is "fulfilled" if completed successfully, "rejected" if an error was thrown during the task running, or "cancelled" if task was cancelled before running.
- *
- * `value` - Awaited return value of successful task.
- *
- * `error` - Captured error of rejected task.
- */
-export type TaskResult<T> = {
-  status: "fulfilled";
-  value: T;
-} | {
-  status: "rejected";
-  error: unknown;
-} | {
-  status: "cancelled";
+/** Options when creating a new IndexedDbAdapter instance. */
+export type IndexedDbAdapterOptions = {
+  /** IndexedDB database instance. */
+  db: IDBDatabase;
+  /** Name of the object store within the IndexedDB database. */
+  storeName: string;
+};
+
+/** Options when creating a new IndexedDbAdapter instance using the `indexedDbAdapter` helper function. */
+export type CreateIndexedDbAdapterOptions = {
+  /**
+   * Name of the IndexedDB database.
+   *
+   * @default "__kvdex_db__"
+   */
+  name?: string;
+
+  /**
+   * Name of the object store within the IndexedDB database.
+   *
+   * @default "__kvdex_store__"
+   */
+  storeName?: string;
+
+  /**
+   * Version of the IndexedDB database.
+   *
+   * @default `undefined`
+   */
+  version?: number;
 };

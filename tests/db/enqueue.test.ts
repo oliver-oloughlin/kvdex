@@ -8,14 +8,14 @@ import {
 import { KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
 import { createHandlerId } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
-import { createResolver, useKv } from "../utils.ts";
+import { useKv } from "../utils.ts";
 
 Deno.test("db - enqueue", async (t) => {
   await t.step("Should enqueue message with string data", async () => {
     await useKv(async (kv) => {
       const data = "data";
       const undeliveredId = "undelivered";
-      const sleeper = createResolver();
+      const sleeper = Promise.withResolvers<void>();
 
       const db = kvdex({
         kv,
@@ -50,7 +50,7 @@ Deno.test("db - enqueue", async (t) => {
       const data = "data";
       const undeliveredId = "undelivered";
       const topic = "topic";
-      const sleeper = createResolver();
+      const sleeper = Promise.withResolvers<void>();
 
       const db = kvdex({
         kv,
@@ -88,7 +88,7 @@ Deno.test("db - enqueue", async (t) => {
     await useKv(async (kv) => {
       const data = undefined;
       const undeliveredId = "undelivered";
-      const sleeper = createResolver();
+      const sleeper = Promise.withResolvers<void>();
 
       const db = kvdex({
         kv,

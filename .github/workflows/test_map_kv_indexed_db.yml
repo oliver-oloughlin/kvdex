@@ -1,4 +1,4 @@
-name: Test MapKv - Map
+name: Test MapKv - IndexedDB
 
 on:
   push:
@@ -22,4 +22,4 @@ jobs:
         uses: denoland/setup-deno@v2
 
       - name: Run tests
-        run: deno task test -- map
+        run: deno task test -- map_indexed_db

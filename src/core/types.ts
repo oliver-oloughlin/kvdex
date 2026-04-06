@@ -983,7 +983,7 @@ export type DenoAtomicOperation = {
 export type DenoKv = {
   atomic(): DenoAtomicOperation;
 
-  close(): void;
+  close(): void | Promise<void>;
 
   delete(key: DenoKvStrictKey): Promise<void> | void;
 

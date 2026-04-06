@@ -1,5 +1,5 @@
 import { assert } from "@std/assert";
-import { createResolver, useDb } from "../utils.ts";
+import { useDb } from "../utils.ts";
 
 Deno.test("db - setInterval", async (t) => {
   await t.step(
@@ -10,13 +10,13 @@ Deno.test("db - setInterval", async (t) => {
         let count2 = 0;
         let count3 = 0;
 
-        const sleeper1 = createResolver();
-        const sleeper2 = createResolver();
-        const sleeper3 = createResolver();
+        const sleeper1 = Promise.withResolvers<void>();
+        const sleeper2 = Promise.withResolvers<void>();
+        const sleeper3 = Promise.withResolvers<void>();
 
         const l1 = db.setInterval(() => count1++, 10, {
           while: ({ count }) => count < 2,
-          onExit: sleeper1.resolve,
+          onExit: async () => await sleeper1.resolve(),
         });
 
         const l2 = db.setInterval(
@@ -24,13 +24,13 @@ Deno.test("db - setInterval", async (t) => {
           () => Math.random() * 20,
           {
             while: ({ first }) => !first,
-            onExit: sleeper2.resolve,
+            onExit: async () => await sleeper2.resolve(),
           },
         );
 
         const l3 = db.setInterval(() => count3++, 10, {
           while: ({ interval }) => interval <= 0,
-          onExit: sleeper3.resolve,
+          onExit: async () => await sleeper3.resolve(),
         });
 
         await sleeper1.promise;

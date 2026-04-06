@@ -1,14 +1,14 @@
 import { kvdex } from "../../mod.ts";
 import { assert } from "@std/assert";
-import { createResolver, useDb, useKv } from "../utils.ts";
+import { useDb, useKv } from "../utils.ts";
 
 Deno.test("db - loop", async (t) => {
   await t.step(
     "Should run both loops for 0 iterations, by terminating before the first task is called",
     async () => {
       await useDb(async (db) => {
-        const sleeper1 = createResolver();
-        const sleeper2 = createResolver();
+        const sleeper1 = Promise.withResolvers<void>();
+        const sleeper2 = Promise.withResolvers<void>();
         let count1 = 0;
         let count2 = 0;
 
@@ -38,7 +38,7 @@ Deno.test("db - loop", async (t) => {
     async () => {
       await useKv(async (kv) => {
         const db = kvdex({ kv });
-        const { resolve, promise } = createResolver();
+        const { resolve, promise } = Promise.withResolvers<void>();
         let count = 0;
 
         const listener = db.loop<number>(

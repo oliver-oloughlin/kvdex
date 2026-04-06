@@ -5,6 +5,11 @@ import { MapKv } from "../src/ext/kv/map/mod.ts";
 import { StorageAdapter } from "../src/ext/kv/mod.ts";
 import { model } from "../src/core/model.ts";
 import { TransformUserModel, type User, UserSchema } from "./models.ts";
+import "fake-indexeddb/auto";
+import {
+  type IndexedDbAdapter,
+  indexedDbAdapter,
+} from "../src/ext/kv/map/indexed_db_adapter.ts";
 
 export const testEncoder = jsonEncoder({
   compressor: brotliCompressor(),
@@ -74,7 +79,7 @@ export function createDb(kv: DenoKv) {
   });
 }
 
-// Temporary use functions
+// Instance functions
 export async function useKv(
   fn: (kv: DenoKv) => unknown,
 ) {
@@ -82,8 +87,13 @@ export async function useKv(
 
   const kv = kvArg === "map"
     ? new MapKv({ clearOnClose: true })
-    : kvArg === "map-local"
+    : kvArg === "map_local"
     ? new MapKv({ map: new StorageAdapter(localStorage), clearOnClose: true })
+    : kvArg === "map_indexed_db"
+    ? new MapKv({
+      map: await indexedDbAdapter(),
+      clearOnClose: true,
+    })
     : await Deno.openKv(":memory:");
 
   const result = await fn(kv);
@@ -101,6 +111,31 @@ export async function useDb(
     const db = createDb(kv);
     return await fn(db);
   });
+}
+
+export async function useMapKv(
+  fn: (kv: MapKv) => unknown,
+) {
+  const mapKv = new MapKv({ clearOnClose: true });
+  await fn(mapKv);
+  await mapKv.close();
+}
+
+export async function useStorageMap(
+  fn: (store: StorageAdapter<any, any>) => unknown,
+) {
+  const store = new StorageAdapter(localStorage);
+  await fn(store);
+  store.clear();
+}
+
+export async function useIndexedDbMap(
+  fn: (store: IndexedDbAdapter<any, any>) => unknown,
+) {
+  const map = await indexedDbAdapter();
+  await fn(map);
+  await map.clear();
+  map.close();
 }
 
 // Generator functions
@@ -175,16 +210,7 @@ export function generateNumbers(n: number) {
   return numbers;
 }
 
-// Sleep functions
+// Promise helpers
 export async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export function createResolver() {
-  let resolve = (_?: unknown) => {};
-  const promise = new Promise((r) => resolve = r);
-  return {
-    resolve,
-    promise,
-  };
 }

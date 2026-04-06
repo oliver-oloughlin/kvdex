@@ -12,7 +12,7 @@ import {
 import { createHandlerId, extendKey } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
 import type { User } from "../models.ts";
-import { createResolver, sleep, useKv } from "../utils.ts";
+import { sleep, useKv } from "../utils.ts";
 import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 Deno.test("serialized_indexable_collection - listenQueue", async (t) => {
@@ -20,7 +20,7 @@ Deno.test("serialized_indexable_collection - listenQueue", async (t) => {
     await useKv(async (kv) => {
       const data = "data";
       const undeliveredId = "id";
-      const sleeper = createResolver();
+      const sleeper = Promise.withResolvers<void>();
 
       const db = kvdex({
         kv,

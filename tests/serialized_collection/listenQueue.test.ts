@@ -12,7 +12,7 @@ import {
 import { createHandlerId, extendKey } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
 import type { User } from "../models.ts";
-import { createResolver, sleep, useKv } from "../utils.ts";
+import { sleep, useKv } from "../utils.ts";
 
 Deno.test("serialized_collection - listenQueue", async (t) => {
   await t.step("Should receive message with string data", async () => {
@@ -25,7 +25,7 @@ Deno.test("serialized_collection - listenQueue", async (t) => {
         schema: { s_users: collection(model<User>()) },
       });
 
-      const sleeper = createResolver();
+      const sleeper = Promise.withResolvers<void>();
       let assertion = false;
 
       const listener = db.s_users.listenQueue((msgData) => {
