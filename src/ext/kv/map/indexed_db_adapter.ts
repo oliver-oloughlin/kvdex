@@ -17,7 +17,7 @@ type CreateIndexedDbAdapterOptions = {
 
 export async function indexedDbAdapter(
   { name, storeName, version }: CreateIndexedDbAdapterOptions = {},
-) {
+): Promise<IndexedDbAdapter<IDBValidKey, unknown>> {
   const request = indexedDB.open(name ?? DEFAULT_INDEXED_DB_NAME, version);
 
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
