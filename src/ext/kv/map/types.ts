@@ -36,6 +36,9 @@ export type BasicMap<K, V> = {
 
   /** Removes all key/value entries from the map. */
   clear(): Promise<void> | void;
+
+  /** Closes the map and releases any resources. */
+  close?(): Promise<void> | void;
 };
 
 /** Options when constructing a new MapKv instance. */
