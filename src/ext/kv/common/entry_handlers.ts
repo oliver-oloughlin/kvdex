@@ -1,6 +1,5 @@
 import { ulid } from "@std/ulid";
 import { jsonParse, jsonStringify } from "../../../common/json.ts";
-import { safeAwait } from "../../../common/safe_await.ts";
 import { KVDEX_QUEUE_KEY_PREFIX } from "../../../core/constants.ts";
 import type {
   DenoKvCommitError,
@@ -68,7 +67,7 @@ export async function setEntry({
 }): Promise<DenoKvCommitError | DenoKvCommitResult> {
   const fn = async () => {
     const keyStr = jsonStringify(key);
-    const prev = await safeAwait(get(keyStr));
+    const prev = await get(keyStr);
 
     const doesExpire = hasExpireIn(options);
     const expireAt = doesExpire ? Date.now() + options.expireIn : null;
@@ -79,8 +78,8 @@ export async function setEntry({
       expireAt,
     } satisfies KvEntry;
 
-    await safeAwait(set(keyStr, entry));
-    await updateWatchers({ watchers, keyStr, prev, value, get, delete: del });
+    await set(keyStr, entry);
+    await updateWatchers({ watchers, keyStr, prev, value });
   };
 
   if (lock) {
@@ -116,7 +115,7 @@ export async function getEntry({
 }): Promise<DenoKvEntryMaybe> {
   const fn = async () => {
     const keyStr = jsonStringify(key);
-    const entry = await safeAwait(get(keyStr)) as KvEntry | undefined | null;
+    const entry = await get(keyStr) as KvEntry | undefined | null;
 
     const nullEntry = {
       key,
@@ -179,8 +178,6 @@ export async function deleteEntry({
         watchers,
         ...result.value,
         value: undefined,
-        get,
-        delete: del,
       });
     }
   } else {
@@ -189,8 +186,6 @@ export async function deleteEntry({
       watchers,
       ...result,
       value: undefined,
-      get,
-      delete: del,
     });
   }
 }
@@ -243,7 +238,7 @@ export async function enqueueValue({
         delete: del,
         lock: null,
       }),
-      safeAwait(handler(value)),
+      handler(value),
     ]));
   }, options?.delay ?? 0);
 
@@ -273,7 +268,6 @@ export async function activateQueuedValues({
     options: undefined,
     watchers: [],
     getEntries,
-    get,
     delete: del,
     lock: null,
   });
@@ -291,7 +285,7 @@ export async function activateQueuedValues({
           delete: del,
           lock: null,
         }),
-        safeAwait(handler(value)),
+        handler(value),
       ]));
     }, delay);
 
@@ -304,7 +298,6 @@ export async function listEntries({
   options,
   watchers,
   getEntries,
-  get,
   delete: del,
   lock,
 }: {
@@ -312,7 +305,6 @@ export async function listEntries({
   options: DenoKvListOptions | undefined;
   watchers: Watcher[];
   getEntries: EntriesGetter;
-  get: Getter;
   delete: Deleter;
   lock: AsyncLock | null;
 }): Promise<DenoKvListIterator> {
@@ -327,14 +319,12 @@ export async function listEntries({
 
     await allFulfilled(
       expiredEntries.flatMap(([key, entry]) => [
-        safeAwait(del(key)),
+        del(key),
         updateWatchers({
           watchers,
           keyStr: key,
           prev: entry,
           value: undefined,
-          get,
-          delete: del,
         }),
       ]),
     );
@@ -435,8 +425,6 @@ async function updateWatchers({ watchers, keyStr, prev, value }: {
   keyStr: string;
   prev: KvEntry | undefined | null;
   value: unknown;
-  get: Getter;
-  delete: Deleter;
 }) {
   await allFulfilled(
     watchers.map((w) => w.update(keyStr, prev?.value, value)),
