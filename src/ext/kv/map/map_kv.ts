@@ -87,7 +87,12 @@ export class MapKv implements DenoKv {
       )
     );
 
-    activateQueuedValues({ kv: this, listenHandlers: this.listenHandlers });
+    activateQueuedValues({
+      listenHandlers: this.listenHandlers,
+      getEntries: () => Array.fromAsync(this.map.entries()),
+      get: (keyStr) => this.map.get(keyStr),
+      delete: (keyStr) => this.map.delete(keyStr),
+    });
   }
 
   async close(): Promise<void> {
@@ -152,12 +157,7 @@ export class MapKv implements DenoKv {
     value: unknown,
     options?: DenoKvEnqueueOptions,
   ): Promise<DenoKvCommitResult> {
-    return await enqueueValue({
-      value,
-      options,
-      listenHandlers: this.listenHandlers,
-      kv: this,
-    });
+    return await this.enqueueValue(value, createVersionstamp(), options);
   }
 
   watch(
@@ -228,6 +228,22 @@ export class MapKv implements DenoKv {
       get: (keyStr) => this.map.get(keyStr),
       delete: (keyStr) => this.map.delete(keyStr),
       lock: lock ? this.asyncLock : null,
+    });
+  }
+
+  private async enqueueValue(
+    value: unknown,
+    versionstamp: string,
+    options?: DenoKvEnqueueOptions,
+  ): Promise<DenoKvCommitResult> {
+    return await enqueueValue({
+      value,
+      versionstamp,
+      options,
+      listenHandlers: this.listenHandlers,
+      get: (keyStr) => this.map.get(keyStr),
+      set: (keyStr, entry) => this.map.set(keyStr, entry),
+      delete: (keyStr) => this.map.delete(keyStr),
     });
   }
 }

@@ -3,7 +3,6 @@ import { jsonParse, jsonStringify } from "../../../common/json.ts";
 import { safeAwait } from "../../../common/safe_await.ts";
 import { KVDEX_QUEUE_KEY_PREFIX } from "../../../core/constants.ts";
 import type {
-  DenoKv,
   DenoKvCommitError,
   DenoKvCommitResult,
   DenoKvEnqueueOptions,
@@ -197,14 +196,20 @@ export async function deleteEntry({
 
 export async function enqueueValue({
   value,
+  versionstamp,
   options,
   listenHandlers,
-  kv,
+  get,
+  set,
+  delete: del,
 }: {
   value: unknown;
+  versionstamp: string;
   options: DenoKvEnqueueOptions | undefined;
   listenHandlers: ((value: unknown) => unknown)[];
-  kv: DenoKv;
+  get: Getter;
+  set: Setter;
+  delete: Deleter;
 }): Promise<DenoKvCommitResult> {
   const timestamp = Date.now() + (options?.delay ?? 0);
   const id = ulid();
@@ -214,11 +219,27 @@ export async function enqueueValue({
     timestamp,
   };
 
-  const cr = await kv.set(key, entryValue);
+  const cr = await setEntry({
+    key,
+    value: entryValue,
+    versionstamp,
+    get,
+    set,
+    delete: del,
+    watchers: [],
+    options: undefined,
+    lock: null,
+  });
 
   setTimeout(async () => {
     await allFulfilled(listenHandlers.flatMap((handler) => [
-      kv.delete(key),
+      deleteEntry({
+        key,
+        watchers: [],
+        get,
+        delete: del,
+        lock: null,
+      }),
       safeAwait(handler(value)),
     ]));
   }, options?.delay ?? 0);
@@ -230,20 +251,39 @@ export async function enqueueValue({
 }
 
 export async function activateQueuedValues({
-  kv,
   listenHandlers,
+  getEntries,
+  get,
+  delete: del,
 }: {
-  kv: DenoKv;
   listenHandlers: ((value: unknown) => unknown)[];
+  getEntries: EntriesGetter;
+  get: Getter;
+  delete: Deleter;
 }) {
-  const iter = await safeAwait(kv.list({ prefix: [KVDEX_QUEUE_KEY_PREFIX] }));
+  const iter = await listEntries({
+    selector: { prefix: [KVDEX_QUEUE_KEY_PREFIX] },
+    options: undefined,
+    watchers: [],
+    getEntries,
+    get,
+    delete: del,
+    lock: null,
+  });
+
   for await (const entry of iter) {
     const { value, timestamp } = entry.value as QueueEntryValue;
     const delay = Math.max(timestamp - Date.now(), 0);
 
     setTimeout(async () => {
       await allFulfilled(listenHandlers.flatMap((handler) => [
-        kv.delete(entry.key as DenoKvStrictKey),
+        deleteEntry({
+          key: entry.key as DenoKvStrictKey,
+          watchers: [],
+          get,
+          delete: del,
+          lock: null,
+        }),
         safeAwait(handler(value)),
       ]));
     }, delay);

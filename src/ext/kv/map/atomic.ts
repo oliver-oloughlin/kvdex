@@ -155,8 +155,8 @@ export class MapKvAtomicOperation implements DenoAtomicOperation {
   }
 
   enqueue(value: unknown, options?: DenoKvEnqueueOptions): DenoAtomicOperation {
-    this.ops.push(async () => {
-      await this.kv.enqueue(value, options);
+    this.ops.push(async (versionstamp) => {
+      await this.kv["enqueueValue"](value, versionstamp, options);
     });
 
     return this;
