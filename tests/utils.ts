@@ -6,7 +6,10 @@ import { StorageAdapter } from "../src/ext/kv/mod.ts";
 import { model } from "../src/core/model.ts";
 import { TransformUserModel, type User, UserSchema } from "./models.ts";
 import "fake-indexeddb/auto";
-import { indexedDbAdapter } from "../src/ext/kv/map/indexed_db_adapter.ts";
+import {
+  IndexedDbAdapter,
+  indexedDbAdapter,
+} from "../src/ext/kv/map/indexed_db_adapter.ts";
 
 export const testEncoder = jsonEncoder({
   compressor: brotliCompressor(),
@@ -110,12 +113,20 @@ export async function useDb(
   });
 }
 
-export async function useStore(
+export async function useStorageMap(
   fn: (store: StorageAdapter<any, any>) => unknown,
 ) {
   const store = new StorageAdapter(localStorage);
   await fn(store);
   store.clear();
+}
+
+export async function useIndexedDbMap(
+  fn: (store: IndexedDbAdapter<any, any>) => unknown,
+) {
+  const map = await indexedDbAdapter();
+  await fn(map);
+  await map.clear();
 }
 
 // Generator functions
