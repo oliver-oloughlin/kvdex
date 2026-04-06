@@ -7,7 +7,7 @@ import { model } from "../src/core/model.ts";
 import { TransformUserModel, type User, UserSchema } from "./models.ts";
 import "fake-indexeddb/auto";
 import {
-  IndexedDbAdapter,
+  type IndexedDbAdapter,
   indexedDbAdapter,
 } from "../src/ext/kv/map/indexed_db_adapter.ts";
 
