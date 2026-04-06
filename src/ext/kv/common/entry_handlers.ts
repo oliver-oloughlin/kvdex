@@ -50,7 +50,6 @@ export async function setEntry({
   versionstamp,
   get,
   set,
-  delete: del,
   watchers,
   options,
   lock,
@@ -60,7 +59,6 @@ export async function setEntry({
   versionstamp: string;
   get: Getter;
   set: Setter;
-  delete: Deleter;
   watchers: Watcher[];
   options?: DenoKvSetOptions;
   lock: AsyncLock | null;
@@ -223,7 +221,6 @@ export async function enqueueValue({
     versionstamp,
     get,
     set,
-    delete: del,
     watchers: [],
     options: undefined,
     lock: null,
