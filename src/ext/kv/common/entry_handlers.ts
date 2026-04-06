@@ -237,6 +237,8 @@ export async function enqueueValue({
       }),
       handler(value),
     ]));
+
+    timerIds.delete(timerId);
   }, options?.delay ?? 0);
 
   timerIds.add(timerId);
@@ -284,6 +286,8 @@ export async function activateQueuedValues({
         }),
         handler(value),
       ]));
+
+      timerIds.delete(timerId);
     }, delay);
 
     timerIds.add(timerId);
