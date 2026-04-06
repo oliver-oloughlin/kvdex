@@ -89,7 +89,7 @@ export class MapKv implements DenoKv {
 
     activateQueuedValues({
       listenHandlers: this.listenHandlers,
-      getEntries: () => Array.fromAsync(this.map.entries()),
+      getEntries: () => this.getEntries(),
       get: (keyStr) => this.map.get(keyStr),
       delete: (keyStr) => this.map.delete(keyStr),
     });
@@ -136,7 +136,7 @@ export class MapKv implements DenoKv {
       selector,
       options,
       watchers: this.watchers,
-      getEntries: () => Array.fromAsync(this.map.entries()),
+      getEntries: () => this.getEntries(),
       get: (keyStr) => this.map.get(keyStr),
       delete: (keyStr) => this.map.delete(keyStr),
       lock: this.asyncLock,
@@ -245,5 +245,9 @@ export class MapKv implements DenoKv {
       set: (keyStr, entry) => this.map.set(keyStr, entry),
       delete: (keyStr) => this.map.delete(keyStr),
     });
+  }
+
+  private async getEntries(): Promise<[string, KvEntry][]> {
+    return await Array.fromAsync(this.map.entries());
   }
 }

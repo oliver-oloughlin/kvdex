@@ -14,9 +14,12 @@ import type {
 } from "../../../core/types.ts";
 import { allFulfilled } from "../../../core/utils.ts";
 import {
+  activateQueuedValues,
   deleteEntry,
+  enqueueValue,
   getEntry,
   type KvEntry,
+  listEntries,
   setEntry,
 } from "../common/entry_handlers.ts";
 import { createVersionstamp } from "../common/utils.ts";
@@ -32,7 +35,14 @@ export class IndexedDbKv implements DenoKv {
   private db: IDBDatabase;
   private storeName: string;
   private watchers: Watcher[];
+  private listenHandlers: ((msg: unknown) => unknown)[];
   private asyncLock: AsyncLock;
+  private listener:
+    | {
+      promise: Promise<void>;
+      resolve: () => void;
+    }
+    | undefined;
 
   private get objStore(): IDBObjectStore {
     return this.db.transaction(this.storeName, "readwrite").objectStore(
@@ -44,7 +54,15 @@ export class IndexedDbKv implements DenoKv {
     this.db = db;
     this.storeName = storeName;
     this.watchers = [];
+    this.listenHandlers = [];
     this.asyncLock = new AsyncLock();
+
+    activateQueuedValues({
+      listenHandlers: this.listenHandlers,
+      get: (keyStr) => this.getDbEntry(keyStr),
+      getEntries: () => this.getDbEntries(),
+      delete: (keyStr) => this.deleteDbEntry(keyStr),
+    });
   }
 
   async delete(key: DenoKvStrictKey): Promise<void> {
@@ -94,22 +112,36 @@ export class IndexedDbKv implements DenoKv {
     return await allFulfilled(keys.map((key) => this.get(key)));
   }
 
-  list(
+  async list(
     selector: DenoKvListSelector,
     options?: DenoKvListOptions,
-  ): Promise<DenoKvListIterator> | DenoKvListIterator {
-    throw new Error("Method not implemented.");
+  ): Promise<DenoKvListIterator> {
+    return await listEntries({
+      selector,
+      options,
+      watchers: this.watchers,
+      getEntries: () => this.getDbEntries(),
+      get: (keyStr) => this.getDbEntry(keyStr),
+      delete: (keyStr) => this.deleteDbEntry(keyStr),
+      lock: this.asyncLock,
+    });
   }
 
   listenQueue(handler: (value: unknown) => unknown): Promise<void> {
-    throw new Error("Method not implemented.");
+    this.listenHandlers.push(handler);
+
+    if (!this.listener) {
+      this.listener = Promise.withResolvers();
+    }
+
+    return this.listener.promise;
   }
 
-  enqueue(
+  async enqueue(
     value: unknown,
     options?: DenoKvEnqueueOptions,
-  ): Promise<DenoKvCommitResult> | DenoKvCommitResult {
-    throw new Error("Method not implemented.");
+  ): Promise<DenoKvCommitResult> {
+    return await this.enqueueValue(value, createVersionstamp(), options);
   }
 
   watch(
@@ -141,25 +173,55 @@ export class IndexedDbKv implements DenoKv {
     this.db.close();
   }
 
-  private async getDbEntry(key: string): Promise<KvEntry | null> {
+  private async getDbEntry(key: IDBValidKey): Promise<KvEntry | null> {
     const req = this.objStore.get(key);
     return await this.handleDbRequest(req);
   }
 
-  private async setDbEntry(key: string, entry: KvEntry): Promise<void> {
+  private async setDbEntry(key: IDBValidKey, entry: KvEntry): Promise<void> {
     const req = this.objStore.put(entry, key);
     await this.handleDbRequest(req);
   }
 
-  private async deleteDbEntry(key: string): Promise<void> {
+  private async deleteDbEntry(key: IDBValidKey): Promise<void> {
     const req = this.objStore.delete(key);
     await this.handleDbRequest(req);
+  }
+
+  private async getDbEntries(): Promise<Array<[string, KvEntry]>> {
+    const req = this.objStore.getAllKeys();
+    const keys = await this.handleDbRequest(req);
+
+    const entries = await allFulfilled(keys.map(async (key) => {
+      const entry = await this.getDbEntry(key);
+      return entry ? [key, entry] as const : null;
+    }));
+
+    return entries.filter((entry): entry is [string, KvEntry] =>
+      entry !== null
+    );
   }
 
   private handleDbRequest<T>(request: IDBRequest<T>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
+    });
+  }
+
+  private async enqueueValue(
+    value: unknown,
+    versionstamp: string,
+    options?: DenoKvEnqueueOptions,
+  ): Promise<DenoKvCommitResult> {
+    return await enqueueValue({
+      value,
+      versionstamp,
+      options,
+      listenHandlers: this.listenHandlers,
+      get: (keyStr) => this.getDbEntry(keyStr),
+      set: (keyStr, entry) => this.setDbEntry(keyStr, entry),
+      delete: (keyStr) => this.deleteDbEntry(keyStr),
     });
   }
 }
