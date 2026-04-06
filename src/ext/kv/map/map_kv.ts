@@ -5,7 +5,6 @@ import type {
   DenoKvCommitResult,
   DenoKvEnqueueOptions,
   DenoKvEntryMaybe,
-  DenoKvLaxKey,
   DenoKvListIterator,
   DenoKvListOptions,
   DenoKvListSelector,
@@ -15,15 +14,17 @@ import type {
 } from "../../../core/types.ts";
 import { MapKvAtomicOperation } from "./atomic.ts";
 import { Watcher } from "../common/watcher.ts";
-import { createVersionstamp, keySort } from "../common/utils.ts";
+import { createVersionstamp } from "../common/utils.ts";
 import type { BasicMap, MapKvOptions } from "./types.ts";
-import { jsonParse, jsonStringify } from "../../../common/json.ts";
 import { allFulfilled } from "../../../core/utils.ts";
 import { AsyncLock } from "./async_lock.ts";
 import {
+  activateQueuedValues,
   deleteEntry,
+  enqueueValue,
   getEntry,
   type KvEntry,
+  listEntries,
   setEntry,
 } from "../common/entry_handlers.ts";
 
@@ -85,6 +86,8 @@ export class MapKv implements DenoKv {
         true,
       )
     );
+
+    activateQueuedValues({ kv: this, listenHandlers: this.listenHandlers });
   }
 
   async close(): Promise<void> {
@@ -124,79 +127,15 @@ export class MapKv implements DenoKv {
     selector: DenoKvListSelector,
     options?: DenoKvListOptions,
   ): Promise<DenoKvListIterator> {
-    let entries = await Array.fromAsync(this.map.entries());
-    const start = (selector as any).start as DenoKvStrictKey | undefined;
-    const end = (selector as any).end as DenoKvStrictKey | undefined;
-    const prefix = (selector as any).prefix as DenoKvStrictKey | undefined;
-
-    entries.sort(([k1], [k2]) => {
-      const key1 = jsonParse<DenoKvStrictKey>(k1);
-      const key2 = jsonParse<DenoKvStrictKey>(k2);
-      return keySort(key1, key2);
+    return await listEntries({
+      selector,
+      options,
+      watchers: this.watchers,
+      getEntries: () => Array.fromAsync(this.map.entries()),
+      get: (keyStr) => this.map.get(keyStr),
+      delete: (keyStr) => this.map.delete(keyStr),
+      lock: this.asyncLock,
     });
-
-    if (options?.reverse) {
-      entries.reverse();
-    }
-
-    if (prefix && prefix.length > 0) {
-      entries = entries.filter(([key]) => {
-        const parsedKey = jsonParse<DenoKvStrictKey>(key);
-        const keyPrefix = parsedKey.slice(0, prefix.length);
-        return jsonStringify(keyPrefix) === jsonStringify(prefix);
-      });
-    }
-
-    if (start) {
-      const index = entries.findIndex(
-        ([key]) => key === jsonStringify(start),
-      );
-
-      if (index) {
-        entries = entries.slice(index);
-      }
-    }
-
-    if (end) {
-      const index = entries.findIndex(
-        ([key]) => key === jsonStringify(end),
-      );
-
-      if (index) {
-        entries = entries.slice(0, index);
-      }
-    }
-
-    if (options?.cursor) {
-      const index = entries.findIndex(
-        ([key]) => key === options.cursor,
-      );
-
-      if (index) {
-        entries = entries.slice(index);
-      }
-    }
-
-    const iter = async function* () {
-      let count = 0;
-
-      for (const [key, entry] of entries) {
-        if (options?.limit !== undefined && count >= options?.limit) {
-          return;
-        }
-
-        yield {
-          key: jsonParse(key) as DenoKvLaxKey,
-          ...entry,
-        };
-
-        count++;
-      }
-    };
-
-    const cursorEntry = options?.limit ? entries.at(options?.limit) : undefined;
-    const cursor = cursorEntry ? cursorEntry[0] : "";
-    return Object.assign(iter(), { cursor });
   }
 
   listenQueue(handler: (value: unknown) => unknown): Promise<void> {
@@ -209,11 +148,16 @@ export class MapKv implements DenoKv {
     return this.listener.promise;
   }
 
-  enqueue(
+  async enqueue(
     value: unknown,
     options?: DenoKvEnqueueOptions,
-  ): Promise<DenoKvCommitResult> | DenoKvCommitResult {
-    return this.enqueueValue(value, createVersionstamp(), options);
+  ): Promise<DenoKvCommitResult> {
+    return await enqueueValue({
+      value,
+      options,
+      listenHandlers: this.listenHandlers,
+      kv: this,
+    });
   }
 
   watch(
@@ -285,20 +229,5 @@ export class MapKv implements DenoKv {
       delete: (keyStr) => this.map.delete(keyStr),
       lock: lock ? this.asyncLock : null,
     });
-  }
-
-  private enqueueValue(
-    value: unknown,
-    versionstamp: string,
-    options?: DenoKvEnqueueOptions,
-  ): Promise<DenoKvCommitResult> | DenoKvCommitResult {
-    setTimeout(async () => {
-      await Promise.all(this.listenHandlers.map((h) => h(value)));
-    }, options?.delay ?? 0);
-
-    return {
-      ok: true,
-      versionstamp,
-    };
   }
 }

@@ -1,10 +1,18 @@
-import { jsonStringify } from "../../../common/json.ts";
+import { ulid } from "@std/ulid";
+import { jsonParse, jsonStringify } from "../../../common/json.ts";
 import { safeAwait } from "../../../common/safe_await.ts";
+import { KVDEX_QUEUE_KEY_PREFIX } from "../../../core/constants.ts";
 import type {
+  DenoKv,
   DenoKvCommitError,
   DenoKvCommitResult,
+  DenoKvEnqueueOptions,
   DenoKvEntryMaybe,
   DenoKvEntryNull,
+  DenoKvLaxKey,
+  DenoKvListIterator,
+  DenoKvListOptions,
+  DenoKvListSelector,
   DenoKvSetOptions,
   DenoKvStrictKey,
   KvValue,
@@ -12,6 +20,7 @@ import type {
 import { allFulfilled } from "../../../core/utils.ts";
 import type { AsyncLock } from "../map/async_lock.ts";
 import type { Watcher } from "./watcher.ts";
+import { createVersionstamp, keySort } from "./utils.ts";
 
 export type KvEntry = {
   value: unknown;
@@ -19,13 +28,23 @@ export type KvEntry = {
   expireAt: number | null;
 };
 
-export type Getter = (
+type Getter = (
   key: string,
 ) => KvEntry | undefined | null | Promise<KvEntry | undefined | null>;
 
-export type Setter = (key: string, entry: KvEntry) => unknown;
+type Setter = (key: string, entry: KvEntry) => unknown;
 
-export type Deleter = (key: string) => unknown;
+type Deleter = (key: string) => unknown;
+
+type EntriesGetter = () => Promise<[string, KvEntry][]> | [
+  string,
+  KvEntry,
+][];
+
+type QueueEntryValue = {
+  value: unknown;
+  timestamp: number;
+};
 
 export async function setEntry({
   key,
@@ -174,6 +193,182 @@ export async function deleteEntry({
       delete: del,
     });
   }
+}
+
+export async function enqueueValue({
+  value,
+  options,
+  listenHandlers,
+  kv,
+}: {
+  value: unknown;
+  options: DenoKvEnqueueOptions | undefined;
+  listenHandlers: ((value: unknown) => unknown)[];
+  kv: DenoKv;
+}): Promise<DenoKvCommitResult> {
+  const timestamp = Date.now() + (options?.delay ?? 0);
+  const id = ulid();
+  const key: DenoKvStrictKey = [KVDEX_QUEUE_KEY_PREFIX, id];
+  const entryValue: QueueEntryValue = {
+    value,
+    timestamp,
+  };
+
+  const cr = await kv.set(key, entryValue);
+
+  setTimeout(async () => {
+    await allFulfilled(listenHandlers.flatMap((handler) => [
+      kv.delete(key),
+      safeAwait(handler(value)),
+    ]));
+  }, options?.delay ?? 0);
+
+  return {
+    ok: true,
+    versionstamp: cr.ok ? cr.versionstamp : createVersionstamp(),
+  };
+}
+
+export async function activateQueuedValues({
+  kv,
+  listenHandlers,
+}: {
+  kv: DenoKv;
+  listenHandlers: ((value: unknown) => unknown)[];
+}) {
+  const iter = await safeAwait(kv.list({ prefix: [KVDEX_QUEUE_KEY_PREFIX] }));
+  for await (const entry of iter) {
+    const { value, timestamp } = entry.value as QueueEntryValue;
+    const delay = Math.max(timestamp - Date.now(), 0);
+
+    setTimeout(async () => {
+      await allFulfilled(listenHandlers.flatMap((handler) => [
+        kv.delete(entry.key as DenoKvStrictKey),
+        safeAwait(handler(value)),
+      ]));
+    }, delay);
+  }
+}
+
+export async function listEntries({
+  selector,
+  options,
+  watchers,
+  getEntries,
+  get,
+  delete: del,
+  lock,
+}: {
+  selector: DenoKvListSelector;
+  options: DenoKvListOptions | undefined;
+  watchers: Watcher[];
+  getEntries: EntriesGetter;
+  get: Getter;
+  delete: Deleter;
+  lock: AsyncLock | null;
+}): Promise<DenoKvListIterator> {
+  const start = (selector as any).start as DenoKvStrictKey | undefined;
+  const end = (selector as any).end as DenoKvStrictKey | undefined;
+  const prefix = (selector as any).prefix as DenoKvStrictKey | undefined;
+
+  const fn = async () => {
+    const allEntries = await getEntries();
+    const validEntries = allEntries.filter(([_, entry]) => !isExpired(entry));
+    const expiredEntries = allEntries.filter(([_, entry]) => isExpired(entry));
+
+    await allFulfilled(
+      expiredEntries.flatMap(([key, entry]) => [
+        safeAwait(del(key)),
+        updateWatchers({
+          watchers,
+          keyStr: key,
+          prev: entry,
+          value: undefined,
+          get,
+          delete: del,
+        }),
+      ]),
+    );
+
+    return validEntries;
+  };
+
+  let entries: [string, KvEntry][];
+  if (lock) {
+    const result = await lock.run(fn);
+    entries = result.status === "fulfilled" ? result.value : [];
+  } else {
+    entries = await fn();
+  }
+
+  entries.sort(([k1], [k2]) => {
+    const key1 = jsonParse<DenoKvStrictKey>(k1);
+    const key2 = jsonParse<DenoKvStrictKey>(k2);
+    return keySort(key1, key2);
+  });
+
+  if (options?.reverse) {
+    entries.reverse();
+  }
+
+  if (prefix && prefix.length > 0) {
+    entries = entries.filter(([key]) => {
+      const parsedKey = jsonParse<DenoKvStrictKey>(key);
+      const keyPrefix = parsedKey.slice(0, prefix.length);
+      return jsonStringify(keyPrefix) === jsonStringify(prefix);
+    });
+  }
+
+  if (start) {
+    const index = entries.findIndex(
+      ([key]) => key === jsonStringify(start),
+    );
+
+    if (index) {
+      entries = entries.slice(index);
+    }
+  }
+
+  if (end) {
+    const index = entries.findIndex(
+      ([key]) => key === jsonStringify(end),
+    );
+
+    if (index) {
+      entries = entries.slice(0, index);
+    }
+  }
+
+  if (options?.cursor) {
+    const index = entries.findIndex(
+      ([key]) => key === options.cursor,
+    );
+
+    if (index) {
+      entries = entries.slice(index);
+    }
+  }
+
+  const iter = async function* () {
+    let count = 0;
+
+    for (const [key, entry] of entries) {
+      if (options?.limit !== undefined && count >= options?.limit) {
+        return;
+      }
+
+      yield {
+        key: jsonParse(key) as DenoKvLaxKey,
+        ...entry,
+      };
+
+      count++;
+    }
+  };
+
+  const cursorEntry = options?.limit ? entries.at(options?.limit) : undefined;
+  const cursor = cursorEntry ? cursorEntry[0] : "";
+  return Object.assign(iter(), { cursor });
 }
 
 function hasExpireIn(

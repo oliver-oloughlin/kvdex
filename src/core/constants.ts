@@ -15,6 +15,8 @@ export const UNDELIVERED_KEY_PREFIX = "__undelivered__";
 
 export const HISTORY_KEY_PREFIX = "__history__";
 
+export const KVDEX_QUEUE_KEY_PREFIX = "__kvdex_queue__";
+
 // Fixed limits
 export const ATOMIC_OPERATION_MUTATION_LIMIT = 1_000;
 
