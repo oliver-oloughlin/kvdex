@@ -85,9 +85,10 @@ export async function setEntry({
 
   if (lock) {
     const result = await lock.run(fn);
-    if (result.status === "fulfilled") {
-      return { ok: true, versionstamp };
-    }
+
+    return result.status === "fulfilled"
+      ? { ok: true, versionstamp }
+      : { ok: false };
   }
 
   await fn();
@@ -372,7 +373,7 @@ export async function listEntries({
       ([key]) => key === jsonStringify(start),
     );
 
-    if (index) {
+    if (index && index !== -1) {
       entries = entries.slice(index);
     }
   }
@@ -382,7 +383,7 @@ export async function listEntries({
       ([key]) => key === jsonStringify(end),
     );
 
-    if (index) {
+    if (index && index !== -1) {
       entries = entries.slice(0, index);
     }
   }
@@ -392,7 +393,7 @@ export async function listEntries({
       ([key]) => key === options.cursor,
     );
 
-    if (index) {
+    if (index && index !== -1) {
       entries = entries.slice(index);
     }
   }
