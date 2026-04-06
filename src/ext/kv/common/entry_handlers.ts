@@ -227,18 +227,20 @@ export async function enqueueValue({
   });
 
   const timerId = setTimeout(async () => {
-    await allFulfilled(listenHandlers.flatMap((handler) => [
-      deleteEntry({
-        key,
-        watchers: [],
-        get,
-        delete: del,
-        lock: null,
-      }),
-      handler(value),
-    ]));
-
-    timerIds.delete(timerId);
+    try {
+      await allFulfilled(listenHandlers.flatMap((handler) => [
+        deleteEntry({
+          key,
+          watchers: [],
+          get,
+          delete: del,
+          lock: null,
+        }),
+        handler(value),
+      ]));
+    } finally {
+      timerIds.delete(timerId);
+    }
   }, options?.delay ?? 0);
 
   timerIds.add(timerId);
@@ -276,18 +278,20 @@ export async function activateQueuedValues({
     const delay = Math.max(timestamp - Date.now(), 0);
 
     const timerId = setTimeout(async () => {
-      await allFulfilled(listenHandlers.flatMap((handler) => [
-        deleteEntry({
-          key: entry.key as DenoKvStrictKey,
-          watchers: [],
-          get,
-          delete: del,
-          lock: null,
-        }),
-        handler(value),
-      ]));
-
-      timerIds.delete(timerId);
+      try {
+        await allFulfilled(listenHandlers.flatMap((handler) => [
+          deleteEntry({
+            key: entry.key as DenoKvStrictKey,
+            watchers: [],
+            get,
+            delete: del,
+            lock: null,
+          }),
+          handler(value),
+        ]));
+      } finally {
+        timerIds.delete(timerId);
+      }
     }, delay);
 
     timerIds.add(timerId);
