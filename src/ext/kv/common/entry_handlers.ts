@@ -17,7 +17,7 @@ import type {
   KvValue,
 } from "../../../core/types.ts";
 import { allFulfilled } from "../../../core/utils.ts";
-import type { AsyncLock } from "../map/async_lock.ts";
+import type { AsyncLock } from "./async_lock.ts";
 import type { Watcher } from "./watcher.ts";
 import { createVersionstamp, keySort } from "./utils.ts";
 

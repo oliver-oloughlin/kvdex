@@ -17,7 +17,7 @@ import { Watcher } from "../common/watcher.ts";
 import { createVersionstamp } from "../common/utils.ts";
 import type { BasicMap, MapKvOptions } from "./types.ts";
 import { allFulfilled } from "../../../core/utils.ts";
-import { AsyncLock } from "./async_lock.ts";
+import { AsyncLock } from "../common/async_lock.ts";
 import {
   activateQueuedValues,
   deleteEntry,

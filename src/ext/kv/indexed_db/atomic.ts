@@ -9,16 +9,16 @@ import type {
 } from "../../../core/types.ts";
 import { allFulfilled } from "../../../core/utils.ts";
 import type { AsyncLock } from "../common/async_lock.ts";
-import type { MapKv } from "./map_kv.ts";
 import { createVersionstamp } from "../common/utils.ts";
+import type { IndexedDbKv } from "./indexed_db_kv.ts";
 
-export class MapKvAtomicOperation implements DenoAtomicOperation {
-  private kv: MapKv;
+export class IndexedDbKvAtomicOperation implements DenoAtomicOperation {
+  private kv: IndexedDbKv;
   private asyncLock: AsyncLock;
   private checks: (() => Promise<boolean>)[];
   private ops: ((versionstamp: string) => Promise<void>)[];
 
-  constructor(kv: MapKv, asyncLock: AsyncLock) {
+  constructor(kv: IndexedDbKv, asyncLock: AsyncLock) {
     this.kv = kv;
     this.asyncLock = asyncLock;
     this.checks = [];
