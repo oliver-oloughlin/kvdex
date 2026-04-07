@@ -26,12 +26,14 @@ _Supported Deno versions:_ **^2.3.0**
 - Support for
   [Standard Schema](https://github.com/standard-schema/standard-schema) models
   ([Zod](https://zod.dev), [ArkType](https://zod.dev),
-  [Valibot](https://valibot.dev) and more)
+  [Valibot](https://valibot.dev) and more).
 - Serialized, compressed and segmented storage for large objects.
+- Support for atomic operations.
 - Listen to real-time data updates.
 - Support for pagination and filtering.
 - Message queues at database and collection level with topics.
-- Support for atomic operations.
+- Support for different KV-backends, such as `Map`, `localStorage` and
+  `IndexedDB`.
 
 ## Table of Contents
 
