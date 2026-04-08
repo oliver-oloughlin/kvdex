@@ -460,7 +460,14 @@ export class Collection<
       // Handle serialized entries
       if (historyEntry.type === "write" && this.encoder) {
         const { ids } = historyEntry.value as EncodedEntry;
-        const timeId = getDocumentId(key as DenoKvStrictKey)!;
+        const timeId = getDocumentId(
+          key as DenoKvStrictKey,
+          this.keys.history.length,
+        );
+
+        if (!timeId) {
+          continue;
+        }
 
         const keys = ids.map((segmentId) =>
           extendKey(this.keys.historySegment, id, timeId, segmentId)
@@ -1274,7 +1281,10 @@ export class Collection<
       if (this.keepsHistory) {
         const historyIter = await this.kv.list({ prefix: this.keys.id });
         for await (const { key } of historyIter) {
-          const id = getDocumentId(key as DenoKvStrictKey);
+          const id = getDocumentId(
+            key as DenoKvStrictKey,
+            this.keys.history.length,
+          );
 
           if (!id) {
             continue;
@@ -2527,7 +2537,7 @@ export class Collection<
 
     const indexedDocId = (value as IndexDataEntry<any>)?.__id__;
     const docId = indexedDocId ??
-      getDocumentId(key as DenoKvStrictKey);
+      getDocumentId(key as DenoKvStrictKey, this.keys.id.length);
 
     if (!docId) {
       return null;

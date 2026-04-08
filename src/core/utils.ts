@@ -42,8 +42,16 @@ export function generateId() {
  * @param key - A document key.
  * @returns A document id, or undefined if key is empty.
  */
-export function getDocumentId(key: DenoKvStrictKey) {
-  return key.at(-1);
+export function getDocumentId(
+  key: DenoKvStrictKey,
+  prefixLength: number,
+): KvId | undefined {
+  const suffix = key.slice(prefixLength);
+  if (suffix.length <= 0) {
+    return undefined;
+  }
+
+  return suffix.length === 1 ? suffix.at(0) : suffix as KvId;
 }
 
 /**
