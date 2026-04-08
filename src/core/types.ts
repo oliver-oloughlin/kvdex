@@ -716,7 +716,7 @@ export type KvEnqueueOptions = NonNullable<
 export type KvKey = [DenoKvStrictKeyPart, ...DenoKvStrictKey];
 
 /** An entry ID */
-export type KvId = DenoKvStrictKeyPart;
+export type KvId = DenoKvStrictKeyPart | KvKey;
 
 /** An object containing only KV values, and is itself a KV value. */
 export type KvObject = {
