@@ -44,9 +44,9 @@ export function generateId() {
  */
 export function getDocumentId(
   key: DenoKvStrictKey,
-  prefixLength: number,
+  keyPrefixLength: number,
 ): KvId | undefined {
-  const suffix = key.slice(prefixLength);
+  const suffix = key.slice(keyPrefixLength);
   if (suffix.length <= 0) {
     return undefined;
   }
