@@ -7,12 +7,23 @@ const LazyKvArraySchema = z.lazy(() => KvArraySchema);
 
 const LazyKvObjectSchema = z.lazy(() => KvObjectSchema);
 
+/** Zod schema for KvKeyPart type */
+export const KvKeyPartSchema = z.union([
+  z.string(),
+  z.number(),
+  z.bigint(),
+  z.boolean(),
+  z.instanceof(Uint8Array),
+]);
+
+/** Zod schema for KvKey type */
+export const KvKeySchema = z.tuple([KvKeyPartSchema]).rest(KvKeyPartSchema);
+
 /** Zod schema for KvId type */
-export const KvIdSchema: z.ZodType<KvId> = z.string()
-  .or(z.number())
-  .or(z.bigint())
-  .or(z.boolean())
-  .or(z.instanceof(Uint8Array));
+export const KvIdSchema: z.ZodType<KvId> = z.union([
+  KvKeyPartSchema,
+  KvKeySchema,
+]);
 
 /** Zod schema for KvValue type */
 export const KvValueSchema: z.ZodType<KvValue> = z.undefined()

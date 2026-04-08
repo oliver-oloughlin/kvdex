@@ -16,9 +16,9 @@ Deno.test("collection - history", async (t) => {
 
         const id = "id";
         await db.users.set(id, mockUser1, { overwrite: true });
-        await sleep(50);
+        await sleep(100);
         await db.users.set(id, mockUser2, { overwrite: true });
-        await sleep(50);
+        await sleep(100);
         await db.users.set(id, mockUser3, { overwrite: true });
 
         const { result: [h1, h2, h3] } = await db.users.findHistory(id);
@@ -45,13 +45,13 @@ Deno.test("collection - history", async (t) => {
 
         const id = "id";
         await db.users.set(id, mockUser1, { overwrite: true });
-        await sleep(50);
+        await sleep(100);
         await db.users.delete(id);
-        await sleep(50);
+        await sleep(100);
         await db.users.set(id, mockUser2, { overwrite: true });
-        await sleep(50);
+        await sleep(100);
         await db.users.set(id, mockUser3, { overwrite: true });
-        await sleep(50);
+        await sleep(100);
         await db.users.delete(id);
 
         const { result: [h1, h2, h3, h4, h5] } = await db.users.findHistory(id);
@@ -82,9 +82,9 @@ Deno.test("collection - history", async (t) => {
 
         const id = "id";
         await db.users.set(id, mockUser1, { overwrite: true });
-        await sleep(50);
+        await sleep(100);
         await db.users.update(id, mockUser2);
-        await sleep(50);
+        await sleep(100);
         await db.users.update(id, mockUser3);
 
         const { result: [h1, h2, h3] } = await db.users.findHistory(id);
@@ -111,11 +111,11 @@ Deno.test("collection - history", async (t) => {
 
         const id = "id";
         await db.users.set(id, mockUser1, { overwrite: true });
-        await sleep(50);
+        await sleep(100);
         await db.users.deleteMany();
-        await sleep(50);
+        await sleep(100);
         await db.users.set(id, mockUser2, { overwrite: true });
-        await sleep(50);
+        await sleep(100);
         await db.users.deleteMany({ filter: () => true });
 
         const { result: [h1, h2, h3, h4] } = await db.users.findHistory(id);
