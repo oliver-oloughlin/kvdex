@@ -440,7 +440,7 @@ export class Collection<
     const keyPrefix = extendKey(this.keys.history, id);
     const selector = createListSelector(keyPrefix, options);
 
-    // Create hsitory entries iterator
+    // Create history entries iterator
     const listOptions = createListOptions(options);
     const iter = await this.kv.list(selector, listOptions);
 
@@ -463,7 +463,7 @@ export class Collection<
         const { ids } = historyEntry.value as EncodedEntry;
         const timeId = getDocumentId(
           key as DenoKvStrictKey,
-          this.keys.history.length,
+          this.keys.historySegment.length,
         );
 
         if (!timeId) {
