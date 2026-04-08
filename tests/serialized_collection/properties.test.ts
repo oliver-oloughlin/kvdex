@@ -224,9 +224,9 @@ Deno.test("serialized_collection - properties", async (t) => {
   await t.step("Should select limited by database reads", async () => {
     await useDb(async (db) => {
       const cr1 = await db.s_users.add(mockUser1);
-      await sleep(10);
+      await sleep(100);
       const cr2 = await db.s_users.add(mockUser2);
-      await sleep(10);
+      await sleep(100);
       const cr3 = await db.s_users.add(mockUser3);
 
       assert(cr1.ok);
@@ -245,9 +245,9 @@ Deno.test("serialized_collection - properties", async (t) => {
   await t.step("Should select limited by result count", async () => {
     await useDb(async (db) => {
       const cr1 = await db.s_users.add(mockUser1);
-      await sleep(10);
+      await sleep(100);
       const cr2 = await db.s_users.add(mockUser2);
-      await sleep(10);
+      await sleep(100);
       const cr3 = await db.s_users.add(mockUser3);
 
       assert(cr1.ok);

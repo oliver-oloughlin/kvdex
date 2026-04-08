@@ -8,7 +8,7 @@ Deno.test("serialized_indexable_collection - getOneBySecondaryIndex", async (t) 
     async () => {
       await useDb(async (db) => {
         const cr1 = await db.is_users.add(mockUser1);
-        await sleep(10);
+        await sleep(100);
         const cr2 = await db.is_users.add(mockUser2);
 
         assert(cr1.ok);

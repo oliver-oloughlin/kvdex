@@ -423,7 +423,7 @@ Deno.test("db - atomic", async (t) => {
         .set(id, 200)
         .commit();
 
-      await sleep(10);
+      await sleep(100);
 
       await db
         .atomic((s) => s.numbers)

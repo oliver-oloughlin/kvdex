@@ -8,7 +8,7 @@ Deno.test("serialized_indexable_collection - updateOneBySecondaryIndex", async (
     async () => {
       await useDb(async (db) => {
         const cr1 = await db.is_users.add(mockUser1);
-        await sleep(10);
+        await sleep(100);
         const cr2 = await db.is_users.add(mockUser2);
 
         assert(cr1.ok);
@@ -79,7 +79,7 @@ Deno.test("serialized_indexable_collection - updateOneBySecondaryIndex", async (
     async () => {
       await useDb(async (db) => {
         const cr1 = await db.is_users.add(mockUser1);
-        await sleep(10);
+        await sleep(100);
         const cr2 = await db.is_users.add(mockUser2);
 
         assert(cr1.ok);
@@ -150,7 +150,7 @@ Deno.test("serialized_indexable_collection - updateOneBySecondaryIndex", async (
     async () => {
       await useDb(async (db) => {
         const cr1 = await db.is_users.add(mockUser1);
-        await sleep(10);
+        await sleep(100);
         const cr2 = await db.is_users.add(mockUser2);
 
         assert(cr1.ok);
@@ -219,7 +219,7 @@ Deno.test("serialized_indexable_collection - updateOneBySecondaryIndex", async (
       let assertion = true;
 
       const cr1 = await db.zis_users.add(mockUser1);
-      await sleep(10);
+      await sleep(100);
       const cr2 = await db.zis_users.add(mockUser2);
 
       assert(cr1.ok);
@@ -240,7 +240,7 @@ Deno.test("serialized_indexable_collection - updateOneBySecondaryIndex", async (
       let assertion = false;
 
       const cr1 = await db.zis_users.add(mockUser1);
-      await sleep(10);
+      await sleep(100);
       const cr2 = await db.zis_users.add(mockUser2);
 
       assert(cr1.ok);
