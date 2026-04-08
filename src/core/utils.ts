@@ -46,12 +46,12 @@ export function getDocumentId(
   key: DenoKvStrictKey,
   keyPrefixLength: number,
 ): KvId | undefined {
-  const suffix = key.slice(keyPrefixLength);
-  if (suffix.length <= 0) {
+  const id = key.slice(keyPrefixLength);
+  if (id.length <= 0) {
     return undefined;
   }
 
-  return suffix.length === 1 ? suffix.at(0) : suffix as KvId;
+  return id.length === 1 ? id.at(0) : id as KvId;
 }
 
 /**

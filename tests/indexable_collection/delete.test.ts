@@ -1,4 +1,4 @@
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { mockUser1 } from "../mocks.ts";
 import { generateUsers, useDb } from "../utils.ts";
 
@@ -19,9 +19,9 @@ Deno.test("indexable_collection - delete", async (t) => {
         );
 
         assert(cr.ok);
-        assert(count1 === 1);
-        assert(byPrimary1?.id === cr.id);
-        assert(bySecondary1.result.at(0)?.id === cr.id);
+        assertEquals(count1, 1);
+        assertEquals(byPrimary1?.id, cr.id);
+        assertEquals(bySecondary1.result.at(0)?.id, cr.id);
 
         await db.i_users.delete(cr.id);
 

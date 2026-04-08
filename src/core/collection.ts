@@ -274,7 +274,7 @@ export class Collection<
     // Create document key, get document entry
     const key = extendKey(this.keys.id, id);
     const entry = await this.kv.get(key, options);
-    return await this.constructDocument(entry);
+    return await this.constructDocument(entry, this.keys.id.length);
   }
 
   /**
@@ -312,7 +312,7 @@ export class Collection<
     const entry = await this.kv.get(key, options);
 
     // Return constructed document
-    return await this.constructDocument(entry);
+    return await this.constructDocument(entry, this.keys.id.length); // TODO: Check if this is correct
   }
 
   /**
@@ -359,6 +359,7 @@ export class Collection<
     // Add documents to result list by secondary index
     return await this.handleMany(
       prefixKey,
+      prefixKey.length,
       (doc) => doc,
       options,
     );
@@ -396,7 +397,7 @@ export class Collection<
 
     // Loop over entries, add to result list
     for (const entry of entries) {
-      const doc = await this.constructDocument(entry);
+      const doc = await this.constructDocument(entry, this.keys.id.length);
 
       if (!doc) {
         continue;
@@ -663,6 +664,7 @@ export class Collection<
     // Delete documents by secondary index, return iterator cursor
     const { cursor } = await this.handleMany(
       prefixKey,
+      prefixKey.length,
       (doc) => this.deleteDocuments([doc.id], this.keepsHistory),
       options,
     );
@@ -825,6 +827,7 @@ export class Collection<
     // Update each document by secondary index, add commit result to result list
     return await this.handleMany(
       prefixKey,
+      prefixKey.length,
       (doc) => this.updateDocument(doc, data, options),
       options,
     );
@@ -991,6 +994,7 @@ export class Collection<
     // Update each document, add commit result to result list
     return await this.handleMany(
       this.keys.id,
+      this.keys.id.length,
       (doc) => this.updateDocument(doc, value, options),
       options,
     );
@@ -1031,6 +1035,7 @@ export class Collection<
     // Update each document by secondary index, add commit result to result list
     return await this.handleMany(
       prefixKey,
+      prefixKey.length + 1,
       (doc) => this.updateDocument(doc, data, options),
       options,
     );
@@ -1070,6 +1075,7 @@ export class Collection<
     // Update a single document
     const { result } = await this.handleMany(
       this.keys.id,
+      this.keys.id.length,
       (doc) => this.updateDocument(doc, data, options),
       { ...options, take: 1 },
     );
@@ -1126,6 +1132,7 @@ export class Collection<
     // Update a single document
     const { result } = await this.handleMany(
       prefixKey,
+      prefixKey.length,
       (doc) => this.updateDocument(doc, data, options),
       { ...options, take: 1 },
     );
@@ -1167,6 +1174,7 @@ export class Collection<
     // Update a single document
     const { result } = await this.handleMany(
       prefixKey,
+      prefixKey.length + 1,
       (doc) => this.updateDocument(doc, data, options),
       { ...options, take: 1 },
     );
@@ -1309,6 +1317,7 @@ export class Collection<
     // Execute delete operation for each document entry
     const { cursor } = await this.handleMany(
       this.keys.id,
+      this.keys.id.length,
       (doc) => this.deleteDocuments([doc.id], this.keepsHistory),
       options,
     );
@@ -1349,6 +1358,7 @@ export class Collection<
     // Delete documents by secondary index, return iterator cursor
     const { cursor } = await this.handleMany(
       prefixKey,
+      prefixKey.length + 1,
       (doc) => this.deleteDocuments([doc.id], this.keepsHistory),
       options,
     );
@@ -1385,6 +1395,7 @@ export class Collection<
     // Get each document, return result list and current iterator cursor
     return await this.handleMany(
       this.keys.id,
+      this.keys.id.length,
       (doc) => doc,
       options,
     );
@@ -1423,6 +1434,7 @@ export class Collection<
     const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
     return await this.handleMany(
       prefixKey,
+      prefixKey.length + 1,
       (doc) => doc,
       options,
     );
@@ -1459,6 +1471,7 @@ export class Collection<
     // Get result list with one item
     const { result } = await this.handleMany(
       this.keys.id,
+      this.keys.id.length,
       (doc) => doc,
       { ...options, take: 1 },
     );
@@ -1511,6 +1524,7 @@ export class Collection<
     // Get result list with one item
     const { result } = await this.handleMany(
       prefixKey,
+      prefixKey.length,
       (doc) => doc,
       { ...options, take: 1 },
     );
@@ -1549,6 +1563,7 @@ export class Collection<
     // Get result list with one item
     const { result } = await this.handleMany(
       prefixKey,
+      prefixKey.length + 1,
       (doc) => doc,
       { ...options, take: 1 },
     );
@@ -1587,6 +1602,7 @@ export class Collection<
     // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
       this.keys.id,
+      this.keys.id.length,
       async (doc) => await fn(doc),
       options,
     );
@@ -1637,6 +1653,7 @@ export class Collection<
     // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
       prefixKey,
+      prefixKey.length,
       (doc) => fn(doc),
       options,
     );
@@ -1680,6 +1697,7 @@ export class Collection<
     // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
       prefixKey,
+      prefixKey.length + 1,
       (doc) => fn(doc),
       options,
     );
@@ -1720,6 +1738,7 @@ export class Collection<
     // Execute callback function for each document entry, return result and cursor
     return await this.handleMany(
       this.keys.id,
+      this.keys.id.length,
       (doc) => fn(doc),
       options,
     );
@@ -1773,6 +1792,7 @@ export class Collection<
     // Execute callback function for each document entry, return result and cursor
     return await this.handleMany(
       prefixKey,
+      prefixKey.length,
       (doc) => fn(doc),
       options,
     );
@@ -1816,6 +1836,7 @@ export class Collection<
     // Execute callback function for each document entry, return result and cursor
     return await this.handleMany(
       prefixKey,
+      prefixKey.length + 1,
       (doc) => fn(doc),
       options,
     );
@@ -1857,7 +1878,13 @@ export class Collection<
     }
 
     // Perform count using many documents handler
-    await this.handleMany(this.keys.id, () => result++, options);
+    await this.handleMany(
+      this.keys.id,
+      this.keys.id.length,
+      () => result++,
+      options,
+    );
+
     return result;
   }
 
@@ -1902,6 +1929,7 @@ export class Collection<
     // Update each document by secondary index, add commit result to result list
     await this.handleMany(
       prefixKey,
+      prefixKey.length,
       () => result++,
       options,
     );
@@ -1945,6 +1973,7 @@ export class Collection<
     // Update each document by secondary index, add commit result to result list
     await this.handleMany(
       prefixKey,
+      prefixKey.length + 1,
       () => result++,
       options,
     );
@@ -2173,7 +2202,7 @@ export class Collection<
       }
 
       // Construct document and invoke callback function
-      const doc = await this.constructDocument(entry);
+      const doc = await this.constructDocument(entry, this.keys.id.length);
       await fn(doc);
     });
   }
@@ -2224,7 +2253,9 @@ export class Collection<
     return createWatcher(this.kv, options, keys, async (entries) => {
       // Construct documents
       const docs = await Array.fromAsync(
-        entries.map((entry) => this.constructDocument(entry)),
+        entries.map((entry) =>
+          this.constructDocument(entry, this.keys.id.length)
+        ),
       );
 
       // Invoke callback function
@@ -2530,6 +2561,7 @@ export class Collection<
    */
   private async constructDocument(
     { key, value, versionstamp }: DenoKvEntryMaybe,
+    keyPrefixLength: number,
   ) {
     if (!versionstamp) {
       return null;
@@ -2537,7 +2569,7 @@ export class Collection<
 
     const indexedDocId = (value as IndexDataEntry<any>)?.__id__;
     const docId = indexedDocId ??
-      getDocumentId(key as DenoKvStrictKey, this.keys.id.length);
+      getDocumentId(key as DenoKvStrictKey, keyPrefixLength);
 
     if (!docId) {
       return null;
@@ -2603,6 +2635,7 @@ export class Collection<
    */
   private async handleMany<const T>(
     prefixKey: KvKey,
+    idKeyPrefixLength: number,
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => T,
     options:
       | ListOptions<Document<TOutput, ParseId<TOptions>>, ParseId<TOptions>>
@@ -2637,7 +2670,7 @@ export class Collection<
       }
 
       // Construct document from entry
-      const doc = await this.constructDocument(entry);
+      const doc = await this.constructDocument(entry, idKeyPrefixLength);
 
       // Continue if document is not constructed
       if (!doc) {
@@ -2703,7 +2736,7 @@ export class Collection<
         // Create document id key, get entry and construct document
         const idKey = extendKey(this.keys.id, id);
         const entry = await this.kv.get(idKey);
-        const doc = await this.constructDocument(entry);
+        const doc = await this.constructDocument(entry, this.keys.id.length);
 
         // Delete document entries
         atomic.delete(idKey);
