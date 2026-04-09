@@ -432,12 +432,12 @@ export function createListSelector<T1, T2 extends KvId>(
 ): DenoKvListSelector {
   // Create start key
   const start = typeof options?.startId !== "undefined"
-    ? [...prefixKey, options.startId!]
+    ? extendKey(prefixKey, options.startId)
     : undefined;
 
   // Create end key
   const end = typeof options?.endId !== "undefined"
-    ? [...prefixKey, options.endId!]
+    ? extendKey(prefixKey, options.endId)
     : undefined;
 
   // Conditionally set prefix key
@@ -448,7 +448,6 @@ export function createListSelector<T1, T2 extends KvId>(
   const selector = { prefix, start, end };
   if (!selector.end) delete selector.end;
   if (!selector.start) delete selector.start;
-  // Return list selector
   return selector;
 }
 
