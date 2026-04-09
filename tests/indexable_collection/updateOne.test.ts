@@ -168,4 +168,28 @@ Deno.test("indexable_collection - updateOne", async (t) => {
       assert(assertion);
     });
   });
+
+  await t.step("Should update one document with multi-part id", async () => {
+    await useDb(async (db) => {
+      const cr1 = await db.i_multi_part_id_users.add(mockUser1);
+      await sleep(100);
+      const cr2 = await db.i_multi_part_id_users.add(mockUser2);
+
+      assert(cr1.ok);
+      assert(cr2.ok);
+
+      const updateCr = await db.i_multi_part_id_users.updateOne(mockUser3, {
+        strategy: "replace",
+      });
+      assert(updateCr.ok);
+
+      const doc1 = await db.i_multi_part_id_users.find(cr1.id);
+      const doc2 = await db.i_multi_part_id_users.find(cr2.id);
+
+      assert(doc1 !== null);
+      assert(doc2 !== null);
+      assert(doc1.value.username === mockUser3.username);
+      assert(doc2.value.username === mockUser2.username);
+    });
+  });
 });

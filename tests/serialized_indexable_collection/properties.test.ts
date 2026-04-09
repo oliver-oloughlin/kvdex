@@ -12,9 +12,10 @@ import {
   SECONDARY_INDEX_KEY_PREFIX,
 } from "../../src/core/constants.ts";
 import { extendKey, keyEq } from "../../src/core/utils.ts";
+import type { KvKey } from "../../src/core/types.ts";
 import { assert } from "@std/assert";
 import type { User } from "../models.ts";
-import { generateLargeUsers, useDb, useKv } from "../utils.ts";
+import { generateLargeUsers, generateUsers, useDb, useKv } from "../utils.ts";
 import { mockUser1 } from "../mocks.ts";
 import { mockUser2 } from "../mocks.ts";
 import { mockUser3 } from "../mocks.ts";
@@ -958,4 +959,89 @@ Deno.test("serialized_indexable_collection - properties", async (t) => {
       assert(typeof cr1.id === "number");
     });
   });
+
+  await t.step("Should select from start multi-part id", async () => {
+    await useDb(async (db) => {
+      const users = generateUsers(10);
+      const cr = await db.is_multi_part_id_users.addMany(users);
+      const count1 = await db.is_multi_part_id_users.count();
+      assert(cr.ok);
+      assert(count1 === users.length);
+
+      const index = 5;
+
+      const query1 = await db.is_multi_part_id_users.getMany();
+      const query2 = await db.is_multi_part_id_users.getMany({
+        startId: query1.result.at(index)?.id,
+      });
+
+      assert(query2.result.length === query1.result.slice(index).length);
+      assert(
+        query2.result.every((doc1) =>
+          query1.result.slice(index).some((doc2) =>
+            keyEq(doc1.id as KvKey, doc2.id as KvKey)
+          )
+        ),
+      );
+    });
+  });
+
+  await t.step("Should select until end multi-part id", async () => {
+    await useDb(async (db) => {
+      const users = generateUsers(10);
+      const cr = await db.is_multi_part_id_users.addMany(users);
+      const count1 = await db.is_multi_part_id_users.count();
+      assert(cr.ok);
+      assert(count1 === users.length);
+
+      const index = 5;
+
+      const query1 = await db.is_multi_part_id_users.getMany();
+      const query2 = await db.is_multi_part_id_users.getMany({
+        endId: query1.result.at(index)?.id,
+      });
+
+      assert(query2.result.length === query1.result.slice(0, index).length);
+      assert(
+        query2.result.every((doc1) =>
+          query1.result.slice(0, index).some((doc2) =>
+            keyEq(doc1.id as KvKey, doc2.id as KvKey)
+          )
+        ),
+      );
+    });
+  });
+
+  await t.step(
+    "Should select from start multi-part id to end multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const users = generateUsers(10);
+        const cr = await db.is_multi_part_id_users.addMany(users);
+        const count1 = await db.is_multi_part_id_users.count();
+        assert(cr.ok);
+        assert(count1 === users.length);
+
+        const index1 = 5;
+        const index2 = 7;
+
+        const query1 = await db.is_multi_part_id_users.getMany();
+        const query2 = await db.is_multi_part_id_users.getMany({
+          startId: query1.result.at(index1)?.id,
+          endId: query1.result.at(index2)?.id,
+        });
+
+        assert(
+          query2.result.length === query1.result.slice(index1, index2).length,
+        );
+        assert(
+          query2.result.every((doc1) =>
+            query1.result.slice(index1, index2).some((doc2) =>
+              keyEq(doc1.id as KvKey, doc2.id as KvKey)
+            )
+          ),
+        );
+      });
+    },
+  );
 });

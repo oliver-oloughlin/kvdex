@@ -1,4 +1,4 @@
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { generateLargeUsers, useDb } from "../utils.ts";
 
 Deno.test("serialized_collection - findMany", async (t) => {
@@ -27,6 +27,21 @@ Deno.test("serialized_collection - findMany", async (t) => {
 
       const docs = await db.s_users.findMany(["", "", ""]);
       assert(docs.length === 0);
+    });
+  });
+
+  await t.step("Should find many documents by multi-part ids", async () => {
+    await useDb(async (db) => {
+      const values = [1, 2, 3];
+      const cr = await db.s_multi_part_id_nums.addMany(values);
+      assert(cr.ok);
+
+      const { result: ids } = await db.s_multi_part_id_nums.map((doc) =>
+        doc.id
+      );
+      const docs = await db.s_multi_part_id_nums.findMany(ids);
+      assertEquals(docs.length, values.length);
+      assert(values.every((value) => docs.some((doc) => doc.value === value)));
     });
   });
 });

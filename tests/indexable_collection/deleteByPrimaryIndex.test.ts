@@ -43,4 +43,22 @@ Deno.test("indexable_collection - deleteByPrimaryIndex", async (t) => {
       });
     },
   );
+
+  await t.step(
+    "Should delete document by primary index with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.i_multi_part_id_users.add(mockUser1);
+        assert(cr.ok);
+
+        await db.i_multi_part_id_users.deleteByPrimaryIndex(
+          "username",
+          mockUser1.username,
+        );
+
+        const count = await db.i_multi_part_id_users.count();
+        assert(count === 0);
+      });
+    },
+  );
 });

@@ -64,4 +64,25 @@ Deno.test("indexable_collection - delete", async (t) => {
       });
     },
   );
+
+  await t.step(
+    "Should successfully delete document from collection with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.i_multi_part_id_users.add(mockUser1);
+        const count1 = await db.i_multi_part_id_users.count();
+
+        assert(cr.ok);
+        assert(count1 === 1);
+
+        await db.i_multi_part_id_users.delete(cr.id);
+
+        const count2 = await db.i_multi_part_id_users.count();
+        const doc = await db.i_multi_part_id_users.find(cr.id);
+
+        assert(count2 === 0);
+        assert(doc === null);
+      });
+    },
+  );
 });

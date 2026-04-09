@@ -1,4 +1,5 @@
 import { assert } from "@std/assert";
+import { mockUser1 } from "../mocks.ts";
 import { generateLargeUsers, useDb } from "../utils.ts";
 
 const [user] = generateLargeUsers(1);
@@ -62,6 +63,27 @@ Deno.test("serialized_indexable_collection - delete", async (t) => {
 
         const count2 = await db.is_users.count();
         assert(count2 === 0);
+      });
+    },
+  );
+
+  await t.step(
+    "Should successfully delete document from collection with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_multi_part_id_users.add(mockUser1);
+        const count1 = await db.is_multi_part_id_users.count();
+
+        assert(cr.ok);
+        assert(count1 === 1);
+
+        await db.is_multi_part_id_users.delete(cr.id);
+
+        const count2 = await db.is_multi_part_id_users.count();
+        const doc = await db.is_multi_part_id_users.find(cr.id);
+
+        assert(count2 === 0);
+        assert(doc === null);
       });
     },
   );

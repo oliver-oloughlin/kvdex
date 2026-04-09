@@ -26,4 +26,23 @@ Deno.test("serialized_indexable_collection - mapBySecondaryOrder", async (t) => 
       });
     },
   );
+
+  await t.step(
+    "Should map by secondary order with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_multi_part_id_users.addMany(
+          mockUsersWithAlteredAge,
+        );
+        assert(cr.ok);
+
+        const { result } = await db.is_multi_part_id_users.mapBySecondaryOrder(
+          "age",
+          (doc) => doc.value.username,
+        );
+
+        assert(result.length === mockUsersWithAlteredAge.length);
+      });
+    },
+  );
 });

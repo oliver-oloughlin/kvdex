@@ -307,4 +307,26 @@ Deno.test("serialized_collection - updateOne", async (t) => {
       assert(assertion);
     });
   });
+
+  await t.step("Should update one document with multi-part id", async () => {
+    await useDb(async (db) => {
+      const cr1 = await db.s_multi_part_id_nums.add(10);
+      await sleep(100);
+      const cr2 = await db.s_multi_part_id_nums.add(20);
+
+      assert(cr1.ok);
+      assert(cr2.ok);
+
+      const updateCr = await db.s_multi_part_id_nums.updateOne(30);
+      assert(updateCr.ok);
+
+      const doc1 = await db.s_multi_part_id_nums.find(cr1.id);
+      const doc2 = await db.s_multi_part_id_nums.find(cr2.id);
+
+      assert(doc1 !== null);
+      assert(doc2 !== null);
+      assertEquals(doc1.value, 30);
+      assertEquals(doc2.value, 20);
+    });
+  });
 });

@@ -1,5 +1,5 @@
 import { assert } from "@std/assert";
-import { mockUserInvalid } from "../mocks.ts";
+import { mockUser1, mockUserInvalid } from "../mocks.ts";
 import { generateLargeUsers, useDb } from "../utils.ts";
 
 const [user] = generateLargeUsers(1);
@@ -51,6 +51,20 @@ Deno.test("serialized_indexable_collection - add", async (t) => {
         let assertion = false;
         await db.zis_users.add(mockUserInvalid).catch(() => assertion = true);
         assert(assertion);
+      });
+    },
+  );
+
+  await t.step(
+    "Should successfully add new document entry to collection with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_multi_part_id_users.add(mockUser1);
+        assert(cr.ok);
+
+        const doc = await db.is_multi_part_id_users.find(cr.id);
+        assert(doc !== null);
+        assert(doc.value.username === mockUser1.username);
       });
     },
   );

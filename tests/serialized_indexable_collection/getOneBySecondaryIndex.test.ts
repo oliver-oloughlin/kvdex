@@ -23,4 +23,22 @@ Deno.test("serialized_indexable_collection - getOneBySecondaryIndex", async (t) 
       });
     },
   );
+
+  await t.step(
+    "Should get one by secondary index with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.is_multi_part_id_users.add(mockUser1);
+        const cr2 = await db.is_multi_part_id_users.add(mockUser2);
+        assert(cr1.ok && cr2.ok);
+
+        const doc = await db.is_multi_part_id_users.getOneBySecondaryIndex(
+          "age",
+          mockUser1.age,
+        );
+        assert(doc !== null);
+        assert(doc.value.age === mockUser1.age);
+      });
+    },
+  );
 });

@@ -117,4 +117,17 @@ Deno.test("indexable_collection - set", async (t) => {
       assert(assertion);
     });
   });
+
+  await t.step("Should set document with multi-part id", async () => {
+    await useDb(async (db) => {
+      const id: [string, number] = ["id", 1];
+
+      const cr = await db.i_multi_part_id_users.set(id, mockUser1);
+      assert(cr.ok);
+
+      const doc = await db.i_multi_part_id_users.find(id);
+      assert(doc !== null);
+      assert(doc.value.username === mockUser1.username);
+    });
+  });
 });

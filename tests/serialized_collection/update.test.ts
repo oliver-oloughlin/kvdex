@@ -1,5 +1,5 @@
 import { collection, kvdex, model } from "../../mod.ts";
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
 import { useDb, useKv } from "../utils.ts";
 
@@ -239,4 +239,27 @@ Deno.test("serialized_collection - update", async (t) => {
       assert(assertion);
     });
   });
+
+  await t.step(
+    "Should update document with multi-part id using replace",
+    async () => {
+      await useDb(async (db) => {
+        const n1 = 10;
+        const cr = await db.s_multi_part_id_nums.add(n1);
+        assert(cr.ok);
+
+        const n2 = 20;
+        const updateCr = await db.s_multi_part_id_nums.update(cr.id, n2);
+
+        assert(updateCr.ok);
+        assertEquals(updateCr.id, cr.id);
+        assertNotEquals(updateCr.versionstamp, cr.versionstamp);
+
+        const doc = await db.s_multi_part_id_nums.find(cr.id);
+
+        assert(doc !== null);
+        assertEquals(doc.value, n2);
+      });
+    },
+  );
 });

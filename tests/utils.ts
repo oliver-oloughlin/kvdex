@@ -80,6 +80,25 @@ export function createDb(kv: DenoKv) {
       multi_part_id_nums: collection(model<number>(), {
         idGenerator: () => [ulid(), Math.random()] as KvId,
       }),
+      s_multi_part_id_nums: collection(model<number>(), {
+        encoder: testEncoder,
+        idGenerator: () => [ulid(), Math.random()] as KvId,
+      }),
+      i_multi_part_id_users: collection(model<User>(), {
+        indices: {
+          username: "primary",
+          age: "secondary",
+        },
+        idGenerator: () => [ulid(), Math.random()] as KvId,
+      }),
+      is_multi_part_id_users: collection(model<User>(), {
+        indices: {
+          username: "primary",
+          age: "secondary",
+        },
+        encoder: testEncoder,
+        idGenerator: () => [ulid(), Math.random()] as KvId,
+      }),
     },
   });
 }

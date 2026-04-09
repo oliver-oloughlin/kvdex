@@ -219,4 +219,38 @@ Deno.test("serialized_indexable_collection - updateByPrimaryIndex", async (t) =>
       assert(assertion);
     });
   });
+
+  await t.step(
+    "Should update document by primary index with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_multi_part_id_users.add(mockUser1);
+        assert(cr.ok);
+
+        const updateData = {
+          address: {
+            country: "Ireland",
+            city: "Dublin",
+            houseNr: null,
+          },
+        };
+
+        const updateCr = await db.is_multi_part_id_users.updateByPrimaryIndex(
+          "username",
+          mockUser1.username,
+          updateData,
+          { strategy: "merge-shallow" },
+        );
+
+        assert(updateCr.ok);
+
+        const doc = await db.is_multi_part_id_users.findByPrimaryIndex(
+          "username",
+          mockUser1.username,
+        );
+        assert(doc !== null);
+        assert(doc.value.address.country === updateData.address.country);
+      });
+    },
+  );
 });

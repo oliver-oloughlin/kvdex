@@ -1,4 +1,4 @@
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { generateInvalidUsers, generateLargeUsers, useDb } from "../utils.ts";
 
 Deno.test("serialized_collection - addMany", async (t) => {
@@ -52,6 +52,21 @@ Deno.test("serialized_collection - addMany", async (t) => {
         await db.zs_users.addMany(users).catch(() => assertion = true);
 
         assert(assertion);
+      });
+    },
+  );
+
+  await t.step(
+    "Should successfully add and find document in collection with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const nums = [10, 20, 30];
+        const cr = await db.s_multi_part_id_nums.addMany(nums);
+        assert(cr.ok);
+
+        const { result: docs } = await db.s_multi_part_id_nums.getMany();
+        assertEquals(docs.length, nums.length);
+        assert(nums.every((num) => docs.some((doc) => doc.value === num)));
       });
     },
   );

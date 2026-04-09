@@ -59,4 +59,27 @@ Deno.test("indexable_collection - findBySecondaryIndex", async (t) => {
       });
     },
   );
+
+  await t.step(
+    "Should find documents by secondary index with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.i_multi_part_id_users.add(mockUser1);
+        const cr2 = await db.i_multi_part_id_users.add(mockUser2);
+        assert(cr1.ok && cr2.ok);
+
+        const { result } = await db.i_multi_part_id_users.findBySecondaryIndex(
+          "age",
+          mockUser1.age,
+        );
+        assert(result.length === 2);
+        assert(
+          result.some((doc) => doc.value.username === mockUser1.username),
+        );
+        assert(
+          result.some((doc) => doc.value.username === mockUser2.username),
+        );
+      });
+    },
+  );
 });

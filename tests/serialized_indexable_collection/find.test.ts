@@ -1,4 +1,5 @@
 import { assert } from "@std/assert";
+import { mockUser1 } from "../mocks.ts";
 import { generateLargeUsers, useDb } from "../utils.ts";
 
 const [user] = generateLargeUsers(1);
@@ -21,6 +22,17 @@ Deno.test("serialized_indexable_collection - find", async (t) => {
     await useDb(async (db) => {
       const doc = await db.is_users.find("123");
       assert(doc === null);
+    });
+  });
+
+  await t.step("Should find document by multi-part id", async () => {
+    await useDb(async (db) => {
+      const cr = await db.is_multi_part_id_users.add(mockUser1);
+      assert(cr.ok);
+
+      const doc = await db.is_multi_part_id_users.find(cr.id);
+      assert(doc !== null);
+      assert(doc.value.username === mockUser1.username);
     });
   });
 });

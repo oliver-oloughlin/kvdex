@@ -130,4 +130,32 @@ Deno.test("indexable_collection - upsert", async (t) => {
       });
     },
   );
+
+  await t.step("Should upsert document with multi-part id", async () => {
+    await useDb(async (db) => {
+      const id: [string, number] = ["id", 1];
+
+      const cr1 = await db.i_multi_part_id_users.upsert({
+        id,
+        set: mockUser1,
+        update: mockUser2,
+      });
+      assert(cr1.ok);
+
+      const doc1 = await db.i_multi_part_id_users.find(id);
+      assert(doc1 !== null);
+      assert(doc1.value.username === mockUser1.username);
+
+      const cr2 = await db.i_multi_part_id_users.upsert({
+        id,
+        set: mockUser1,
+        update: mockUser3,
+      }, { strategy: "replace" });
+      assert(cr2.ok);
+
+      const doc2 = await db.i_multi_part_id_users.find(id);
+      assert(doc2 !== null);
+      assert(doc2.value.username === mockUser3.username);
+    });
+  });
 });
