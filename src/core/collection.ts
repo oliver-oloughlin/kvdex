@@ -311,8 +311,8 @@ export class Collection<
     // Get index entry
     const entry = await this.kv.get(key, options);
 
-    // Return constructed document
-    return await this.constructDocument(entry, this.keys.id.length); // TODO: Check if this is correct
+    // Return constructed document - key prefix length not relevant as document id is stored in index entry value
+    return await this.constructDocument(entry, this.keys.id.length);
   }
 
   /**
