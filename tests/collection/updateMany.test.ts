@@ -1,7 +1,8 @@
-import { collection, kvdex, model } from "../../mod.ts";
+import { collection, kvdex, KvKey, model } from "../../mod.ts";
 import { assert, assertEquals } from "@std/assert";
 import { mockUser1, mockUserInvalid } from "../mocks.ts";
 import { generateNumbers, generateUsers, useDb, useKv } from "../utils.ts";
+import { keyEq } from "../../src/core/utils.ts";
 
 Deno.test("collection - updateMany", async (t) => {
   await t.step(
@@ -303,4 +304,34 @@ Deno.test("collection - updateMany", async (t) => {
       assert(assertion);
     });
   });
+
+  await t.step(
+    "Should update multiple documents with multi-part id using replace",
+    async () => {
+      await useDb(async (db) => {
+        const nums = generateNumbers(10);
+        const cr = await db.multi_part_id_nums.addMany(nums);
+        assert(cr.ok);
+
+        const docs = await db.multi_part_id_nums.getMany();
+        const ids = docs.result.map((doc) => doc.id);
+        const versionstamps = docs.result.map((doc) => doc.versionstamp);
+
+        const updateNum = 999_999;
+
+        const { result } = await db.multi_part_id_nums.updateMany(updateNum);
+
+        assert(
+          result.every((cr) =>
+            cr.ok && ids.some((id) => keyEq(id as KvKey, cr.id as KvKey)) &&
+            !versionstamps.includes(cr.versionstamp)
+          ),
+        );
+
+        await db.multi_part_id_nums.forEach((doc) => {
+          assertEquals(doc.value, updateNum);
+        });
+      });
+    },
+  );
 });
