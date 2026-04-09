@@ -258,7 +258,7 @@ const db = kvdex({
 });
 ```
 
-Using randomly generated uuids:
+Using randomly generated UUIDs:
 
 ```ts
 import { collection, kvdex, model } from "@olli/kvdex";
@@ -270,6 +270,23 @@ const db = kvdex({
   schema: {
     users: collection(model<User>(), {
       idGenerator: () => crypto.randomUUID(),
+    }),
+  },
+});
+```
+
+Using multi-part ids:
+
+```ts
+import { collection, kvdex, model } from "@olli/kvdex";
+
+const kv = await Deno.openKv();
+
+const db = kvdex({
+  kv: kv,
+  schema: {
+    users: collection(model<User>(), {
+      idGenerator: () => [ulid(), Math.random()],
     }),
   },
 });
