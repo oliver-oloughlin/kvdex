@@ -286,7 +286,7 @@ const db = kvdex({
   kv: kv,
   schema: {
     users: collection(model<User>(), {
-      idGenerator: () => [ulid(), Math.random()],
+      idGenerator: () => [crypto.randomUUID(), Math.random()],
     }),
   },
 });
