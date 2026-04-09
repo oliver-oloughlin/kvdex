@@ -1,4 +1,4 @@
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
 import { useDb } from "../utils.ts";
 
@@ -63,6 +63,20 @@ Deno.test("collection - set", async (t) => {
       let assertion = false;
       await db.z_users.set("id", mockUserInvalid).catch(() => assertion = true);
       assert(assertion);
+    });
+  });
+
+  await t.step("Should set document with multi-part id", async () => {
+    await useDb(async (db) => {
+      const id: [string, number] = ["id", 1];
+      const n = 10;
+
+      const cr = await db.multi_part_id_nums.set(id, n);
+      assert(cr.ok);
+
+      const doc = await db.multi_part_id_nums.find(id);
+      assert(doc !== null);
+      assertEquals(doc.value, n);
     });
   });
 });

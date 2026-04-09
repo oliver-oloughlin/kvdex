@@ -1,8 +1,10 @@
 import { collection, kvdex, model } from "../../mod.ts";
-import { assert } from "@std/assert";
-import { sleep, useKv } from "../utils.ts";
+import { assert, assertEquals, assertLessOrEqual } from "@std/assert";
+import { sleep, useDb, useKv } from "../utils.ts";
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts";
 import type { User } from "../models.ts";
+import { ulid } from "@std/ulid/ulid";
+import { KvId } from "../../src/core/types.ts";
 
 Deno.test("collection - history", async (t) => {
   await t.step(
@@ -220,4 +222,41 @@ Deno.test("collection - history", async (t) => {
       assert(history2_2.length === 1);
     });
   });
+
+  await t.step(
+    "Should persist history of multiple inserts in correct order with multi-part id",
+    async () => {
+      await useKv(async (kv) => {
+        const db = kvdex({
+          kv,
+          schema: {
+            numbers: collection(model<number>(), {
+              history: true,
+              idGenerator: () => [ulid(), Math.random()] as KvId,
+            }),
+          },
+        });
+
+        const id: [string, number] = ["id", 1];
+        const n1 = 10;
+        const n2 = 20;
+        const n3 = 30;
+        await db.numbers.set(id, n1, { overwrite: true });
+        await sleep(100);
+        await db.numbers.set(id, n2, { overwrite: true });
+        await sleep(100);
+        await db.numbers.set(id, n3, { overwrite: true });
+
+        const { result: [h1, h2, h3] } = await db.numbers.findHistory(id);
+        assert(h1.type === "write");
+        assertEquals(h1.value, n1);
+        assertLessOrEqual(h1.timestamp.valueOf(), h2.timestamp.valueOf());
+        assert(h2.type === "write");
+        assertEquals(h2.value, n2);
+        assertLessOrEqual(h2.timestamp.valueOf(), h3.timestamp.valueOf());
+        assert(h3.type === "write");
+        assertEquals(h3.value, n3);
+      });
+    },
+  );
 });
