@@ -1,10 +1,10 @@
 import { collection, kvdex, model } from "../../mod.ts";
 import { assert, assertEquals, assertLessOrEqual } from "@std/assert";
-import { sleep, useDb, useKv } from "../utils.ts";
+import { sleep, useKv } from "../utils.ts";
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts";
 import type { User } from "../models.ts";
 import { ulid } from "@std/ulid/ulid";
-import { KvId } from "../../src/core/types.ts";
+import type { KvId } from "../../src/core/types.ts";
 
 Deno.test("collection - history", async (t) => {
   await t.step(

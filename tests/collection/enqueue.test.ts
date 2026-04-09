@@ -9,7 +9,7 @@ import { createHandlerId } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
 import { useDb, useKv } from "../utils.ts";
 import { ulid } from "@std/ulid/ulid";
-import { KvId } from "../../src/core/types.ts";
+import type { KvId } from "../../src/core/types.ts";
 
 Deno.test("collection - enqueue", async (t) => {
   await t.step("Should enqueue message with string data", async () => {

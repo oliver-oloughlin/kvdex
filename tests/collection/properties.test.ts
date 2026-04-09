@@ -6,7 +6,7 @@ import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts";
 import type { User } from "../models.ts";
 import { generateNumbers, generateUsers, useDb, useKv } from "../utils.ts";
 import { sleep } from "../utils.ts";
-import { KvKey } from "../../src/core/types.ts";
+import type { KvKey } from "../../src/core/types.ts";
 
 Deno.test("collection - properties", async (t) => {
   await t.step("Keys should have the correct prefixes", async () => {
