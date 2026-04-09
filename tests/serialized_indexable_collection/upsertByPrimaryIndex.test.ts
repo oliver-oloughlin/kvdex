@@ -131,4 +131,39 @@ Deno.test("serialized_indexable_collection - upsertByPrimaryIndex", async (t) =>
       });
     },
   );
+
+  await t.step(
+    "Should upsert document by primary index with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.is_multi_part_id_users.upsertByPrimaryIndex({
+          index: ["username", mockUser1.username],
+          set: mockUser1,
+          update: mockUser2,
+        });
+        assert(cr1.ok);
+
+        const doc1 = await db.is_multi_part_id_users.findByPrimaryIndex(
+          "username",
+          mockUser1.username,
+        );
+        assert(doc1 !== null);
+        assert(doc1.value.username === mockUser1.username);
+
+        const cr2 = await db.is_multi_part_id_users.upsertByPrimaryIndex({
+          index: ["username", mockUser1.username],
+          set: mockUser1,
+          update: mockUser3,
+        }, { strategy: "replace" });
+        assert(cr2.ok);
+
+        const doc2 = await db.is_multi_part_id_users.findByPrimaryIndex(
+          "username",
+          mockUser3.username,
+        );
+        assert(doc2 !== null);
+        assert(doc2.value.username === mockUser3.username);
+      });
+    },
+  );
 });

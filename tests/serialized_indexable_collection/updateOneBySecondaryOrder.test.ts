@@ -202,4 +202,33 @@ Deno.test("serialized_indexable_collection - updateOneBySecondaryOrder", async (
       assert(assertion);
     });
   });
+
+  await t.step(
+    "Should updateOne by secondary order with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_multi_part_id_users.addMany(
+          mockUsersWithAlteredAge,
+        );
+        assert(cr.ok);
+
+        const updateData = {
+          address: {
+            country: "Ireland",
+            city: "Dublin",
+            houseNr: null,
+          },
+        };
+
+        const updateCr = await db.is_multi_part_id_users
+          .updateOneBySecondaryOrder(
+            "age",
+            updateData,
+            { strategy: "merge-shallow" },
+          );
+
+        assert(updateCr.ok);
+      });
+    },
+  );
 });

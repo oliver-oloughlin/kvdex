@@ -1,4 +1,4 @@
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts";
 import type { User } from "../models.ts";
 import { useDb } from "../utils.ts";
@@ -130,4 +130,32 @@ Deno.test("serialized_collection - upsert", async (t) => {
       });
     },
   );
+
+  await t.step("Should upsert document with multi-part id", async () => {
+    await useDb(async (db) => {
+      const id: [string, number] = ["id", 1];
+
+      const cr1 = await db.s_multi_part_id_nums.upsert({
+        id,
+        set: 10,
+        update: 20,
+      });
+      assert(cr1.ok);
+
+      const doc1 = await db.s_multi_part_id_nums.find(id);
+      assert(doc1 !== null);
+      assertEquals(doc1.value, 10);
+
+      const cr2 = await db.s_multi_part_id_nums.upsert({
+        id,
+        set: 10,
+        update: 20,
+      });
+      assert(cr2.ok);
+
+      const doc2 = await db.s_multi_part_id_nums.find(id);
+      assert(doc2 !== null);
+      assertEquals(doc2.value, 20);
+    });
+  });
 });

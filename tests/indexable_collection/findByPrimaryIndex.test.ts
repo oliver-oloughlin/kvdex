@@ -48,4 +48,21 @@ Deno.test("indexable_collection - findByPrimaryIndex", async (t) => {
       });
     },
   );
+
+  await t.step(
+    "Should find document by primary index with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.i_multi_part_id_users.add(mockUser1);
+        assert(cr.ok);
+
+        const doc = await db.i_multi_part_id_users.findByPrimaryIndex(
+          "username",
+          mockUser1.username,
+        );
+        assert(doc !== null);
+        assert(doc.value.username === mockUser1.username);
+      });
+    },
+  );
 });

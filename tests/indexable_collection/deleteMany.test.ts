@@ -1,4 +1,5 @@
 import { assert } from "@std/assert";
+import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts";
 import { generateUsers, useDb } from "../utils.ts";
 
 Deno.test("indexable_collection - deleteMany", async (t) => {
@@ -40,6 +41,28 @@ Deno.test("indexable_collection - deleteMany", async (t) => {
         assert(count2 === 0);
         assert(byPrimary2 === null);
         assert(bySecondary2.result.length === 0);
+      });
+    },
+  );
+
+  await t.step(
+    "Should delete all documents from collection with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.i_multi_part_id_users.addMany([
+          mockUser1,
+          mockUser2,
+          mockUser3,
+        ]);
+        assert(cr.ok);
+
+        const count1 = await db.i_multi_part_id_users.count();
+        assert(count1 === 3);
+
+        await db.i_multi_part_id_users.deleteMany();
+
+        const count2 = await db.i_multi_part_id_users.count();
+        assert(count2 === 0);
       });
     },
   );

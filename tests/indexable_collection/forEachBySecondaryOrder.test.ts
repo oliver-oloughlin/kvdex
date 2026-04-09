@@ -29,4 +29,26 @@ Deno.test("indexable_collection - forEachBySecondaryOrder", async (t) => {
       });
     },
   );
+
+  await t.step(
+    "Should forEach by secondary order with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.i_multi_part_id_users.addMany(
+          mockUsersWithAlteredAge,
+        );
+        assert(cr.ok);
+
+        const docs: string[] = [];
+        await db.i_multi_part_id_users.forEachBySecondaryOrder(
+          "age",
+          (doc) => {
+            docs.push(doc.value.username);
+          },
+        );
+
+        assert(docs.length === mockUsersWithAlteredAge.length);
+      });
+    },
+  );
 });

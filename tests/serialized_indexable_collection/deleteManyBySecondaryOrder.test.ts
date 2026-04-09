@@ -25,4 +25,24 @@ Deno.test("serialized_indexable_collection - deleteManyBySecondaryOrder", async 
       });
     },
   );
+
+  await t.step(
+    "Should deleteMany by secondary order with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_multi_part_id_users.addMany(
+          mockUsersWithAlteredAge,
+        );
+        assert(cr.ok);
+
+        const count1 = await db.is_multi_part_id_users.count();
+        assert(count1 === mockUsersWithAlteredAge.length);
+
+        await db.is_multi_part_id_users.deleteManyBySecondaryOrder("age");
+
+        const count2 = await db.is_multi_part_id_users.count();
+        assert(count2 === 0);
+      });
+    },
+  );
 });

@@ -1,5 +1,12 @@
 import { z } from "zod";
-import type { KvArray, KvId, KvObject, KvValue } from "../../core/types.ts";
+import type {
+  DenoKvStrictKeyPart,
+  KvArray,
+  KvId,
+  KvKey,
+  KvObject,
+  KvValue,
+} from "../../core/types.ts";
 
 const LazyKvValueSchema = z.lazy(() => KvValueSchema);
 
@@ -7,12 +14,25 @@ const LazyKvArraySchema = z.lazy(() => KvArraySchema);
 
 const LazyKvObjectSchema = z.lazy(() => KvObjectSchema);
 
+/** Zod schema for strict KvKeyPart type (excluding symbol) */
+export const KvKeyPartSchema: z.ZodType<DenoKvStrictKeyPart> = z.union([
+  z.string(),
+  z.number(),
+  z.bigint(),
+  z.boolean(),
+  z.instanceof(Uint8Array),
+]);
+
+/** Zod schema for KvKey type */
+export const KvKeySchema: z.ZodType<KvKey> = z.tuple([KvKeyPartSchema]).rest(
+  KvKeyPartSchema,
+);
+
 /** Zod schema for KvId type */
-export const KvIdSchema: z.ZodType<KvId> = z.string()
-  .or(z.number())
-  .or(z.bigint())
-  .or(z.boolean())
-  .or(z.instanceof(Uint8Array));
+export const KvIdSchema: z.ZodType<KvId> = z.union([
+  KvKeyPartSchema,
+  KvKeySchema,
+]);
 
 /** Zod schema for KvValue type */
 export const KvValueSchema: z.ZodType<KvValue> = z.undefined()

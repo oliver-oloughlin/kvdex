@@ -1,4 +1,5 @@
 import { assert } from "@std/assert";
+import { mockUser1 } from "../mocks.ts";
 import { generateLargeUsers, useDb } from "../utils.ts";
 import { validate } from "../../src/core/utils.ts";
 import { TransformUserModel } from "../models.ts";
@@ -47,6 +48,23 @@ Deno.test("serialized_indexable_collection - findByPrimaryIndex", async (t) => {
           transformed.name,
         );
         assert(doc?.value.name === transformed.name);
+      });
+    },
+  );
+
+  await t.step(
+    "Should find document by primary index with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_multi_part_id_users.add(mockUser1);
+        assert(cr.ok);
+
+        const doc = await db.is_multi_part_id_users.findByPrimaryIndex(
+          "username",
+          mockUser1.username,
+        );
+        assert(doc !== null);
+        assert(doc.value.username === mockUser1.username);
       });
     },
   );

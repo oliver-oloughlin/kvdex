@@ -14,4 +14,21 @@ Deno.test("serialized_indexable_collection - getOneBySecondaryOrder", async (t) 
       assert(doc.value.username === mockUser3.username);
     });
   });
+
+  await t.step(
+    "Should get one by secondary order with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_multi_part_id_users.addMany(
+          mockUsersWithAlteredAge,
+        );
+        assert(cr.ok);
+
+        const doc = await db.is_multi_part_id_users.getOneBySecondaryOrder(
+          "age",
+        );
+        assert(doc !== null);
+      });
+    },
+  );
 });

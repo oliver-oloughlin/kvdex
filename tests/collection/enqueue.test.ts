@@ -8,6 +8,8 @@ import {
 import { createHandlerId } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
 import { useDb, useKv } from "../utils.ts";
+import { ulid } from "@std/ulid/ulid";
+import type { KvId } from "../../src/core/types.ts";
 
 Deno.test("collection - enqueue", async (t) => {
   await t.step("Should enqueue message with string data", async () => {
@@ -101,4 +103,46 @@ Deno.test("collection - enqueue", async (t) => {
       return async () => await listener;
     });
   });
+
+  await t.step(
+    "Should enqueue message with string data and multi-part undelivered id",
+    async () => {
+      await useKv(async (kv) => {
+        const data = "data";
+        const undeliveredId: [string, number] = ["undelivered", 1];
+        const sleeper = Promise.withResolvers<void>();
+
+        const db = kvdex({
+          kv,
+          schema: {
+            numbers: collection(model<number>(), {
+              idGenerator: () => [ulid(), Math.random()] as KvId,
+            }),
+          },
+        });
+
+        const handlerId = createHandlerId(db.numbers["keys"].base, undefined);
+
+        let assertion = false;
+
+        const listener = kv.listenQueue((msg) => {
+          const qMsg = msg as QueueMessage<KvValue>;
+          assertion = qMsg.__handlerId__ === handlerId &&
+            qMsg.__data__ === data;
+          sleeper.resolve();
+        });
+
+        await db.numbers.enqueue(data, {
+          idsIfUndelivered: [undeliveredId],
+        });
+
+        await sleeper.promise;
+
+        const undelivered = await db.numbers.findUndelivered(undeliveredId);
+        assert(assertion || typeof undelivered?.value === typeof data);
+
+        return async () => await listener;
+      });
+    },
+  );
 });

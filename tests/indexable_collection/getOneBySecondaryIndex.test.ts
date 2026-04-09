@@ -8,7 +8,7 @@ Deno.test("indexable_collection - getOneBySecondaryIndex", async (t) => {
     async () => {
       await useDb(async (db) => {
         const cr1 = await db.i_users.add(mockUser1);
-        await sleep(10);
+        await sleep(100);
         const cr2 = await db.i_users.add(mockUser2);
 
         assert(cr1.ok);
@@ -20,6 +20,24 @@ Deno.test("indexable_collection - getOneBySecondaryIndex", async (t) => {
         );
         assert(doc !== null);
         assert(doc.value.username === mockUser1.username);
+      });
+    },
+  );
+
+  await t.step(
+    "Should get one by secondary index with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.i_multi_part_id_users.add(mockUser1);
+        const cr2 = await db.i_multi_part_id_users.add(mockUser2);
+        assert(cr1.ok && cr2.ok);
+
+        const doc = await db.i_multi_part_id_users.getOneBySecondaryIndex(
+          "age",
+          mockUser1.age,
+        );
+        assert(doc !== null);
+        assert(doc.value.age === mockUser1.age);
       });
     },
   );

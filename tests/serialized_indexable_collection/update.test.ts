@@ -232,4 +232,26 @@ Deno.test("serialized_indexable_collection - update", async (t) => {
       assert(assertion);
     });
   });
+
+  await t.step(
+    "Should update document with multi-part id using replace",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_multi_part_id_users.add(mockUser1);
+        assert(cr.ok);
+
+        const updateCr = await db.is_multi_part_id_users.update(
+          cr.id,
+          mockUser2,
+          { strategy: "replace" },
+        );
+
+        assert(updateCr.ok);
+
+        const doc = await db.is_multi_part_id_users.find(cr.id);
+        assert(doc !== null);
+        assert(doc.value.username === mockUser2.username);
+      });
+    },
+  );
 });

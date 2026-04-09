@@ -215,5 +215,35 @@ Deno.test.ignore(
         assert(assertion);
       });
     });
+
+    await t.step(
+      "Should updateMany by secondary order with multi-part id",
+      async () => {
+        await useDb(async (db) => {
+          const cr = await db.i_multi_part_id_users.addMany(
+            mockUsersWithAlteredAge,
+          );
+          assert(cr.ok);
+
+          const updateData = {
+            address: {
+              country: "Ireland",
+              city: "Dublin",
+              houseNr: null,
+            },
+          };
+
+          const { result } = await db.i_multi_part_id_users
+            .updateManyBySecondaryOrder(
+              "age",
+              updateData,
+              { strategy: "merge-shallow" },
+            );
+
+          assert(result.every((cr) => cr.ok));
+          assert(result.length === mockUsersWithAlteredAge.length);
+        });
+      },
+    );
   },
 );

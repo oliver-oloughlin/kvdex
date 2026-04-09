@@ -1,4 +1,5 @@
 import { assert } from "@std/assert";
+import { mockUser1, mockUser2 } from "../mocks.ts";
 import { generateLargeUsers, useDb } from "../utils.ts";
 
 const [user1, user2] = generateLargeUsers(2);
@@ -43,6 +44,25 @@ Deno.test("serialized_indexable_collection - deleteBySecondaryIndex", async (t) 
         assert(count2 === 0);
         assert(byPrimary2 === null);
         assert(bySecondary2.result.length === 0);
+      });
+    },
+  );
+
+  await t.step(
+    "Should delete documents by secondary index with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.is_multi_part_id_users.add(mockUser1);
+        const cr2 = await db.is_multi_part_id_users.add(mockUser2);
+        assert(cr1.ok && cr2.ok);
+
+        await db.is_multi_part_id_users.deleteBySecondaryIndex(
+          "age",
+          mockUser1.age,
+        );
+
+        const count = await db.is_multi_part_id_users.count();
+        assert(count === 0);
       });
     },
   );

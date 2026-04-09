@@ -1,4 +1,4 @@
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { mockUser1 } from "../mocks.ts";
 import { generateUsers, useDb } from "../utils.ts";
 
@@ -19,9 +19,9 @@ Deno.test("indexable_collection - delete", async (t) => {
         );
 
         assert(cr.ok);
-        assert(count1 === 1);
-        assert(byPrimary1?.id === cr.id);
-        assert(bySecondary1.result.at(0)?.id === cr.id);
+        assertEquals(count1, 1);
+        assertEquals(byPrimary1?.id, cr.id);
+        assertEquals(bySecondary1.result.at(0)?.id, cr.id);
 
         await db.i_users.delete(cr.id);
 
@@ -61,6 +61,27 @@ Deno.test("indexable_collection - delete", async (t) => {
 
         const count2 = await db.i_users.count();
         assert(count2 === 0);
+      });
+    },
+  );
+
+  await t.step(
+    "Should successfully delete document from collection with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.i_multi_part_id_users.add(mockUser1);
+        const count1 = await db.i_multi_part_id_users.count();
+
+        assert(cr.ok);
+        assert(count1 === 1);
+
+        await db.i_multi_part_id_users.delete(cr.id);
+
+        const count2 = await db.i_multi_part_id_users.count();
+        const doc = await db.i_multi_part_id_users.find(cr.id);
+
+        assert(count2 === 0);
+        assert(doc === null);
       });
     },
   );

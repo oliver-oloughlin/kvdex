@@ -45,4 +45,23 @@ Deno.test("indexable_collection - deleteBySecondaryIndex", async (t) => {
       });
     },
   );
+
+  await t.step(
+    "Should delete documents by secondary index with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.i_multi_part_id_users.add(mockUser1);
+        const cr2 = await db.i_multi_part_id_users.add(mockUser2);
+        assert(cr1.ok && cr2.ok);
+
+        await db.i_multi_part_id_users.deleteBySecondaryIndex(
+          "age",
+          mockUser1.age,
+        );
+
+        const count = await db.i_multi_part_id_users.count();
+        assert(count === 0);
+      });
+    },
+  );
 });

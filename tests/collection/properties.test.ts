@@ -1,11 +1,12 @@
 import { collection, type Document, kvdex, model } from "../../mod.ts";
 import { ID_KEY_PREFIX, KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
 import { extendKey, keyEq } from "../../src/core/utils.ts";
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts";
 import type { User } from "../models.ts";
-import { generateUsers, useDb, useKv } from "../utils.ts";
+import { generateNumbers, generateUsers, useDb, useKv } from "../utils.ts";
 import { sleep } from "../utils.ts";
+import type { KvKey } from "../../src/core/types.ts";
 
 Deno.test("collection - properties", async (t) => {
   await t.step("Keys should have the correct prefixes", async () => {
@@ -217,9 +218,9 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select limited by database reads", async () => {
     await useDb(async (db) => {
       const cr1 = await db.users.add(mockUser1);
-      await sleep(10);
+      await sleep(100);
       const cr2 = await db.users.add(mockUser2);
-      await sleep(10);
+      await sleep(100);
       const cr3 = await db.users.add(mockUser3);
 
       assert(cr1.ok);
@@ -238,9 +239,9 @@ Deno.test("collection - properties", async (t) => {
   await t.step("Should select limited by result count", async () => {
     await useDb(async (db) => {
       const cr1 = await db.users.add(mockUser1);
-      await sleep(10);
+      await sleep(100);
       const cr2 = await db.users.add(mockUser2);
-      await sleep(10);
+      await sleep(100);
       const cr3 = await db.users.add(mockUser3);
 
       assert(cr1.ok);
@@ -313,4 +314,90 @@ Deno.test("collection - properties", async (t) => {
       assert(typeof doc2.id === "number");
     });
   });
+
+  await t.step("Should select from start multi-part id", async () => {
+    await useDb(async (db) => {
+      const nums = generateNumbers(10);
+      const cr = await db.multi_part_id_nums.addMany(nums);
+      const count1 = await db.multi_part_id_nums.count();
+      assert(cr.ok);
+      assertEquals(count1, nums.length);
+
+      const index = 5;
+
+      const query1 = await db.multi_part_id_nums.getMany();
+      const query2 = await db.multi_part_id_nums.getMany({
+        startId: query1.result.at(index)?.id,
+      });
+
+      assertEquals(query2.result.length, query1.result.slice(index).length);
+      assert(
+        query2.result.every((doc1) =>
+          query1.result.slice(index).some((doc2) =>
+            keyEq(doc1.id as KvKey, doc2.id as KvKey)
+          )
+        ),
+      );
+    });
+  });
+
+  await t.step("Should select until end multi-part id", async () => {
+    await useDb(async (db) => {
+      const nums = generateNumbers(10);
+      const cr = await db.multi_part_id_nums.addMany(nums);
+      const count1 = await db.multi_part_id_nums.count();
+      assert(cr.ok);
+      assertEquals(count1, nums.length);
+
+      const index = 5;
+
+      const query1 = await db.multi_part_id_nums.getMany();
+      const query2 = await db.multi_part_id_nums.getMany({
+        endId: query1.result.at(index)?.id,
+      });
+
+      assertEquals(query2.result.length, query1.result.slice(0, index).length);
+      assert(
+        query2.result.every((doc1) =>
+          query1.result.slice(0, index).some((doc2) =>
+            keyEq(doc1.id as KvKey, doc2.id as KvKey)
+          )
+        ),
+      );
+    });
+  });
+
+  await t.step(
+    "Should select from start multi-part id to end multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const nums = generateNumbers(10);
+        const cr = await db.multi_part_id_nums.addMany(nums);
+        const count1 = await db.multi_part_id_nums.count();
+        assert(cr.ok);
+        assertEquals(count1, nums.length);
+
+        const index1 = 5;
+        const index2 = 7;
+
+        const query1 = await db.multi_part_id_nums.getMany();
+        const query2 = await db.multi_part_id_nums.getMany({
+          startId: query1.result.at(index1)?.id,
+          endId: query1.result.at(index2)?.id,
+        });
+
+        assertEquals(
+          query2.result.length,
+          query1.result.slice(index1, index2).length,
+        );
+        assert(
+          query2.result.every((doc1) =>
+            query1.result.slice(index1, index2).some((doc2) =>
+              keyEq(doc1.id as KvKey, doc2.id as KvKey)
+            )
+          ),
+        );
+      });
+    },
+  );
 });

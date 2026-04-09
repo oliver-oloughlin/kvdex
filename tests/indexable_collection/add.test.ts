@@ -52,4 +52,18 @@ Deno.test("indexable_collection - add", async (t) => {
       });
     },
   );
+
+  await t.step(
+    "Should successfully add new document entry to collection with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.i_multi_part_id_users.add(mockUser1);
+        assert(cr.ok);
+
+        const doc = await db.i_multi_part_id_users.find(cr.id);
+        assert(doc !== null);
+        assert(doc.value.username === mockUser1.username);
+      });
+    },
+  );
 });

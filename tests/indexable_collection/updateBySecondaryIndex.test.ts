@@ -1,5 +1,5 @@
 import { assert } from "@std/assert";
-import { mockUser1, mockUserInvalid } from "../mocks.ts";
+import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
 import { generateUsers, useDb } from "../utils.ts";
 
 Deno.test("indexable_collection - updateBySecondaryIndex", async (t) => {
@@ -191,4 +191,37 @@ Deno.test("indexable_collection - updateBySecondaryIndex", async (t) => {
       assert(assertion);
     });
   });
+
+  await t.step(
+    "Should update documents by secondary index with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.i_multi_part_id_users.add(mockUser1);
+        const cr2 = await db.i_multi_part_id_users.add(mockUser2);
+        assert(cr1.ok && cr2.ok);
+
+        const updateData = {
+          address: {
+            country: "Ireland",
+            city: "Dublin",
+            houseNr: null,
+          },
+        };
+
+        const { result } = await db.i_multi_part_id_users
+          .updateBySecondaryIndex(
+            "age",
+            mockUser1.age,
+            updateData,
+            { strategy: "merge-shallow" },
+          );
+
+        assert(result.every((cr) => cr.ok));
+
+        await db.i_multi_part_id_users.forEach((doc) => {
+          assert(doc.value.address.country === updateData.address.country);
+        });
+      });
+    },
+  );
 });

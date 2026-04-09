@@ -25,4 +25,24 @@ Deno.test("serialized_indexable_collection - countBySecondaryIndex", async (t) =
       });
     },
   );
+
+  await t.step(
+    "Should count by secondary index with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_multi_part_id_users.addMany([
+          mockUser1,
+          mockUser2,
+          mockUser3,
+        ]);
+        assert(cr.ok);
+
+        const count = await db.is_multi_part_id_users.countBySecondaryIndex(
+          "age",
+          mockUser1.age,
+        );
+        assert(count === 2);
+      });
+    },
+  );
 });

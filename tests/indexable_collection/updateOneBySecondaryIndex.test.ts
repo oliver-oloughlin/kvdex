@@ -8,7 +8,7 @@ Deno.test("indexable_collection - updateOneBySecondaryIndex", async (t) => {
     async () => {
       await useDb(async (db) => {
         const cr1 = await db.i_users.add(mockUser1);
-        await sleep(10);
+        await sleep(100);
         const cr2 = await db.i_users.add(mockUser2);
 
         assert(cr1.ok);
@@ -57,7 +57,7 @@ Deno.test("indexable_collection - updateOneBySecondaryIndex", async (t) => {
     async () => {
       await useDb(async (db) => {
         const cr1 = await db.i_users.add(mockUser1);
-        await sleep(10);
+        await sleep(100);
         const cr2 = await db.i_users.add(mockUser2);
 
         assert(cr1.ok);
@@ -106,7 +106,7 @@ Deno.test("indexable_collection - updateOneBySecondaryIndex", async (t) => {
     async () => {
       await useDb(async (db) => {
         const cr1 = await db.i_users.add(mockUser1);
-        await sleep(10);
+        await sleep(100);
         const cr2 = await db.i_users.add(mockUser2);
 
         assert(cr1.ok);
@@ -153,7 +153,7 @@ Deno.test("indexable_collection - updateOneBySecondaryIndex", async (t) => {
       let assertion = true;
 
       const cr1 = await db.zi_users.add(mockUser1);
-      await sleep(10);
+      await sleep(100);
       const cr2 = await db.zi_users.add(mockUser2);
 
       assert(cr1.ok);
@@ -174,7 +174,7 @@ Deno.test("indexable_collection - updateOneBySecondaryIndex", async (t) => {
       let assertion = false;
 
       const cr1 = await db.zi_users.add(mockUser1);
-      await sleep(10);
+      await sleep(100);
       const cr2 = await db.zi_users.add(mockUser2);
 
       assert(cr1.ok);
@@ -189,4 +189,33 @@ Deno.test("indexable_collection - updateOneBySecondaryIndex", async (t) => {
       assert(assertion);
     });
   });
+
+  await t.step(
+    "Should updateOne by secondary index with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.i_multi_part_id_users.add(mockUser1);
+        const cr2 = await db.i_multi_part_id_users.add(mockUser2);
+        assert(cr1.ok && cr2.ok);
+
+        const updateData = {
+          address: {
+            country: "Ireland",
+            city: "Dublin",
+            houseNr: null,
+          },
+        };
+
+        const updateCr = await db.i_multi_part_id_users
+          .updateOneBySecondaryIndex(
+            "age",
+            mockUser1.age,
+            updateData,
+            { strategy: "merge-shallow" },
+          );
+
+        assert(updateCr.ok);
+      });
+    },
+  );
 });

@@ -1,6 +1,8 @@
 import { assert } from "@std/assert";
-import { mockUser1, mockUserInvalid } from "../mocks.ts";
+import { mockUser1, mockUser2, mockUser3, mockUserInvalid } from "../mocks.ts";
 import { generateUsers, useDb } from "../utils.ts";
+import { keyEq } from "../../src/core/utils.ts";
+import type { KvKey } from "../../src/core/types.ts";
 
 Deno.test("indexable_collection - updateMany", async (t) => {
   await t.step(
@@ -168,4 +170,46 @@ Deno.test("indexable_collection - updateMany", async (t) => {
       assert(assertion);
     });
   });
+
+  await t.step(
+    "Should update multiple documents with multi-part id using replace",
+    async () => {
+      await useDb(async (db) => {
+        const users = [mockUser1, mockUser2, mockUser3];
+        const cr = await db.i_multi_part_id_users.addMany(users);
+        assert(cr.ok);
+
+        const docs = await db.i_multi_part_id_users.getMany();
+        const ids = docs.result.map((doc) => doc.id);
+        const versionstamps = docs.result.map((doc) => doc.versionstamp);
+
+        const updateData = {
+          address: {
+            country: "Ireland",
+            city: "Dublin",
+            houseNr: null,
+          },
+        };
+
+        const { result } = await db.i_multi_part_id_users.updateMany(
+          updateData,
+          { strategy: "merge-shallow" },
+        );
+
+        assert(
+          result.every((cr) =>
+            cr.ok &&
+            ids.some((id) => keyEq(id as KvKey, cr.id as KvKey)) &&
+            !versionstamps.includes(cr.versionstamp)
+          ),
+        );
+
+        await db.i_multi_part_id_users.forEach((doc) => {
+          assert(doc.value.address.country === updateData.address.country);
+          assert(doc.value.address.city === updateData.address.city);
+          assert(doc.value.address.houseNr === updateData.address.houseNr);
+        });
+      });
+    },
+  );
 });

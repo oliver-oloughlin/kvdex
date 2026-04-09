@@ -1,5 +1,5 @@
 import { assert } from "@std/assert";
-import { mockUserInvalid } from "../mocks.ts";
+import { mockUser1, mockUserInvalid } from "../mocks.ts";
 import { generateLargeUsers, useDb } from "../utils.ts";
 
 const [user1, user2] = generateLargeUsers(2);
@@ -117,6 +117,19 @@ Deno.test("serialized_indexable_collection - set", async (t) => {
         assertion = true
       );
       assert(assertion);
+    });
+  });
+
+  await t.step("Should set document with multi-part id", async () => {
+    await useDb(async (db) => {
+      const id: [string, number] = ["id", 1];
+
+      const cr = await db.is_multi_part_id_users.set(id, mockUser1);
+      assert(cr.ok);
+
+      const doc = await db.is_multi_part_id_users.find(id);
+      assert(doc !== null);
+      assert(doc.value.username === mockUser1.username);
     });
   });
 });

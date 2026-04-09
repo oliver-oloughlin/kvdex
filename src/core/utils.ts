@@ -42,8 +42,16 @@ export function generateId() {
  * @param key - A document key.
  * @returns A document id, or undefined if key is empty.
  */
-export function getDocumentId(key: DenoKvStrictKey) {
-  return key.at(-1);
+export function getDocumentId(
+  key: DenoKvStrictKey,
+  keyPrefixLength: number,
+): KvId | undefined {
+  const id = key.slice(keyPrefixLength);
+  if (id.length <= 0) {
+    return undefined;
+  }
+
+  return id.length === 1 ? id.at(0) : id as KvId;
 }
 
 /**
@@ -53,8 +61,8 @@ export function getDocumentId(key: DenoKvStrictKey) {
  * @param keyParts - Key parts to add to the input key.
  * @returns An extended kv key.
  */
-export function extendKey(key: KvKey, ...keyParts: KvKey) {
-  return [...key, ...keyParts] as KvKey;
+export function extendKey(key: KvKey, ...keyParts: KvId[]) {
+  return [...key, ...keyParts].flat() as KvKey;
 }
 
 /**
@@ -424,12 +432,12 @@ export function createListSelector<T1, T2 extends KvId>(
 ): DenoKvListSelector {
   // Create start key
   const start = typeof options?.startId !== "undefined"
-    ? [...prefixKey, options.startId!]
+    ? extendKey(prefixKey, options.startId)
     : undefined;
 
   // Create end key
   const end = typeof options?.endId !== "undefined"
-    ? [...prefixKey, options.endId!]
+    ? extendKey(prefixKey, options.endId)
     : undefined;
 
   // Conditionally set prefix key
@@ -440,7 +448,6 @@ export function createListSelector<T1, T2 extends KvId>(
   const selector = { prefix, start, end };
   if (!selector.end) delete selector.end;
   if (!selector.start) delete selector.start;
-  // Return list selector
   return selector;
 }
 

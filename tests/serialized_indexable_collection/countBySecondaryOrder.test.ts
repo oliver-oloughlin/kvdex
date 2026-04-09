@@ -40,4 +40,21 @@ Deno.test("serialized_indexable_collection - countBySecondaryOrder", async (t) =
       });
     },
   );
+
+  await t.step(
+    "Should count by secondary order with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_multi_part_id_users.addMany(
+          mockUsersWithAlteredAge,
+        );
+        assert(cr.ok);
+
+        const count = await db.is_multi_part_id_users.countBySecondaryOrder(
+          "age",
+        );
+        assert(count === mockUsersWithAlteredAge.length);
+      });
+    },
+  );
 });
