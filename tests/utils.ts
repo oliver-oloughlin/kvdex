@@ -10,6 +10,8 @@ import {
   type IndexedDbAdapter,
   indexedDbAdapter,
 } from "../src/ext/kv/map/indexed_db_adapter.ts";
+import { ulid } from "@std/ulid/ulid";
+import type { KvId } from "../src/core/types.ts";
 
 export const testEncoder = jsonEncoder({
   compressor: brotliCompressor(),
@@ -74,6 +76,9 @@ export function createDb(kv: DenoKv) {
           decadeAge: "secondary",
         },
         encoder: testEncoder,
+      }),
+      multi_part_id_nums: collection(model<number>(), {
+        idGenerator: () => [ulid(), Math.random()] as KvId,
       }),
     },
   });
