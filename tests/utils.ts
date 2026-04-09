@@ -77,6 +77,9 @@ export function createDb(kv: DenoKv) {
         },
         encoder: testEncoder,
       }),
+      multi_part_id_u64s: collection(model<DenoKvU64>(), {
+        idGenerator: () => [ulid(), Math.random()] as KvId,
+      }),
       multi_part_id_nums: collection(model<number>(), {
         idGenerator: () => [ulid(), Math.random()] as KvId,
       }),

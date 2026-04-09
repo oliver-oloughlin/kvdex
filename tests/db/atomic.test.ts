@@ -9,6 +9,7 @@ import { createHandlerId } from "../../src/core/utils.ts";
 import { assert, assertEquals, assertThrows } from "@std/assert";
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
 import { sleep, useDb, useKv } from "../utils.ts";
+import type { KvKey } from "../../src/core/types.ts";
 
 Deno.test("db - atomic", async (t) => {
   await t.step("Should add documents to collection", async () => {
@@ -446,4 +447,206 @@ Deno.test("db - atomic", async (t) => {
       assert(h2.type === "delete");
     });
   });
+
+  await t.step(
+    "Should add documents to collection with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db
+          .atomic((schema) => schema.multi_part_id_nums)
+          .add(1)
+          .add(2)
+          .commit();
+
+        assert(cr.ok);
+
+        const count = await db.multi_part_id_nums.count();
+        assert(count === 2);
+      });
+    },
+  );
+
+  await t.step(
+    "Should set document with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const id: KvKey = ["id", 1];
+
+        const cr = await db
+          .atomic((schema) => schema.multi_part_id_nums)
+          .set(id, 10)
+          .commit();
+
+        assert(cr.ok);
+
+        const doc = await db.multi_part_id_nums.find(id);
+        assert(doc !== null);
+        assertEquals(doc.value, 10);
+        assertEquals(doc.id, id);
+      });
+    },
+  );
+
+  await t.step(
+    "Should only set first document with colliding multi-part ids",
+    async () => {
+      await useDb(async (db) => {
+        const id: KvKey = ["id", 1];
+
+        const cr = await db
+          .atomic((schema) => schema.multi_part_id_nums)
+          .set(id, 10)
+          .set(id, 20)
+          .commit();
+
+        assert(cr.ok);
+
+        const count = await db.multi_part_id_nums.count();
+        assertEquals(count, 1);
+      });
+    },
+  );
+
+  await t.step(
+    "Should delete document with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.multi_part_id_nums.add(10);
+        assert(cr1.ok);
+
+        const cr2 = await db
+          .atomic((schema) => schema.multi_part_id_nums)
+          .delete(cr1.id)
+          .commit();
+
+        assert(cr2.ok);
+
+        const count = await db.multi_part_id_nums.count();
+        const doc = await db.multi_part_id_nums.find(cr1.id);
+        assertEquals(count, 0);
+        assert(doc === null);
+      });
+    },
+  );
+
+  await t.step(
+    "Should perform sum operation with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const initial = 100n;
+        const additional = 10n;
+
+        const cr1 = await db.multi_part_id_u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
+
+        const cr2 = await db
+          .atomic((schema) => schema.multi_part_id_u64s)
+          .sum(cr1.id, additional)
+          .commit();
+
+        assert(cr2.ok);
+
+        const doc = await db.multi_part_id_u64s.find(cr1.id);
+        assert(doc?.value.value === initial + additional);
+      });
+    },
+  );
+
+  await t.step(
+    "Should perform min operation with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const initial = 100n;
+        const min = 10n;
+
+        const cr1 = await db.multi_part_id_u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
+
+        const cr2 = await db
+          .atomic((schema) => schema.multi_part_id_u64s)
+          .min(cr1.id, min)
+          .commit();
+
+        assert(cr2.ok);
+
+        const doc = await db.multi_part_id_u64s.find(cr1.id);
+        assert(doc?.value.value === min);
+      });
+    },
+  );
+
+  await t.step(
+    "Should perform max operation with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const initial = 100n;
+        const max = 200n;
+
+        const cr1 = await db.multi_part_id_u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
+
+        const cr2 = await db
+          .atomic((schema) => schema.multi_part_id_u64s)
+          .max(cr1.id, max)
+          .commit();
+
+        assert(cr2.ok);
+
+        const doc = await db.multi_part_id_u64s.find(cr1.id);
+        assert(doc?.value.value === max);
+      });
+    },
+  );
+
+  await t.step(
+    "Should perform mutate operations with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const id: KvKey = ["mutate", 1];
+
+        const cr = await db
+          .atomic((schema) => schema.multi_part_id_nums)
+          .mutate(
+            {
+              id,
+              type: "set",
+              value: 42,
+            },
+          )
+          .commit();
+
+        assert(cr.ok);
+
+        const doc = await db.multi_part_id_nums.find(id);
+        assert(doc !== null);
+        assertEquals(doc.value, 42);
+        assertEquals(doc.id, id);
+      });
+    },
+  );
+
+  await t.step(
+    "Should perform mutate sum with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const initial = 100n;
+        const sum = 50n;
+
+        const cr1 = await db.multi_part_id_u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
+
+        await db
+          .atomic((schema) => schema.multi_part_id_u64s)
+          .mutate({
+            id: cr1.id,
+            type: "sum",
+            value: sum,
+          })
+          .commit();
+
+        const doc = await db.multi_part_id_u64s.find(cr1.id);
+        assert(doc?.value.value === initial + sum);
+      });
+    },
+  );
 });
