@@ -1,8 +1,8 @@
 name: Benchmarks
 
 on:
-  push:
-    branches: ["main"]
+  release:
+    types: [published]
   pull_request:
     branches: ["main"]
 
@@ -18,9 +18,20 @@ jobs:
     steps:
       - name: Setup repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
+
+      - name: Resolve version label
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "label=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "label=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Run benchmarks
         run: deno bench --unstable-kv --json > benchmark-results.json
@@ -28,17 +39,18 @@ jobs:
       - name: Convert benchmark results
         run: deno run --allow-read benchmarks/utils/convert_bench_results.ts benchmark-results.json > benchmark-results-converted.json
 
-      # On push to main: store results in gh-pages branch for historical tracking
+      # On release: store results in gh-pages branch for historical tracking
       # On PRs: compare against stored baseline and comment with performance diff
       - name: Store and compare benchmark results
         uses: benchmark-action/github-action-benchmark@v1
         with:
+          name: "Benchmark"
           tool: "customSmallerIsBetter"
           output-file-path: benchmark-results-converted.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           benchmark-data-dir-path: "benchmarks-data"
-          # Store results on push to main
-          auto-push: ${{ github.event_name == 'push' }}
+          # Store results on release publish
+          auto-push: ${{ github.event_name == 'release' }}
           # Comment on PRs with performance comparison
           comment-on-alert: true
           summary-always: true
