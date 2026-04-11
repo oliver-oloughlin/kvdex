@@ -500,10 +500,10 @@ default). Upon completion, a list of CommitResult objects will be returned.
 
 ```ts
 // Adds 5 new document entries to the KV store.
-const result = await db.numbers.addMany([1, 2, 3, 4, 5]);
+const result1 = await db.numbers.addMany([1, 2, 3, 4, 5]);
 
 // Only adds the first entry, as "username" is defined as a primary index and cannot have duplicates
-const result = await db.users.addMany([
+const result2 = await db.users.addMany([
   {
     username: "oli",
     age: 24,
