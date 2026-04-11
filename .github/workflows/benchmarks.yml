@@ -44,7 +44,7 @@ jobs:
       - name: Store and compare benchmark results
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: "kvdex (${{ steps.version.outputs.label }})"
+          name: "Benchmark"
           tool: "customSmallerIsBetter"
           output-file-path: benchmark-results-converted.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
