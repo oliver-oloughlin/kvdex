@@ -25,7 +25,7 @@ _Supported Deno versions:_ **^2.3.0**
 - Primary (unique) and secondary (non-unique) indexing.
 - Support for
   [Standard Schema](https://github.com/standard-schema/standard-schema) models
-  ([Zod](https://zod.dev), [ArkType](https://zod.dev),
+  ([Zod](https://zod.dev), [ArkType](https://arktype.io),
   [Valibot](https://valibot.dev) and more).
 - Serialized, compressed and segmented storage for large objects.
 - Support for atomic operations.
@@ -195,31 +195,31 @@ const UserModel = z.object({
 object which expects a Deno KV instance and a schema definition.
 
 ```ts
-import { kvdex, model, collection } from "@olli/kvdex"
-import { jsonEncoder } from "@olli/kvdex/encoding/json"
+import { collection, kvdex, model } from "@olli/kvdex";
+import { jsonEncoder } from "@olli/kvdex/encoding/json";
 
-const kv = await Deno.openKv()
+const kv = await Deno.openKv();
 
 const db = kvdex({
   kv: kv,
   schema: {
     numbers: collection(model<number>()),
     serializedStrings: collection(model<string>(), {
-      encoder: jsonEncoder()
+      encoder: jsonEncoder(),
     }),
     users: collection(UserModel, {
       history: true,
       indices: {
-        username: "primary" // unique
-        age: "secondary" // non-unique
-      }
+        username: "primary", // unique
+        age: "secondary", // non-unique
+      },
     }),
     // Nested collections
     nested: {
       strings: collection(model<string>()),
-    }
-  }
-})
+    },
+  },
+});
 ```
 
 The schema definition contains collection builders, or nested schema
@@ -330,7 +330,7 @@ For storing objects larger than the atomic operation size limit, see
 import { kvdex, collection, model } from "@olli/kvdex"
 import { jsonEncoder } from "@olli/kvdex/encoding/json"
 import { v8Encoder } from "@olli/kvdex/encoding/v8"
-import { brotliCompression } from "@olli/kvdex/encoding/brotli"
+import { brotliCompressor } from "@olli/kvdex/encoding/brotli"
 
 const kv = await Deno.openKv()
 
@@ -338,31 +338,31 @@ const db = kvdex({
   kv: kv,
   schema: {
     users: collection(model<User>(), {
-        // JSON-encoder without compression (best runtime compatibility)
-        encoder: jsonEncoder(),
+      // JSON-encoder without compression (best runtime compatibility)
+      encoder: jsonEncoder(),
 
-        // JSON-encoder + Brotli compression (requires node:zlib built-in)
-        encoder: jsonEncoder({ compression: brotliCompression() }),
+      // JSON-encoder + Brotli compression (requires node:zlib built-in)
+      encoder: jsonEncoder({ compressor: brotliCompressor() }),
 
-        // V8-encoder without brotli compression (requires node:v8 built-in)
-        encoder: v8Encoder()
+      // V8-encoder without brotli compression (requires node:v8 built-in)
+      encoder: v8Encoder(),
 
-        // V8-encoder + brotli compression (requires node:v8 and node:zlib built-in)
-        encoder: v8Encoder({ compression: brotliCompression() })
+      // V8-encoder + brotli compression (requires node:v8 and node:zlib built-in)
+      encoder: v8Encoder({ compressor: brotliCompressor() }),
 
-        // Set custom serialize, deserialize, compress and decompress functions
-        encoder: {
-          serializer: {
-            serialize: ...,
-            deserialize: ...,
-          },
-          // optional
-          compressor: {
-            compress: ...,
-            decompress: ...,
-          }
-        }
-      }),
+      // Set custom serialize, deserialize, compress and decompress functions
+      encoder: {
+        serializer: {
+          serialize: ...,
+          deserialize: ...,
+        },
+        // optional
+        compressor: {
+          compress: ...,
+          decompress: ...,
+        },
+      },
+    }),
   }
 })
 ```
@@ -500,19 +500,19 @@ default). Upon completion, a list of CommitResult objects will be returned.
 
 ```ts
 // Adds 5 new document entries to the KV store.
-await result = await db.numbers.addMany([1, 2, 3, 4, 5])
+const result1 = await db.numbers.addMany([1, 2, 3, 4, 5]);
 
 // Only adds the first entry, as "username" is defined as a primary index and cannot have duplicates
-await result = await db.users.addMany([
+const result2 = await db.users.addMany([
   {
     username: "oli",
-    age: 24
+    age: 24,
   },
   {
     username: "oli",
-    age: 56
-  }
-])
+    age: 56,
+  },
+]);
 ```
 
 ### set()
@@ -699,12 +699,12 @@ const result = await db.users.upsert({
     activities: ["bowling"],
     address: {
       country: "USA",
-      city: "Las Vegas"
-      street: "St. Boulevard"
-      houseNumber: 23
-    }
-  }
-})
+      city: "Las Vegas",
+      street: "St. Boulevard",
+      houseNumber: 23,
+    },
+  },
+});
 ```
 
 ### upsertByPrimaryIndex()
@@ -723,12 +723,12 @@ const result = await db.users.upsertByPrimaryIndex({
     activities: ["bowling"],
     address: {
       country: "USA",
-      city: "Las Vegas"
-      street: "St. Boulevard"
-      houseNumber: 23
-    }
-  }
-})
+      city: "Las Vegas",
+      street: "St. Boulevard",
+      houseNumber: 23,
+    },
+  },
+});
 ```
 
 ### delete()
@@ -1100,7 +1100,7 @@ db.users.listenQueue(async (data) => {
 
   const res = await fetch("...", {
     method: "POST",
-    body: data,
+    body: dataBody,
   });
 
   console.log("POSTED:", dataBody, res.ok);
@@ -1254,7 +1254,7 @@ db.listenQueue(async (data) => {
 
   const res = await fetch("...", {
     method: "POST",
-    body: data,
+    body: dataBody,
   });
 
   console.log("POSTED:", dataBody, res.ok);
