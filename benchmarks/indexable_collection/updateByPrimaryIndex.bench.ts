@@ -1,6 +1,26 @@
-import { mockUser1 } from "../../tests/mocks.ts";
+import { mockUser1, mockUser2 } from "../../tests/mocks.ts";
 import type { User } from "../../tests/models.ts";
 import { useDb } from "../../tests/utils.ts";
+
+Deno.bench(
+  "indexable_collection - updateByPrimaryIndex (replace)",
+  async (b) => {
+    await useDb(async (db) => {
+      await db.i_users.add(mockUser1);
+
+      b.start();
+
+      await db.i_users.updateByPrimaryIndex(
+        "username",
+        mockUser1.username,
+        mockUser2,
+        { strategy: "replace" },
+      );
+
+      b.end();
+    });
+  },
+);
 
 Deno.bench(
   "indexable_collection - updateByPrimaryIndex (shallow merge)",
@@ -31,28 +51,31 @@ Deno.bench(
   },
 );
 
-Deno.bench("collection - updateByPrimaryIndex (deep merge)", async (b) => {
-  await useDb(async (db) => {
-    await db.i_users.add(mockUser1);
+Deno.bench(
+  "indexable_collection - updateByPrimaryIndex (deep merge)",
+  async (b) => {
+    await useDb(async (db) => {
+      await db.i_users.add(mockUser1);
 
-    const updateData: Partial<User> = {
-      address: {
-        country: "USA",
-        city: "Los Angeles",
-        street: "Sesame Street",
-        houseNr: null,
-      },
-    };
+      const updateData: Partial<User> = {
+        address: {
+          country: "USA",
+          city: "Los Angeles",
+          street: "Sesame Street",
+          houseNr: null,
+        },
+      };
 
-    b.start();
+      b.start();
 
-    await db.i_users.updateByPrimaryIndex(
-      "username",
-      mockUser1.username,
-      updateData,
-      { strategy: "merge" },
-    );
+      await db.i_users.updateByPrimaryIndex(
+        "username",
+        mockUser1.username,
+        updateData,
+        { strategy: "merge" },
+      );
 
-    b.end();
-  });
-});
+      b.end();
+    });
+  },
+);

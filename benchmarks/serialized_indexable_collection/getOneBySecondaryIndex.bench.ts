@@ -1,7 +1,7 @@
 import { generateUsers, useDb } from "../../tests/utils.ts";
 
 Deno.bench(
-  "serialized_indexable_collection - findBySecondaryIndex [1_000]",
+  "serialized_indexable_collection - getOneBySecondaryIndex [1_000]",
   async (b) => {
     await useDb(async (db) => {
       const targetUsers = generateUsers(1_000, 25);
@@ -10,7 +10,7 @@ Deno.bench(
       await db.is_users.addMany(otherUsers);
 
       b.start();
-      await db.is_users.findBySecondaryIndex("age", 25);
+      await db.is_users.getOneBySecondaryIndex("age", 25);
       b.end();
     });
   },

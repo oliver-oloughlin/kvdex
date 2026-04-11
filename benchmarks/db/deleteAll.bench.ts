@@ -1,14 +1,13 @@
-import { useDb } from "../../tests/utils.ts";
+import { generateUsers, useDb } from "../../tests/utils.ts";
 
-Deno.bench("db - deleteAll", async (b) => {
+Deno.bench("db - deleteAll [4_000]", async (b) => {
   await useDb(async (db) => {
-    const u64s: Deno.KvU64[] = [];
+    const users = generateUsers(1_000);
 
-    for (let i = 0; i < 1_000; i++) {
-      u64s.push(new Deno.KvU64(100n));
-    }
-
-    await db.u64s.addMany(u64s);
+    await db.users.addMany(users);
+    await db.i_users.addMany(users);
+    await db.s_users.addMany(users);
+    await db.is_users.addMany(users);
 
     b.start();
     await db.deleteAll();

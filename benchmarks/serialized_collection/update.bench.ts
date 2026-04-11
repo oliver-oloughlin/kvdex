@@ -10,7 +10,7 @@ Deno.bench("serialized_collection - update (replace)", async (b) => {
     const updateData = new Deno.KvU64(200n);
 
     b.start();
-    await db.s_u64s.update(id, updateData);
+    await db.s_u64s.update(id, updateData, { strategy: "replace" });
     b.end();
   });
 });
