@@ -23,15 +23,18 @@ jobs:
         uses: denoland/setup-deno@v2
 
       - name: Run benchmarks
-        run: deno bench --unstable-kv > benchmark-results.txt
+        run: deno bench --unstable-kv --json > benchmark-results.json
+
+      - name: Convert benchmark results
+        run: deno run benchmarks/utils/convert_bench_results.ts benchmark-results.json > benchmark-results-converted.json
 
       # On push to main: store results in gh-pages branch for historical tracking
       # On PRs: compare against stored baseline and comment with performance diff
       - name: Store and compare benchmark results
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          tool: "deno"
-          output-file-path: benchmark-results.txt
+          tool: "customSmallerIsBetter"
+          output-file-path: benchmark-results-converted.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           benchmark-data-dir-path: "benchmarks-data"
           # Store results on push to main
