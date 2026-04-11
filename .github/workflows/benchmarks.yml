@@ -23,7 +23,7 @@ jobs:
         uses: denoland/setup-deno@v2
 
       - name: Run benchmarks
-        run: deno bench --unstable-kv --json > benchmark-results.json
+        run: deno bench --unstable-kv --json --allow-read > benchmark-results.json
 
       - name: Convert benchmark results
         run: deno run benchmarks/utils/convert_bench_results.ts benchmark-results.json > benchmark-results-converted.json
