@@ -1,0 +1,51 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  benchmark:
+    name: Run benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+
+      - name: Run benchmarks
+        run: deno bench --unstable-kv --json > benchmark-results.json
+
+      - name: Convert benchmark results
+        run: deno run --allow-read benchmarks/utils/convert_bench_results.ts benchmark-results.json > benchmark-results-converted.json
+
+      # On push to main: store results in gh-pages branch for historical tracking
+      # On PRs: compare against stored baseline and comment with performance diff
+      - name: Store and compare benchmark results
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: "customSmallerIsBetter"
+          output-file-path: benchmark-results-converted.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          benchmark-data-dir-path: "benchmarks-data"
+          # Store results on push to main
+          auto-push: ${{ github.event_name == 'push' }}
+          # Comment on PRs with performance comparison
+          comment-on-alert: true
+          summary-always: true
+          # Alert if any benchmark is 20% slower than baseline
+          alert-threshold: "120%"
+          # Always comment on PRs with the full comparison
+          comment-always: ${{ github.event_name == 'pull_request' }}
+          # Fail the workflow if performance regresses significantly (50%+)
+          fail-on-alert: false
+          fail-threshold: "150%"

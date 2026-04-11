@@ -1,6 +1,26 @@
-import { mockUser1 } from "../../tests/mocks.ts";
+import { mockUser1, mockUser2 } from "../../tests/mocks.ts";
 import type { User } from "../../tests/models.ts";
 import { useDb } from "../../tests/utils.ts";
+
+Deno.bench(
+  "serialized_indexable_collection - updateByPrimaryIndex (replace)",
+  async (b) => {
+    await useDb(async (db) => {
+      await db.is_users.add(mockUser1);
+
+      b.start();
+
+      await db.is_users.updateByPrimaryIndex(
+        "username",
+        mockUser1.username,
+        mockUser2,
+        { strategy: "replace" },
+      );
+
+      b.end();
+    });
+  },
+);
 
 Deno.bench(
   "serialized_indexable_collection - updateByPrimaryIndex (shallow merge)",
@@ -32,7 +52,7 @@ Deno.bench(
 );
 
 Deno.bench(
-  "serialized_collection - updateByPrimaryIndex (deep merge)",
+  "serialized_indexable_collection - updateByPrimaryIndex (deep merge)",
   async (b) => {
     await useDb(async (db) => {
       await db.is_users.add(mockUser1);

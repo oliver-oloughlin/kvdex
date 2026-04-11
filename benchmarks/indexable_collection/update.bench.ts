@@ -1,6 +1,17 @@
-import { mockUser1 } from "../../tests/mocks.ts";
+import { mockUser1, mockUser2 } from "../../tests/mocks.ts";
 import type { User } from "../../tests/models.ts";
 import { useDb } from "../../tests/utils.ts";
+
+Deno.bench("indexable_collection - update (replace)", async (b) => {
+  await useDb(async (db) => {
+    const id = "id";
+    await db.i_users.set(id, mockUser1);
+
+    b.start();
+    await db.i_users.update(id, mockUser2, { strategy: "replace" });
+    b.end();
+  });
+});
 
 Deno.bench("indexable_collection - update (shallow merge)", async (b) => {
   await useDb(async (db) => {
@@ -22,7 +33,7 @@ Deno.bench("indexable_collection - update (shallow merge)", async (b) => {
   });
 });
 
-Deno.bench("collection - update (deep merge)", async (b) => {
+Deno.bench("indexable_collection - update (deep merge)", async (b) => {
   await useDb(async (db) => {
     const id = "id";
     await db.i_users.set(id, mockUser1);

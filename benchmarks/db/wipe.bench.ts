@@ -1,6 +1,6 @@
 import { generateUsers, useDb } from "../../tests/utils.ts";
 
-Deno.bench("db - countAll [4_000]", async (b) => {
+Deno.bench("db - wipe [4_000]", async (b) => {
   await useDb(async (db) => {
     const users = generateUsers(1_000);
 
@@ -10,7 +10,7 @@ Deno.bench("db - countAll [4_000]", async (b) => {
     await db.is_users.addMany(users);
 
     b.start();
-    await db.countAll();
+    await db.wipe();
     b.end();
   });
 });
