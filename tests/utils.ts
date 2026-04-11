@@ -177,7 +177,7 @@ export function generateLargeUsers(n: number) {
   for (let i = 0; i < n; i++) {
     const r = Math.random();
     users.push({
-      username: `user_${i}`,
+      username: crypto.randomUUID(),
       age: Math.floor(15 + i / 5),
       address: {
         country,
@@ -197,7 +197,7 @@ export function generateUsers(n: number, age?: number) {
   for (let i = 0; i < n; i++) {
     const r = Math.random();
     users.push({
-      username: `user_${i}`,
+      username: crypto.randomUUID(),
       age: age ?? Math.floor(15 + i / 5),
       address: {
         country: "Norway",
