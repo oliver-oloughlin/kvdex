@@ -36,9 +36,11 @@ const results = benches
   .map(
     (bench) => ({
       name: bench.name,
-      unit: "ns/iter",
-      value: bench.results[0].ok.avg,
-      range: `${bench.results[0].ok.min} … ${bench.results[0].ok.max}`,
+      unit: "µs/iter",
+      value: Math.round(bench.results[0].ok.avg / 1_000 * 100) / 100,
+      range: `${Math.round(bench.results[0].ok.min / 1_000)} … ${
+        Math.round(bench.results[0].ok.max / 1_000)
+      } µs`,
     }),
   );
 
