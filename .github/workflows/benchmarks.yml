@@ -23,10 +23,10 @@ jobs:
         uses: denoland/setup-deno@v2
 
       - name: Run benchmarks
-        run: deno bench --unstable-kv --json --allow-read > benchmark-results.json
+        run: deno bench --unstable-kv --json > benchmark-results.json
 
       - name: Convert benchmark results
-        run: deno run benchmarks/utils/convert_bench_results.ts benchmark-results.json > benchmark-results-converted.json
+        run: deno run --allow-read benchmarks/utils/convert_bench_results.ts benchmark-results.json > benchmark-results-converted.json
 
       # On push to main: store results in gh-pages branch for historical tracking
       # On PRs: compare against stored baseline and comment with performance diff
