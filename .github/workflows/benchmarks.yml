@@ -24,15 +24,6 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v2
 
-      - name: Resolve version label
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            echo "label=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "label=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Run benchmarks
         run: deno bench --unstable-kv --json > benchmark-results.json
 
@@ -61,3 +52,18 @@ jobs:
           # Fail the workflow if performance regresses significantly (50%+)
           fail-on-alert: false
           fail-threshold: "150%"
+
+      # Replace the commit SHA with the release tag in the chart data
+      # so x-axis labels show version tags instead of commit hashes
+      - name: Label data point with release tag
+        if: github.event_name == 'release'
+        run: |
+          git fetch origin gh-pages
+          git worktree add gh-pages-dir gh-pages
+          cd gh-pages-dir
+          sed -i "s/\"id\":\"${{ github.sha }}\"/\"id\":\"${{ github.event.release.tag_name }}\"/g" benchmarks-data/data.js
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add benchmarks-data/data.js
+          git commit -m "Label benchmark with ${{ github.event.release.tag_name }}"
+          git push origin gh-pages
