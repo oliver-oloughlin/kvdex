@@ -574,9 +574,36 @@ export async function diffIndices(
   dataOld: KvObject,
   dataNew: KvObject,
   collection: Collection<any, any, any>,
-  setFn: (indexKey: KvKey) => void,
-  deleteFn: (indexKey: KvKey) => void,
+  atomic: DenoAtomicOperation,
 ) {
+  const { insertKeys, deleteKeys, checkKeys } = await createIndexDiffs(
+    id,
+    dataOld,
+    dataNew,
+    collection,
+  );
+
+  insertKeys.forEach((key) => atomic.set(key, dataNew));
+  deleteKeys.forEach((key) => atomic.delete(key));
+
+  checkKeys.forEach((key) =>
+    atomic.check({
+      key,
+      versionstamp: null,
+    })
+  );
+}
+
+export async function createIndexDiffs(
+  id: KvId | null,
+  dataOld: KvObject,
+  dataNew: KvObject,
+  collection: Collection<any, any, any>,
+) {
+  const insertKeys: KvKey[] = [];
+  const deleteKeys: KvKey[] = [];
+  const checkKeys: KvKey[] = [];
+
   // Handle primary indices
   for (const index of collection["primaryIndexList"]) {
     const indexValueOld = dataOld[index] as KvId | undefined;
@@ -613,16 +640,17 @@ export async function diffIndices(
     }
 
     if (typeof indexKeyOld !== "undefined") {
-      deleteFn(indexKeyOld);
+      deleteKeys.push(indexKeyOld);
     }
 
     if (typeof indexKeyNew !== "undefined") {
-      setFn(indexKeyNew);
+      checkKeys.push(indexKeyNew);
+      insertKeys.push(indexKeyNew);
     }
   }
 
   if (!id) {
-    return;
+    return { insertKeys, deleteKeys, checkKeys };
   }
 
   // Handle secondary indices
@@ -663,11 +691,13 @@ export async function diffIndices(
     }
 
     if (typeof indexKeyOld !== "undefined") {
-      deleteFn(indexKeyOld);
+      deleteKeys.push(indexKeyOld);
     }
 
     if (typeof indexKeyNew !== "undefined") {
-      setFn(indexKeyNew);
+      insertKeys.push(indexKeyNew);
     }
   }
+
+  return { insertKeys, deleteKeys, checkKeys };
 }
