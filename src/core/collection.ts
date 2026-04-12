@@ -2485,7 +2485,7 @@ export class Collection<
     // Get document value, delete document entry
     const { value, id } = doc;
 
-    // If indexable, check for index collisions and delete exisitng index entries
+    // If indexable, check for index collisions and delete existing index entries
     if (this.isIndexable) {
       const atomic = this.kv.atomic();
 
