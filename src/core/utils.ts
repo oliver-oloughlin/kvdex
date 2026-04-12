@@ -26,6 +26,7 @@ import type {
 } from "./types.ts";
 import { ulid } from "@std/ulid";
 import { jsonEncoder } from "../ext/encoding/mod.ts";
+import { equals } from "@std/bytes";
 
 /**
  * Generate a new document id.
@@ -565,5 +566,108 @@ async function handleIndices(
     );
 
     secondary(indexKey);
+  }
+}
+
+export async function diffIndices(
+  id: KvId | null,
+  dataOld: KvObject,
+  dataNew: KvObject,
+  collection: Collection<any, any, any>,
+  setFn: (indexKey: KvKey) => void,
+  deleteFn: (indexKey: KvKey) => void,
+) {
+  // Handle primary indices
+  for (const index of collection["primaryIndexList"]) {
+    const indexValueOld = dataOld[index] as KvId | undefined;
+    const indexValueNew = dataNew[index] as KvId | undefined;
+
+    const encodedOld = typeof indexValueOld !== "undefined"
+      ? await encodeData(indexValueOld, collection["encoder"])
+      : undefined;
+
+    const encodedNew = typeof indexValueNew !== "undefined"
+      ? await encodeData(indexValueNew, collection["encoder"])
+      : undefined;
+
+    const indexKeyOld = typeof encodedOld !== "undefined"
+      ? extendKey(
+        collection["keys"].primaryIndex,
+        index,
+        encodedOld,
+      )
+      : undefined;
+
+    const indexKeyNew = typeof encodedNew !== "undefined"
+      ? extendKey(
+        collection["keys"].primaryIndex,
+        index,
+        encodedNew,
+      )
+      : undefined;
+
+    if (
+      equals(encodedOld ?? new Uint8Array(), encodedNew ?? new Uint8Array())
+    ) {
+      continue;
+    }
+
+    if (typeof indexKeyOld !== "undefined") {
+      deleteFn(indexKeyOld);
+    }
+
+    if (typeof indexKeyNew !== "undefined") {
+      setFn(indexKeyNew);
+    }
+  }
+
+  if (!id) {
+    return;
+  }
+
+  // Handle secondary indices
+  for (const index of collection["secondaryIndexList"]) {
+    const indexValueOld = dataOld[index] as KvId | undefined;
+    const indexValueNew = dataNew[index] as KvId | undefined;
+
+    const encodedOld = typeof indexValueOld !== "undefined"
+      ? await encodeData(indexValueOld, collection["encoder"])
+      : undefined;
+
+    const encodedNew = typeof indexValueNew !== "undefined"
+      ? await encodeData(indexValueNew, collection["encoder"])
+      : undefined;
+
+    const indexKeyOld = typeof encodedOld !== "undefined"
+      ? extendKey(
+        collection["keys"].secondaryIndex,
+        index,
+        encodedOld,
+        id,
+      )
+      : undefined;
+
+    const indexKeyNew = typeof encodedNew !== "undefined"
+      ? extendKey(
+        collection["keys"].secondaryIndex,
+        index,
+        encodedNew,
+        id,
+      )
+      : undefined;
+
+    if (
+      equals(encodedOld ?? new Uint8Array(), encodedNew ?? new Uint8Array())
+    ) {
+      continue;
+    }
+
+    if (typeof indexKeyOld !== "undefined") {
+      deleteFn(indexKeyOld);
+    }
+
+    if (typeof indexKeyNew !== "undefined") {
+      setFn(indexKeyNew);
+    }
   }
 }
