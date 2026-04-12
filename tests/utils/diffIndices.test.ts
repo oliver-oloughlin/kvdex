@@ -78,26 +78,54 @@ Deno.test("utils - diffIndices", async (t) => {
         const cr = await collection.add(user1);
         assert(cr.ok);
 
-        const { insertKeys, deleteKeys, checkKeys } = await createIndexDiffs(
+        const {
+          insertPrimaryKeys,
+          insertSecondaryKeys,
+          deleteKeys,
+          checkKeys,
+        } = await createIndexDiffs(
           cr.id,
           user1,
           user2,
           collection,
         );
 
-        assertEquals(insertKeys.length, 4);
+        assertEquals(insertPrimaryKeys.length, 2);
+        assertEquals(insertSecondaryKeys.length, 2);
         assertEquals(deleteKeys.length, 4);
         assertEquals(checkKeys.length, 2);
 
-        assert(insertKeys.some(keyIncludesEncodedPart(user2Encoded.username)));
-        assert(insertKeys.some(keyIncludesEncodedPart(user2Encoded.email)));
-        assert(insertKeys.some(keyIncludesEncodedPart(user2Encoded.age)));
-        assert(insertKeys.some(keyIncludesEncodedPart(user2Encoded.bornYear)));
+        assert(
+          insertPrimaryKeys.some(keyIncludesEncodedPart(user2Encoded.username)),
+        );
+        assert(
+          insertPrimaryKeys.some(keyIncludesEncodedPart(user2Encoded.email)),
+        );
+        assert(
+          insertSecondaryKeys.some(keyIncludesEncodedPart(user2Encoded.age)),
+        );
+        assert(
+          insertSecondaryKeys.some(
+            keyIncludesEncodedPart(user2Encoded.bornYear),
+          ),
+        );
 
-        assert(!insertKeys.some(keyIncludesEncodedPart(user1Encoded.username)));
-        assert(!insertKeys.some(keyIncludesEncodedPart(user1Encoded.email)));
-        assert(!insertKeys.some(keyIncludesEncodedPart(user1Encoded.age)));
-        assert(!insertKeys.some(keyIncludesEncodedPart(user1Encoded.bornYear)));
+        assert(
+          !insertPrimaryKeys.some(
+            keyIncludesEncodedPart(user1Encoded.username),
+          ),
+        );
+        assert(
+          !insertPrimaryKeys.some(keyIncludesEncodedPart(user1Encoded.email)),
+        );
+        assert(
+          !insertSecondaryKeys.some(keyIncludesEncodedPart(user1Encoded.age)),
+        );
+        assert(
+          !insertSecondaryKeys.some(
+            keyIncludesEncodedPart(user1Encoded.bornYear),
+          ),
+        );
 
         assert(deleteKeys.some(keyIncludesEncodedPart(user1Encoded.username)));
         assert(deleteKeys.some(keyIncludesEncodedPart(user1Encoded.email)));
@@ -176,26 +204,54 @@ Deno.test("utils - diffIndices", async (t) => {
         const cr = await collection.add(user1);
         assert(cr.ok);
 
-        const { insertKeys, deleteKeys, checkKeys } = await createIndexDiffs(
+        const {
+          insertPrimaryKeys,
+          insertSecondaryKeys,
+          deleteKeys,
+          checkKeys,
+        } = await createIndexDiffs(
           cr.id,
           user1,
           user2,
           collection,
         );
 
-        assertEquals(insertKeys.length, 2);
+        assertEquals(insertPrimaryKeys.length, 1);
+        assertEquals(insertSecondaryKeys.length, 1);
         assertEquals(deleteKeys.length, 2);
         assertEquals(checkKeys.length, 1);
 
-        assert(insertKeys.some(keyIncludesEncodedPart(user2Encoded.username)));
-        assert(!insertKeys.some(keyIncludesEncodedPart(user2Encoded.email)));
-        assert(insertKeys.some(keyIncludesEncodedPart(user2Encoded.age)));
-        assert(!insertKeys.some(keyIncludesEncodedPart(user2Encoded.bornYear)));
+        assert(
+          insertPrimaryKeys.some(keyIncludesEncodedPart(user2Encoded.username)),
+        );
+        assert(
+          !insertPrimaryKeys.some(keyIncludesEncodedPart(user2Encoded.email)),
+        );
+        assert(
+          insertSecondaryKeys.some(keyIncludesEncodedPart(user2Encoded.age)),
+        );
+        assert(
+          !insertSecondaryKeys.some(
+            keyIncludesEncodedPart(user2Encoded.bornYear),
+          ),
+        );
 
-        assert(!insertKeys.some(keyIncludesEncodedPart(user1Encoded.username)));
-        assert(!insertKeys.some(keyIncludesEncodedPart(user1Encoded.email)));
-        assert(!insertKeys.some(keyIncludesEncodedPart(user1Encoded.age)));
-        assert(!insertKeys.some(keyIncludesEncodedPart(user1Encoded.bornYear)));
+        assert(
+          !insertPrimaryKeys.some(
+            keyIncludesEncodedPart(user1Encoded.username),
+          ),
+        );
+        assert(
+          !insertPrimaryKeys.some(keyIncludesEncodedPart(user1Encoded.email)),
+        );
+        assert(
+          !insertSecondaryKeys.some(keyIncludesEncodedPart(user1Encoded.age)),
+        );
+        assert(
+          !insertSecondaryKeys.some(
+            keyIncludesEncodedPart(user1Encoded.bornYear),
+          ),
+        );
 
         assert(deleteKeys.some(keyIncludesEncodedPart(user1Encoded.username)));
         assert(!deleteKeys.some(keyIncludesEncodedPart(user1Encoded.email)));
@@ -266,26 +322,42 @@ Deno.test("utils - diffIndices", async (t) => {
         const cr = await collection.add(user1);
         assert(cr.ok);
 
-        const { insertKeys, deleteKeys, checkKeys } = await createIndexDiffs(
+        const {
+          insertPrimaryKeys,
+          insertSecondaryKeys,
+          deleteKeys,
+          checkKeys,
+        } = await createIndexDiffs(
           cr.id,
           user1,
           user2,
           collection,
         );
 
-        assertEquals(insertKeys.length, 2);
+        assertEquals(insertPrimaryKeys.length, 1);
+        assertEquals(insertSecondaryKeys.length, 1);
         assertEquals(deleteKeys.length, 2);
         assertEquals(checkKeys.length, 1);
 
-        assert(insertKeys.some(keyIncludesEncodedPart(user2Encoded.username)));
-        assert(!insertKeys.some(keyIncludesStringPart("email")));
-        assert(insertKeys.some(keyIncludesEncodedPart(user2Encoded.age)));
-        assert(!insertKeys.some(keyIncludesStringPart("bornYear")));
+        assert(
+          insertPrimaryKeys.some(keyIncludesEncodedPart(user2Encoded.username)),
+        );
+        assert(!insertPrimaryKeys.some(keyIncludesStringPart("email")));
+        assert(
+          insertSecondaryKeys.some(keyIncludesEncodedPart(user2Encoded.age)),
+        );
+        assert(!insertSecondaryKeys.some(keyIncludesStringPart("bornYear")));
 
-        assert(!insertKeys.some(keyIncludesEncodedPart(user1Encoded.username)));
-        assert(!insertKeys.some(keyIncludesStringPart("email")));
-        assert(!insertKeys.some(keyIncludesEncodedPart(user1Encoded.age)));
-        assert(!insertKeys.some(keyIncludesStringPart("bornYear")));
+        assert(
+          !insertPrimaryKeys.some(
+            keyIncludesEncodedPart(user1Encoded.username),
+          ),
+        );
+        assert(!insertPrimaryKeys.some(keyIncludesStringPart("email")));
+        assert(
+          !insertSecondaryKeys.some(keyIncludesEncodedPart(user1Encoded.age)),
+        );
+        assert(!insertSecondaryKeys.some(keyIncludesStringPart("bornYear")));
 
         assert(deleteKeys.some(keyIncludesEncodedPart(user1Encoded.username)));
         assert(!deleteKeys.some(keyIncludesStringPart("email")));

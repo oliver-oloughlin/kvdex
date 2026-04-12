@@ -570,21 +570,32 @@ async function handleIndices(
 }
 
 export async function diffIndices(
-  id: KvId | null,
+  id: KvId,
   dataOld: KvObject,
   dataNew: KvObject,
   collection: Collection<any, any, any>,
   atomic: DenoAtomicOperation,
+  options?: DenoKvSetOptions,
 ) {
-  const { insertKeys, deleteKeys, checkKeys } = await createIndexDiffs(
-    id,
-    dataOld,
-    dataNew,
-    collection,
-  );
+  const { insertPrimaryKeys, insertSecondaryKeys, deleteKeys, checkKeys } =
+    await createIndexDiffs(
+      id,
+      dataOld,
+      dataNew,
+      collection,
+    );
 
-  insertKeys.forEach((key) => atomic.set(key, dataNew));
+  insertSecondaryKeys.forEach((key) => atomic.set(key, dataNew, options));
   deleteKeys.forEach((key) => atomic.delete(key));
+
+  insertPrimaryKeys.forEach((key) => {
+    const indexEntry: IndexDataEntry<KvObject> = {
+      ...dataNew,
+      __id__: id,
+    };
+
+    atomic.set(key, indexEntry, options);
+  });
 
   checkKeys.forEach((key) =>
     atomic.check({
@@ -594,13 +605,21 @@ export async function diffIndices(
   );
 }
 
+export type IndexDiffs = {
+  insertPrimaryKeys: KvKey[];
+  insertSecondaryKeys: KvKey[];
+  deleteKeys: KvKey[];
+  checkKeys: KvKey[];
+};
+
 export async function createIndexDiffs(
-  id: KvId | null,
+  id: KvId,
   dataOld: KvObject,
   dataNew: KvObject,
   collection: Collection<any, any, any>,
-) {
-  const insertKeys: KvKey[] = [];
+): Promise<IndexDiffs> {
+  const insertPrimaryKeys: KvKey[] = [];
+  const insertSecondaryKeys: KvKey[] = [];
   const deleteKeys: KvKey[] = [];
   const checkKeys: KvKey[] = [];
 
@@ -645,12 +664,8 @@ export async function createIndexDiffs(
 
     if (typeof indexKeyNew !== "undefined") {
       checkKeys.push(indexKeyNew);
-      insertKeys.push(indexKeyNew);
+      insertPrimaryKeys.push(indexKeyNew);
     }
-  }
-
-  if (!id) {
-    return { insertKeys, deleteKeys, checkKeys };
   }
 
   // Handle secondary indices
@@ -695,9 +710,9 @@ export async function createIndexDiffs(
     }
 
     if (typeof indexKeyNew !== "undefined") {
-      insertKeys.push(indexKeyNew);
+      insertSecondaryKeys.push(indexKeyNew);
     }
   }
 
-  return { insertKeys, deleteKeys, checkKeys };
+  return { insertPrimaryKeys, insertSecondaryKeys, deleteKeys, checkKeys };
 }
