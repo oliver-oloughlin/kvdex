@@ -8,7 +8,6 @@ import {
 import { generateUsers, useDb } from "../utils.ts";
 import type { User } from "../models.ts";
 
-// TODO: fix update document deleting indices even when failing to update document
 Deno.test(
   "indexable_collection - updateManyBySecondaryOrder",
   async (t) => {
