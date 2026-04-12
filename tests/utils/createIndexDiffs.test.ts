@@ -23,7 +23,7 @@ const keyIncludesStringPart = (part: string) => {
   return (key: KvKey) => key.some((p) => p === part);
 };
 
-Deno.test("utils - diffIndices", async (t) => {
+Deno.test("utils - createIndexDiffs", async (t) => {
   await t.step(
     "Should delete old primary and secondary indices and set new primary and secondary indices",
     async () => {
@@ -216,8 +216,8 @@ Deno.test("utils - diffIndices", async (t) => {
           collection,
         );
 
-        assertEquals(insertPrimaryKeys.length, 1);
-        assertEquals(insertSecondaryKeys.length, 1);
+        assertEquals(insertPrimaryKeys.length, 2);
+        assertEquals(insertSecondaryKeys.length, 2);
         assertEquals(deleteKeys.length, 2);
         assertEquals(checkKeys.length, 1);
 
@@ -225,13 +225,13 @@ Deno.test("utils - diffIndices", async (t) => {
           insertPrimaryKeys.some(keyIncludesEncodedPart(user2Encoded.username)),
         );
         assert(
-          !insertPrimaryKeys.some(keyIncludesEncodedPart(user2Encoded.email)),
+          insertPrimaryKeys.some(keyIncludesEncodedPart(user2Encoded.email)),
         );
         assert(
           insertSecondaryKeys.some(keyIncludesEncodedPart(user2Encoded.age)),
         );
         assert(
-          !insertSecondaryKeys.some(
+          insertSecondaryKeys.some(
             keyIncludesEncodedPart(user2Encoded.bornYear),
           ),
         );
@@ -242,13 +242,13 @@ Deno.test("utils - diffIndices", async (t) => {
           ),
         );
         assert(
-          !insertPrimaryKeys.some(keyIncludesEncodedPart(user1Encoded.email)),
+          insertPrimaryKeys.some(keyIncludesEncodedPart(user1Encoded.email)),
         );
         assert(
           !insertSecondaryKeys.some(keyIncludesEncodedPart(user1Encoded.age)),
         );
         assert(
-          !insertSecondaryKeys.some(
+          insertSecondaryKeys.some(
             keyIncludesEncodedPart(user1Encoded.bornYear),
           ),
         );

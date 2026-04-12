@@ -234,32 +234,6 @@ export async function setIndices(
 }
 
 /**
- * Check for index collisions when inserting update data.
- *
- * @param data - Update data.
- * @param atomic - Atomic operation.
- * @param collection - Collection context.
- * @returns The atomic operation with added checks.
- */
-export async function checkIndices(
-  data: KvObject,
-  atomic: DenoAtomicOperation,
-  collection: Collection<any, any, any>,
-) {
-  await handleIndices(
-    null,
-    data,
-    collection,
-    (primaryIndexKey) => {
-      atomic.check({
-        key: primaryIndexKey,
-        versionstamp: null,
-      });
-    },
-  );
-}
-
-/**
  * Delete document indices using an atomic operation.
  *
  * @param id - Document id.
@@ -569,35 +543,26 @@ async function handleIndices(
   }
 }
 
-export async function diffIndices(
+export function applyIndexDiffs(
   id: KvId,
-  dataOld: KvObject,
-  dataNew: KvObject,
-  collection: Collection<any, any, any>,
+  diffs: IndexDiffs,
+  value: unknown,
   atomic: DenoAtomicOperation,
   options?: DenoKvSetOptions,
 ) {
-  const { insertPrimaryKeys, insertSecondaryKeys, deleteKeys, checkKeys } =
-    await createIndexDiffs(
-      id,
-      dataOld,
-      dataNew,
-      collection,
-    );
+  diffs.deleteKeys.forEach((key) => atomic.delete(key));
 
-  insertSecondaryKeys.forEach((key) => atomic.set(key, dataNew, options));
-  deleteKeys.forEach((key) => atomic.delete(key));
+  diffs.insertSecondaryKeys.forEach((key) => atomic.set(key, value, options));
 
-  insertPrimaryKeys.forEach((key) => {
+  diffs.insertPrimaryKeys.forEach((key) => {
     const indexEntry: IndexDataEntry<KvObject> = {
-      ...dataNew,
+      ...(value as KvObject),
       __id__: id,
     };
-
     atomic.set(key, indexEntry, options);
   });
 
-  checkKeys.forEach((key) =>
+  diffs.checkKeys.forEach((key) =>
     atomic.check({
       key,
       versionstamp: null,
@@ -655,6 +620,11 @@ export async function createIndexDiffs(
     if (
       equals(encodedOld ?? new Uint8Array(), encodedNew ?? new Uint8Array())
     ) {
+      // Index key unchanged — still re-set the entry with new document data,
+      // but skip delete and collision check since the key already belongs to this doc.
+      if (typeof indexKeyNew !== "undefined") {
+        insertPrimaryKeys.push(indexKeyNew);
+      }
       continue;
     }
 
@@ -702,6 +672,11 @@ export async function createIndexDiffs(
     if (
       equals(encodedOld ?? new Uint8Array(), encodedNew ?? new Uint8Array())
     ) {
+      // Index key unchanged — still re-set the entry with new document data,
+      // but skip delete since the key already belongs to this doc.
+      if (typeof indexKeyNew !== "undefined") {
+        insertSecondaryKeys.push(indexKeyNew);
+      }
       continue;
     }
 
