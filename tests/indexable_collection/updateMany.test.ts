@@ -1,4 +1,4 @@
-import { assert } from "@std/assert";
+import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUser3, mockUserInvalid } from "../mocks.ts";
 import { generateUsers, useDb } from "../utils.ts";
 import { keyEq } from "../../src/core/utils.ts";
@@ -91,52 +91,59 @@ Deno.test("indexable_collection - updateMany", async (t) => {
     "Should only update one document of type KvObject using replace (primary index collision)",
     async () => {
       await useDb(async (db) => {
-        const users = generateUsers(1_000);
+        const users = generateUsers(1_000, -1);
         const cr = await db.i_users.addMany(users);
         assert(cr.ok);
-
-        const docs = await db.i_users.getMany();
-        const ids = docs.result.map((doc) => doc.id);
-        const versionstamps = docs.result.map((doc) => doc.versionstamp);
 
         const { result } = await db.i_users.updateMany(mockUser1, {
           strategy: "replace",
         });
 
-        assert(
-          result.some((cr) =>
-            cr.ok && ids.includes(cr.id) &&
-            !versionstamps.includes(cr.versionstamp)
-          ),
-        );
+        const successfulCrs = result.filter((cr) => cr.ok);
+        const unsuccessfulCrs = result.filter((cr) => !cr.ok);
 
-        assert(
-          result.some((cr) => !cr.ok),
-        );
+        assertEquals(successfulCrs.length, 1);
+        assertEquals(unsuccessfulCrs.length, users.length - 1);
 
         const byPrimary = await db.i_users.findByPrimaryIndex(
           "username",
           mockUser1.username,
         );
 
-        const { result: [bySecondary] } = await db.i_users.findBySecondaryIndex(
-          "age",
-          mockUser1.age,
+        const { result: [bySecondary] } = await db.i_users
+          .findBySecondaryIndex(
+            "age",
+            mockUser1.age,
+          );
+
+        assertNotEquals(byPrimary, null);
+        assertEquals(byPrimary?.value.username, mockUser1.username);
+        assertEquals(
+          byPrimary?.value.address.country,
+          mockUser1.address.country,
         );
+        assertEquals(byPrimary?.value.address.city, mockUser1.address.city);
+        assertEquals(
+          byPrimary?.value.address.houseNr,
+          mockUser1.address.houseNr,
+        );
+        assertEquals(byPrimary?.value.address.street, mockUser1.address.street);
 
-        assert(byPrimary !== null);
-        assert(byPrimary.value.username === mockUser1.username);
-        assert(byPrimary.value.address.country === mockUser1.address.country);
-        assert(byPrimary.value.address.city === mockUser1.address.city);
-        assert(byPrimary.value.address.houseNr === mockUser1.address.houseNr);
-        assert(byPrimary.value.address.street === mockUser1.address.street);
-
-        assert(bySecondary !== null);
-        assert(bySecondary.value.username === mockUser1.username);
-        assert(bySecondary.value.address.country === mockUser1.address.country);
-        assert(bySecondary.value.address.city === mockUser1.address.city);
-        assert(bySecondary.value.address.houseNr === mockUser1.address.houseNr);
-        assert(bySecondary.value.address.street === mockUser1.address.street);
+        assertNotEquals(bySecondary, null);
+        assertEquals(bySecondary?.value.username, mockUser1.username);
+        assertEquals(
+          bySecondary?.value.address.country,
+          mockUser1.address.country,
+        );
+        assertEquals(bySecondary?.value.address.city, mockUser1.address.city);
+        assertEquals(
+          bySecondary?.value.address.houseNr,
+          mockUser1.address.houseNr,
+        );
+        assertEquals(
+          bySecondary?.value.address.street,
+          mockUser1.address.street,
+        );
       });
     },
   );
