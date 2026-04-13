@@ -2506,14 +2506,18 @@ export class Collection<
     // Get document value, delete document entry
     const { value, id } = doc;
 
-    // If serialized, collect existing segment keys to delete atomically
+    // If serialized, derive existing segment keys from the document's encoded entry
     const oldSegmentKeys: DenoKvStrictKey[] = [];
     if (this.encoder) {
-      const keyPrefix = extendKey(this.keys.segment, id);
-      const iter = await this.kv.list({ prefix: keyPrefix });
-
-      for await (const { key } of iter) {
-        oldSegmentKeys.push(key as DenoKvStrictKey);
+      const idKey = extendKey(this.keys.id, id);
+      const entry = await this.kv.get(idKey);
+      if (entry.value) {
+        const { ids } = entry.value as EncodedEntry;
+        ids.forEach((segId) => {
+          oldSegmentKeys.push(
+            extendKey(this.keys.segment, id, segId) as DenoKvStrictKey,
+          );
+        });
       }
     }
 
