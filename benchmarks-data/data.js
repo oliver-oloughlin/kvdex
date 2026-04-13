@@ -15,10 +15,10 @@ window.BENCHMARK_DATA = {
             "username": "web-flow",
             "email": "noreply@github.com"
           },
-          "id": "cf1136b1dab4dbea1ff84426a06962d7ba3b8add",
-          "message": "fix: broken update tests & race condition bug for index updates (#294)\n\n* fix: make sure street is set\n\n* fix: typo\n\n* feat: create diff indices util\n\n* feat: add idnex diff utils + tests\n\n* fix: handle distinction between primary and secondary keys\n\n* fix: update with indices bug\n\n* fix: remove TODOs that have been solved\n\n* fix: remove TODO\n\n* chore: bump version\n\n* fix: O(n*2) performance issue\n\n---------\n\nCo-authored-by: oliver-oloughlin <oliver.oloughlin@gmail.com>",
+          "id": "3.6.2",
+          "message": "3.6.2",
           "timestamp": "2026-04-13T07:16:57Z",
-          "url": "https://github.com/oliver-oloughlin/kvdex/commit/cf1136b1dab4dbea1ff84426a06962d7ba3b8add"
+          "url": "https://github.com/oliver-oloughlin/kvdex/releases/tag/3.6.2"
         },
         "date": 1776065153477,
         "tool": "customSmallerIsBetter",
