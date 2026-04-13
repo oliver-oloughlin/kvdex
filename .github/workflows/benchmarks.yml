@@ -49,21 +49,33 @@ jobs:
           alert-threshold: "120%"
           # Always comment on PRs with the full comparison
           comment-always: ${{ github.event_name == 'pull_request' }}
-          # Fail the workflow if performance regresses significantly (50%+)
+          # Do not fail the workflow on performance regressions
           fail-on-alert: false
-          fail-threshold: "150%"
 
       # Replace the commit SHA with the release tag in the chart data
       # so x-axis labels show version tags instead of commit hashes
       - name: Label data point with release tag
         if: github.event_name == 'release'
         run: |
+          # Resolve SHAs before switching to gh-pages worktree
+          RELEASE_SHA="${{ github.sha }}"
+          TAG_SHA="$(git rev-list -n 1 "${{ github.event.release.tag_name }}" 2>/dev/null || echo "")"
+
           git fetch origin gh-pages
           git worktree add gh-pages-dir gh-pages
           cd gh-pages-dir
-          sed -i "s/\"id\":\"${{ github.sha }}\"/\"id\":\"${{ github.event.release.tag_name }}\"/g" benchmarks-data/data.js
+
+          sed -i "s|\"id\":\"${RELEASE_SHA}\"|\"id\":\"${{ github.event.release.tag_name }}\"|g" benchmarks-data/data.js
+          if [ -n "$TAG_SHA" ] && [ "$TAG_SHA" != "$RELEASE_SHA" ]; then
+            sed -i "s|\"id\":\"${TAG_SHA}\"|\"id\":\"${{ github.event.release.tag_name }}\"|g" benchmarks-data/data.js
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add benchmarks-data/data.js
-          git commit -m "Label benchmark with ${{ github.event.release.tag_name }}"
-          git push origin gh-pages
+          if git diff --cached --quiet; then
+            echo "No changes to commit — SHA may not have matched"
+          else
+            git commit -m "Label benchmark with ${{ github.event.release.tag_name }}"
+            git push origin gh-pages
+          fi
