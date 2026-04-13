@@ -1,4 +1,4 @@
-import { assert, assertEquals } from "@std/assert";
+import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import {
   mockUser1,
   mockUser2,
@@ -8,8 +8,7 @@ import {
 import { generateUsers, useDb } from "../utils.ts";
 import type { User } from "../models.ts";
 
-// TODO: fix update document deleting indices even when failing to update document
-Deno.test.ignore(
+Deno.test(
   "serialized_indexable_collection - updateManyBySecondaryOrder",
   async (t) => {
     await t.step(
@@ -70,7 +69,15 @@ Deno.test.ignore(
       "Should update documents of KvObject type using deep merge",
       async () => {
         await useDb(async (db) => {
-          const cr = await db.is_users.addMany(mockUsersWithAlteredAge);
+          const users = mockUsersWithAlteredAge.map((user) => ({
+            ...user,
+            address: {
+              ...user.address,
+              street: "Test Street",
+            },
+          }));
+
+          const cr = await db.is_users.addMany(users);
           assert(cr.ok);
 
           const docs = await db.is_users.getMany();
@@ -102,18 +109,18 @@ Deno.test.ignore(
           );
 
           await db.is_users.forEachBySecondaryOrder("age", (doc) => {
-            assert(doc.value.address.country === updateData.address.country);
-            assert(doc.value.address.city === updateData.address.city);
-            assert(doc.value.address.houseNr === updateData.address.houseNr);
-            assert(doc.value.address.street !== undefined);
+            assertEquals(doc.value.address.country, updateData.address.country);
+            assertEquals(doc.value.address.city, updateData.address.city);
+            assertEquals(doc.value.address.houseNr, updateData.address.houseNr);
+            assertNotEquals(doc.value.address.street, undefined);
           }, { limit: 2 });
 
           const last = await db.is_users.getOneBySecondaryOrder("age", {
             reverse: true,
           });
 
-          assert(last?.value.username === mockUser2.username);
-          assert(last.value.address.country === mockUser2.address.country);
+          assertEquals(last?.value.username, mockUser2.username);
+          assertEquals(last?.value.address.country, mockUser2.address.country);
         });
       },
     );

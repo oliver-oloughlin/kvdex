@@ -26,6 +26,7 @@ import type {
 } from "./types.ts";
 import { ulid } from "@std/ulid";
 import { jsonEncoder } from "../ext/encoding/mod.ts";
+import { equals } from "@std/bytes";
 
 /**
  * Generate a new document id.
@@ -228,32 +229,6 @@ export async function setIndices(
     },
     (secondaryIndexKey) => {
       atomic.set(secondaryIndexKey, value, options);
-    },
-  );
-}
-
-/**
- * Check for index collisions when inserting update data.
- *
- * @param data - Update data.
- * @param atomic - Atomic operation.
- * @param collection - Collection context.
- * @returns The atomic operation with added checks.
- */
-export async function checkIndices(
-  data: KvObject,
-  atomic: DenoAtomicOperation,
-  collection: Collection<any, any, any>,
-) {
-  await handleIndices(
-    null,
-    data,
-    collection,
-    (primaryIndexKey) => {
-      atomic.check({
-        key: primaryIndexKey,
-        versionstamp: null,
-      });
     },
   );
 }
@@ -566,4 +541,153 @@ async function handleIndices(
 
     secondary(indexKey);
   }
+}
+
+export function applyIndexDiffs(
+  id: KvId,
+  diffs: IndexDiffs,
+  value: unknown,
+  atomic: DenoAtomicOperation,
+  options?: DenoKvSetOptions,
+) {
+  diffs.deleteKeys.forEach((key) => atomic.delete(key));
+
+  diffs.insertSecondaryKeys.forEach((key) => atomic.set(key, value, options));
+
+  diffs.insertPrimaryKeys.forEach((key) => {
+    const indexEntry: IndexDataEntry<KvObject> = {
+      ...(value as KvObject),
+      __id__: id,
+    };
+    atomic.set(key, indexEntry, options);
+  });
+
+  diffs.checkKeys.forEach((key) =>
+    atomic.check({
+      key,
+      versionstamp: null,
+    })
+  );
+}
+
+export type IndexDiffs = {
+  insertPrimaryKeys: KvKey[];
+  insertSecondaryKeys: KvKey[];
+  deleteKeys: KvKey[];
+  checkKeys: KvKey[];
+};
+
+export async function createIndexDiffs(
+  id: KvId,
+  dataOld: KvObject,
+  dataNew: KvObject,
+  collection: Collection<any, any, any>,
+): Promise<IndexDiffs> {
+  const insertPrimaryKeys: KvKey[] = [];
+  const insertSecondaryKeys: KvKey[] = [];
+  const deleteKeys: KvKey[] = [];
+  const checkKeys: KvKey[] = [];
+
+  // Handle primary indices
+  for (const index of collection["primaryIndexList"]) {
+    const indexValueOld = dataOld[index] as KvId | undefined;
+    const indexValueNew = dataNew[index] as KvId | undefined;
+
+    const encodedOld = typeof indexValueOld !== "undefined"
+      ? await encodeData(indexValueOld, collection["encoder"])
+      : undefined;
+
+    const encodedNew = typeof indexValueNew !== "undefined"
+      ? await encodeData(indexValueNew, collection["encoder"])
+      : undefined;
+
+    const indexKeyOld = typeof encodedOld !== "undefined"
+      ? extendKey(
+        collection["keys"].primaryIndex,
+        index,
+        encodedOld,
+      )
+      : undefined;
+
+    const indexKeyNew = typeof encodedNew !== "undefined"
+      ? extendKey(
+        collection["keys"].primaryIndex,
+        index,
+        encodedNew,
+      )
+      : undefined;
+
+    if (
+      equals(encodedOld ?? new Uint8Array(), encodedNew ?? new Uint8Array())
+    ) {
+      // Index key unchanged — still re-set the entry with new document data,
+      // but skip delete and collision check since the key already belongs to this doc.
+      if (typeof indexKeyNew !== "undefined") {
+        insertPrimaryKeys.push(indexKeyNew);
+      }
+      continue;
+    }
+
+    if (typeof indexKeyOld !== "undefined") {
+      deleteKeys.push(indexKeyOld);
+    }
+
+    if (typeof indexKeyNew !== "undefined") {
+      checkKeys.push(indexKeyNew);
+      insertPrimaryKeys.push(indexKeyNew);
+    }
+  }
+
+  // Handle secondary indices
+  for (const index of collection["secondaryIndexList"]) {
+    const indexValueOld = dataOld[index] as KvId | undefined;
+    const indexValueNew = dataNew[index] as KvId | undefined;
+
+    const encodedOld = typeof indexValueOld !== "undefined"
+      ? await encodeData(indexValueOld, collection["encoder"])
+      : undefined;
+
+    const encodedNew = typeof indexValueNew !== "undefined"
+      ? await encodeData(indexValueNew, collection["encoder"])
+      : undefined;
+
+    const indexKeyOld = typeof encodedOld !== "undefined"
+      ? extendKey(
+        collection["keys"].secondaryIndex,
+        index,
+        encodedOld,
+        id,
+      )
+      : undefined;
+
+    const indexKeyNew = typeof encodedNew !== "undefined"
+      ? extendKey(
+        collection["keys"].secondaryIndex,
+        index,
+        encodedNew,
+        id,
+      )
+      : undefined;
+
+    if (
+      equals(encodedOld ?? new Uint8Array(), encodedNew ?? new Uint8Array())
+    ) {
+      // Index key unchanged — still re-set the entry with new document data,
+      // but skip delete since the key already belongs to this doc.
+      if (typeof indexKeyNew !== "undefined") {
+        insertSecondaryKeys.push(indexKeyNew);
+      }
+      continue;
+    }
+
+    if (typeof indexKeyOld !== "undefined") {
+      deleteKeys.push(indexKeyOld);
+    }
+
+    if (typeof indexKeyNew !== "undefined") {
+      insertSecondaryKeys.push(indexKeyNew);
+    }
+  }
+
+  return { insertPrimaryKeys, insertSecondaryKeys, deleteKeys, checkKeys };
 }

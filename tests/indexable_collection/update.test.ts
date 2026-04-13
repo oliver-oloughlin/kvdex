@@ -1,5 +1,5 @@
 import type { Document } from "../../mod.ts";
-import { assert } from "@std/assert";
+import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
 import type { User } from "../models.ts";
 import { useDb } from "../utils.ts";
@@ -38,13 +38,14 @@ Deno.test("indexable_collection - update", async (t) => {
         );
 
         assert(updateCr.ok);
-        assert(updateCr.id === cr.id);
-        assert(byPrimary?.id === cr.id);
-        assert(bySecondary.result.at(0)?.id === cr.id);
-        assert(updateCr.versionstamp !== cr.versionstamp);
-        assert(updateCr.versionstamp === byPrimary.versionstamp);
-        assert(
-          updateCr.versionstamp === bySecondary.result.at(0)?.versionstamp,
+        assertEquals(updateCr.id, cr.id);
+        assertEquals(byPrimary?.id, cr.id);
+        assertEquals(bySecondary.result.at(0)?.id, cr.id);
+        assertNotEquals(updateCr.versionstamp, cr.versionstamp);
+        assertEquals(updateCr.versionstamp, byPrimary?.versionstamp);
+        assertEquals(
+          updateCr.versionstamp,
+          bySecondary.result.at(0)?.versionstamp,
         );
 
         const asserts = (doc: Document<User, string> | null) => {
@@ -187,7 +188,7 @@ Deno.test("indexable_collection - update", async (t) => {
 
         const update = await db.i_users.update(id2, {
           ...mockUser3,
-          username: mockUser2.username,
+          username: mockUser1.username,
         });
 
         assert(!update.ok);

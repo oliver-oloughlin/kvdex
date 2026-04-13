@@ -186,7 +186,7 @@ Deno.test("serialized_indexable_collection - update", async (t) => {
 
         const update = await db.is_users.update(id2, {
           ...mockUser3,
-          username: mockUser2.username,
+          username: mockUser1.username,
         });
 
         assert(!update.ok);

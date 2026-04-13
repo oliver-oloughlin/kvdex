@@ -49,8 +49,9 @@ import type {
 } from "./types.ts";
 import {
   allFulfilled,
-  checkIndices,
+  applyIndexDiffs,
   createHandlerId,
+  createIndexDiffs,
   createListOptions,
   createListSelector,
   createSecondaryIndexKeyPrefix,
@@ -61,6 +62,7 @@ import {
   extendKey,
   generateId,
   getDocumentId,
+  type IndexDiffs,
   isKvObject,
   kvGetMany,
   prepareEnqueue,
@@ -2307,6 +2309,8 @@ export class Collection<
     idKey: KvKey,
     value: TOutput,
     options: SetOptions | undefined,
+    indexDiffs: IndexDiffs | null = null,
+    oldSegmentKeys: DenoKvStrictKey[] = [],
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Initialize atomic operation and keys list
     const ids: KvId[] = [];
@@ -2315,6 +2319,11 @@ export class Collection<
     const timeId = ulid();
     const operationPool = new AtomicPool();
     const indexOperationPool = new AtomicPool();
+
+    // Delete old segment entries atomically (from update path)
+    for (const key of oldSegmentKeys) {
+      operationPool.delete(key);
+    }
 
     // Check for id collision
     if (!options?.overwrite) {
@@ -2381,14 +2390,26 @@ export class Collection<
 
     // Set indices if is indexable
     if (this.isIndexable) {
-      await setIndices(
-        docId,
-        value as KvObject,
-        docValue,
-        indexOperationPool,
-        this,
-        options,
-      );
+      if (indexDiffs) {
+        // Update path: apply index diffs
+        applyIndexDiffs(
+          docId,
+          indexDiffs,
+          docValue,
+          indexOperationPool,
+          options,
+        );
+      } else {
+        // Insert path: set all indices
+        await setIndices(
+          docId,
+          value as KvObject,
+          docValue,
+          indexOperationPool,
+          this,
+          options,
+        );
+      }
     }
 
     // Initialize index check, commit result and atomic operation
@@ -2485,43 +2506,19 @@ export class Collection<
     // Get document value, delete document entry
     const { value, id } = doc;
 
-    // If indexable, check for index collisions and delete exisitng index entries
-    if (this.isIndexable) {
-      const atomic = this.kv.atomic();
-
-      await checkIndices(
-        data as KvObject,
-        atomic,
-        this,
-      );
-
-      await deleteIndices(
-        id,
-        doc.value as KvObject,
-        atomic,
-        this,
-      );
-
-      const cr = await atomic.commit();
-
-      if (!cr.ok) {
-        return {
-          ok: false,
-        };
-      }
-    }
-
-    // If serialized, delete existing segment entries
+    // If serialized, derive existing segment keys from the document's encoded entry
+    const oldSegmentKeys: DenoKvStrictKey[] = [];
     if (this.encoder) {
-      const atomic = new AtomicWrapper(this.kv);
-      const keyPrefix = extendKey(this.keys.segment, id);
-      const iter = await this.kv.list({ prefix: keyPrefix });
-
-      for await (const { key } of iter) {
-        atomic.delete(key as DenoKvStrictKey);
+      const idKey = extendKey(this.keys.id, id);
+      const entry = await this.kv.get(idKey);
+      if (entry.value) {
+        const { ids } = entry.value as EncodedEntry;
+        ids.forEach((segId) => {
+          oldSegmentKeys.push(
+            extendKey(this.keys.segment, id, segId) as DenoKvStrictKey,
+          );
+        });
       }
-
-      await atomic.commit();
     }
 
     // Determine update strategy and check value type
@@ -2541,6 +2538,16 @@ export class Collection<
     // Parse updated value
     const parsed = await validate(this.model, updated);
 
+    // If indexable, compute index diffs between old and new data
+    const indexDiffs = this.isIndexable
+      ? await createIndexDiffs(
+        id,
+        value as KvObject,
+        parsed as KvObject,
+        this,
+      )
+      : null;
+
     // Set new document value
     return await this.setDoc(
       id,
@@ -2550,6 +2557,8 @@ export class Collection<
         ...options,
         overwrite: true,
       },
+      indexDiffs,
+      oldSegmentKeys,
     );
   }
 
