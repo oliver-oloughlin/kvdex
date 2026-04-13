@@ -49,9 +49,8 @@ jobs:
           alert-threshold: "120%"
           # Always comment on PRs with the full comparison
           comment-always: ${{ github.event_name == 'pull_request' }}
-          # Fail the workflow if performance regresses significantly (50%+)
+          # Do not fail the workflow on performance regressions
           fail-on-alert: false
-          fail-threshold: "150%"
 
       # Replace the commit SHA with the release tag in the chart data
       # so x-axis labels show version tags instead of commit hashes
