@@ -15,10 +15,10 @@ window.BENCHMARK_DATA = {
             "username": "web-flow",
             "email": "noreply@github.com"
           },
-          "id": "3.6.2",
-          "message": "3.6.2",
+          "id": "cf1136b1dab4dbea1ff84426a06962d7ba3b8add",
+          "message": "fix: broken update tests & race condition bug for index updates (#294)",
           "timestamp": "2026-04-13T07:16:57Z",
-          "url": "https://github.com/oliver-oloughlin/kvdex/releases/tag/3.6.2"
+          "url": "https://github.com/oliver-oloughlin/kvdex/commit/cf1136b1dab4dbea1ff84426a06962d7ba3b8add"
         },
         "date": 1776065153477,
         "tool": "customSmallerIsBetter",
