@@ -1,5 +1,38 @@
 import { assert, assertEquals } from "@std/assert";
 import { sleep, useIndexedDbMap, useMapKv, useStorageMap } from "../utils.ts";
+import { MapKv } from "../../src/ext/kv/map/mod.ts";
+import type { BasicMap } from "../../src/ext/kv/map/types.ts";
+
+/** A BasicMap wrapper that delays `set` to simulate slow initialization. */
+class SlowMap<K, V> implements BasicMap<K, V> {
+  private inner = new Map<K, V>();
+  private delay: number;
+
+  constructor(delay = 50) {
+    this.delay = delay;
+  }
+
+  async set(key: K, value: V) {
+    await new Promise((r) => setTimeout(r, this.delay));
+    this.inner.set(key, value);
+  }
+
+  get(key: K) {
+    return this.inner.get(key);
+  }
+
+  delete(key: K) {
+    return this.inner.delete(key);
+  }
+
+  entries() {
+    return this.inner.entries();
+  }
+
+  clear() {
+    this.inner.clear();
+  }
+}
 
 Deno.test({
   name: "ext - kv",
@@ -260,6 +293,210 @@ Deno.test({
           assertEquals(storeEntries2.length, 0);
         });
       });
+    });
+
+    await t.step("readiness", async (t) => {
+      const initEntries = [
+        { key: ["a", 1], value: "alpha", versionstamp: "00000000000000000001" },
+        { key: ["a", 2], value: "beta", versionstamp: "00000000000000000002" },
+        { key: ["a", 3], value: "gamma", versionstamp: "00000000000000000003" },
+      ];
+
+      await t.step(
+        "get should not complete before ready",
+        async () => {
+          const kv = new MapKv({
+            map: new SlowMap(),
+            entries: initEntries,
+          });
+
+          let readyTimestamp = 0;
+          const promise = kv["ready"].then(() => readyTimestamp = Date.now());
+
+          await kv.get(["a", 1]);
+          const opTimestamp = Date.now();
+          await promise;
+
+          assert(readyTimestamp > 0, "ready should have resolved");
+          assert(
+            opTimestamp >= readyTimestamp,
+            `get completed (${opTimestamp}) before ready resolved (${readyTimestamp})`,
+          );
+          await kv.close();
+        },
+      );
+
+      await t.step(
+        "getMany should not complete before ready",
+        async () => {
+          const kv = new MapKv({
+            map: new SlowMap(),
+            entries: initEntries,
+          });
+
+          let readyTimestamp = 0;
+          const promise = kv["ready"].then(() => readyTimestamp = Date.now());
+
+          await kv.getMany([["a", 1], ["a", 2]]);
+          const opTimestamp = Date.now();
+          await promise;
+
+          assert(readyTimestamp > 0, "ready should have resolved");
+          assert(
+            opTimestamp >= readyTimestamp,
+            `getMany completed (${opTimestamp}) before ready resolved (${readyTimestamp})`,
+          );
+          await kv.close();
+        },
+      );
+
+      await t.step(
+        "set should not complete before ready",
+        async () => {
+          const kv = new MapKv({
+            map: new SlowMap(),
+            entries: initEntries,
+          });
+
+          let readyTimestamp = 0;
+          const promise = kv["ready"].then(() => readyTimestamp = Date.now());
+
+          await kv.set(["b", 1], "new");
+          const opTimestamp = Date.now();
+          await promise;
+
+          assert(readyTimestamp > 0, "ready should have resolved");
+          assert(
+            opTimestamp >= readyTimestamp,
+            `set completed (${opTimestamp}) before ready resolved (${readyTimestamp})`,
+          );
+          await kv.close();
+        },
+      );
+
+      await t.step(
+        "delete should not complete before ready",
+        async () => {
+          const kv = new MapKv({
+            map: new SlowMap(),
+            entries: initEntries,
+          });
+
+          let readyTimestamp = 0;
+          const promise = kv["ready"].then(() => readyTimestamp = Date.now());
+
+          await kv.delete(["a", 1]);
+          const opTimestamp = Date.now();
+          await promise;
+
+          assert(readyTimestamp > 0, "ready should have resolved");
+          assert(
+            opTimestamp >= readyTimestamp,
+            `delete completed (${opTimestamp}) before ready resolved (${readyTimestamp})`,
+          );
+          await kv.close();
+        },
+      );
+
+      await t.step(
+        "list should not complete before ready",
+        async () => {
+          const kv = new MapKv({
+            map: new SlowMap(),
+            entries: initEntries,
+          });
+
+          let readyTimestamp = 0;
+          const promise = kv["ready"].then(() => readyTimestamp = Date.now());
+
+          await kv.list({ prefix: ["a"] });
+          const opTimestamp = Date.now();
+          await promise;
+
+          assert(readyTimestamp > 0, "ready should have resolved");
+          assert(
+            opTimestamp >= readyTimestamp,
+            `list completed (${opTimestamp}) before ready resolved (${readyTimestamp})`,
+          );
+          await kv.close();
+        },
+      );
+
+      await t.step(
+        "enqueue should not complete before ready",
+        async () => {
+          const kv = new MapKv({
+            map: new SlowMap(),
+            entries: initEntries,
+          });
+
+          let readyTimestamp = 0;
+          const promise = kv["ready"].then(() => readyTimestamp = Date.now());
+
+          await kv.enqueue("msg", { delay: 1000 });
+          const opTimestamp = Date.now();
+          await promise;
+
+          assert(readyTimestamp > 0, "ready should have resolved");
+          assert(
+            opTimestamp >= readyTimestamp,
+            `enqueue completed (${opTimestamp}) before ready resolved (${readyTimestamp})`,
+          );
+          await kv.close();
+        },
+      );
+
+      await t.step(
+        "close should not complete before ready",
+        async () => {
+          const kv = new MapKv({
+            map: new SlowMap(),
+            entries: initEntries,
+          });
+
+          let readyTimestamp = 0;
+          const promise = kv["ready"].then(() => readyTimestamp = Date.now());
+
+          await kv.close();
+          const opTimestamp = Date.now();
+          await promise;
+
+          assert(readyTimestamp > 0, "ready should have resolved");
+          assert(
+            opTimestamp >= readyTimestamp,
+            `close completed (${opTimestamp}) before ready resolved (${readyTimestamp})`,
+          );
+        },
+      );
+
+      await t.step(
+        "concurrent operations should all complete after ready",
+        async () => {
+          const kv = new MapKv({
+            map: new SlowMap(),
+            entries: initEntries,
+          });
+
+          let readyTimestamp = 0;
+          const promise = kv["ready"].then(() => readyTimestamp = Date.now());
+
+          await Promise.all([
+            kv.get(["a", 1]),
+            kv.getMany([["a", 2], ["a", 3]]),
+            kv.set(["b", 1], "concurrent"),
+            kv.list({ prefix: ["a"] }),
+          ]);
+          const opTimestamp = Date.now();
+          await promise;
+
+          assert(readyTimestamp > 0, "ready should have resolved");
+          assert(
+            opTimestamp >= readyTimestamp,
+            `concurrent ops completed (${opTimestamp}) before ready resolved (${readyTimestamp})`,
+          );
+          await kv.close();
+        },
+      );
     });
   },
 });

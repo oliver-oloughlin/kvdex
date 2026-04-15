@@ -13,11 +13,11 @@ import type {
   DenoKvWatchOptions,
 } from "../../../core/types.ts";
 import { MapKvAtomicOperation } from "./atomic.ts";
-import { Watcher } from "../common/watcher.ts";
-import { createVersionstamp } from "../common/utils.ts";
+import { Watcher } from "./watcher.ts";
+import { createVersionstamp } from "./utils.ts";
 import type { BasicMap, MapKvOptions } from "./types.ts";
 import { allFulfilled } from "../../../core/utils.ts";
-import { AsyncLock } from "../common/async_lock.ts";
+import { AsyncLock } from "./async_lock.ts";
 import {
   activateQueuedValues,
   deleteEntry,
@@ -26,7 +26,7 @@ import {
   type KvEntry,
   listEntries,
   setEntry,
-} from "../common/entry_handlers.ts";
+} from "./entry_handlers.ts";
 
 /**
  * KV instance utilising a `BasicMap` as it's backend.
@@ -60,6 +60,7 @@ export class MapKv implements DenoKv {
   private listenHandlers: ((msg: unknown) => unknown)[];
   private asyncLock: AsyncLock;
   private timerIds: Set<number>;
+  private ready: Promise<void>;
   private listener:
     | {
       promise: Promise<void>;
@@ -79,26 +80,39 @@ export class MapKv implements DenoKv {
     this.asyncLock = new AsyncLock();
     this.timerIds = new Set();
 
-    entries?.forEach(({ key, ...data }) =>
-      this.setDocument(
-        key as DenoKvStrictKey,
-        data.value,
-        data.versionstamp,
-        undefined,
-        true,
-      )
-    );
+    const { promise: ready, resolve: resolveReady } = Promise.withResolvers<
+      void
+    >();
+    this.ready = ready;
 
-    activateQueuedValues({
+    const initializers: Promise<unknown>[] = [];
+
+    entries?.forEach(({ key, ...data }) => {
+      initializers.push(setEntry({
+        key: key as DenoKvStrictKey,
+        value: data.value,
+        versionstamp: data.versionstamp,
+        get: (keyStr) => this.map.get(keyStr),
+        set: (keyStr, entry) => this.map.set(keyStr, entry),
+        watchers: this.watchers,
+        options: undefined,
+        lock: this.asyncLock,
+      }));
+    });
+
+    initializers.push(activateQueuedValues({
       listenHandlers: this.listenHandlers,
       getEntries: () => this.getEntries(),
       get: (keyStr) => this.map.get(keyStr),
       delete: (keyStr) => this.map.delete(keyStr),
       timerIds: this.timerIds,
-    });
+    }));
+
+    allFulfilled(initializers).then(() => resolveReady());
   }
 
   async close(): Promise<void> {
+    await this.ready;
     this.watchers.forEach((w) => w.cancel());
     this.listener?.resolve();
     this.asyncLock.cancel();
@@ -112,14 +126,17 @@ export class MapKv implements DenoKv {
   }
 
   async delete(key: DenoKvStrictKey): Promise<void> {
+    await this.ready;
     await this.deleteDocument(key, true);
   }
 
   async get(key: DenoKvStrictKey): Promise<DenoKvEntryMaybe> {
+    await this.ready;
     return await this.getDocument(key, true);
   }
 
   async getMany(keys: DenoKvStrictKey[]): Promise<DenoKvEntryMaybe[]> {
+    await this.ready;
     return await allFulfilled(keys.map((key) => this.get(key)));
   }
 
@@ -128,6 +145,7 @@ export class MapKv implements DenoKv {
     value: unknown,
     options?: DenoKvSetOptions,
   ): Promise<DenoKvCommitError | DenoKvCommitResult> {
+    await this.ready;
     return await this.setDocument(
       key,
       value,
@@ -141,6 +159,7 @@ export class MapKv implements DenoKv {
     selector: DenoKvListSelector,
     options?: DenoKvListOptions,
   ): Promise<DenoKvListIterator> {
+    await this.ready;
     return await listEntries({
       selector,
       options,
@@ -165,6 +184,7 @@ export class MapKv implements DenoKv {
     value: unknown,
     options?: DenoKvEnqueueOptions,
   ): Promise<DenoKvCommitResult> {
+    await this.ready;
     return await this.enqueueValue(value, createVersionstamp(), options);
   }
 
