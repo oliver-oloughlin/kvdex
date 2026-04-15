@@ -8,9 +8,9 @@ import type {
   DenoKvStrictKey,
 } from "../../../core/types.ts";
 import { allFulfilled } from "../../../core/utils.ts";
-import type { AsyncLock } from "../common/async_lock.ts";
+import type { AsyncLock } from "./async_lock.ts";
 import type { MapKv } from "./map_kv.ts";
-import { createVersionstamp } from "../common/utils.ts";
+import { createVersionstamp } from "./utils.ts";
 
 export class MapKvAtomicOperation implements DenoAtomicOperation {
   private kv: MapKv;
