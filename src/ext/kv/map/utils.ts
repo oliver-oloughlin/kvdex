@@ -132,7 +132,7 @@ function sortByUint8Array(u1: Uint8Array, u2: Uint8Array): number {
 }
 
 function sortByString(str1: string, str2: string): number {
-  return str1.localeCompare(str2);
+  return str1 < str2 ? -1 : str1 > str2 ? 1 : 0;
 }
 
 function sortByNumber(n1: number, n2: number): number {
