@@ -80,11 +80,6 @@ export class MapKv implements DenoKv {
     this.asyncLock = new AsyncLock();
     this.timerIds = new Set();
 
-    const { promise: ready, resolve: resolveReady } = Promise.withResolvers<
-      void
-    >();
-    this.ready = ready;
-
     const initializers: Promise<unknown>[] = [];
 
     entries?.forEach(({ key, ...data }) => {
