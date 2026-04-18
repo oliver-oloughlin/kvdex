@@ -60,7 +60,7 @@ export class MapKv implements DenoKv {
   private listenHandlers: ((msg: unknown) => unknown)[];
   private asyncLock: AsyncLock;
   private timerIds: Set<number>;
-  private ready: Promise<void>;
+  private ready: Promise<unknown>;
   private listener:
     | {
       promise: Promise<void>;
@@ -79,11 +79,6 @@ export class MapKv implements DenoKv {
     this.listenHandlers = [];
     this.asyncLock = new AsyncLock();
     this.timerIds = new Set();
-
-    const { promise: ready, resolve: resolveReady } = Promise.withResolvers<
-      void
-    >();
-    this.ready = ready;
 
     const initializers: Promise<unknown>[] = [];
 
@@ -108,7 +103,7 @@ export class MapKv implements DenoKv {
       timerIds: this.timerIds,
     }));
 
-    allFulfilled(initializers).then(() => resolveReady());
+    this.ready = allFulfilled(initializers);
   }
 
   async close(): Promise<void> {
