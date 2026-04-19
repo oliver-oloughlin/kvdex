@@ -74,7 +74,24 @@ export function extendKey(key: KvKey, ...keyParts: KvId[]) {
  * @returns true if keys are equal, false if not.
  */
 export function keyEq(k1: KvKey, k2: KvKey) {
-  return JSON.stringify(k1) === JSON.stringify(k2);
+  for (let i = 0; i < k1.length; i++) {
+    const part1 = k1.at(i);
+    const part2 = k2.at(i);
+
+    if (part1 instanceof Uint8Array && part2 instanceof Uint8Array) {
+      if (!equals(part1, part2)) {
+        return false;
+      } else {
+        continue;
+      }
+    }
+
+    if (part1 !== part2) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 export async function transform<TInput, TOutput extends KvValue>(
