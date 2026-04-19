@@ -74,6 +74,10 @@ export function extendKey(key: KvKey, ...keyParts: KvId[]) {
  * @returns true if keys are equal, false if not.
  */
 export function keyEq(k1: KvKey, k2: KvKey) {
+  if (k1.length !== k2.length) {
+    return false;
+  }
+
   for (let i = 0; i < k1.length; i++) {
     const part1 = k1.at(i);
     const part2 = k2.at(i);
