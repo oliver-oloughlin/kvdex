@@ -96,6 +96,24 @@ import { ulid } from "@std/ulid";
 /**
  * Create a new collection within a database context.
  *
+ * @param options - Collection options for configuring the collection.
+ * @returns A collection builder function.
+ *
+ * @example
+ * ```ts
+ * import { collection, kvdex } from "@olli/kvdex"
+ *
+ * const kv = await Deno.openKv()
+ *
+ * const db = kvdex({
+ *   kv: kv,
+ *   schema: {
+ *     // Simple collection:
+ *     numbers: collection<number>(),
+ *   }
+ * })
+ * ```
+ *
  * @example
  * ```ts
  * import { model, collection, kvdex } from "@olli/kvdex"
@@ -111,7 +129,8 @@ import { ulid } from "@std/ulid";
  * const db = kvdex({
  *   kv: kv,
  *   schema: {
- *     numbers: collection({ model: model<number>() }),
+ *     // Object collection with explicit model, indices,
+ *     // custom id generator, and JSON encoding:
  *     users: collection({
  *       model: model<User>(),
  *       idGenerator: () => crypto.randomUUID(),
@@ -124,9 +143,6 @@ import { ulid } from "@std/ulid";
  *   }
  * })
  * ```
- *
- * @param config - Collection config containing model and options.
- * @returns A collection builder function.
  */
 
 // Overload 1: Object model provided — indices allowed
