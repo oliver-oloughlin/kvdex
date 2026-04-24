@@ -3,7 +3,6 @@ import type {
   BuilderFn,
   CheckKeyOf,
   CollectionKeys,
-  CollectionOptions,
   CommitResult,
   DenoKv,
   DenoKvCommitError,
@@ -32,10 +31,10 @@ import type {
   ListOptions,
   ManyCommitResult,
   Model,
+  ObjectCollectionOptions,
   Pagination,
   PaginationResult,
   ParseId,
-  PossibleCollectionOptions,
   PrimaryIndexKeys,
   PrimaryIndexUpsert,
   QueueHandlers,
@@ -180,7 +179,7 @@ export function collection<
 
 // Implementation
 export function collection(
-  options?: CollectionOptions<any, any>,
+  options?: ObjectCollectionOptions<any, any>,
 ) {
   return (
     kv: DenoKv,
@@ -272,7 +271,7 @@ export class Collection<
     };
 
     // Check all possible options
-    const opts = (options ?? {}) as PossibleCollectionOptions;
+    const opts = (options ?? {}) as ObjectCollectionOptions<any, any>;
 
     // Set index lists
     this.primaryIndexList = [];

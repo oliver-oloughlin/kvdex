@@ -276,7 +276,7 @@ export type AtomicMutation<T1, T2 extends KvId> =
   );
 
 /** Options for atomic set operation */
-export type AtomicSetOptions<T extends CollectionOptions<any, any>> =
+export type AtomicSetOptions<T extends BaseCollectionOptions<any, any>> =
   & DenoKvSetOptions
   & (T extends { indices: IndexRecord<KvObject> } ? EmptyObject
     : Pick<SetOptions, "overwrite">);
@@ -300,21 +300,10 @@ export type ObjectCollectionOptions<TInput, TOutput extends KvObject> =
     indices?: IndexRecord<TOutput>;
   };
 
-/** Options for creating a new collection */
-export type CollectionOptions<TInput, TOutput extends KvValue> = TOutput extends
-  KvObject ? ObjectCollectionOptions<TInput, TOutput>
-  : BaseCollectionOptions<TInput, TOutput>;
-
 export type ParseId<T extends BaseCollectionOptions<any, any>> =
   T["idGenerator"] extends IdGenerator<any, any>
     ? Awaited<ReturnType<T["idGenerator"]>>
     : string;
-
-/** Utility type for accessing all possible collection options */
-export type PossibleCollectionOptions = CollectionOptions<
-  Record<string, never>,
-  Record<string, never>
->;
 
 /** Record of all collection keys */
 export type CollectionKeys = {

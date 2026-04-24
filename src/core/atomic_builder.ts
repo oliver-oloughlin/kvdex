@@ -6,7 +6,6 @@ import type {
   AtomicMutation,
   AtomicSetOptions,
   BaseCollectionOptions,
-  CollectionOptions,
   CollectionSelector,
   DenoAtomicCheck,
   DenoKv,
