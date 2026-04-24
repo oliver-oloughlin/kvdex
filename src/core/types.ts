@@ -18,7 +18,7 @@ export type EmptyObject = typeof EMPTY_OBJECT;
 export type BuilderFn<
   TInput,
   TOutput extends KvValue,
-  TOptions extends CollectionOptions<TOutput>,
+  TOptions extends BaseCollectionOptions<TInput, TOutput>,
 > = (
   kv: DenoKv,
   key: KvKey,
@@ -210,7 +210,7 @@ export type CollectionSelector<
   TSchema extends Schema<SchemaDefinition>,
   TInput,
   TOutput extends KvValue,
-  TOptions extends CollectionOptions<TOutput>,
+  TOptions extends BaseCollectionOptions<TInput, TOutput>,
 > = (
   schema: TSchema,
 ) => Collection<TInput, TOutput, TOptions>;
@@ -276,7 +276,7 @@ export type AtomicMutation<T1, T2 extends KvId> =
   );
 
 /** Options for atomic set operation */
-export type AtomicSetOptions<T extends CollectionOptions<any>> =
+export type AtomicSetOptions<T extends CollectionOptions<any, any>> =
   & DenoKvSetOptions
   & (T extends { indices: IndexRecord<KvObject> } ? EmptyObject
     : Pick<SetOptions, "overwrite">);
@@ -287,25 +287,32 @@ export type AtomicSetOptions<T extends CollectionOptions<any>> =
 /*                      */
 /************************/
 
-/** Options for creating a new collection */
-export type CollectionOptions<T extends KvValue> =
-  & {
-    idGenerator?: IdGenerator<T, KvId>;
-    encoder?: Encoder;
-    history?: true;
-  }
-  & (
-    T extends KvObject ? {
-        indices?: IndexRecord<T>;
-      }
-      : { [K in never]: never }
-  );
+export type BaseCollectionOptions<TInput, TOutput extends KvValue> = {
+  model?: Model<TInput, TOutput>;
+  idGenerator?: IdGenerator<TOutput, KvId>;
+  encoder?: Encoder;
+  history?: true;
+};
 
-export type ParseId<T extends CollectionOptions<any>> = T["idGenerator"] extends
-  IdGenerator<any, any> ? Awaited<ReturnType<T["idGenerator"]>> : string;
+export type ObjectCollectionOptions<TInput, TOutput extends KvObject> =
+  & BaseCollectionOptions<TInput, TOutput>
+  & {
+    indices?: IndexRecord<TOutput>;
+  };
+
+/** Options for creating a new collection */
+export type CollectionOptions<TInput, TOutput extends KvValue> = TOutput extends
+  KvObject ? ObjectCollectionOptions<TInput, TOutput>
+  : BaseCollectionOptions<TInput, TOutput>;
+
+export type ParseId<T extends BaseCollectionOptions<any, any>> =
+  T["idGenerator"] extends IdGenerator<any, any>
+    ? Awaited<ReturnType<T["idGenerator"]>>
+    : string;
 
 /** Utility type for accessing all possible collection options */
 export type PossibleCollectionOptions = CollectionOptions<
+  Record<string, never>,
   Record<string, never>
 >;
 
@@ -353,18 +360,32 @@ export type IndexRecord<T extends KvObject> = {
 
 /** Keys of primary indices */
 export type PrimaryIndexKeys<
-  T1 extends KvValue,
-  T2 extends CollectionOptions<T1>,
-> = T2 extends { indices: IndexRecord<KvObject> }
-  ? KeysOfThatExtend<T2["indices"], "primary">
+  TInput,
+  TOutput extends KvValue,
+  TOptions extends BaseCollectionOptions<TInput, TOutput>,
+> = TOutput extends KvObject
+  ? TOptions extends { indices?: infer I }
+    ? NonNullable<I> extends IndexRecord<KvObject> ? KeysOfThatExtend<
+        { [K in keyof NonNullable<I>]-?: NonNullable<NonNullable<I>[K]> },
+        "primary"
+      >
+    : never
+  : never
   : never;
 
 /** Keys of secondary indices */
 export type SecondaryIndexKeys<
-  T1 extends KvValue,
-  T2 extends CollectionOptions<T1>,
-> = T2 extends { indices: IndexRecord<KvObject> }
-  ? KeysOfThatExtend<T2["indices"], "secondary">
+  TInput,
+  TOutput extends KvValue,
+  TOptions extends BaseCollectionOptions<TInput, TOutput>,
+> = TOutput extends KvObject
+  ? TOptions extends { indices?: infer I }
+    ? NonNullable<I> extends IndexRecord<KvObject> ? KeysOfThatExtend<
+        { [K in keyof NonNullable<I>]-?: NonNullable<NonNullable<I>[K]> },
+        "secondary"
+      >
+    : never
+  : never
   : never;
 
 /** Indexed value entry */

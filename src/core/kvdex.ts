@@ -1,5 +1,5 @@
 import type {
-  CollectionOptions,
+  BaseCollectionOptions,
   CollectionSelector,
   CountAllOptions,
   Database,
@@ -167,7 +167,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   atomic<
     const TInput,
     const TOutput extends KvValue,
-    const TOptions extends CollectionOptions<TOutput>,
+    const TOptions extends BaseCollectionOptions<TInput, TOutput>,
   >(
     selector: CollectionSelector<TSchema, TInput, TOutput, TOptions>,
   ): AtomicBuilder<
@@ -651,7 +651,7 @@ async function _countAll(
   kv: DenoKv,
   schemaOrCollection:
     | Schema<SchemaDefinition>
-    | Collection<KvValue, KvValue, CollectionOptions<KvValue>>,
+    | Collection<KvValue, KvValue, BaseCollectionOptions<KvValue, KvValue>>,
   options?: CountAllOptions,
 ): Promise<number> {
   // If input is a collection, return the collection count
@@ -679,7 +679,7 @@ async function _deleteAll(
   kv: DenoKv,
   schemaOrCollection:
     | Schema<SchemaDefinition>
-    | Collection<KvValue, KvValue, CollectionOptions<KvValue>>,
+    | Collection<KvValue, KvValue, BaseCollectionOptions<KvValue, KvValue>>,
 ): Promise<void> {
   // If input is a collection, perform deleteMany
   if (schemaOrCollection instanceof Collection) {

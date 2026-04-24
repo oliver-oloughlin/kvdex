@@ -5,6 +5,7 @@ import type {
   AtomicCheck,
   AtomicMutation,
   AtomicSetOptions,
+  BaseCollectionOptions,
   CollectionOptions,
   CollectionSelector,
   DenoAtomicCheck,
@@ -43,7 +44,7 @@ export class AtomicBuilder<
   const TSchema extends Schema<SchemaDefinition>,
   const TInput,
   const TOutput extends KvValue,
-  const TOptions extends CollectionOptions<TOutput>,
+  const TOptions extends BaseCollectionOptions<TInput, TOutput>,
 > {
   private kv: DenoKv;
   private schema: TSchema;
@@ -51,7 +52,7 @@ export class AtomicBuilder<
   private collection: Collection<
     TInput,
     TOutput,
-    CollectionOptions<TOutput>
+    BaseCollectionOptions<TInput, TOutput>
   >;
 
   /**
@@ -68,7 +69,7 @@ export class AtomicBuilder<
     collection: Collection<
       TInput,
       TOutput,
-      CollectionOptions<TOutput>
+      BaseCollectionOptions<TInput, TOutput>
     >,
     operations?: Operations,
   ) {
@@ -111,7 +112,7 @@ export class AtomicBuilder<
   select<
     const Input,
     const Output extends KvValue,
-    const Options extends CollectionOptions<Output>,
+    const Options extends BaseCollectionOptions<Input, Output>,
   >(
     selector: CollectionSelector<TSchema, Input, Output, Options>,
   ): AtomicBuilder<TSchema, Input, Output, Options> {

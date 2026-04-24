@@ -1,4 +1,5 @@
 import type {
+  BaseCollectionOptions,
   BuilderFn,
   CheckKeyOf,
   CollectionKeys,
@@ -21,6 +22,9 @@ import type {
   IdGenerator,
   IdUpsert,
   IndexDataEntry,
+  IndexRecord,
+  IndexType,
+  KeysOfThatExtend,
   KvId,
   KvKey,
   KvObject,
@@ -108,8 +112,9 @@ import { ulid } from "@std/ulid";
  * const db = kvdex({
  *   kv: kv,
  *   schema: {
- *     numbers: collection(model<number>()),
- *     users: collection(model<User>(), {
+ *     numbers: collection({ model: model<number>() }),
+ *     users: collection({
+ *       model: model<User>(),
  *       idGenerator: () => crypto.randomUUID(),
  *       encoder: jsonEncoder(),
  *       indices: {
@@ -121,30 +126,73 @@ import { ulid } from "@std/ulid";
  * })
  * ```
  *
- * @param model - Collection model.
- * @param options - Collection options.
+ * @param config - Collection config containing model and options.
  * @returns A collection builder function.
  */
+
+// Overload 1: Object model provided — indices allowed
+export function collection<
+  const TInput,
+  const TOutput extends KvObject,
+  const TIndices extends
+    & IndexRecord<TOutput>
+    & {
+      [K in keyof TIndices]: K extends KeysOfThatExtend<
+        TOutput,
+        KvValue | undefined
+      > ? IndexType
+        : never;
+    },
+>(
+  options: BaseCollectionOptions<TInput, TOutput> & {
+    model: Model<TInput, TOutput>;
+    indices?: TIndices;
+  },
+): BuilderFn<
+  TInput,
+  TOutput,
+  BaseCollectionOptions<TInput, TOutput> & { indices: TIndices }
+>;
+
+// Overload 2: Non-object model provided — no indices
 export function collection<
   const TInput,
   const TOutput extends KvValue,
-  const TOptions extends CollectionOptions<TOutput>,
 >(
-  model: Model<TInput, TOutput> = m(),
-  options?: TOptions,
-): BuilderFn<TInput, TOutput, TOptions> {
+  options: BaseCollectionOptions<TInput, TOutput> & {
+    model: Model<TInput, TOutput>;
+  },
+): BuilderFn<TInput, TOutput, BaseCollectionOptions<TInput, TOutput>>;
+
+// Overload 3: Explicit KvObject type param — optional config with indices
+export function collection<
+  const T extends KvObject,
+>(
+  options?: BaseCollectionOptions<T, T> & { indices?: IndexRecord<T> },
+): BuilderFn<T, T, BaseCollectionOptions<T, T> & { indices?: IndexRecord<T> }>;
+
+// Overload 4: Explicit non-object type param — optional config without indices
+export function collection<
+  const T extends KvValue = KvValue,
+>(
+  options?: BaseCollectionOptions<T, T>,
+): BuilderFn<T, T, BaseCollectionOptions<T, T>>;
+
+// Implementation
+export function collection(
+  options?: CollectionOptions<any, any>,
+) {
   return (
     kv: DenoKv,
     key: KvKey,
     queueHandlers: QueueHandlers,
     idempotentListener: IdempotentListener,
   ) =>
-    new Collection<TInput, TOutput, TOptions>(
+    new Collection(
       kv,
       key,
       queueHandlers,
       idempotentListener,
-      model,
       options,
     );
 }
@@ -153,7 +201,7 @@ export function collection<
 export class Collection<
   const TInput,
   const TOutput extends KvValue,
-  const TOptions extends CollectionOptions<TOutput>,
+  const TOptions extends BaseCollectionOptions<TInput, TOutput>,
 > {
   private kv: DenoKv;
   private queueHandlers: QueueHandlers;
@@ -172,14 +220,13 @@ export class Collection<
     key: KvKey,
     queueHandlers: QueueHandlers,
     idempotentListener: IdempotentListener,
-    model: Model<TInput, TOutput>,
     options?: TOptions,
   ) {
     // Set basic fields
     this.kv = kv;
     this.queueHandlers = queueHandlers;
     this.idempotentListener = idempotentListener;
-    this.model = model;
+    this.model = options?.model ?? m();
     this.idGenerator = options?.idGenerator ?? generateId as any;
     this.encoder = options?.encoder;
 
@@ -294,7 +341,7 @@ export class Collection<
    * @returns A promise resolving to the document found by selected index, or null if not found.
    */
   async findByPrimaryIndex<
-    const K extends PrimaryIndexKeys<TOutput, TOptions>,
+    const K extends PrimaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
@@ -339,7 +386,7 @@ export class Collection<
    * @returns A promise resolving to an object containing the result list and iterator cursor.
    */
   async findBySecondaryIndex<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
@@ -591,7 +638,7 @@ export class Collection<
    * @returns A promise that resolves to void.
    */
   async deleteByPrimaryIndex<
-    const K extends PrimaryIndexKeys<TOutput, TOptions>,
+    const K extends PrimaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
@@ -644,7 +691,7 @@ export class Collection<
    * @returns A promise that resolves to void.
    */
   async deleteBySecondaryIndex<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
@@ -749,7 +796,7 @@ export class Collection<
    * @returns Promise that resolves to a commit result.
    */
   async updateByPrimaryIndex<
-    const K extends PrimaryIndexKeys<TOutput, TOptions>,
+    const K extends PrimaryIndexKeys<TInput, TOutput, TOptions>,
     const T extends UpdateOptions,
   >(
     index: K,
@@ -801,7 +848,7 @@ export class Collection<
    * @returns Promise that resolves to an object containing result list and iterator cursor.
    */
   async updateBySecondaryIndex<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
     const T extends UpdateManyOptions<
       Document<TOutput, ParseId<TOptions>>,
       ParseId<TOptions>
@@ -914,7 +961,7 @@ export class Collection<
    * @returns A promise resolving to either CommitResult or CommitError.
    */
   async upsertByPrimaryIndex<
-    const TIndex extends PrimaryIndexKeys<TOutput, TOptions>,
+    const TIndex extends PrimaryIndexKeys<TInput, TOutput, TOptions>,
     const TUpsertOptions extends UpdateOptions,
   >(
     input: PrimaryIndexUpsert<
@@ -1017,7 +1064,7 @@ export class Collection<
    * @returns Promise resolving to an object containing iterator cursor and result list.
    */
   async updateManyBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
     const T extends UpdateManyOptions<
       Document<TOutput, ParseId<TOptions>>,
       ParseId<TOptions>
@@ -1117,7 +1164,7 @@ export class Collection<
       Document<TOutput, ParseId<TOptions>>,
       ParseId<TOptions>
     >,
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
@@ -1164,7 +1211,7 @@ export class Collection<
       Document<TOutput, ParseId<TOptions>>,
       ParseId<TOptions>
     >,
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     order: K,
     data: UpdateData<TOutput, T["strategy"]>,
@@ -1346,7 +1393,7 @@ export class Collection<
    * @returns A promise that resolves to void.
    */
   async deleteManyBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     order: K,
     options?: ListOptions<
@@ -1425,7 +1472,7 @@ export class Collection<
    * @returns A promise that resovles to an object containing a list of the retrieved documents and the iterator cursor
    */
   async getManyBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     order: K,
     options?: ListOptions<
@@ -1507,7 +1554,7 @@ export class Collection<
    * @returns A promise resolving to either a document or null.
    */
   async getOneBySecondaryIndex<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
@@ -1551,7 +1598,7 @@ export class Collection<
    * @returns A promise resolving to either a document or null.
    */
   async getOneBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     order: K,
     options?: HandleOneOptions<
@@ -1635,7 +1682,7 @@ export class Collection<
    * @returns A promise that resovles to an object containing the iterator cursor.
    */
   async forEachBySecondaryIndex<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
@@ -1684,7 +1731,7 @@ export class Collection<
    * @returns A promise that resovles to an object containing the iterator cursor.
    */
   async forEachBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     order: K,
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => unknown,
@@ -1771,7 +1818,7 @@ export class Collection<
    */
   async mapBySecondaryIndex<
     const T,
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
@@ -1823,7 +1870,7 @@ export class Collection<
    */
   async mapBySecondaryOrder<
     const T,
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     order: K,
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => T,
@@ -1906,7 +1953,7 @@ export class Collection<
    * @returns A promise that resolves to a number representing the count.
    */
   async countBySecondaryIndex<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
@@ -1958,7 +2005,7 @@ export class Collection<
    * @returns A promise that resolves to a number representing the count.
    */
   async countBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TOutput, TOptions>,
+    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     order: K,
     options?: ListOptions<
