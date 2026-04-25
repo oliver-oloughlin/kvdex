@@ -47,7 +47,8 @@ Deno.test("ext - zod", async (t) => {
         kv,
         schema: {
           users: collection({ model: UserSchema }),
-          i_users: collection({ model: UserSchema,
+          i_users: collection({
+            model: UserSchema,
             indices: {
               username: "primary",
               age: "secondary",
@@ -95,7 +96,8 @@ Deno.test("ext - zod", async (t) => {
           kv,
           schema: {
             users: collection({ model: UserSchema }),
-            i_users: collection({ model: UserSchema,
+            i_users: collection({
+              model: UserSchema,
               indices: {
                 username: "primary",
                 age: "secondary",

@@ -13,7 +13,8 @@ Deno.test("serialized_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection({ model: model<User>(),
+            users: collection({
+              model: model<User>(),
               history: true,
               encoder: jsonEncoder(),
             }),
@@ -47,7 +48,8 @@ Deno.test("serialized_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection({ model: model<User>(),
+            users: collection({
+              model: model<User>(),
               history: true,
               encoder: jsonEncoder(),
             }),
@@ -89,7 +91,8 @@ Deno.test("serialized_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection({ model: model<User>(),
+            users: collection({
+              model: model<User>(),
               history: true,
               encoder: jsonEncoder(),
             }),
@@ -123,7 +126,8 @@ Deno.test("serialized_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection({ model: model<User>(),
+            users: collection({
+              model: model<User>(),
               history: true,
               encoder: jsonEncoder(),
             }),
@@ -179,7 +183,8 @@ Deno.test("serialized_collection - history", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users: collection({ model: model<User>(),
+          users: collection({
+            model: model<User>(),
             history: true,
             encoder: jsonEncoder(),
           }),
@@ -223,7 +228,8 @@ Deno.test("serialized_collection - history", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users: collection({ model: model<User>(),
+          users: collection({
+            model: model<User>(),
             encoder: jsonEncoder(),
             history: true,
           }),

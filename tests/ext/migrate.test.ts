@@ -57,7 +57,9 @@ function createDb(kv: Deno.Kv) {
       c_TUint16Array: collection({ model: model<typeof TUint16Array>() }),
       c_TUint32Array: collection({ model: model<typeof TUint32Array>() }),
       c_TBigUint64Array: collection({ model: model<typeof TBigUint64Array>() }),
-      c_TUint8ClampedArray: collection({ model: model<typeof TUint8ClampedArray>() }),
+      c_TUint8ClampedArray: collection({
+        model: model<typeof TUint8ClampedArray>(),
+      }),
       c_TFloat32Array: collection({ model: model<typeof TFloat32Array>() }),
       c_TFloat64Array: collection({ model: model<typeof TFloat64Array>() }),
       c_TBuffer: collection({ model: model<typeof TBuffer>() }),
@@ -86,7 +88,9 @@ function createDb(kv: Deno.Kv) {
       s_TUint16Array: collection({ model: model<typeof TUint16Array>() }),
       s_TUint32Array: collection({ model: model<typeof TUint32Array>() }),
       s_TBigUint64Array: collection({ model: model<typeof TBigUint64Array>() }),
-      s_TUint8ClampedArray: collection({ model: model<typeof TUint8ClampedArray>() }),
+      s_TUint8ClampedArray: collection({
+        model: model<typeof TUint8ClampedArray>(),
+      }),
       s_TFloat32Array: collection({ model: model<typeof TFloat32Array>() }),
       s_TFloat64Array: collection({ model: model<typeof TFloat64Array>() }),
       s_TBuffer: collection({ model: model<typeof TBuffer>() }),
@@ -98,10 +102,12 @@ function createDb(kv: Deno.Kv) {
       s_TObject: collection({ model: model<typeof TObject>() }),
       s_TSet: collection({ model: model<typeof TSet>() }),
       s_TMap: collection({ model: model<typeof TMap>() }),
-      i: collection({ model: model<typeof TObject>(),
+      i: collection({
+        model: model<typeof TObject>(),
         indices: { TString: "primary", TNumber: "secondary" },
       }),
-      is: collection({ model: model<typeof TObject>(),
+      is: collection({
+        model: model<typeof TObject>(),
         encoder: jsonEncoder(),
         indices: { TString: "primary", TNumber: "secondary" },
       }),

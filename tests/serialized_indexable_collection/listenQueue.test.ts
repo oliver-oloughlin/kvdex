@@ -25,7 +25,8 @@ Deno.test("serialized_indexable_collection - listenQueue", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          is_users: collection({ model: model<User>(),
+          is_users: collection({
+            model: model<User>(),
             indices: {},
             encoder: jsonEncoder(),
           }),
@@ -71,7 +72,8 @@ Deno.test("serialized_indexable_collection - listenQueue", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          is_users: collection({ model: model<User>(),
+          is_users: collection({
+            model: model<User>(),
             indices: {},
             encoder: jsonEncoder(),
           }),

@@ -11,7 +11,8 @@ Deno.test("indexable_collection - types", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            objects: collection({ model: model<typeof TObject>(),
+            objects: collection({
+              model: model<typeof TObject>(),
               indices: {
                 TString: "primary",
                 TNumber: "secondary",

@@ -33,11 +33,13 @@ Deno.test("serialized_collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users1: collection({ model: model<User>(),
+          users1: collection({
+            model: model<User>(),
             encoder: jsonEncoder(),
             idGenerator: () => Math.random(),
           }),
-          users2: collection({ model: model<User>(),
+          users2: collection({
+            model: model<User>(),
             encoder: jsonEncoder(),
             idGenerator: (data) => data.username,
           }),
@@ -296,7 +298,8 @@ Deno.test("serialized_collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          test: collection({ model: model<User>(),
+          test: collection({
+            model: model<User>(),
             encoder: jsonEncoder(),
             idGenerator: async (user) => {
               const buffer = await crypto.subtle.digest(

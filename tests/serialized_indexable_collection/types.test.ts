@@ -12,7 +12,8 @@ Deno.test("serialized_indexable_collection - types", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            objects: collection({ model: model<typeof TObject>(),
+            objects: collection({
+              model: model<typeof TObject>(),
               encoder: jsonEncoder(),
               indices: {
                 TString: "primary",
