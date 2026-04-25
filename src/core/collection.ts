@@ -145,7 +145,7 @@ import { ulid } from "@std/ulid";
  * ```
  */
 
-// Overload 1: Object model provided — indices allowed
+// Overload 1: Object model provided with indices
 export function collection<
   const TInput,
   const TOutput extends KvObject,
@@ -158,35 +158,66 @@ export function collection<
       > ? IndexType
         : never;
     },
+  const TId extends KvId = string,
 >(
-  options: BaseCollectionOptions<TInput, TOutput> & {
+  options: Omit<BaseCollectionOptions<TInput, TOutput>, "idGenerator"> & {
     model: Model<TInput, TOutput>;
-    indices?: TIndices;
+    indices: TIndices;
+    idGenerator?: IdGenerator<TOutput, TId>;
   },
 ): BuilderFn<
   TInput,
   TOutput,
-  BaseCollectionOptions<TInput, TOutput> & { indices: TIndices }
+  BaseCollectionOptions<TInput, TOutput> & {
+    indices: TIndices;
+    idGenerator: IdGenerator<TOutput, TId>;
+  }
 >;
 
-// Overload 2: Non-object model provided — no indices
+// Overload 2: Object model provided without indices
+export function collection<
+  const TInput,
+  const TOutput extends KvObject,
+  const TId extends KvId = string,
+>(
+  options: Omit<BaseCollectionOptions<TInput, TOutput>, "idGenerator"> & {
+    model: Model<TInput, TOutput>;
+    idGenerator?: IdGenerator<TOutput, TId>;
+  },
+): BuilderFn<
+  TInput,
+  TOutput,
+  BaseCollectionOptions<TInput, TOutput> & {
+    idGenerator: IdGenerator<TOutput, TId>;
+  }
+>;
+
+// Overload 3: Non-object model provided — no indices
 export function collection<
   const TInput,
   const TOutput extends KvValue,
+  const TId extends KvId = string,
 >(
-  options: BaseCollectionOptions<TInput, TOutput> & {
+  options: Omit<BaseCollectionOptions<TInput, TOutput>, "idGenerator"> & {
     model: Model<TInput, TOutput>;
+    idGenerator?: IdGenerator<TOutput, TId>;
   },
-): BuilderFn<TInput, TOutput, BaseCollectionOptions<TInput, TOutput>>;
+): BuilderFn<
+  TInput,
+  TOutput,
+  BaseCollectionOptions<TInput, TOutput> & {
+    idGenerator: IdGenerator<TOutput, TId>;
+  }
+>;
 
-// Overload 3: Explicit KvObject type param — optional config with indices
+// Overload 4: Explicit KvObject type param — optional config with indices
 export function collection<
   const T extends KvObject,
 >(
   options?: BaseCollectionOptions<T, T> & { indices?: IndexRecord<T> },
 ): BuilderFn<T, T, BaseCollectionOptions<T, T> & { indices?: IndexRecord<T> }>;
 
-// Overload 4: Explicit non-object type param — optional config without indices
+// Overload 5: Explicit non-object type param — optional config without indices
 export function collection<
   const T extends KvValue = KvValue,
 >(

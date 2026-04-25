@@ -311,7 +311,7 @@ Deno.test("db - atomic", async (t) => {
 
       const db = kvdex({
         kv,
-        schema: { numbers: collection(model<number>()) },
+        schema: { numbers: collection({ model: model<number>() }) },
       });
 
       const handlerId = createHandlerId(db.numbers["keys"].base, undefined);
@@ -413,7 +413,9 @@ Deno.test("db - atomic", async (t) => {
     await useKv(async (kv) => {
       const db = kvdex({
         kv,
-        schema: { numbers: collection(model<number>(), { history: true }) },
+        schema: {
+          numbers: collection({ model: model<number>(), history: true }),
+        },
       });
 
       const id = "id";

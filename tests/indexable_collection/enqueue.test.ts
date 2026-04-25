@@ -18,7 +18,7 @@ Deno.test("indexable_collection - enqueue", async (t) => {
 
       const db = kvdex({
         kv,
-        schema: { i_users: collection(model<User>(), { indices: {} }) },
+        schema: { i_users: collection({ model: model<User>(), indices: {} }) },
       });
 
       const sleeper = Promise.withResolvers<void>();

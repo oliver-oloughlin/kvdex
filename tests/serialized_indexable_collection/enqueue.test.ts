@@ -20,10 +20,7 @@ Deno.test("serialized_indexable_collection - enqueue", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          is_users: collection(model<User>(), {
-            indices: {},
-            serialized: true,
-          }),
+          is_users: collection({ model: model<User>(), indices: {} }),
         },
       });
 

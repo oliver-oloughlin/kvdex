@@ -147,9 +147,9 @@ Deno.test("serialized_collection - updateOne", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            arrays: collection(model<number[]>()),
-            sets: collection(model<Set<number>>()),
-            maps: collection(model<Map<string, number>>()),
+            arrays: collection({ model: model<number[]>() }),
+            sets: collection({ model: model<Set<number>>() }),
+            maps: collection({ model: model<Map<string, number>>() }),
           },
         });
 
@@ -224,9 +224,9 @@ Deno.test("serialized_collection - updateOne", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            numbers: collection(model<number>()),
-            strings: collection(model<string>()),
-            dates: collection(model<Date>()),
+            numbers: collection({ model: model<number>() }),
+            strings: collection({ model: model<string>() }),
+            dates: collection({ model: model<Date>() }),
           },
         });
 

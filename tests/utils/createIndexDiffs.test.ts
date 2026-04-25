@@ -35,8 +35,8 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           ["users"],
           new Map<any, any>(),
           () => Promise.resolve(),
-          model<User>(),
           {
+            model: model<User>(),
             encoder,
             indices: {
               username: "primary",
@@ -161,8 +161,8 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           ["users"],
           new Map<any, any>(),
           () => Promise.resolve(),
-          model<User>(),
           {
+            model: model<User>(),
             encoder,
             indices: {
               username: "primary",
@@ -287,8 +287,8 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           ["users"],
           new Map<any, any>(),
           () => Promise.resolve(),
-          model<User>(),
           {
+            model: model<User>(),
             encoder,
             indices: {
               username: "primary",

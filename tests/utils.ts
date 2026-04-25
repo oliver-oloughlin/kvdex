@@ -22,79 +22,82 @@ export function createDb(kv: DenoKv) {
   return kvdex({
     kv,
     schema: {
-      u64s: collection(model<DenoKvU64>()),
-      s_u64s: collection(model<DenoKvU64>(), {
-        encoder: testEncoder,
-      }),
-      users: collection(model<User>()),
-      i_users: collection(model<User>(), {
+      u64s: collection({ model: model<DenoKvU64>() }),
+      s_u64s: collection({ model: model<DenoKvU64>(), encoder: testEncoder }),
+      users: collection({ model: model<User>() }),
+      i_users: collection({
+        model: model<User>(),
         indices: {
           username: "primary",
           age: "secondary",
         },
       }),
-      s_users: collection(model<User>(), {
-        encoder: testEncoder,
-      }),
-      is_users: collection(model<User>(), {
-        indices: {
-          username: "primary",
-          age: "secondary",
-        },
-        encoder: testEncoder,
-      }),
-      z_users: collection(UserSchema),
-      zi_users: collection(UserSchema, {
-        indices: {
-          username: "primary",
-          age: "secondary",
-        },
-      }),
-      zs_users: collection(UserSchema, {
-        encoder: testEncoder,
-      }),
-      zis_users: collection(UserSchema, {
+      s_users: collection({ model: model<User>(), encoder: testEncoder }),
+      is_users: collection({
+        model: model<User>(),
         indices: {
           username: "primary",
           age: "secondary",
         },
         encoder: testEncoder,
       }),
-      a_users: collection(TransformUserModel),
-      ai_users: collection(TransformUserModel, {
+      z_users: collection({ model: UserSchema }),
+      zi_users: collection({
+        model: UserSchema,
+        indices: {
+          username: "primary",
+          age: "secondary",
+        },
+      }),
+      zs_users: collection({ model: UserSchema, encoder: testEncoder }),
+      zis_users: collection({
+        model: UserSchema,
+        indices: {
+          username: "primary",
+          age: "secondary",
+        },
+        encoder: testEncoder,
+      }),
+      a_users: collection({ model: TransformUserModel }),
+      ai_users: collection({
+        model: TransformUserModel,
         indices: {
           name: "primary",
           decadeAge: "secondary",
         },
       }),
-      as_users: collection(TransformUserModel, {
-        encoder: testEncoder,
-      }),
-      ais_users: collection(TransformUserModel, {
+      as_users: collection({ model: TransformUserModel, encoder: testEncoder }),
+      ais_users: collection({
+        model: TransformUserModel,
         indices: {
           name: "primary",
           decadeAge: "secondary",
         },
         encoder: testEncoder,
       }),
-      multi_part_id_u64s: collection(model<DenoKvU64>(), {
+      multi_part_id_u64s: collection({
+        model: model<DenoKvU64>(),
         idGenerator: () => [ulid(), Math.random()] as KvId,
       }),
-      multi_part_id_nums: collection(model<number>(), {
+      multi_part_id_nums: collection({
+        model: model<number>(),
         idGenerator: () => [ulid(), Math.random()] as KvId,
       }),
-      s_multi_part_id_nums: collection(model<number>(), {
+      s_multi_part_id_nums: collection({
+        model: model<number>(),
         encoder: testEncoder,
         idGenerator: () => [ulid(), Math.random()] as KvId,
       }),
-      i_multi_part_id_users: collection(model<User>(), {
+      i_multi_part_id_users: collection({
+        model: model<User>(),
         indices: {
           username: "primary",
           age: "secondary",
         },
         idGenerator: () => [ulid(), Math.random()] as KvId,
       }),
-      is_multi_part_id_users: collection(model<User>(), {
+      is_multi_part_id_users: collection({
+        model: model<User>(),
         indices: {
           username: "primary",
           age: "secondary",

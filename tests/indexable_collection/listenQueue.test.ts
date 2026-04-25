@@ -22,7 +22,7 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
 
       const db = kvdex({
         kv,
-        schema: { i_users: collection(model<User>(), { indices: {} }) },
+        schema: { i_users: collection({ model: model<User>(), indices: {} }) },
       });
 
       const sleeper = Promise.withResolvers<void>();
@@ -63,7 +63,7 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
     await useKv(async (kv) => {
       const db = kvdex({
         kv,
-        schema: { i_users: collection(model<User>(), { indices: {} }) },
+        schema: { i_users: collection({ model: model<User>(), indices: {} }) },
       });
 
       let assertion = true;

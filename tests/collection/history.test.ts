@@ -13,7 +13,9 @@ Deno.test("collection - history", async (t) => {
       await useKv(async (kv) => {
         const db = kvdex({
           kv,
-          schema: { users: collection(model<User>(), { history: true }) },
+          schema: {
+            users: collection({ model: model<User>(), history: true }),
+          },
         });
 
         const id = "id";
@@ -42,7 +44,9 @@ Deno.test("collection - history", async (t) => {
       await useKv(async (kv) => {
         const db = kvdex({
           kv,
-          schema: { users: collection(model<User>(), { history: true }) },
+          schema: {
+            users: collection({ model: model<User>(), history: true }),
+          },
         });
 
         const id = "id";
@@ -79,7 +83,9 @@ Deno.test("collection - history", async (t) => {
       await useKv(async (kv) => {
         const db = kvdex({
           kv,
-          schema: { users: collection(model<User>(), { history: true }) },
+          schema: {
+            users: collection({ model: model<User>(), history: true }),
+          },
         });
 
         const id = "id";
@@ -108,7 +114,9 @@ Deno.test("collection - history", async (t) => {
       await useKv(async (kv) => {
         const db = kvdex({
           kv,
-          schema: { users: collection(model<User>(), { history: true }) },
+          schema: {
+            users: collection({ model: model<User>(), history: true }),
+          },
         });
 
         const id = "id";
@@ -140,7 +148,7 @@ Deno.test("collection - history", async (t) => {
       await useKv(async (kv) => {
         const db = kvdex({
           kv,
-          schema: { users: collection(model<User>()) },
+          schema: { users: collection({ model: model<User>() }) },
         });
 
         const id = "id";
@@ -159,7 +167,7 @@ Deno.test("collection - history", async (t) => {
     await useKv(async (kv) => {
       const db = kvdex({
         kv,
-        schema: { users: collection(model<User>(), { history: true }) },
+        schema: { users: collection({ model: model<User>(), history: true }) },
       });
 
       const id = "id";
@@ -198,7 +206,7 @@ Deno.test("collection - history", async (t) => {
     await useKv(async (kv) => {
       const db = kvdex({
         kv,
-        schema: { users: collection(model<User>(), { history: true }) },
+        schema: { users: collection({ model: model<User>(), history: true }) },
       });
 
       const id = "id";
@@ -230,7 +238,8 @@ Deno.test("collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            numbers: collection(model<number>(), {
+            numbers: collection({
+              model: model<number>(),
               history: true,
               idGenerator: () => [ulid(), Math.random()] as KvId,
             }),

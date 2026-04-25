@@ -46,14 +46,14 @@ Deno.test("ext - zod", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users: collection(UserSchema),
-          i_users: collection(UserSchema, {
+          users: collection({ model: UserSchema }),
+          i_users: collection({ model: UserSchema,
             indices: {
               username: "primary",
               age: "secondary",
             },
           }),
-          s_users: collection(UserSchema, { encoder: testEncoder }),
+          s_users: collection({ model: UserSchema, encoder: testEncoder }),
         },
       });
 
@@ -94,14 +94,14 @@ Deno.test("ext - zod", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(UserSchema),
-            i_users: collection(UserSchema, {
+            users: collection({ model: UserSchema }),
+            i_users: collection({ model: UserSchema,
               indices: {
                 username: "primary",
                 age: "secondary",
               },
             }),
-            l_users: collection(UserSchema),
+            l_users: collection({ model: UserSchema }),
           },
         });
 

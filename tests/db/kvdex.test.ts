@@ -11,9 +11,9 @@ Deno.test("db - kvdex", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            numbers: collection(model<number>()),
+            numbers: collection({ model: model<number>() }),
             nested: {
-              numbers: collection(model<number>()),
+              numbers: collection({ model: model<number>() }),
             },
           },
         });

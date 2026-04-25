@@ -23,7 +23,7 @@ Deno.test("collection - listenQueue", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          numbers: collection(model<number>()),
+          numbers: collection({ model: model<number>() }),
         },
       });
 
@@ -65,7 +65,7 @@ Deno.test("collection - listenQueue", async (t) => {
     await useKv(async (kv) => {
       const db = kvdex({
         kv,
-        schema: { numbers: collection(model<number>()) },
+        schema: { numbers: collection({ model: model<number>() }) },
       });
 
       let assertion = true;

@@ -14,25 +14,25 @@ Deno.test("db - wipe", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            i_users: collection(model<User>(), {
+            i_users: collection({ model: model<User>(),
               history: true,
               indices: {
                 username: "primary",
                 age: "secondary",
               },
             }),
-            s_users: collection(model<User>(), {
+            s_users: collection({ model: model<User>(),
               encoder: jsonEncoder(),
               history: true,
             }),
-            u64s: collection(model<Deno.KvU64>(), {
+            u64s: collection({ model: model<Deno.KvU64>(),
               history: true,
             }),
-            mp_users: collection(model<User>(), {
+            mp_users: collection({ model: model<User>(),
               history: true,
               idGenerator: () => [ulid(), Math.random()] as KvId,
             }),
-            mp_u64s: collection(model<Deno.KvU64>(), {
+            mp_u64s: collection({ model: model<Deno.KvU64>(),
               history: true,
               idGenerator: () => [ulid(), Math.random()] as KvId,
             }),

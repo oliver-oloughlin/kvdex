@@ -203,20 +203,23 @@ const kv = await Deno.openKv();
 const db = kvdex({
   kv: kv,
   schema: {
-    numbers: collection(model<number>()),
-    serializedStrings: collection(model<string>(), {
+    // Simple collections:
+    numbers: collection<number>(),
+
+    // Object collections with indices and other options:
+    users: collection({
+      model: model<User>(),
       encoder: jsonEncoder(),
-    }),
-    users: collection(UserModel, {
       history: true,
       indices: {
         username: "primary", // unique
         age: "secondary", // non-unique
       },
     }),
-    // Nested collections
+
+    // Nested collections:
     nested: {
-      strings: collection(model<string>()),
+      numbers: collection<number>(),
     },
   },
 });
@@ -251,7 +254,7 @@ const kv = await Deno.openKv();
 const db = kvdex({
   kv: kv,
   schema: {
-    users: collection(model<User>(), {
+    users: collection<User>({
       idGenerator: (user) => user.username,
     }),
   },
@@ -268,7 +271,7 @@ const kv = await Deno.openKv();
 const db = kvdex({
   kv: kv,
   schema: {
-    users: collection(model<User>(), {
+    users: collection<User>({
       idGenerator: () => crypto.randomUUID(),
     }),
   },
@@ -285,7 +288,7 @@ const kv = await Deno.openKv();
 const db = kvdex({
   kv: kv,
   schema: {
-    users: collection(model<User>(), {
+    users: collection<User>({
       idGenerator: () => [crypto.randomUUID(), Math.random()],
     }),
   },
@@ -307,7 +310,7 @@ const kv = await Deno.openKv();
 const db = kvdex({
   kv: kv,
   schema: {
-    users: collection(model<User>(), {
+    users: collection<User>({
       indices: {
         username: "primary", // unique
         age: "secondary", // non-unique
@@ -337,7 +340,7 @@ const kv = await Deno.openKv()
 const db = kvdex({
   kv: kv,
   schema: {
-    users: collection(model<User>(), {
+    users: collection<User>({
       // JSON-encoder without compression (best runtime compatibility)
       encoder: jsonEncoder(),
 
@@ -379,9 +382,7 @@ const kv = await Deno.openKv();
 const db = kvdex({
   kv: kv,
   schema: {
-    users: collection(model<User>(), {
-      history: true,
-    }),
+    users: collection<User>({ history: true }),
   },
 });
 ```
@@ -1689,7 +1690,7 @@ const kv = await Deno.openKv()
 const db = kvdex({
   kv: kv,
   schema: {
-    blobs: collection(model<Uint8Array>(), { encoder: jsonEncoder() }),
+    blobs: collection<Uint8Array>({ encoder: jsonEncoder() }),
   }
 })
 

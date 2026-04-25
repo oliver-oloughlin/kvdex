@@ -25,10 +25,12 @@ Deno.test("collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users1: collection(model<User>(), {
+          users1: collection({
+            model: model<User>(),
             idGenerator: () => Math.random(),
           }),
-          users2: collection(model<User>(), {
+          users2: collection({
+            model: model<User>(),
             idGenerator: (data) => data.username,
             indices: {
               username: "primary",
@@ -289,7 +291,8 @@ Deno.test("collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          test: collection(model<User>(), {
+          test: collection({
+            model: model<User>(),
             idGenerator: async (user) => {
               const buffer = await crypto.subtle.digest(
                 "SHA-256",

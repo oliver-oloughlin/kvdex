@@ -19,7 +19,7 @@ Deno.test("db - enqueue", async (t) => {
 
       const db = kvdex({
         kv,
-        schema: { numbers: collection(model<number>()) },
+        schema: { numbers: collection({ model: model<number>() }) },
       });
 
       const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined);
@@ -54,7 +54,7 @@ Deno.test("db - enqueue", async (t) => {
 
       const db = kvdex({
         kv,
-        schema: { numbers: collection(model<number>()) },
+        schema: { numbers: collection({ model: model<number>() }) },
       });
 
       let assertion1 = false;
@@ -92,7 +92,7 @@ Deno.test("db - enqueue", async (t) => {
 
       const db = kvdex({
         kv,
-        schema: { numbers: collection(model<number>()) },
+        schema: { numbers: collection({ model: model<number>() }) },
       });
 
       const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined);

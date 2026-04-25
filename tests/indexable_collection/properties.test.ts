@@ -45,11 +45,13 @@ Deno.test("indexable_collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users1: collection(model<User>(), {
+          users1: collection({
+            model: model<User>(),
             idGenerator: () => Math.random(),
             indices: {},
           }),
-          users2: collection(model<User>(), {
+          users2: collection({
+            model: model<User>(),
             idGenerator: (data) => data.username,
             indices: {},
           }),
@@ -239,23 +241,21 @@ Deno.test("indexable_collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          i: collection(
-            model<{
+          i: collection({
+            model: model<{
               oblPrimary: string;
               oblSecondary: number;
               optPrimary?: string;
               optSecondary?: number;
               check?: Date;
             }>(),
-            {
-              indices: {
-                oblPrimary: "primary",
-                oblSecondary: "secondary",
-                optPrimary: "primary",
-                optSecondary: "secondary",
-              },
+            indices: {
+              oblPrimary: "primary",
+              oblSecondary: "secondary",
+              optPrimary: "primary",
+              optSecondary: "secondary",
             },
-          ),
+          }),
         },
       });
 
@@ -496,157 +496,183 @@ Deno.test("indexable_collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          val1: collection(model<Data>(), {
+          val1: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val2: collection(model<Data>(), {
+          val2: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val3: collection(model<Data>(), {
+          val3: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val4: collection(model<Data>(), {
+          val4: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val5: collection(model<Data>(), {
+          val5: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val6: collection(model<Data>(), {
+          val6: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val7: collection(model<Data>(), {
+          val7: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val8: collection(model<Data>(), {
+          val8: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val9: collection(model<Data>(), {
+          val9: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val10: collection(model<Data>(), {
+          val10: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val11: collection(model<Data>(), {
+          val11: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val12: collection(model<Data>(), {
+          val12: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val13: collection(model<Data>(), {
+          val13: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val14: collection(model<Data>(), {
+          val14: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val15: collection(model<Data>(), {
+          val15: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val16: collection(model<Data>(), {
+          val16: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val17: collection(model<Data>(), {
+          val17: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val18: collection(model<Data>(), {
+          val18: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val19: collection(model<Data>(), {
+          val19: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val20: collection(model<Data>(), {
+          val20: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val21: collection(model<Data>(), {
+          val21: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val22: collection(model<Data>(), {
+          val22: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val23: collection(model<Data>(), {
+          val23: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val24: collection(model<Data>(), {
+          val24: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val25: collection(model<Data>(), {
+          val25: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val26: collection(model<Data>(), {
+          val26: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
@@ -903,7 +929,8 @@ Deno.test("indexable_collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          test: collection(model<User>(), {
+          test: collection({
+            model: model<User>(),
             indices: {
               username: "primary",
               age: "secondary",

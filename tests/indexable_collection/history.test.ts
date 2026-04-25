@@ -12,7 +12,7 @@ Deno.test("indexable_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               history: true,
               indices: {
                 username: "primary",
@@ -49,7 +49,7 @@ Deno.test("indexable_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               history: true,
               indices: {
                 username: "primary",
@@ -94,7 +94,7 @@ Deno.test("indexable_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               history: true,
               indices: {
                 username: "primary",
@@ -131,7 +131,7 @@ Deno.test("indexable_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               history: true,
               indices: {
                 username: "primary",
@@ -171,7 +171,7 @@ Deno.test("indexable_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               indices: {
                 username: "primary",
                 age: "secondary",
@@ -197,7 +197,7 @@ Deno.test("indexable_collection - history", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users: collection(model<User>(), {
+          users: collection({ model: model<User>(),
             history: true,
             indices: {
               username: "primary",
@@ -244,7 +244,7 @@ Deno.test("indexable_collection - history", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users: collection(model<User>(), {
+          users: collection({ model: model<User>(),
             history: true,
             indices: {
               username: "primary",

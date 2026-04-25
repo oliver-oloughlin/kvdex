@@ -13,7 +13,7 @@ Deno.test("serialized_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               history: true,
               encoder: jsonEncoder(),
             }),
@@ -47,7 +47,7 @@ Deno.test("serialized_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               history: true,
               encoder: jsonEncoder(),
             }),
@@ -89,7 +89,7 @@ Deno.test("serialized_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               history: true,
               encoder: jsonEncoder(),
             }),
@@ -123,7 +123,7 @@ Deno.test("serialized_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               history: true,
               encoder: jsonEncoder(),
             }),
@@ -159,7 +159,7 @@ Deno.test("serialized_collection - history", async (t) => {
       await useKv(async (kv) => {
         const db = kvdex({
           kv,
-          schema: { users: collection(model<User>()) },
+          schema: { users: collection({ model: model<User>() }) },
         });
 
         const id = "id";
@@ -179,7 +179,7 @@ Deno.test("serialized_collection - history", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users: collection(model<User>(), {
+          users: collection({ model: model<User>(),
             history: true,
             encoder: jsonEncoder(),
           }),
@@ -223,7 +223,7 @@ Deno.test("serialized_collection - history", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users: collection(model<User>(), {
+          users: collection({ model: model<User>(),
             encoder: jsonEncoder(),
             history: true,
           }),

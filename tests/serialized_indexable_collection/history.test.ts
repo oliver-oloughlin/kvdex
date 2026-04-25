@@ -13,7 +13,7 @@ Deno.test("serialized_indexable_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               encoder: jsonEncoder(),
               history: true,
               indices: {
@@ -51,7 +51,7 @@ Deno.test("serialized_indexable_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               encoder: jsonEncoder(),
               history: true,
               indices: {
@@ -97,7 +97,7 @@ Deno.test("serialized_indexable_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               encoder: jsonEncoder(),
               history: true,
               indices: {
@@ -135,7 +135,7 @@ Deno.test("serialized_indexable_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               encoder: jsonEncoder(),
               history: true,
               indices: {
@@ -176,7 +176,7 @@ Deno.test("serialized_indexable_collection - history", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(model<User>(), {
+            users: collection({ model: model<User>(),
               encoder: jsonEncoder(),
               indices: {
                 username: "primary",
@@ -203,7 +203,7 @@ Deno.test("serialized_indexable_collection - history", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users: collection(model<User>(), {
+          users: collection({ model: model<User>(),
             history: true,
             encoder: jsonEncoder(),
             indices: {
@@ -251,7 +251,7 @@ Deno.test("serialized_indexable_collection - history", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users: collection(model<User>(), {
+          users: collection({ model: model<User>(),
             encoder: jsonEncoder(),
             history: true,
             indices: {
