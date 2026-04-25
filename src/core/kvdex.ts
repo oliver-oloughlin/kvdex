@@ -50,30 +50,34 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  *
  * @example
  * ```ts
- * import { kvdex, model, collection } from "@olli/kvdex"
- * import { jsonEncoder } from "@olli/kvdex"
+ * import { collection, kvdex, model } from "@olli/kvdex";
+ * import { jsonEncoder } from "@olli/kvdex/encoding/json";
  *
- * type User = {
- *   username: string
- *   age: number
- * }
- *
- * const kv = await Deno.openKv()
+ * const kv = await Deno.openKv();
  *
  * const db = kvdex({
  *   kv: kv,
  *   schema: {
- *     numbers: collection(model<number>()),
- *     u64s: collection(model<Deno.KvU64>()),
- *     serializedStrings: collection(model<string>(), { encoder: jsonEncoder() }),
- *     users: collection(model<User>(), {
+ *     // Simple collections:
+ *     numbers: collection<number>(),
+ *
+ *     // Object collections with indices and other options:
+ *     users: collection({
+ *       model: model<User>(),
+ *       encoder: jsonEncoder(),
+ *       history: true,
  *       indices: {
- *         username: "primary",
- *         age: "secondary"
- *       }
- *     })
- *   }
- * })
+ *         username: "primary", // unique
+ *         age: "secondary", // non-unique
+ *       },
+ *     }),
+ *
+ *     // Nested collections:
+ *     nested: {
+ *       numbers: collection<number>(),
+ *     },
+ *   },
+ * });
  * ```
  *
  * @param kv - The Deno KV instance to be used for storing and retrieving data.
