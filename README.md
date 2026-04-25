@@ -310,7 +310,8 @@ const kv = await Deno.openKv();
 const db = kvdex({
   kv: kv,
   schema: {
-    users: collection<User>({
+    users: collection({
+      model: model<User>(),
       indices: {
         username: "primary", // unique
         age: "secondary", // non-unique
