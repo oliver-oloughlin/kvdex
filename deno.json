@@ -1,6 +1,6 @@
 {
   "name": "@olli/kvdex",
-  "version": "3.6.5",
+  "version": "4.0.0",
   "exports": {
     ".": "./mod.ts",
     "./zod": "./src/ext/zod/mod.ts",
