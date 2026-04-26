@@ -40,9 +40,9 @@ _Supported Deno versions:_ **^2.3.0**
 - [kvdex](#kvdex)
   - [Highlights](#highlights)
   - [Table of Contents](#table-of-contents)
-  - [Models](#models)
   - [Database](#database)
   - [Collection Options](#collection-options)
+    - [`model`](#model)
     - [`idGenerator`](#idgenerator)
     - [`indices`](#indices)
     - [`encoder`](#encoder)
@@ -125,70 +125,6 @@ _Supported Deno versions:_ **^2.3.0**
   - [Development](#development)
   - [License](#license)
 
-## Models
-
-Collections are typed using models. Standard models can be defined using the
-`model()` function. Alternatively, any
-[Standard Schema](https://github.com/standard-schema/standard-schema) compliant
-model can be used, meaning validation libraries such as [Zod](https://zod.dev)
-is supported without being a dependency. The standard model uses type casting
-only, and does not perform any runtime validation. Asymmetric models can be
-created by passing a transform function which maps from an input type to an
-output type. Asymmetric models are useful for storing derived values or filling
-default values. It is up to the developer to choose the strategy that fits their
-use case the best.
-
-**_NOTE_:** When using interfaces instead of types, they must extend the
-`KvValue` type.
-
-Using the standard model strategy:
-
-```ts
-import { model } from "@olli/kvdex";
-
-type User = {
-  username: string;
-  age: number;
-  activities: string[];
-  address?: {
-    country: string;
-    city: string;
-    street: string;
-    houseNumber: number | null;
-  };
-};
-
-// Normal model (equal input and output)
-const UserModel = model<User>();
-
-// Asymmetric model (mapped output)
-const UserModel = model((user: User) => ({
-  upperCaseUsername: user.username.toUpperCase(),
-  ageInDecades: user.age / 10,
-  createdAt: new Date(),
-}));
-```
-
-Using [Zod](https://zod.dev) instead:
-
-```ts
-import { z } from "npm:zod";
-
-type User = z.infer<typeof UserModel>;
-
-const UserModel = z.object({
-  username: z.string(),
-  age: z.number(),
-  activities: z.array(z.string()),
-  address: z.object({
-    country: z.string(),
-    city: z.string(),
-    street: z.string(),
-    houseNumber: z.number().nullable(),
-  }).optional(),
-});
-```
-
 ## Database
 
 `kvdex()` is used for creating a new database instance. It takes an options
@@ -236,6 +172,94 @@ default, or alternatively your provided encoder.
 These are all the options available for the `collection()` method, used when
 defining collections of documents. All collection options are optional.
 
+### `model`
+
+Set the document model for a collection, which is used to infer the collection's
+document type and perform any validation or transformation of document values.
+Any [Standard Schema](https://standardschema.dev/schema) compliant model can be
+utilized, meaning validation libraries such as [Zod](https://zod.dev) are
+supported without being a dependency. A built-in model is provided, which
+performs type-casting and optionally transformation of document values, but no
+runtime-validation. By default the built-in model is used.
+
+**_NOTE_:** When using interfaces instead of types, they must extend the
+`KvValue` type.
+
+Typing using the built-in model:
+
+```ts
+import { collection, kvdex, model } from "@olli/kvdex";
+
+type User = {
+  username: string;
+  age: number;
+};
+
+const kv = await Deno.openKv();
+
+const db = kvdex({
+  kv: kv,
+  schema: {
+    users: collection({ model: model<User>() }),
+  },
+});
+```
+
+Typing and runtime-validation using Zod:
+
+```ts
+import { collection, kvdex } from "@olli/kvdex";
+import { z } from "zod";
+
+const UserSchema = z.object({
+  username: z.string(),
+  age: z.number(),
+});
+
+const kv = await Deno.openKv();
+
+const db = kvdex({
+  kv: kv,
+  schema: {
+    users: collection({ model: UserSchema }),
+  },
+});
+```
+
+Typing and value transformation using the built-in model:
+
+```ts
+import { collection, kvdex, model } from "@olli/kvdex";
+
+type UserInput = {
+  username: string;
+  displayName?: string;
+  password: string;
+};
+
+type UserOutput = {
+  username: string;
+  displayName: string;
+  passwordHash: string;
+};
+
+// Models with a transform can be used to set default values or derived values
+const UserModel = model((input: UserInput) => ({
+  username: input.username,
+  displayName: input.displayName ?? input.username,
+  passwordHash: hash(input.password),
+} as UserOutput));
+
+const kv = await Deno.openKv();
+
+const db = kvdex({
+  kv: kv,
+  schema: {
+    users: collection({ model: UserModel }),
+  },
+});
+```
+
 ### `idGenerator`
 
 Override the default id generator, which is used to automatically generate an id
@@ -247,7 +271,7 @@ added, which can be useful to create derived ids. The default id generator uses
 Id created from the data being added:
 
 ```ts
-import { collection, kvdex, model } from "@olli/kvdex";
+import { collection, kvdex } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
@@ -264,7 +288,7 @@ const db = kvdex({
 Using randomly generated UUIDs:
 
 ```ts
-import { collection, kvdex, model } from "@olli/kvdex";
+import { collection, kvdex } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
@@ -281,7 +305,7 @@ const db = kvdex({
 Using multi-part ids:
 
 ```ts
-import { collection, kvdex, model } from "@olli/kvdex";
+import { collection, kvdex } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
@@ -331,7 +355,7 @@ For storing objects larger than the atomic operation size limit, see
 [Blob Storage](#blob-storage).
 
 ```ts
-import { kvdex, collection, model } from "@olli/kvdex"
+import { kvdex, collection } from "@olli/kvdex"
 import { jsonEncoder } from "@olli/kvdex/encoding/json"
 import { v8Encoder } from "@olli/kvdex/encoding/v8"
 import { brotliCompressor } from "@olli/kvdex/encoding/brotli"
