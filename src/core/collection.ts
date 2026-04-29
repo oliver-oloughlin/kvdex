@@ -2597,7 +2597,7 @@ export class Collection<
     options: UpdateOptions | undefined,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Get document value, delete document entry
-    const { value, id } = doc;
+    const { value, id, versionstamp } = doc;
 
     // If serialized, derive existing segment keys from the document's encoded entry
     const oldSegmentKeys: DenoKvStrictKey[] = [];
@@ -2635,6 +2635,8 @@ export class Collection<
     const indexDiffs = this.isIndexable
       ? await createIndexDiffs(
         id,
+        extendKey(this.keys.id, id),
+        versionstamp,
         value as KvObject,
         parsed as KvObject,
         this,

@@ -589,6 +589,11 @@ export function applyIndexDiffs(
       versionstamp: null,
     })
   );
+
+  atomic.check({
+    key: diffs.idKey,
+    versionstamp: diffs.versionstamp,
+  });
 }
 
 export type IndexDiffs = {
@@ -596,10 +601,14 @@ export type IndexDiffs = {
   insertSecondaryKeys: KvKey[];
   deleteKeys: KvKey[];
   checkKeys: KvKey[];
+  idKey: KvKey;
+  versionstamp: string;
 };
 
 export async function createIndexDiffs(
   id: KvId,
+  idKey: KvKey,
+  versionstamp: string,
   dataOld: KvObject,
   dataNew: KvObject,
   collection: Collection<any, any, any>,
@@ -710,5 +719,12 @@ export async function createIndexDiffs(
     }
   }
 
-  return { insertPrimaryKeys, insertSecondaryKeys, deleteKeys, checkKeys };
+  return {
+    insertPrimaryKeys,
+    insertSecondaryKeys,
+    deleteKeys,
+    checkKeys,
+    idKey,
+    versionstamp,
+  };
 }
