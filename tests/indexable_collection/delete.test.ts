@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "@std/assert";
 import { mockUser1 } from "../mocks.ts";
-import { generateUsers, useDb } from "../utils.ts";
+import { useDb } from "../utils.ts";
 
 Deno.test("indexable_collection - delete", async (t) => {
   await t.step(
