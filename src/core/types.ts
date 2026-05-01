@@ -453,6 +453,9 @@ export type SetOptions = NonNullable<Parameters<DenoKv["set"]>["2"]> & {
   batched?: boolean;
 };
 
+/** Options for deleting a document entry */
+export type DeleteOptions = Pick<SetOptions, "batched"> & FindOptions;
+
 /** Options for listing documents */
 export type ListOptions<T1, T2 extends KvId> =
   & Omit<DenoKvListOptions, "limit">
@@ -490,6 +493,11 @@ export type HandleOneOptions<T1, T2 extends KvId> = Omit<
   ListOptions<T1, T2>,
   "take"
 >;
+
+/** Options for deleting many documents */
+export type DeleteManyOptions<T1, T2 extends KvId> =
+  & ListOptions<T1, T2>
+  & DeleteOptions;
 
 /** Options for finding a single document */
 export type FindOptions = NonNullable<Parameters<DenoKv["get"]>[1]>;

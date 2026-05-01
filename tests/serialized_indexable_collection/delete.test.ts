@@ -47,27 +47,6 @@ Deno.test("serialized_indexable_collection - delete", async (t) => {
   );
 
   await t.step(
-    "Should successfully delete 1000 documents from the collection",
-    async () => {
-      await useDb(async (db) => {
-        const users = generateLargeUsers(100);
-        const cr = await db.is_users.addMany(users);
-        const count1 = await db.is_users.count();
-
-        assert(cr.ok);
-        assert(count1 === users.length);
-
-        const { result: ids } = await db.is_users.map((doc) => doc.id);
-
-        await db.is_users.delete(...ids);
-
-        const count2 = await db.is_users.count();
-        assert(count2 === 0);
-      });
-    },
-  );
-
-  await t.step(
     "Should successfully delete document from collection with multi-part id",
     async () => {
       await useDb(async (db) => {

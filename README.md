@@ -759,12 +759,10 @@ const result = await db.users.upsertByPrimaryIndex({
 
 ### delete()
 
-Delete one or more documents with the given ids from the KV store.
+Delete a document with the given id from the KV store.
 
 ```ts
 await db.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77");
-
-await db.users.delete("user1", "user2", "user3");
 ```
 
 ### deleteByPrimaryIndex()

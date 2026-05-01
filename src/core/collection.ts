@@ -4,7 +4,8 @@ import type {
   CheckKeyOf,
   CollectionKeys,
   CommitResult,
-  DenoAtomicOperation,
+  DeleteManyOptions,
+  DeleteOptions,
   DenoKv,
   DenoKvCommitError,
   DenoKvCommitResult,
@@ -656,19 +657,25 @@ export class Collection<
   }
 
   /**
-   * Deletes one or more documents with the given ids from the KV store.
+   * Deletes a document with the given id from the KV store.
    *
    * @example
    * ```ts
-   * await db.users.delete("oliver")
-   *
-   * await db.users.delete("user1", "user2", "user3")
+   * await db.users.delete("user_id")
    * ```
-   * @param ids - IDs of documents to be deleted.
+   *
+   * @example
+   * ```ts
+   * await db.users.delete("user_id", {
+   *   batched: true
+   * })
+   * ```
+   * @param id - ID of the document to be deleted.
+   * @param options - Delete options, optional.
    * @returns A promise that resovles to void.
    */
-  async delete(...ids: ParseId<TOptions>[]): Promise<void> {
-    await this.deleteDocuments(ids, this.keepsHistory);
+  async delete(id: ParseId<TOptions>, options?: DeleteOptions): Promise<void> {
+    await this.deleteDocument(id, options);
   }
 
   /**
@@ -682,7 +689,7 @@ export class Collection<
    *
    * @param index - Selected index.
    * @param value - Index value.
-   * @param options - Find options, optional.
+   * @param options - Delete options, optional.
    * @returns A promise that resolves to void.
    */
   async deleteByPrimaryIndex<
@@ -690,7 +697,7 @@ export class Collection<
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
-    options?: FindOptions,
+    options?: DeleteOptions,
   ): Promise<void> {
     // Serialize and compress index value
     const encoded = await encodeData(value, this.encoder);
@@ -716,7 +723,7 @@ export class Collection<
       & Pick<IndexDataEntry<KvObject>, "__id__">;
 
     // Delete document by id
-    await this.deleteDocuments([__id__], this.keepsHistory);
+    await this.deleteDocument(__id__, options);
   }
 
   /**
@@ -735,7 +742,7 @@ export class Collection<
    *
    * @param index - Selected index.
    * @param value - Index value.
-   * @param options - List options, optional.
+   * @param options - Delete many options, optional.
    * @returns A promise that resolves to void.
    */
   async deleteBySecondaryIndex<
@@ -743,7 +750,7 @@ export class Collection<
   >(
     index: K,
     value: CheckKeyOf<K, TOutput>,
-    options?: ListOptions<
+    options?: DeleteManyOptions<
       Document<TOutput, ParseId<TOptions>>,
       ParseId<TOptions>
     >,
@@ -762,7 +769,7 @@ export class Collection<
     const { cursor } = await this.handleMany(
       prefixKey,
       prefixKey.length,
-      (doc) => this.deleteDocuments([doc.id], this.keepsHistory),
+      (doc) => this.deleteDocument(doc.id, options),
       options,
     );
 
@@ -1360,11 +1367,11 @@ export class Collection<
    * })
    * ```
    *
-   * @param options - List options, optional.
+   * @param options - Delete many options, optional.
    * @returns A promise that resovles to an object containing the iterator cursor
    */
   async deleteMany(
-    options?: ListOptions<
+    options?: DeleteManyOptions<
       Document<TOutput, ParseId<TOptions>>,
       ParseId<TOptions>
     >,
@@ -1415,7 +1422,7 @@ export class Collection<
     const { cursor } = await this.handleMany(
       this.keys.id,
       this.keys.id.length,
-      (doc) => this.deleteDocuments([doc.id], this.keepsHistory),
+      (doc) => this.deleteDocument(doc.id, options),
       options,
     );
 
@@ -1437,14 +1444,14 @@ export class Collection<
    * ```
    *
    * @param order - Secondary order to delete documents by.
-   * @param options - List options, optional.
+   * @param options - Delete many options, optional.
    * @returns A promise that resolves to void.
    */
   async deleteManyBySecondaryOrder<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     order: K,
-    options?: ListOptions<
+    options?: DeleteManyOptions<
       Document<TOutput, ParseId<TOptions>>,
       ParseId<TOptions>
     >,
@@ -1456,7 +1463,7 @@ export class Collection<
     const { cursor } = await this.handleMany(
       prefixKey,
       prefixKey.length + 1,
-      (doc) => this.deleteDocuments([doc.id], this.keepsHistory),
+      (doc) => this.deleteDocument(doc.id, options),
       options,
     );
 
@@ -2812,122 +2819,121 @@ export class Collection<
   }
 
   /**
-   * Delete documents by id.
+   * Delete a document by id.
    *
-   * @param ids - List of document ids.
-   * @param recordHistory - Whether to record history entry or not.
-   * @returns
+   * @param id - Id of the document to delete.
+   * @returns Promise resolving to a DenoKvCommitResult object if successful, or DenoKvCommitError object if unsuccessful.
    */
-  private async deleteDocuments(ids: KvId[], recordHistory: boolean) {
-    // Initialize atomic operation
-    const atomicOperations: DenoAtomicOperation[] = [];
+  private async deleteDocument(
+    id: KvId,
+    options: DeleteOptions | undefined,
+  ): Promise<DenoKvCommitResult | DenoKvCommitError> {
+    const atomic = this.kv.atomic();
 
-    // Set delete history entry if recordHistory is true
-    if (recordHistory) {
-      const atomic = new AtomicWrapper(this.kv);
+    // Set delete history entry if keepsHistory is true
+    if (this.keepsHistory) {
+      const historyKey = extendKey(this.keys.history, id, ulid());
 
-      ids.forEach((id) => {
-        const historyKey = extendKey(this.keys.history, id, ulid());
+      const historyEntry: HistoryEntry<TOutput> = {
+        type: "delete",
+        timestamp: new Date(),
+      };
 
-        const historyEntry: HistoryEntry<TOutput> = {
-          type: "delete",
-          timestamp: new Date(),
-        };
-
-        atomic.set(historyKey, historyEntry);
-      });
-
-      atomicOperations.push(atomic);
+      atomic.set(historyKey, historyEntry);
     }
 
+    // Handle serialized and indexable document
     if (this.isIndexable && this.encoder) {
-      const segmentAtomic = new AtomicWrapper(this.kv);
+      const atomics = [atomic];
 
-      // Run delete operations for each id
-      await allFulfilled(ids.map(async (id) => {
-        const atomic = this.kv.atomic();
+      // Create document id key, get entry and construct document
+      const idKey = extendKey(this.keys.id, id);
+      const { value, versionstamp } = await this.kv.get(idKey);
 
-        // Create document id key, get entry and construct document
-        const idKey = extendKey(this.keys.id, id);
-        const entry = await this.kv.get(idKey);
-        const doc = await this.constructDocument(entry, this.keys.id.length);
+      // Delete main document entry
+      atomic.delete(idKey);
 
-        // Delete document entries
-        atomic.delete(idKey);
-
-        if (entry.value) {
-          const keys = (entry.value as EncodedEntry).ids.map((segId) =>
-            extendKey(this.keys.segment, id, segId)
-          );
-
-          keys.forEach((key) => segmentAtomic.delete(key));
-        }
-
-        if (doc) {
-          await deleteIndices(
-            id,
-            doc.versionstamp,
-            doc.value as KvObject,
-            atomic,
-            this,
-          );
-        }
-
-        atomicOperations.push(atomic);
-      }));
-
-      atomicOperations.push(segmentAtomic);
-    } else if (this.isIndexable) {
-      // Run delete operations for each id
-      await allFulfilled(ids.map(async (id) => {
-        const atomic = this.kv.atomic();
-
-        // Create idKey, get document value
-        const idKey = extendKey(this.keys.id, id);
-        const { value, versionstamp } = await this.kv.get(idKey);
-
-        // If no value or versionstamp, abort delete
-        if (!value || !versionstamp) {
-          return;
-        }
-
-        // Delete document entries
-        atomic.delete(idKey);
-        await deleteIndices(id, versionstamp, value as KvObject, atomic, this);
-
-        atomicOperations.push(atomic);
-      }));
-    } else if (this.encoder) {
-      const atomic = new AtomicWrapper(this.kv);
-
-      // Perform delete for each id
-      await allFulfilled(ids.map(async (id) => {
-        // Create document id key, get document value
-        const idKey = extendKey(this.keys.id, id);
-        const { value } = await this.kv.get(idKey);
-
-        // If no value, abort delete
-        if (!value) {
-          return;
-        }
-
-        // Delete document entries
-        atomic.delete(idKey);
-
+      // Delete segment entries
+      if (value) {
         const keys = (value as EncodedEntry).ids.map((segId) =>
           extendKey(this.keys.segment, id, segId)
         );
 
-        keys.forEach((key) => atomic.delete(key));
-      }));
+        if (options?.batched) {
+          const segmentAtomic = new AtomicWrapper(this.kv);
+          keys.forEach((key) => segmentAtomic.delete(key));
+          atomics.push(segmentAtomic);
+        } else {
+          keys.forEach((key) => atomic.delete(key));
+        }
+      }
 
-      atomicOperations.push(atomic);
-    } else {
-      const atomic = new AtomicWrapper(this.kv);
-      ids.forEach((id) => atomic.delete(extendKey(this.keys.id, id)));
-      atomicOperations.push(atomic);
+      // Delete index entries
+      if (value && versionstamp) {
+        await deleteIndices(
+          id,
+          versionstamp,
+          value as KvObject,
+          atomic,
+          this,
+        );
+      }
+
+      // Commit atomic operations
+      return await commitAtomicOperations(atomics);
     }
 
-    return await commitAtomicOperations(atomicOperations);
+    // Handle indexable document
+    if (this.isIndexable) {
+      // Create idKey, get document value
+      const idKey = extendKey(this.keys.id, id);
+      const { value, versionstamp } = await this.kv.get(idKey);
+
+      // Delete main document entry
+      atomic.delete(idKey);
+
+      // Delete index entries
+      if (versionstamp) {
+        await deleteIndices(id, versionstamp, value as KvObject, atomic, this);
+      }
+
+      // Commit atomic operation
+      return await atomic.commit();
+    }
+
+    // Handle serialized document
+    if (this.encoder) {
+      const atomics = [atomic];
+
+      // Create document id key, get entry and construct document
+      const idKey = extendKey(this.keys.id, id);
+      const { value } = await this.kv.get(idKey);
+
+      // Delete main document entry
+      atomic.delete(idKey);
+
+      // Delete segment entries
+      if (value) {
+        const keys = (value as EncodedEntry).ids.map((segId) =>
+          extendKey(this.keys.segment, id, segId)
+        );
+
+        if (options?.batched) {
+          const segmentAtomic = new AtomicWrapper(this.kv);
+          keys.forEach((key) => segmentAtomic.delete(key));
+          atomics.push(segmentAtomic);
+        } else {
+          keys.forEach((key) => atomic.delete(key));
+        }
+      }
+
+      // Commit atomic operations
+      return await commitAtomicOperations(atomics);
+    }
+
+    // Handle regular document
+    const idKey = extendKey(this.keys.id, id);
+    atomic.delete(idKey);
+    return await atomic.commit();
   }
 }
