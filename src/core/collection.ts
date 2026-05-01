@@ -2866,7 +2866,7 @@ export class Collection<
         if (doc) {
           await deleteIndices(
             id,
-            null,
+            doc.versionstamp,
             doc.value as KvObject,
             atomic,
             this,
@@ -2893,7 +2893,7 @@ export class Collection<
 
         // Delete document entries
         atomic.delete(idKey);
-        await deleteIndices(id, null, value as KvObject, atomic, this);
+        await deleteIndices(id, versionstamp, value as KvObject, atomic, this);
 
         atomicOperations.push(atomic);
       }));
