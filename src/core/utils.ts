@@ -3,6 +3,8 @@ import type { Collection } from "./collection.ts";
 import type {
   DenoAtomicOperation,
   DenoKv,
+  DenoKvCommitError,
+  DenoKvCommitResult,
   DenoKvEntryMaybe,
   DenoKvListSelector,
   DenoKvSetOptions,
@@ -731,5 +733,30 @@ export async function createIndexDiffs(
     id,
     idKey,
     versionstamp,
+  };
+}
+
+export async function commitAtomicOperations(
+  atomicOperations: DenoAtomicOperation[],
+): Promise<DenoKvCommitResult | DenoKvCommitError> {
+  // Commit all operations
+  const settled = await Promise.allSettled(
+    atomicOperations.map((op) => op.commit()),
+  );
+
+  // Check status of all commits
+  const success = settled.every((v) => v.status === "fulfilled" && v.value.ok);
+
+  // If successful, return commit result
+  if (success) {
+    return {
+      ok: true,
+      versionstamp: (settled.at(0) as any)?.value.versionstamp ?? "0",
+    };
+  }
+
+  // Return commit error
+  return {
+    ok: false,
   };
 }
