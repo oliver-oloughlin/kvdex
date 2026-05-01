@@ -599,16 +599,18 @@ export function applyIndexDiffs(
     })
   );
 
-  atomic.check({
-    key: diffs.idKey,
-    versionstamp: diffs.versionstamp,
-  });
+  if (diffs.versionstamp !== undefined) {
+    atomic.check({
+      key: diffs.idKey,
+      versionstamp: diffs.versionstamp,
+    });
+  }
 }
 
 export async function createIndexDiffs(
   id: KvId,
   idKey: KvKey,
-  versionstamp: string | null,
+  versionstamp: string | null | undefined,
   dataOld: KvObject | null,
   dataNew: KvObject,
   collection: Collection<any, any, any>,

@@ -507,7 +507,7 @@ export class AtomicBuilder<
       if (collection["isIndexable"]) {
         const doc = overwrite ? await this.kv.get(idKey) : null;
         const docValue = doc?.value as KvObject | undefined ?? null;
-        const versionstamp = doc?.versionstamp ?? null;
+        const versionstamp = doc?.versionstamp;
 
         const diffs = await createIndexDiffs(
           docId,

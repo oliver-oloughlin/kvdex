@@ -81,6 +81,7 @@ export type WatchManager = {
   cancel: () => Promise<void>;
 };
 
+/** Index differences used for updating index entries */
 export type IndexDiffs = {
   insertPrimaryKeys: KvKey[];
   insertSecondaryKeys: KvKey[];
@@ -88,7 +89,7 @@ export type IndexDiffs = {
   checkKeys: KvKey[];
   id: KvId;
   idKey: KvKey;
-  versionstamp: string | null;
+  versionstamp: string | null | undefined;
 };
 
 /**********************/
