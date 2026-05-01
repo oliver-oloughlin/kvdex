@@ -678,7 +678,7 @@ export class Collection<
     id: ParseId<TOptions>,
     options?: DeleteOptions,
   ): Promise<DenoKvCommitResult | DenoKvCommitError> {
-    return await this.deleteDocument(id, options);
+    return await this.deleteDocument(id, null, options);
   }
 
   /**
@@ -726,7 +726,7 @@ export class Collection<
       & Pick<IndexDataEntry<KvObject>, "__id__">;
 
     // Delete document by id
-    await this.deleteDocument(__id__, options);
+    await this.deleteDocument(__id__, null, options);
   }
 
   /**
@@ -772,7 +772,7 @@ export class Collection<
     const { cursor } = await this.handleMany(
       prefixKey,
       prefixKey.length,
-      (doc) => this.deleteDocument(doc.id, options),
+      (doc) => this.deleteDocument(doc.id, doc, options),
       options,
     );
 
@@ -1425,7 +1425,7 @@ export class Collection<
     const { cursor } = await this.handleMany(
       this.keys.id,
       this.keys.id.length,
-      (doc) => this.deleteDocument(doc.id, options),
+      (doc) => this.deleteDocument(doc.id, doc, options),
       options,
     );
 
@@ -1466,7 +1466,7 @@ export class Collection<
     const { cursor } = await this.handleMany(
       prefixKey,
       prefixKey.length + 1,
-      (doc) => this.deleteDocument(doc.id, options),
+      (doc) => this.deleteDocument(doc.id, doc, options),
       options,
     );
 
@@ -2829,6 +2829,7 @@ export class Collection<
    */
   private async deleteDocument(
     id: KvId,
+    doc: Document<TOutput, ParseId<TOptions>> | null,
     options: DeleteOptions | undefined,
   ): Promise<DenoKvCommitResult | DenoKvCommitError> {
     const atomic = this.kv.atomic();
@@ -2851,14 +2852,17 @@ export class Collection<
 
       // Create document id key, get entry and construct document
       const idKey = extendKey(this.keys.id, id);
-      const { value, versionstamp } = await this.kv.get(idKey);
+      const entry = await this.kv.get(idKey);
+
+      const document = doc ??
+        await this.constructDocument(entry, this.keys.id.length);
 
       // Delete main document entry
       atomic.delete(idKey);
 
       // Delete segment entries
-      if (value) {
-        const keys = (value as EncodedEntry).ids.map((segId) =>
+      if (entry.value) {
+        const keys = (entry.value as EncodedEntry).ids.map((segId) =>
           extendKey(this.keys.segment, id, segId)
         );
 
@@ -2872,11 +2876,11 @@ export class Collection<
       }
 
       // Delete index entries
-      if (value && versionstamp) {
+      if (document) {
         await deleteIndices(
           id,
-          versionstamp,
-          value as KvObject,
+          document.versionstamp,
+          document.value as KvObject,
           atomic,
           this,
         );
@@ -2890,7 +2894,7 @@ export class Collection<
     if (this.isIndexable) {
       // Create idKey, get document value
       const idKey = extendKey(this.keys.id, id);
-      const { value, versionstamp } = await this.kv.get(idKey);
+      const { value, versionstamp } = doc ?? await this.kv.get(idKey);
 
       // Delete main document entry
       atomic.delete(idKey);
