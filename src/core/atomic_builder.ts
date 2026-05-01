@@ -23,12 +23,12 @@ import type {
   SchemaDefinition,
 } from "../core/types.ts";
 import {
-  allFulfilled,
+  applyIndexDiffs,
+  createIndexDiffs,
   deleteIndices,
   extendKey,
   keyEq,
   prepareEnqueue,
-  setIndices,
   transform,
   validate,
 } from "../core/utils.ts";
@@ -87,10 +87,9 @@ export class AtomicBuilder<
     // Initiate operations or set from given operations
     this.operations = operations ?? {
       atomic: kv.atomic(),
-      asyncMutations: [],
-      prepareDeleteFns: [],
+      asyncPreparations: [],
       indexDeleteCollectionKeys: [],
-      indexAddCollectionKeys: [],
+      indexSetCollectionKeys: [],
     };
   }
 
@@ -195,18 +194,20 @@ export class AtomicBuilder<
     this.operations.atomic.delete(idKey);
 
     // If collection is indexable, handle indexing
-    if (this.collection["isIndexable"]) {
+    if (collection["isIndexable"]) {
       // Add collection key for collision detection
       this.operations.indexDeleteCollectionKeys.push(collection["keys"].base);
 
-      // Add delete preperation function to prepeare delete functions list
-      this.operations.prepareDeleteFns.push(async (kv) => {
-        const doc = await kv.get(idKey);
+      // Add delete preperation function
+      this.operations.asyncPreparations.push(async () => {
+        const doc = await this.kv.get(idKey);
 
-        return {
+        await deleteIndices(
           id,
-          data: doc.value as KvObject ?? {},
-        };
+          doc.value as KvObject,
+          this.operations.atomic,
+          collection,
+        );
       });
     }
 
@@ -439,14 +440,9 @@ export class AtomicBuilder<
    * @returns A promise that resolves to a DenoKvCommitResult if the operation is successful, or DenoKvCommitError if not.
    */
   async commit(): Promise<DenoKvCommitResult | DenoKvCommitError> {
-    // Perform async mutations
-    for (const mut of this.operations.asyncMutations) {
-      await mut();
-    }
-
-    // Check for key collisions between add/delete
+    // Check for key collisions between set/delete
     if (
-      this.operations.indexAddCollectionKeys.some((addKey) =>
+      this.operations.indexSetCollectionKeys.some((addKey) =>
         this.operations.indexDeleteCollectionKeys.some((deleteKey) =>
           keyEq(addKey, deleteKey)
         )
@@ -458,43 +454,11 @@ export class AtomicBuilder<
       };
     }
 
-    // Prepare delete ops
-    const preparedIndexDeletes = await allFulfilled(
-      this.operations.prepareDeleteFns.map((fn) => fn(this.kv)),
-    );
+    // Perform async preparations
+    await Promise.all(this.operations.asyncPreparations.map((prep) => prep()));
 
     // Execute atomic operation
-    const commitResult = await this.operations.atomic.commit();
-
-    // If successful commit, perform delete ops
-    if (commitResult.ok) {
-      await allFulfilled(
-        preparedIndexDeletes.map(async (preparedDelete) => {
-          // Get document id and data from prepared delete object
-          const {
-            id,
-            data,
-          } = preparedDelete;
-
-          // Initiate atomic operation for index deletions
-          const atomic = this.kv.atomic();
-
-          // Set index delete operations using atomic operation
-          await deleteIndices(
-            id,
-            data,
-            atomic,
-            this.collection,
-          );
-
-          // Execute atomic operation
-          await atomic.commit();
-        }),
-      );
-    }
-
-    // Return commit result
-    return commitResult;
+    return await this.operations.atomic.commit();
   }
 
   /***********************/
@@ -519,16 +483,20 @@ export class AtomicBuilder<
     const overwrite = !!(options as AtomicSetOptions<EmptyObject> | undefined)
       ?.overwrite;
 
-    if (this.collection["isIndexable"] && overwrite) {
-      throw new InvalidCollectionError(
-        "The overwrite property is not supported for indexable collections",
-      );
+    const collection = this.collection;
+
+    if (collection["isIndexable"]) {
+      if (overwrite) {
+        throw new InvalidCollectionError(
+          "The overwrite property is not supported for indexable collections",
+        );
+      }
+
+      // Add collection id key for collision detection
+      this.operations.indexSetCollectionKeys.push(collection["keys"].base);
     }
 
-    this.operations.asyncMutations.push(async () => {
-      // Create id key from collection id key and id
-      const collection = this.collection;
-
+    this.operations.asyncPreparations.push(async () => {
       const parsed = await transform(collection["model"], value) ??
         await validate(collection["model"], value);
 
@@ -542,16 +510,23 @@ export class AtomicBuilder<
       }
 
       if (collection["isIndexable"]) {
-        // Add collection id key for collision detection
-        this.operations.indexAddCollectionKeys.push(collection["keys"].base);
+        const doc = overwrite ? await this.kv.get(idKey) : null;
+        const docValue = doc?.value as KvObject | undefined ?? null;
+        const versionstamp = doc?.versionstamp ?? null;
 
-        // Add indexing operations
-        await setIndices(
+        const diffs = await createIndexDiffs(
           docId,
+          idKey,
+          versionstamp,
+          docValue,
           parsed as KvObject,
+          collection,
+        );
+
+        applyIndexDiffs(
+          diffs,
           parsed as KvObject,
           this.operations.atomic,
-          this.collection,
           options,
         );
       }

@@ -11,6 +11,7 @@ import type {
   EnqueueOptions,
   FindManyOptions,
   IndexDataEntry,
+  IndexDiffs,
   KvId,
   KvKey,
   KvObject,
@@ -565,20 +566,18 @@ async function handleIndices(
 }
 
 export function applyIndexDiffs(
-  id: KvId,
   diffs: IndexDiffs,
-  value: unknown,
+  value: KvObject,
   atomic: DenoAtomicOperation,
-  options?: DenoKvSetOptions,
+  options: DenoKvSetOptions | undefined,
 ) {
   diffs.deleteKeys.forEach((key) => atomic.delete(key));
-
   diffs.insertSecondaryKeys.forEach((key) => atomic.set(key, value, options));
 
   diffs.insertPrimaryKeys.forEach((key) => {
     const indexEntry: IndexDataEntry<KvObject> = {
-      ...(value as KvObject),
-      __id__: id,
+      ...value,
+      __id__: diffs.id,
     };
     atomic.set(key, indexEntry, options);
   });
@@ -596,20 +595,11 @@ export function applyIndexDiffs(
   });
 }
 
-export type IndexDiffs = {
-  insertPrimaryKeys: KvKey[];
-  insertSecondaryKeys: KvKey[];
-  deleteKeys: KvKey[];
-  checkKeys: KvKey[];
-  idKey: KvKey;
-  versionstamp: string;
-};
-
 export async function createIndexDiffs(
   id: KvId,
   idKey: KvKey,
-  versionstamp: string,
-  dataOld: KvObject,
+  versionstamp: string | null,
+  dataOld: KvObject | null,
   dataNew: KvObject,
   collection: Collection<any, any, any>,
 ): Promise<IndexDiffs> {
@@ -620,7 +610,10 @@ export async function createIndexDiffs(
 
   // Handle primary indices
   for (const index of collection["primaryIndexList"]) {
-    const indexValueOld = dataOld[index] as KvId | undefined;
+    const indexValueOld = dataOld
+      ? dataOld[index] as KvId | undefined
+      : undefined;
+
     const indexValueNew = dataNew[index] as KvId | undefined;
 
     const encodedOld = typeof indexValueOld !== "undefined"
@@ -670,7 +663,10 @@ export async function createIndexDiffs(
 
   // Handle secondary indices
   for (const index of collection["secondaryIndexList"]) {
-    const indexValueOld = dataOld[index] as KvId | undefined;
+    const indexValueOld = dataOld
+      ? dataOld[index] as KvId | undefined
+      : undefined;
+
     const indexValueNew = dataNew[index] as KvId | undefined;
 
     const encodedOld = typeof indexValueOld !== "undefined"
@@ -724,6 +720,7 @@ export async function createIndexDiffs(
     insertSecondaryKeys,
     deleteKeys,
     checkKeys,
+    id,
     idKey,
     versionstamp,
   };

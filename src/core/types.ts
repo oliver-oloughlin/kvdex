@@ -81,6 +81,16 @@ export type WatchManager = {
   cancel: () => Promise<void>;
 };
 
+export type IndexDiffs = {
+  insertPrimaryKeys: KvKey[];
+  insertSecondaryKeys: KvKey[];
+  deleteKeys: KvKey[];
+  checkKeys: KvKey[];
+  id: KvId;
+  idKey: KvKey;
+  versionstamp: string | null;
+};
+
 /**********************/
 /*                    */
 /*   INTERVAL TYPES   */
@@ -215,22 +225,12 @@ export type CollectionSelector<
   schema: TSchema,
 ) => Collection<TInput, TOutput, TOptions>;
 
-/** Prepared value delete function */
-export type PrepareDeleteFn = (kv: DenoKv) => Promise<PreparedIndexDelete>;
-
-/** Prepared index delete function */
-export type PreparedIndexDelete = {
-  id: KvId;
-  data: KvObject;
-};
-
 /** Atomic builder operations */
 export type Operations = {
   atomic: DenoAtomicOperation;
-  asyncMutations: Array<() => Promise<void>>;
-  prepareDeleteFns: PrepareDeleteFn[];
+  asyncPreparations: Array<() => Promise<void>>;
   indexDeleteCollectionKeys: KvKey[];
-  indexAddCollectionKeys: KvKey[];
+  indexSetCollectionKeys: KvKey[];
 };
 
 /** Kvdex atomic check */

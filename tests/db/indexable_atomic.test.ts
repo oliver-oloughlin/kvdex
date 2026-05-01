@@ -86,7 +86,7 @@ Deno.test("db - indexable_atomic", async (t) => {
         const cr1 = await db.i_users.add(mockUser1);
         assert(cr1.ok);
 
-        await db
+        const atomicCr = await db
           .atomic((schema) => schema.i_users)
           .delete(cr1.id)
           .commit();
@@ -103,15 +103,16 @@ Deno.test("db - indexable_atomic", async (t) => {
           mockUser1.age,
         );
 
-        assert(byId === null);
-        assert(byPrimary === null);
-        assert(bySecondary.result.length === 0);
+        assert(atomicCr.ok);
+        assertEquals(byId, null);
+        assertEquals(byPrimary, null);
+        assertEquals(bySecondary.result.length, 0);
       });
     },
   );
 
   await t.step(
-    "Should fail operation when trying to set and delete from the same indexbale collection",
+    "Should fail operation when trying to set and delete from the same indexable collection",
     async () => {
       await useDb(async (db) => {
         const cr = await db
@@ -212,7 +213,7 @@ Deno.test("db - indexable_atomic", async (t) => {
         const cr1 = await db.i_multi_part_id_users.add(mockUser1);
         assert(cr1.ok);
 
-        await db
+        const atomicCr = await db
           .atomic((schema) => schema.i_multi_part_id_users)
           .delete(cr1.id)
           .commit();
@@ -230,6 +231,7 @@ Deno.test("db - indexable_atomic", async (t) => {
             mockUser1.age,
           );
 
+        assert(atomicCr.ok);
         assert(byId === null);
         assert(byPrimary === null);
         assert(bySecondary.result.length === 0);

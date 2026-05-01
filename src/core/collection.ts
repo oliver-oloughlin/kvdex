@@ -21,6 +21,7 @@ import type {
   IdGenerator,
   IdUpsert,
   IndexDataEntry,
+  IndexDiffs,
   IndexRecord,
   IndexType,
   KeysOfThatExtend,
@@ -65,7 +66,6 @@ import {
   extendKey,
   generateId,
   getDocumentId,
-  type IndexDiffs,
   isKvObject,
   kvGetMany,
   prepareEnqueue,
@@ -2486,7 +2486,6 @@ export class Collection<
       if (indexDiffs) {
         // Update path: apply index diffs
         applyIndexDiffs(
-          docId,
           indexDiffs,
           docValue,
           indexOperationPool,
