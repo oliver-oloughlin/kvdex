@@ -6,7 +6,7 @@ import {
   type QueueMessage,
 } from "../../mod.ts";
 import { createHandlerId } from "../../src/core/utils.ts";
-import { assert, assertEquals, assertThrows } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
 import { sleep, useDb, useKv } from "../utils.ts";
 import type { KvKey } from "../../src/core/types.ts";
@@ -68,17 +68,61 @@ Deno.test("db - atomic", async (t) => {
   });
 
   await t.step(
-    "Should throw when trying to overwrite document in indexable collection",
+    "Should overwrite document in indexable collection",
     async () => {
       await useDb(async (db) => {
         const cr1 = await db.i_users.add(mockUser1);
         assert(cr1.ok);
 
-        assertThrows(() => {
-          db
-            .atomic((schema) => schema.i_users)
-            .set(cr1.id, mockUser2, { overwrite: true } as any);
-        });
+        const cr2 = await db
+          .atomic((schema) => schema.i_users)
+          .set(cr1.id, mockUser2, { overwrite: true })
+          .commit();
+
+        assert(cr2.ok);
+
+        const count = await db.i_users.count();
+        assertEquals(count, 1);
+
+        // Document should have new value
+        const doc = await db.i_users.find(cr1.id);
+        assertEquals(doc?.value, mockUser2);
+
+        // Old primary index should be gone
+        const byOldPrimary = await db.i_users.findByPrimaryIndex(
+          "username",
+          mockUser1.username,
+        );
+        assertEquals(byOldPrimary, null);
+
+        // New primary index should work
+        const byNewPrimary = await db.i_users.findByPrimaryIndex(
+          "username",
+          mockUser2.username,
+        );
+        assertEquals(byNewPrimary?.value, mockUser2);
+
+        // Old secondary index should not find the document
+        const { result: byOldSecondary } = await db.i_users
+          .findBySecondaryIndex(
+            "age",
+            mockUser1.age,
+          );
+        const foundByOldAge = byOldSecondary.some(
+          (d) => d.value.username === mockUser1.username,
+        );
+        assertEquals(foundByOldAge, false);
+
+        // New secondary index should find the document
+        const { result: byNewSecondary } = await db.i_users
+          .findBySecondaryIndex(
+            "age",
+            mockUser2.age,
+          );
+        const foundByNewAge = byNewSecondary.some(
+          (d) => d.value.username === mockUser2.username,
+        );
+        assertEquals(foundByNewAge, true);
       });
     },
   );
