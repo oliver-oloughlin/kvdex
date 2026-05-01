@@ -672,10 +672,13 @@ export class Collection<
    * ```
    * @param id - ID of the document to be deleted.
    * @param options - Delete options, optional.
-   * @returns A promise that resovles to void.
+   * @returns A promise that resolves to a DenoKvCommitResult object if successful or a DenoKvCommitError object if unsuccessful.
    */
-  async delete(id: ParseId<TOptions>, options?: DeleteOptions): Promise<void> {
-    await this.deleteDocument(id, options);
+  async delete(
+    id: ParseId<TOptions>,
+    options?: DeleteOptions,
+  ): Promise<DenoKvCommitResult | DenoKvCommitError> {
+    return await this.deleteDocument(id, options);
   }
 
   /**

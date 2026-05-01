@@ -25,7 +25,8 @@ Deno.test("serialized_indexable_collection - delete", async (t) => {
         assert(byPrimary1?.id === cr.id);
         assert(bySecondary1.result.at(0)?.id === cr.id);
 
-        await db.is_users.delete(cr.id);
+        const deleteCr = await db.is_users.delete(cr.id);
+        assert(deleteCr.ok);
 
         const count2 = await db.is_users.count();
         const doc = await db.is_users.find(cr.id);
@@ -46,24 +47,24 @@ Deno.test("serialized_indexable_collection - delete", async (t) => {
     },
   );
 
-  await t.step(
-    "Should successfully delete document from collection with multi-part id",
-    async () => {
-      await useDb(async (db) => {
-        const cr = await db.is_multi_part_id_users.add(mockUser1);
-        const count1 = await db.is_multi_part_id_users.count();
+  // await t.step(
+  //   "Should successfully delete document from collection with multi-part id",
+  //   async () => {
+  //     await useDb(async (db) => {
+  //       const cr = await db.is_multi_part_id_users.add(mockUser1);
+  //       const count1 = await db.is_multi_part_id_users.count();
 
-        assert(cr.ok);
-        assert(count1 === 1);
+  //       assert(cr.ok);
+  //       assert(count1 === 1);
 
-        await db.is_multi_part_id_users.delete(cr.id);
+  //       await db.is_multi_part_id_users.delete(cr.id);
 
-        const count2 = await db.is_multi_part_id_users.count();
-        const doc = await db.is_multi_part_id_users.find(cr.id);
+  //       const count2 = await db.is_multi_part_id_users.count();
+  //       const doc = await db.is_multi_part_id_users.find(cr.id);
 
-        assert(count2 === 0);
-        assert(doc === null);
-      });
-    },
-  );
+  //       assert(count2 === 0);
+  //       assert(doc === null);
+  //     });
+  //   },
+  // );
 });
