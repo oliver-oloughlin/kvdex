@@ -13,7 +13,30 @@ Deno.test("serialized_collection - delete", async (t) => {
         assert(cr.ok);
         assert(count1 === 1);
 
-        await db.s_users.delete(cr.id);
+        const deleteCr = await db.s_users.delete(cr.id);
+        assert(deleteCr.ok);
+
+        const count2 = await db.s_users.count();
+        const doc = await db.s_users.find(cr.id);
+
+        assert(count2 === 0);
+        assert(doc === null);
+      });
+    },
+  );
+
+  await t.step(
+    "Should successfully delete a document from the collection with batched option",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.s_users.add(mockUser1);
+        const count1 = await db.s_users.count();
+
+        assert(cr.ok);
+        assert(count1 === 1);
+
+        const deleteCr = await db.s_users.delete(cr.id, { batched: true });
+        assert(deleteCr.ok);
 
         const count2 = await db.s_users.count();
         const doc = await db.s_users.find(cr.id);
@@ -34,7 +57,8 @@ Deno.test("serialized_collection - delete", async (t) => {
         assert(cr.ok);
         assertEquals(count1, 1);
 
-        await db.s_multi_part_id_nums.delete(cr.id);
+        const deleteCr = await db.s_multi_part_id_nums.delete(cr.id);
+        assert(deleteCr.ok);
 
         const count2 = await db.s_multi_part_id_nums.count();
         const doc = await db.s_multi_part_id_nums.find(cr.id);
