@@ -2551,6 +2551,7 @@ export class Collection<
         if (this.isIndexable) {
           await deleteIndices(
             docId,
+            null,
             value as KvObject,
             failedAtomic,
             this,
@@ -2853,7 +2854,13 @@ export class Collection<
         }
 
         if (doc) {
-          await deleteIndices(id, doc.value as KvObject, atomic, this);
+          await deleteIndices(
+            id,
+            null,
+            doc.value as KvObject,
+            atomic,
+            this,
+          );
         }
       }));
 
@@ -2867,16 +2874,16 @@ export class Collection<
       await allFulfilled(ids.map(async (id) => {
         // Create idKey, get document value
         const idKey = extendKey(this.keys.id, id);
-        const { value } = await this.kv.get(idKey);
+        const { value, versionstamp } = await this.kv.get(idKey);
 
-        // If no value, abort delete
-        if (!value) {
+        // If no value or versionstamp, abort delete
+        if (!value || !versionstamp) {
           return;
         }
 
         // Delete document entries
         atomic.delete(idKey);
-        await deleteIndices(id, value as KvObject, atomic, this);
+        await deleteIndices(id, null, value as KvObject, atomic, this);
       }));
 
       // Commit the operation

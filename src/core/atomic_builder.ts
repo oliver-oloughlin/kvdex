@@ -201,13 +201,15 @@ export class AtomicBuilder<
       // Add delete preperation function
       this.operations.asyncPreparations.push(async () => {
         const doc = await this.kv.get(idKey);
-
-        await deleteIndices(
-          id,
-          doc.value as KvObject,
-          this.operations.atomic,
-          collection,
-        );
+        if (doc.versionstamp) {
+          await deleteIndices(
+            id,
+            doc.versionstamp,
+            (doc.value ?? {}) as KvObject,
+            this.operations.atomic,
+            collection,
+          );
+        }
       });
     }
 

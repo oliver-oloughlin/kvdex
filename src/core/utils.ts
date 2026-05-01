@@ -266,6 +266,7 @@ export async function setIndices(
  */
 export async function deleteIndices(
   id: KvId,
+  versionstamp: string | null,
   data: KvObject,
   atomic: DenoAtomicOperation,
   collection: Collection<any, any, any>,
@@ -277,6 +278,13 @@ export async function deleteIndices(
     (primaryIndexKey) => atomic.delete(primaryIndexKey),
     (secondaryIndexKey) => atomic.delete(secondaryIndexKey),
   );
+
+  if (versionstamp) {
+    atomic.check({
+      key: extendKey(collection["keys"].id, id),
+      versionstamp,
+    });
+  }
 }
 
 /**
