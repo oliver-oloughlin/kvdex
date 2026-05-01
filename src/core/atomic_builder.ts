@@ -12,7 +12,6 @@ import type {
   DenoKvCommitError,
   DenoKvCommitResult,
   DenoKvU64,
-  EmptyObject,
   EnqueueOptions,
   HistoryEntry,
   KvObject,
@@ -141,7 +140,7 @@ export class AtomicBuilder<
    */
   add(
     value: TInput,
-    options?: AtomicSetOptions<TOptions>,
+    options?: AtomicSetOptions,
   ): this {
     return this.setDocument(null, value, options);
   }
@@ -167,7 +166,7 @@ export class AtomicBuilder<
   set(
     id: ParseId<TOptions>,
     value: TInput,
-    options?: AtomicSetOptions<TOptions>,
+    options?: AtomicSetOptions,
   ): this {
     return this.setDocument(id, value, options);
   }
@@ -480,20 +479,14 @@ export class AtomicBuilder<
   private setDocument(
     id: ParseId<TOptions> | null,
     value: TInput,
-    options?: AtomicSetOptions<TOptions>,
+    options?: AtomicSetOptions,
   ) {
-    const overwrite = !!(options as AtomicSetOptions<EmptyObject> | undefined)
+    const overwrite = !!(options as AtomicSetOptions | undefined)
       ?.overwrite;
 
     const collection = this.collection;
 
     if (collection["isIndexable"]) {
-      if (overwrite) {
-        throw new InvalidCollectionError(
-          "The overwrite property is not supported for indexable collections",
-        );
-      }
-
       // Add collection id key for collision detection
       this.operations.indexSetCollectionKeys.push(collection["keys"].base);
     }

@@ -276,10 +276,7 @@ export type AtomicMutation<T1, T2 extends KvId> =
   );
 
 /** Options for atomic set operation */
-export type AtomicSetOptions<T extends BaseCollectionOptions<any, any>> =
-  & DenoKvSetOptions
-  & (T extends { indices: IndexRecord<KvObject> } ? EmptyObject
-    : Pick<SetOptions, "overwrite">);
+export type AtomicSetOptions = Pick<SetOptions, "overwrite" | "expireIn">;
 
 /************************/
 /*                      */

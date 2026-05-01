@@ -1358,15 +1358,9 @@ returns a promise resolving to either a Deno.KvCommitResult object if
 successful, or Deno.KvCommitError if not.
 
 **_NOTE_:** Atomic operations are not available for serialized collections. For
-indexable collections, any operations performing deletes will not be truly
-atomic in the sense that it performs a single isolated operation. This is
-because the document data must be read before performing the initial delete
-operation, to then perform another delete operation for the index entries. If
-the initial operation fails, the index entries will not be deleted. To avoid
-collisions and errors related to indexing, an atomic operation will always fail
-if it is trying to delete and write to the same indexable collection. It will
-also fail if trying to set/add a document with colliding index entries, or if
-trying to set a document with the `overwrite` option.
+indexable collections, to avoid collisions and errors related to indexing, an
+atomic operation will always fail when trying to delete and write to the same
+indexable collection.
 
 ### Without checking
 
@@ -1398,7 +1392,7 @@ const result2 = await db
   .commit();
 
 // Will fail and return Deno.KvCommitError because it is trying
-// to both add and delete from an indexable collection
+// to both add and delete from the same indexable collection
 const result3 = await db
   .atomic((schema) => schema.users)
   .delete("user_1")
