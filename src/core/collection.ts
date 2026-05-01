@@ -954,8 +954,8 @@ export class Collection<
    *     activities: ["bowling"],
    *     address: {
    *       country: "USA",
-   *       city: "Las Vegas"
-   *       street: "St. Boulevard"
+   *       city: "Las Vegas",
+   *       street: "St. Boulevard",
    *       houseNumber: 23
    *     }
    *   }
@@ -1006,8 +1006,8 @@ export class Collection<
    *     activities: ["bowling"],
    *     address: {
    *       country: "USA",
-   *       city: "Las Vegas"
-   *       street: "St. Boulevard"
+   *       city: "Las Vegas",
+   *       street: "St. Boulevard",
    *       houseNumber: 23
    *     }
    *   }
@@ -1153,7 +1153,7 @@ export class Collection<
    *
    * @example
    * ```ts
-   * // Updates the first user document and sets name = 67
+   * // Updates the first user document and sets age = 67
    * const result = await db.users.updateOne({ age: 67 })
    * ```
    *
@@ -1205,7 +1205,7 @@ export class Collection<
    * @example
    * ```ts
    * // Updates the first user where age = 20 and username starts with "a", using shallow merge
-   * const result = await db.users.updateOne("age", 20, { age: 67 }, {
+   * const result = await db.users.updateOneBySecondaryIndex("age", 20, { age: 67 }, {
    *   filter: (doc) => doc.value.username.startsWith("a"),
    *   strategy: "merge-shallow"
    * })
@@ -1298,10 +1298,10 @@ export class Collection<
    * @example
    * ```ts
    * // Adds 5 new document entries to the KV store.
-   * await results = await db.numbers.addMany([1, 2, 3, 4, 5])
+   * await result = await db.numbers.addMany([1, 2, 3, 4, 5])
    *
    * // Only adds the first entry, as "username" is defined as a primary index and cannot have duplicates
-   * await results = await db.users.addMany([
+   * await result = await db.users.addMany([
    *   {
    *     username: "oli",
    *     age: 24
