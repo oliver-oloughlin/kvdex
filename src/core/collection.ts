@@ -693,7 +693,7 @@ export class Collection<
    * @param index - Selected index.
    * @param value - Index value.
    * @param options - Delete options, optional.
-   * @returns A promise that resolves to void.
+   * @returns A promise that resolves to a DenoKvCommitResult object if successful or a DenoKvCommitError object if unsuccessful.
    */
   async deleteByPrimaryIndex<
     const K extends PrimaryIndexKeys<TInput, TOutput, TOptions>,
@@ -701,7 +701,7 @@ export class Collection<
     index: K,
     value: CheckKeyOf<K, TOutput>,
     options?: DeleteOptions,
-  ): Promise<void> {
+  ): Promise<DenoKvCommitResult | DenoKvCommitError> {
     // Serialize and compress index value
     const encoded = await encodeData(value, this.encoder);
 
@@ -715,9 +715,12 @@ export class Collection<
     // Get index entry
     const result = await this.kv.get(key, options);
 
-    // If no value, abort delete
+    // If no value, abort delete and return successful result
     if (result.value === null || result.versionstamp === null) {
-      return;
+      return {
+        ok: true,
+        versionstamp: "0",
+      };
     }
 
     // Extract document id from index entry
@@ -726,7 +729,7 @@ export class Collection<
       & Pick<IndexDataEntry<KvObject>, "__id__">;
 
     // Delete document by id
-    await this.deleteDocument(__id__, options);
+    return await this.deleteDocument(__id__, options);
   }
 
   /**
@@ -746,7 +749,7 @@ export class Collection<
    * @param index - Selected index.
    * @param value - Index value.
    * @param options - Delete many options, optional.
-   * @returns A promise that resolves to void.
+   * @returns A promise that resolves to a PaginationResult containing the results of the delete operations.
    */
   async deleteBySecondaryIndex<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
@@ -757,7 +760,7 @@ export class Collection<
       Document<TOutput, ParseId<TOptions>>,
       ParseId<TOptions>
     >,
-  ): Promise<Pagination> {
+  ): Promise<PaginationResult<DenoKvCommitResult | DenoKvCommitError>> {
     // Serialize and compress index value
     const encoded = await encodeData(value, this.encoder);
 
@@ -768,16 +771,13 @@ export class Collection<
       encoded,
     );
 
-    // Delete documents by secondary index, return iterator cursor
-    const { cursor } = await this.handleMany(
+    // Delete documents by secondary index and return pagination result
+    return await this.handleMany(
       prefixKey,
       prefixKey.length,
       (doc) => this.deleteDocument(doc.id, options),
       options,
     );
-
-    // Return iterator cursor
-    return { cursor };
   }
 
   /**
@@ -1378,58 +1378,20 @@ export class Collection<
       Document<TOutput, ParseId<TOptions>>,
       ParseId<TOptions>
     >,
-  ): Promise<Pagination> {
+  ): Promise<PaginationResult<DenoKvCommitResult | DenoKvCommitError>> {
     // Perform quick delete if all documents are to be deleted
     if (selectsAll(options)) {
-      // Create list iterator and empty keys list, init atomic operation
-      const iter = await this.kv.list({ prefix: this.keys.base }, options);
-      const keys: DenoKvStrictKey[] = [];
-      const atomic = new AtomicWrapper(this.kv);
-
-      // Collect all collection entry keys
-      for await (const { key } of iter) {
-        keys.push(key as DenoKvStrictKey);
-      }
-
-      // Set history entries if keeps history
-      if (this.keepsHistory) {
-        const historyIter = await this.kv.list({ prefix: this.keys.id });
-        for await (const { key } of historyIter) {
-          const id = getDocumentId(
-            key as DenoKvStrictKey,
-            this.keys.history.length,
-          );
-
-          if (!id) {
-            continue;
-          }
-
-          const historyKey = extendKey(this.keys.history, id, ulid());
-
-          const historyEntry: HistoryEntry<TOutput> = {
-            type: "delete",
-            timestamp: new Date(),
-          };
-
-          atomic.set(historyKey, historyEntry);
-        }
-      }
-
-      // Delete all keys and return
-      keys.forEach((key) => atomic.delete(key));
-      await atomic.commit();
+      const result = await this.deleteAllDocuments(options);
+      return { cursor: undefined, result: [result] };
     }
 
-    // Execute delete operation for each document entry
-    const { cursor } = await this.handleMany(
+    // Execute delete operation for each document entry and return pagination result
+    return await this.handleMany(
       this.keys.id,
       this.keys.id.length,
       (doc) => this.deleteDocument(doc.id, options),
       options,
     );
-
-    // Return iterator cursor
-    return { cursor };
   }
 
   /**
@@ -1457,20 +1419,17 @@ export class Collection<
       Document<TOutput, ParseId<TOptions>>,
       ParseId<TOptions>
     >,
-  ): Promise<Pagination> {
+  ): Promise<PaginationResult<DenoKvCommitResult | DenoKvCommitError>> {
     // Create prefix key
     const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
-    // Delete documents by secondary index, return iterator cursor
-    const { cursor } = await this.handleMany(
+    // Delete documents by secondary index and return pagination result
+    return await this.handleMany(
       prefixKey,
       prefixKey.length + 1,
       (doc) => this.deleteDocument(doc.id, options),
       options,
     );
-
-    // Return iterator cursor
-    return { cursor };
   }
 
   /**
@@ -2937,6 +2896,49 @@ export class Collection<
     // Handle regular document
     const idKey = extendKey(this.keys.id, id);
     atomic.delete(idKey);
+    return await atomic.commit();
+  }
+
+  private async deleteAllDocuments(
+    options?: DeleteManyOptions<
+      Document<TOutput, ParseId<TOptions>>,
+      ParseId<TOptions>
+    >,
+  ): Promise<DenoKvCommitResult | DenoKvCommitError> {
+    // Create list iterator and empty keys list, init atomic operation
+    const iter = await this.kv.list({ prefix: this.keys.base }, options);
+    const atomic = new AtomicWrapper(this.kv);
+
+    // Delete all collection entries
+    for await (const { key } of iter) {
+      atomic.delete(key as DenoKvStrictKey);
+    }
+
+    // Set history entries if keeps history
+    if (this.keepsHistory) {
+      const historyIter = await this.kv.list({ prefix: this.keys.id });
+      for await (const { key } of historyIter) {
+        const id = getDocumentId(
+          key as DenoKvStrictKey,
+          this.keys.history.length,
+        );
+
+        if (!id) {
+          continue;
+        }
+
+        const historyKey = extendKey(this.keys.history, id, ulid());
+
+        const historyEntry: HistoryEntry<TOutput> = {
+          type: "delete",
+          timestamp: new Date(),
+        };
+
+        atomic.set(historyKey, historyEntry);
+      }
+    }
+
+    // Commit atomic operation
     return await atomic.commit();
   }
 }
