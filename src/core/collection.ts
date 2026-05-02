@@ -2500,7 +2500,7 @@ export class Collection<
           options,
         );
 
-        await checkIndices(docValue, segmentPool, this);
+        await checkIndices(value as KvObject, segmentPool, this);
       }
     }
 
