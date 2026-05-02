@@ -1371,7 +1371,7 @@ export class Collection<
    * ```
    *
    * @param options - Delete many options, optional.
-   * @returns A promise that resovles to an object containing the iterator cursor
+   * @returns A promise that resolves to an object containing the iterator cursor
    */
   async deleteMany(
     options?: DeleteManyOptions<
@@ -1383,7 +1383,6 @@ export class Collection<
     if (selectsAll(options)) {
       // Create list iterator and empty keys list, init atomic operation
       const iter = await this.kv.list({ prefix: this.keys.base }, options);
-
       const keys: DenoKvStrictKey[] = [];
       const atomic = new AtomicWrapper(this.kv);
 
@@ -1491,7 +1490,7 @@ export class Collection<
    * ```
    *
    * @param options - List options, optional.
-   * @returns A promise that resovles to an object containing a list of the retrieved documents and the iterator cursor
+   * @returns A promise that resolves to an object containing a list of the retrieved documents and the iterator cursor
    */
   async getMany(
     options?: ListOptions<
@@ -1527,7 +1526,7 @@ export class Collection<
    *
    * @param order - Secondary order to retrieve documents by.
    * @param options - List options, optional.
-   * @returns A promise that resovles to an object containing a list of the retrieved documents and the iterator cursor
+   * @returns A promise that resolves to an object containing a list of the retrieved documents and the iterator cursor
    */
   async getManyBySecondaryOrder<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
@@ -1567,7 +1566,7 @@ export class Collection<
    * ```
    *
    * @param options - List options, optional.
-   * @returns A promise that resovles to the retreived document
+   * @returns A promise that resolves to the retreived document
    */
   async getOne(
     options?: HandleOneOptions<
@@ -1697,7 +1696,7 @@ export class Collection<
    *
    * @param fn - Callback function.
    * @param options - List options, optional.
-   * @returns A promise that resovles to an object containing the iterator cursor
+   * @returns A promise that resolves to an object containing the iterator cursor
    */
   async forEach(
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => unknown,
@@ -1737,7 +1736,7 @@ export class Collection<
    * @param value - Index value.
    * @param fn - Callback function.
    * @param options - List options, optional.
-   * @returns A promise that resovles to an object containing the iterator cursor.
+   * @returns A promise that resolves to an object containing the iterator cursor.
    */
   async forEachBySecondaryIndex<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
@@ -1786,7 +1785,7 @@ export class Collection<
    * @param order - Secondary order to retrieve documents by.
    * @param fn - Callback function.
    * @param options - List options, optional.
-   * @returns A promise that resovles to an object containing the iterator cursor.
+   * @returns A promise that resolves to an object containing the iterator cursor.
    */
   async forEachBySecondaryOrder<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
@@ -1833,7 +1832,7 @@ export class Collection<
    *
    * @param fn - Callback function.
    * @param options - List options, optional.
-   * @returns A promise that resovles to an object containing a list of the callback results and the iterator cursor
+   * @returns A promise that resolves to an object containing a list of the callback results and the iterator cursor
    */
   async map<const T>(
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => T,
@@ -1872,7 +1871,7 @@ export class Collection<
    * @param value - Index value.
    * @param fn - Callback function.
    * @param options - List options, optional.
-   * @returns A promise that resovles to an object containing a list of the callback results and the iterator cursor.
+   * @returns A promise that resolves to an object containing a list of the callback results and the iterator cursor.
    */
   async mapBySecondaryIndex<
     const T,
@@ -1924,7 +1923,7 @@ export class Collection<
    * @param order - Secondary order to map documents by.
    * @param fn - Callback function.
    * @param options - List options, optional.
-   * @returns A promise that resovles to an object containing a list of the callback results and the iterator cursor.
+   * @returns A promise that resolves to an object containing a list of the callback results and the iterator cursor.
    */
   async mapBySecondaryOrder<
     const T,
