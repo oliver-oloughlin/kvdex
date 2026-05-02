@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1776613458840,
+  "lastUpdate": 1777746966021,
   "repoUrl": "https://github.com/oliver-oloughlin/kvdex",
   "entries": {
     "Benchmark": [
@@ -4435,6 +4435,894 @@ window.BENCHMARK_DATA = {
             "name": "utils - v8Serialize",
             "value": 143323,
             "range": "104738 … 188768 µs",
+            "unit": "µs/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "54100972+oliver-oloughlin@users.noreply.github.com",
+            "name": "Oliver O'Loughlin",
+            "username": "oliver-oloughlin"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "99631fa8d80a9d76d00da43d6f0c69183aced0de",
+          "message": "fix: overwrite indioces with new documetn value (#302)\n\nCo-authored-by: oliver-oloughlin <oliver.oloughlin@gmail.com>\nCo-authored-by: Copilot <copilot@github.com>",
+          "timestamp": "2026-05-02T18:29:05Z",
+          "tree_id": "4bdee24a7dabf949038c233d6924b456a64e366d",
+          "url": "https://github.com/oliver-oloughlin/kvdex/commit/99631fa8d80a9d76d00da43d6f0c69183aced0de"
+        },
+        "date": 1777746965658,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "collection - add",
+            "value": 150.05,
+            "range": "113 … 347 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - addMany [1_000]",
+            "value": 37395.19,
+            "range": "27264 … 55013 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - count [1_000]",
+            "value": 7800.12,
+            "range": "6601 … 11041 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - delete [1]",
+            "value": 94.65,
+            "range": "75 … 374 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - deleteMany - [1_000]",
+            "value": 10668.47,
+            "range": "9534 … 13513 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - find",
+            "value": 116.65,
+            "range": "105 … 263 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - findMany [1_000]",
+            "value": 16824.82,
+            "range": "14095 … 23630 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - forEach [1_000]",
+            "value": 11142.18,
+            "range": "9263 … 16017 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - getMany [1_000]",
+            "value": 9180.74,
+            "range": "8356 … 10725 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - getOne [1_000]",
+            "value": 1070.35,
+            "range": "710 … 1556 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - map [1_000]",
+            "value": 9292.97,
+            "range": "8344 … 11570 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - set",
+            "value": 150.24,
+            "range": "112 … 291 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - update (replace)",
+            "value": 202.39,
+            "range": "170 … 744 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - update (shallow merge)",
+            "value": 202.04,
+            "range": "180 … 474 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - update (deep merge)",
+            "value": 208.31,
+            "range": "187 … 356 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - updateMany (replace) [1_000]",
+            "value": 35316.55,
+            "range": "30000 … 46924 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - updateMany (shallow merge) [1_000]",
+            "value": 34808.24,
+            "range": "30587 … 47945 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - updateMany (deep merge) [1_000]",
+            "value": 38109.22,
+            "range": "31386 … 48716 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - updateOne (replace) [1_000]",
+            "value": 1521.82,
+            "range": "966 … 2474 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - updateOne (shallow merge) [1_000]",
+            "value": 1839.77,
+            "range": "988 … 3356 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - updateOne (deep merge) [1_000]",
+            "value": 1796.67,
+            "range": "1401 … 3017 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - upsert (insert)",
+            "value": 225.07,
+            "range": "196 … 645 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "collection - upsert (update)",
+            "value": 213.06,
+            "range": "187 … 298 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "db - atomic (add + commit)",
+            "value": 151.6,
+            "range": "115 … 469 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "db - atomic (set + delete + commit)",
+            "value": 95.84,
+            "range": "85 … 221 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "db - atomic (check + set + commit)",
+            "value": 71.04,
+            "range": "60 … 126 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "db - atomic (add multi-collection)",
+            "value": 187.93,
+            "range": "165 … 333 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "db - countAll [4_000]",
+            "value": 26990.63,
+            "range": "22182 … 29865 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "db - deleteAll [4_000]",
+            "value": 106507.59,
+            "range": "99863 … 116411 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "db - kvdex (10 collections)",
+            "value": 28.12,
+            "range": "22 … 135 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "db - kvdex (100 collections)",
+            "value": 142.18,
+            "range": "126 … 301 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "db - wipe [4_000]",
+            "value": 116045.36,
+            "range": "106462 … 122873 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - add",
+            "value": 184.07,
+            "range": "143 … 449 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - addMany [1_000]",
+            "value": 65930.11,
+            "range": "57695 … 97558 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - count [1_000]",
+            "value": 7070.25,
+            "range": "6506 … 7622 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - countBySecondaryIndex [1_000]",
+            "value": 11617.58,
+            "range": "10394 … 12498 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - delete [1]",
+            "value": 221.29,
+            "range": "191 … 515 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - deleteByPrimaryIndex",
+            "value": 315.34,
+            "range": "269 … 605 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - deleteBySecondaryIndex [1_000]",
+            "value": 80957.55,
+            "range": "71974 … 104570 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - deleteMany [1_000]",
+            "value": 35480.47,
+            "range": "33221 … 39935 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - find",
+            "value": 118.41,
+            "range": "104 … 226 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - findByPrimaryIndex",
+            "value": 130.44,
+            "range": "115 … 230 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - findBySecondaryIndex [1_000]",
+            "value": 11528.97,
+            "range": "9429 … 12657 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - findMany [1_000]",
+            "value": 18044.3,
+            "range": "14324 … 25268 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - forEach [1_000]",
+            "value": 10730.97,
+            "range": "9485 … 13282 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - getMany [1_000]",
+            "value": 10818.54,
+            "range": "9126 … 12032 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - getManyBySecondaryOrder [2_000]",
+            "value": 25467.44,
+            "range": "24194 … 27134 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - getOne [1_000]",
+            "value": 1254.29,
+            "range": "806 … 1807 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - getOneBySecondaryIndex [1_000]",
+            "value": 2274.11,
+            "range": "979 … 3352 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - getOneBySecondaryOrder [2_000]",
+            "value": 2221,
+            "range": "937 … 3333 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - map [1_000]",
+            "value": 10550.96,
+            "range": "8949 … 12178 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - set",
+            "value": 178.41,
+            "range": "148 … 454 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - update (replace)",
+            "value": 264.21,
+            "range": "225 … 482 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - update (shallow merge)",
+            "value": 233.65,
+            "range": "208 … 548 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - update (deep merge)",
+            "value": 237.21,
+            "range": "214 … 349 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateByPrimaryIndex (replace)",
+            "value": 271.91,
+            "range": "234 … 514 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateByPrimaryIndex (shallow merge)",
+            "value": 241.45,
+            "range": "209 … 1530 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateByPrimaryIndex (deep merge)",
+            "value": 243.89,
+            "range": "216 … 408 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateBySecondaryIndex (replace) [1_000]",
+            "value": 64570.36,
+            "range": "60556 … 67818 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateBySecondaryIndex (shallow merge) [1_000]",
+            "value": 77284.19,
+            "range": "69502 … 107846 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateBySecondaryIndex (deep merge) [1_000]",
+            "value": 85374.55,
+            "range": "69642 … 108633 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateMany (replace) [1_000]",
+            "value": 62175.66,
+            "range": "56252 … 68541 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateMany (shallow merge) [1_000]",
+            "value": 75801.58,
+            "range": "67725 … 101270 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateMany (deep merge) [1_000]",
+            "value": 78934.24,
+            "range": "67538 … 123772 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateOne (replace) [1_000]",
+            "value": 1553.98,
+            "range": "1125 … 2080 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateOne (shallow merge) [1_000]",
+            "value": 1627.78,
+            "range": "1173 … 2124 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateOne (deep merge) [1_000]",
+            "value": 2194.81,
+            "range": "1573 … 2957 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateOneBySecondaryIndex (replace) [1_000]",
+            "value": 2393.65,
+            "range": "1261 … 3135 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateOneBySecondaryIndex (shallow merge) [1_000]",
+            "value": 2399.44,
+            "range": "2143 … 2808 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - updateOneBySecondaryIndex (deep merge) [1_000]",
+            "value": 2625.63,
+            "range": "2047 … 3751 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - upsert (insert)",
+            "value": 260.5,
+            "range": "225 … 633 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - upsert (update)",
+            "value": 260.45,
+            "range": "228 … 396 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - upsertByPrimaryIndex (insert)",
+            "value": 278.1,
+            "range": "230 … 600 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "indexable_collection - upsertByPrimaryIndex (update)",
+            "value": 268.49,
+            "range": "236 … 384 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - add",
+            "value": 270.16,
+            "range": "221 … 771 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - addMany [1_000]",
+            "value": 76050.02,
+            "range": "63626 … 92803 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - count [1_000]",
+            "value": 268.82,
+            "range": "154 … 707 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - delete [1]",
+            "value": 210.65,
+            "range": "180 … 466 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - deleteMany [1_000]",
+            "value": 20557.29,
+            "range": "18263 … 24336 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - find",
+            "value": 411.31,
+            "range": "341 … 1240 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - findMany [1_000]",
+            "value": 243984.2,
+            "range": "218636 … 261238 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - forEach [1_000]",
+            "value": 256064.78,
+            "range": "234431 … 274969 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - getMany [1_000]",
+            "value": 241384.05,
+            "range": "220103 … 278703 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - getOne [1_000]",
+            "value": 1893.97,
+            "range": "1369 … 5320 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - map [1_000]",
+            "value": 258718.67,
+            "range": "235701 … 278781 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - set",
+            "value": 267.87,
+            "range": "221 … 1267 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - update (replace)",
+            "value": 613.03,
+            "range": "490 … 1382 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - update (shallow merge)",
+            "value": 652.82,
+            "range": "566 … 1277 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - update (deep merge)",
+            "value": 649.27,
+            "range": "580 … 914 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - updateMany (replace) [1_000]",
+            "value": 405514.14,
+            "range": "370934 … 452558 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - updateMany (shallow merge) [1_000]",
+            "value": 402332.46,
+            "range": "351828 … 516646 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - updateMany (deep merge) [1_000]",
+            "value": 405576.86,
+            "range": "353797 … 552845 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - updateOne (replace) [1_000]",
+            "value": 2245.62,
+            "range": "1689 … 5252 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - updateOne (shallow merge) [1_000]",
+            "value": 1963.86,
+            "range": "1572 … 2317 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - updateOne (deep merge) [1_000]",
+            "value": 2079.16,
+            "range": "1614 … 2569 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - upsert (insert)",
+            "value": 351.34,
+            "range": "284 … 921 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_collection - upsert (update)",
+            "value": 728,
+            "range": "584 … 2768 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - add",
+            "value": 426.59,
+            "range": "311 … 1447 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - addMany [1_000]",
+            "value": 141452.37,
+            "range": "119598 … 167817 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - count [1_000]",
+            "value": 8299.52,
+            "range": "5902 … 12721 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - countBySecondaryIndex [1_000]",
+            "value": 252371.2,
+            "range": "239891 … 292662 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - delete [1]",
+            "value": 598.85,
+            "range": "493 … 1221 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - deleteByPrimaryIndex",
+            "value": 764.05,
+            "range": "630 … 1353 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - deleteBySecondaryIndex [1_000]",
+            "value": 553952.37,
+            "range": "509626 … 599566 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - deleteMany [1_000]",
+            "value": 47495.42,
+            "range": "42873 … 52517 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - find",
+            "value": 411.69,
+            "range": "337 … 721 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - findByPrimaryIndex",
+            "value": 489.34,
+            "range": "394 … 1191 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - findBySecondaryIndex [1_000]",
+            "value": 251695.92,
+            "range": "223391 … 284478 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - findMany [1_000]",
+            "value": 252569.63,
+            "range": "218177 … 269765 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - forEach [1_000]",
+            "value": 274146.74,
+            "range": "239060 … 308542 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - getMany [1_000]",
+            "value": 258342.85,
+            "range": "229541 … 300708 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - getManyBySecondaryOrder [2_000]",
+            "value": 510490.34,
+            "range": "474362 … 540464 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - getOne [1_000]",
+            "value": 3461.28,
+            "range": "1474 … 8191 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - getOneBySecondaryIndex [1_000]",
+            "value": 3305.38,
+            "range": "1627 … 8241 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - getOneBySecondaryOrder [2_000]",
+            "value": 3242.14,
+            "range": "1547 … 7361 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - map [1_000]",
+            "value": 247720.85,
+            "range": "218914 … 289967 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - set",
+            "value": 354.9,
+            "range": "253 … 1174 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - update (replace)",
+            "value": 887.38,
+            "range": "718 … 1798 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - update (shallow merge)",
+            "value": 779.37,
+            "range": "676 … 1767 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - update (deep merge)",
+            "value": 761.93,
+            "range": "674 … 1108 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateByPrimaryIndex (replace)",
+            "value": 958.18,
+            "range": "761 … 2151 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateByPrimaryIndex (shallow merge)",
+            "value": 839.84,
+            "range": "725 … 1713 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateByPrimaryIndex (deep merge)",
+            "value": 835.43,
+            "range": "718 … 1203 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateBySecondaryIndex (replace) [1_000]",
+            "value": 534537.31,
+            "range": "488739 … 574677 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateBySecondaryIndex (shallow merge) [1_000]",
+            "value": 542420.73,
+            "range": "489149 … 620468 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateBySecondaryIndex (deep merge) [1_000]",
+            "value": 542364.13,
+            "range": "503219 … 582905 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateMany (replace) [1_000]",
+            "value": 510254.49,
+            "range": "466168 … 565706 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateMany (shallow merge) [1_000]",
+            "value": 537309.36,
+            "range": "484220 … 610406 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateMany (deep merge) [1_000]",
+            "value": 540016.66,
+            "range": "485459 … 598911 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateOne (replace) [1_000]",
+            "value": 3278.37,
+            "range": "1860 … 8284 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateOne (shallow merge) [1_000]",
+            "value": 3342.01,
+            "range": "1840 … 7677 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateOne (deep merge) [1_000]",
+            "value": 4203.55,
+            "range": "1768 … 8428 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateOneBySecondaryIndex (replace) [1_000]",
+            "value": 4274.19,
+            "range": "2873 … 6986 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateOneBySecondaryIndex (shallow merge) [1_000]",
+            "value": 6132.38,
+            "range": "3809 … 10807 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - updateOneBySecondaryIndex (deep merge) [1_000]",
+            "value": 5182.58,
+            "range": "3666 … 7027 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - upsert (insert)",
+            "value": 454.28,
+            "range": "337 … 1331 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - upsert (update)",
+            "value": 878.2,
+            "range": "719 … 2220 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - upsertByPrimaryIndex (insert)",
+            "value": 518.11,
+            "range": "391 … 1636 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "serialized_indexable_collection - upsertByPrimaryIndex (update)",
+            "value": 917.45,
+            "range": "754 … 2909 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "utils - jsonDeserialize (58.677141189575195 MB)",
+            "value": 1006505.43,
+            "range": "976678 … 1068322 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "utils - v8Deserialize - (57.15713882446289 MS)",
+            "value": 130364,
+            "range": "99677 … 314217 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "encoder - brotli_compress",
+            "value": 642604.92,
+            "range": "632272 … 660951 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "utils - jsonSerialize",
+            "value": 741890.41,
+            "range": "724314 … 788708 µs",
+            "unit": "µs/iter"
+          },
+          {
+            "name": "utils - v8Serialize",
+            "value": 125926.12,
+            "range": "96146 … 139635 µs",
             "unit": "µs/iter"
           }
         ]
