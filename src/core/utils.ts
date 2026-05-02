@@ -652,23 +652,19 @@ export async function createIndexDiffs(
       )
       : undefined;
 
-    if (
-      equals(encodedOld ?? new Uint8Array(), encodedNew ?? new Uint8Array())
-    ) {
-      // Index key unchanged — still re-set the entry with new document data,
-      // but skip delete and collision check since the key already belongs to this doc.
-      if (typeof indexKeyNew !== "undefined") {
-        insertPrimaryKeys.push(indexKeyNew);
-      }
-      continue;
-    }
+    const areEqual = equals(
+      encodedOld ?? new Uint8Array(),
+      encodedNew ?? new Uint8Array(),
+    );
 
-    if (typeof indexKeyOld !== "undefined") {
+    if (typeof indexKeyOld !== "undefined" && !areEqual) {
       deleteKeys.push(indexKeyOld);
     }
 
     if (typeof indexKeyNew !== "undefined") {
-      checkKeys.push(indexKeyNew);
+      if (!areEqual) {
+        checkKeys.push(indexKeyNew);
+      }
       insertPrimaryKeys.push(indexKeyNew);
     }
   }
@@ -707,18 +703,12 @@ export async function createIndexDiffs(
       )
       : undefined;
 
-    if (
-      equals(encodedOld ?? new Uint8Array(), encodedNew ?? new Uint8Array())
-    ) {
-      // Index key unchanged — still re-set the entry with new document data,
-      // but skip delete since the key already belongs to this doc.
-      if (typeof indexKeyNew !== "undefined") {
-        insertSecondaryKeys.push(indexKeyNew);
-      }
-      continue;
-    }
+    const areEqual = equals(
+      encodedOld ?? new Uint8Array(),
+      encodedNew ?? new Uint8Array(),
+    );
 
-    if (typeof indexKeyOld !== "undefined") {
+    if (typeof indexKeyOld !== "undefined" && !areEqual) {
       deleteKeys.push(indexKeyOld);
     }
 
