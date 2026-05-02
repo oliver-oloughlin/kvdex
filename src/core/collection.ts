@@ -2814,7 +2814,15 @@ export class Collection<
         if (options?.batched) {
           const segmentAtomic = new AtomicWrapper(this.kv);
           keys.forEach((key) => segmentAtomic.delete(key));
-          atomics.push(segmentAtomic);
+
+          // Check that document is unchanged since read for segmented entries,
+          // otherwise handled in main atomic via deleteIndices().
+          segmentAtomic.check({
+            key: idKey,
+            versionstamp: entry.versionstamp,
+          });
+
+          atomics.unshift(segmentAtomic);
         } else {
           keys.forEach((key) => atomic.delete(key));
         }
