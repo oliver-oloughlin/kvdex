@@ -2386,7 +2386,7 @@ export class Collection<
 
     // Delete old segment entries atomically (from update path)
     for (const key of oldSegmentKeys) {
-      mainPool.delete(key);
+      segmentPool.delete(key);
     }
 
     // Check for id collision
