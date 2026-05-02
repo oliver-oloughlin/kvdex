@@ -1,4 +1,4 @@
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { mockUser1, mockUserInvalid } from "../mocks.ts";
 import { generateLargeUsers, useDb } from "../utils.ts";
 
@@ -63,41 +63,72 @@ Deno.test("serialized_indexable_collection - set", async (t) => {
     "Should overwrite document in collection with colliding id",
     async () => {
       await useDb(async (db) => {
-        const cr1 = await db.is_users.set("id", user1);
+        const u1 = user1;
+        const u2 = { ...user2, age: user1.age + 1 };
+
+        const cr1 = await db.is_users.set("id", u1);
         assert(cr1.ok);
 
-        const cr2 = await db.is_users.set("id", user2, { overwrite: true });
+        const cr2 = await db.is_users.set("id", u2, { overwrite: true });
         assert(cr2.ok);
 
-        const doc = await db.is_users.find("id");
-        assert(doc !== null);
-        assert(doc.value.username === user2.username);
+        const docById = await db.is_users.find("id");
+
+        const docByOldPrimaryIndex = await db.is_users.findByPrimaryIndex(
+          "username",
+          u1.username,
+        );
+
+        const docByNewPrimaryIndex = await db.is_users.findByPrimaryIndex(
+          "username",
+          u2.username,
+        );
+
+        const { result: [docByOldSecondaryIndex] } = await db.is_users
+          .findBySecondaryIndex("age", u1.age);
+
+        const { result: [docByNewSecondaryIndex] } = await db.is_users
+          .findBySecondaryIndex("age", u2.age);
+
+        assertEquals(docById?.value, u2);
+        assertEquals(docByOldPrimaryIndex, null);
+        assertEquals(docByNewPrimaryIndex?.value, u2);
+        assertEquals(docByOldSecondaryIndex?.value, undefined);
+        assertEquals(docByNewSecondaryIndex?.value, u2);
       });
     },
   );
 
   await t.step(
-    "Should not overwrite document in collection with colliding primary index",
+    "Should overwrite document in collection with colliding primary index",
     async () => {
       await useDb(async (db) => {
-        const cr1 = await db.is_users.set("id1", user1);
+        const u1 = user1;
+        const u2 = { ...user2, username: user1.username, age: user1.age + 1 };
+
+        const cr1 = await db.is_users.set("id", u1);
         assert(cr1.ok);
 
-        const cr2 = await db.is_users.set("id2", user1, { overwrite: true });
-        assert(!cr2.ok);
+        const cr2 = await db.is_users.set("id", u2, { overwrite: true });
+        assert(cr2.ok);
 
-        const byPrimary = await db.is_users.findByPrimaryIndex(
+        const docById = await db.is_users.find("id");
+
+        const docByPrimaryIndex = await db.is_users.findByPrimaryIndex(
           "username",
-          user1.username,
+          u1.username,
         );
 
-        const bySecondary = await db.is_users.findBySecondaryIndex(
-          "age",
-          user1.age,
-        );
+        const { result: [docByOldSecondaryIndex] } = await db.is_users
+          .findBySecondaryIndex("age", u1.age);
 
-        assert(byPrimary?.id === cr1.id);
-        assert(bySecondary.result.length === 1);
+        const { result: [docByNewSecondaryIndex] } = await db.is_users
+          .findBySecondaryIndex("age", u2.age);
+
+        assertEquals(docById?.value, u2);
+        assertEquals(docByPrimaryIndex?.value, u2);
+        assertEquals(docByOldSecondaryIndex?.value, undefined);
+        assertEquals(docByNewSecondaryIndex?.value, u2);
       });
     },
   );

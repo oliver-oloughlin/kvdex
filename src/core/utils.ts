@@ -290,6 +290,32 @@ export async function deleteIndices(
 }
 
 /**
+ * Check for index collisions.
+ *
+ * @param data - Update data.
+ * @param atomic - Atomic operation.
+ * @param collection - Collection context.
+ * @returns The atomic operation with added checks.
+ */
+export async function checkIndices(
+  data: KvObject,
+  atomic: DenoAtomicOperation,
+  collection: Collection<any, any, any>,
+) {
+  await handleIndices(
+    null,
+    data,
+    collection,
+    (primaryIndexKey) => {
+      atomic.check({
+        key: primaryIndexKey,
+        versionstamp: null,
+      });
+    },
+  );
+}
+
+/**
  * Perform kv.getMany with sliced executions to allow for more keys than internal limit.
  *
  * @param keys - List of keys.

@@ -6,6 +6,7 @@ import type {
   CommitResult,
   DeleteManyOptions,
   DeleteOptions,
+  DenoAtomicOperation,
   DenoKv,
   DenoKvCommitError,
   DenoKvCommitResult,
@@ -56,6 +57,7 @@ import type {
 import {
   allFulfilled,
   applyIndexDiffs,
+  checkIndices,
   commitAtomicOperations,
   createHandlerId,
   createIndexDiffs,
@@ -2375,25 +2377,31 @@ export class Collection<
     indexDiffs: IndexDiffs | null = null,
     oldSegmentKeys: DenoKvStrictKey[] = [],
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
-    // Initialize atomic operation and keys list
-    const ids: KvId[] = [];
+    // Initialize atomic pools
     let docValue: any = value;
     const isUint8Array = value instanceof Uint8Array;
     const timeId = ulid();
-    const operationPool = new AtomicPool();
-    const indexOperationPool = new AtomicPool();
+    const segmentPool = new AtomicPool();
+    const mainPool = new AtomicPool();
 
     // Delete old segment entries atomically (from update path)
     for (const key of oldSegmentKeys) {
-      operationPool.delete(key);
+      mainPool.delete(key);
     }
 
     // Check for id collision
     if (!options?.overwrite) {
-      operationPool.check({
+      mainPool.check({
         key: idKey,
         versionstamp: null,
       });
+
+      if (options?.batched) {
+        segmentPool.check({
+          key: idKey,
+          versionstamp: null,
+        });
+      }
     }
 
     // Serialize if enabled
@@ -2403,13 +2411,14 @@ export class Collection<
         : await encodeData(value, this.encoder);
 
       // Set segmented entries
+      const ids: KvId[] = [];
       let index = 0;
       for (let i = 0; i < encoded.length; i += UINT8ARRAY_LENGTH_LIMIT) {
         const part = encoded.subarray(i, i + UINT8ARRAY_LENGTH_LIMIT);
         const key = extendKey(this.keys.segment, docId, index);
         ids.push(index);
 
-        operationPool.set(key, part, options);
+        segmentPool.set(key, part, options);
 
         // Set history segments if keeps history
         if (this.keepsHistory) {
@@ -2420,7 +2429,7 @@ export class Collection<
             index,
           );
 
-          operationPool.set(historySegmentKey, part);
+          segmentPool.set(historySegmentKey, part);
         }
 
         index++;
@@ -2436,7 +2445,7 @@ export class Collection<
     }
 
     // Set document entry
-    operationPool.set(idKey, docValue, options);
+    mainPool.set(idKey, docValue, options);
 
     // Set history entry if keeps history
     if (this.keepsHistory) {
@@ -2448,7 +2457,7 @@ export class Collection<
         value: docValue,
       };
 
-      operationPool.set(historyKey, historyEntry);
+      mainPool.set(historyKey, historyEntry);
     }
 
     // Set indices if is indexable
@@ -2458,7 +2467,26 @@ export class Collection<
         applyIndexDiffs(
           indexDiffs,
           docValue,
-          indexOperationPool,
+          mainPool,
+          options,
+        );
+      } else if (options?.overwrite) {
+        const entry = await this.kv.get(idKey);
+        const doc = await this.constructDocument(entry, this.keys.id.length);
+
+        const diffs = await createIndexDiffs(
+          docId,
+          idKey,
+          entry.versionstamp,
+          doc?.value as KvObject | null,
+          value as KvObject,
+          this,
+        );
+
+        applyIndexDiffs(
+          diffs,
+          docValue,
+          mainPool,
           options,
         );
       } else {
@@ -2467,70 +2495,32 @@ export class Collection<
           docId,
           value as KvObject,
           docValue,
-          indexOperationPool,
+          mainPool,
           this,
           options,
         );
+
+        await checkIndices(docValue, segmentPool, this);
       }
     }
 
-    // Initialize index check, commit result and atomic operation
-    let indexCheck = false;
-    let cr: DenoKvCommitResult | DenoKvCommitError = { ok: false };
+    const atomics: DenoAtomicOperation[] = [];
+    const mainAtomic = this.kv.atomic();
+    mainPool.bindTo(mainAtomic);
+    atomics.push(mainAtomic);
 
-    const atomic = options?.batched
-      ? new AtomicWrapper(this.kv)
-      : this.kv.atomic();
-
-    // Perform index mutations first if operation is batched, else bind all mutations to main operation
     if (options?.batched) {
-      const indexAtomic = this.kv.atomic();
-      indexOperationPool.bindTo(indexAtomic);
-      const indexCr = await indexAtomic.commit();
-      indexCheck = indexCr.ok;
+      const segmentsAtomic = new AtomicWrapper(this.kv);
+      segmentPool.bindTo(segmentsAtomic);
+      atomics.push(segmentsAtomic);
     } else {
-      indexOperationPool.bindTo(atomic);
+      segmentPool.bindTo(mainAtomic);
     }
 
-    // Bind remaining mutations to main operation
-    operationPool.bindTo(atomic);
-
-    // Commit operation if not batched or if index setters completed successfully
-    if (!options?.batched || indexCheck) {
-      cr = await atomic.commit();
-    }
+    const cr = await commitAtomicOperations(atomics);
 
     // Handle failed operation
     if (!cr.ok) {
-      // Delete any entries upon failed batched operation
-      if (options?.batched && indexCheck) {
-        const failedAtomic = new AtomicWrapper(this.kv);
-
-        if (this.keepsHistory) {
-          const historyKey = extendKey(this.keys.history, docId, timeId);
-          failedAtomic.delete(historyKey);
-        }
-
-        if (this.encoder) {
-          const { ids } = docValue as EncodedEntry;
-          ids.forEach((id) =>
-            failedAtomic.delete(extendKey(this.keys.segment, docId, id))
-          );
-        }
-
-        if (this.isIndexable) {
-          await deleteIndices(
-            docId,
-            null,
-            value as KvObject,
-            failedAtomic,
-            this,
-          );
-        }
-
-        await failedAtomic.commit();
-      }
-
       // Return commit error if no remaining retry attempts
       const retry = options?.retry ?? 0;
       if (!retry) {
