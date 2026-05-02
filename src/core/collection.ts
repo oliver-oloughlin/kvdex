@@ -2815,8 +2815,7 @@ export class Collection<
           const segmentAtomic = new AtomicWrapper(this.kv);
           keys.forEach((key) => segmentAtomic.delete(key));
 
-          // Check that document is unchanged since read for segmented entries,
-          // otherwise handled in main atomic via deleteIndices().
+          // Check that document is unchanged since read for segmented entries
           segmentAtomic.check({
             key: idKey,
             versionstamp: entry.versionstamp,
@@ -2867,10 +2866,16 @@ export class Collection<
 
       // Create document id key, get entry and construct document
       const idKey = extendKey(this.keys.id, id);
-      const { value } = await this.kv.get(idKey);
+      const { value, versionstamp } = await this.kv.get(idKey);
 
       // Delete main document entry
       atomic.delete(idKey);
+
+      // Check that document is unchanged since read
+      atomic.check({
+        key: idKey,
+        versionstamp,
+      });
 
       // Delete segment entries
       if (value) {
@@ -2881,7 +2886,14 @@ export class Collection<
         if (options?.batched) {
           const segmentAtomic = new AtomicWrapper(this.kv);
           keys.forEach((key) => segmentAtomic.delete(key));
-          atomics.push(segmentAtomic);
+
+          // Check that document is unchanged since read for segmented entries
+          segmentAtomic.check({
+            key: idKey,
+            versionstamp,
+          });
+
+          atomics.unshift(segmentAtomic);
         } else {
           keys.forEach((key) => atomic.delete(key));
         }
