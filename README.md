@@ -1387,24 +1387,6 @@ const result2 = await db
     },
   })
   .commit();
-
-// Will fail and return Deno.KvCommitError because it is trying
-// to add and delete from the same indexable collection
-const result3 = await db
-  .atomic((schema) => schema.users)
-  .delete("user_1")
-  .set("user_1", {
-    username: "oliver",
-    age: 24,
-    activities: ["skiing", "running"],
-    address: {
-      country: "Norway",
-      city: "Bergen",
-      street: "Sesame",
-      houseNumber: 42,
-    },
-  })
-  .commit();
 ```
 
 ### With checking
