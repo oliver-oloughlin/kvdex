@@ -1390,7 +1390,7 @@ const result2 = await db
   .commit();
 
 // Will fail and return Deno.KvCommitError because it is trying
-// to both add and delete from the same indexable collection
+// to add and delete from the same indexable collection
 const result3 = await db
   .atomic((schema) => schema.users)
   .delete("user_1")
