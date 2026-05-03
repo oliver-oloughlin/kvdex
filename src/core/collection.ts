@@ -2815,13 +2815,13 @@ export class Collection<
           const segmentAtomic = new AtomicWrapper(this.kv);
           keys.forEach((key) => segmentAtomic.delete(key));
 
-          // Check that document is unchanged since read for segmented entries
+          // Check that document is deleted when deleting segment entries
           segmentAtomic.check({
             key: idKey,
-            versionstamp: entry.versionstamp,
+            versionstamp: null,
           });
 
-          atomics.unshift(segmentAtomic);
+          atomics.push(segmentAtomic);
         } else {
           keys.forEach((key) => atomic.delete(key));
         }
@@ -2887,13 +2887,13 @@ export class Collection<
           const segmentAtomic = new AtomicWrapper(this.kv);
           keys.forEach((key) => segmentAtomic.delete(key));
 
-          // Check that document is unchanged since read for segmented entries
+          // Check that document is deleted when deleting segment entries
           segmentAtomic.check({
             key: idKey,
-            versionstamp,
+            versionstamp: null,
           });
 
-          atomics.unshift(segmentAtomic);
+          atomics.push(segmentAtomic);
         } else {
           keys.forEach((key) => atomic.delete(key));
         }
