@@ -112,13 +112,128 @@ Deno.test("db - indexable_atomic", async (t) => {
   );
 
   await t.step(
-    "Should fail operation when trying to set and delete from the same indexable collection",
+    "Should succeed when setting and deleting different documents with no index collisions in the same indexable collection",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.i_users.add(mockUser1);
+        assert(cr1.ok);
+
+        const cr2 = await db
+          .atomic((schema) => schema.i_users)
+          .set("new_id", mockUser3)
+          .delete(cr1.id)
+          .commit();
+
+        assert(cr2.ok);
+
+        // Deleted document should be gone
+        const deleted = await db.i_users.find(cr1.id);
+        assertEquals(deleted, null);
+
+        // New document should exist with correct indices
+        const doc = await db.i_users.find("new_id");
+        assertEquals(doc?.value, mockUser3);
+
+        const byPrimary = await db.i_users.findByPrimaryIndex(
+          "username",
+          mockUser3.username,
+        );
+        assertEquals(byPrimary?.value, mockUser3);
+
+        const { result: [bySecondary] } = await db.i_users
+          .findBySecondaryIndex("age", mockUser3.age);
+        assertEquals(bySecondary?.value, mockUser3);
+
+        // Old indices should be gone
+        const byOldPrimary = await db.i_users.findByPrimaryIndex(
+          "username",
+          mockUser1.username,
+        );
+        assertEquals(byOldPrimary, null);
+
+        const { result: [byOldSecondary] } = await db.i_users
+          .findBySecondaryIndex("age", mockUser1.age);
+        assertEquals(byOldSecondary, undefined);
+      });
+    },
+  );
+
+  await t.step(
+    "Should succeed when deleting and setting different documents with no index collisions in the same indexable collection",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.i_users.add(mockUser1);
+        assert(cr1.ok);
+
+        const cr2 = await db
+          .atomic((schema) => schema.i_users)
+          .delete(cr1.id)
+          .set("new_id", mockUser3)
+          .commit();
+
+        assert(cr2.ok);
+
+        // Deleted document should be gone
+        const deleted = await db.i_users.find(cr1.id);
+        assertEquals(deleted, null);
+
+        // New document should exist with correct indices
+        const doc = await db.i_users.find("new_id");
+        assertEquals(doc?.value, mockUser3);
+
+        const byPrimary = await db.i_users.findByPrimaryIndex(
+          "username",
+          mockUser3.username,
+        );
+        assertEquals(byPrimary?.value, mockUser3);
+
+        const { result: [bySecondary] } = await db.i_users
+          .findBySecondaryIndex("age", mockUser3.age);
+        assertEquals(bySecondary?.value, mockUser3);
+
+        // Old indices should be gone
+        const byOldPrimary = await db.i_users.findByPrimaryIndex(
+          "username",
+          mockUser1.username,
+        );
+        assertEquals(byOldPrimary, null);
+
+        const { result: [byOldSecondary] } = await db.i_users
+          .findBySecondaryIndex("age", mockUser1.age);
+        assertEquals(byOldSecondary, undefined);
+      });
+    },
+  );
+
+  await t.step(
+    "Should fail when setting and deleting different documents with colliding primary index in the same indexable collection",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.i_users.add(mockUser1);
+        assert(cr1.ok);
+
+        // Try to set a new document with the same username (primary index) as the one being deleted
+        const collidingUser = { ...mockUser3, username: mockUser1.username };
+
+        const cr2 = await db
+          .atomic((schema) => schema.i_users)
+          .set("new_id", collidingUser)
+          .delete(cr1.id)
+          .commit();
+
+        assert(!cr2.ok);
+      });
+    },
+  );
+
+  await t.step(
+    "Should fail when setting two different documents with colliding primary index in the same indexable collection",
     async () => {
       await useDb(async (db) => {
         const cr = await db
           .atomic((schema) => schema.i_users)
-          .add(mockUser1)
-          .delete("id")
+          .set("id1", mockUser1)
+          .set("id2", { ...mockUser3, username: mockUser1.username })
           .commit();
 
         assert(!cr.ok);
@@ -240,18 +355,50 @@ Deno.test("db - indexable_atomic", async (t) => {
   );
 
   await t.step(
-    "Should fail operation when trying to set and delete from the same indexable collection with multi-part id",
+    "Should succeed when setting and deleting different documents with no index collisions in the same indexable collection with multi-part id",
     async () => {
       await useDb(async (db) => {
-        const id: KvKey = ["id", 1];
+        const cr1 = await db.i_multi_part_id_users.add(mockUser1);
+        assert(cr1.ok);
 
-        const cr = await db
+        const newId: KvKey = ["new", 1];
+
+        const cr2 = await db
           .atomic((schema) => schema.i_multi_part_id_users)
-          .add(mockUser1)
-          .delete(id)
+          .set(newId, mockUser3)
+          .delete(cr1.id)
           .commit();
 
-        assert(!cr.ok);
+        assert(cr2.ok);
+
+        // Deleted document should be gone
+        const deleted = await db.i_multi_part_id_users.find(cr1.id);
+        assertEquals(deleted, null);
+
+        // New document should exist
+        const doc = await db.i_multi_part_id_users.find(newId);
+        assertEquals(doc?.value, mockUser3);
+      });
+    },
+  );
+
+  await t.step(
+    "Should fail when setting and deleting different documents with colliding primary index in the same indexable collection with multi-part id",
+    async () => {
+      await useDb(async (db) => {
+        const cr1 = await db.i_multi_part_id_users.add(mockUser1);
+        assert(cr1.ok);
+
+        const newId: KvKey = ["new", 1];
+        const collidingUser = { ...mockUser3, username: mockUser1.username };
+
+        const cr2 = await db
+          .atomic((schema) => schema.i_multi_part_id_users)
+          .set(newId, collidingUser)
+          .delete(cr1.id)
+          .commit();
+
+        assert(!cr2.ok);
       });
     },
   );

@@ -26,12 +26,10 @@ import {
   createIndexDiffs,
   deleteIndices,
   extendKey,
-  keyEq,
   prepareEnqueue,
   transform,
   validate,
 } from "../core/utils.ts";
-import { AtomicPool } from "./atomic_pool.ts";
 import { jsonStringify } from "../common/json.ts";
 
 /**
@@ -88,8 +86,6 @@ export class AtomicBuilder<
     // Initiate operations or set from given operations
     this.operations = operations ?? {
       atomic: kv.atomic(),
-      indexDeleteCollectionKeys: [],
-      indexSetCollectionKeys: [],
       orderedMutationInitializers: [],
       lazyMutations: new Map(),
     };
@@ -200,11 +196,6 @@ export class AtomicBuilder<
 
         // If collection is indexable, handle indexing
         if (collection["isIndexable"]) {
-          // Add collection key for collision detection
-          this.operations.indexDeleteCollectionKeys.push(
-            collection["keys"].base,
-          );
-
           const doc = await this.kv.get(idKey);
           if (doc.versionstamp) {
             await deleteIndices(
@@ -468,25 +459,10 @@ export class AtomicBuilder<
 
   /**
    * Executes the built atomic operation.
-   * Will always fail if trying to delete and add/set to the same indexable collection in the same operation.
    *
    * @returns A promise that resolves to a DenoKvCommitResult if the operation is successful, or DenoKvCommitError if not.
    */
   async commit(): Promise<DenoKvCommitResult | DenoKvCommitError> {
-    // Check for key collisions between set/delete
-    if (
-      this.operations.indexSetCollectionKeys.some((addKey) =>
-        this.operations.indexDeleteCollectionKeys.some((deleteKey) =>
-          keyEq(addKey, deleteKey)
-        )
-      )
-    ) {
-      // If collisions are detected, return commit error
-      return {
-        ok: false,
-      };
-    }
-
     // Execute ordered initializers sequentially
     for (const initializer of this.operations.orderedMutationInitializers) {
       await initializer();
@@ -520,15 +496,7 @@ export class AtomicBuilder<
     value: TInput,
     options?: AtomicSetOptions,
   ) {
-    const overwrite = !!(options as AtomicSetOptions | undefined)
-      ?.overwrite;
-
     const collection = this.collection;
-
-    if (collection["isIndexable"]) {
-      // Add collection id key for collision detection
-      this.operations.indexSetCollectionKeys.push(collection["keys"].base);
-    }
 
     this.operations.orderedMutationInitializers.push(async () => {
       const parsed = await transform(collection["model"], value) ??
@@ -541,12 +509,12 @@ export class AtomicBuilder<
       this.operations.lazyMutations.set(idKeyStr, async () => {
         // Add set operation
         this.operations.atomic.set(idKey, parsed, options);
-        if (!overwrite) {
+        if (!options?.overwrite) {
           this.operations.atomic.check({ key: idKey, versionstamp: null });
         }
 
         if (collection["isIndexable"]) {
-          const doc = overwrite ? await this.kv.get(idKey) : null;
+          const doc = options?.overwrite ? await this.kv.get(idKey) : null;
           const docValue = doc?.value as KvObject | undefined ?? null;
           const versionstamp = doc?.versionstamp;
 
