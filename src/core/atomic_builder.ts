@@ -31,6 +31,8 @@ import {
   transform,
   validate,
 } from "../core/utils.ts";
+import { AtomicPool } from "./atomic_pool.ts";
+import { jsonStringify } from "../common/json.ts";
 
 /**
  * Builder object for creating and executing atomic operations in the KV store.
@@ -89,6 +91,8 @@ export class AtomicBuilder<
       asyncPreparations: [],
       indexDeleteCollectionKeys: [],
       indexSetCollectionKeys: [],
+      deleteAtomicPools: new Map(),
+      setAtomicPools: new Map(),
     };
   }
 
@@ -188,9 +192,11 @@ export class AtomicBuilder<
     // Create id key from id and collection id key
     const collection = this.collection;
     const idKey = extendKey(collection["keys"].id, id);
+    const idKeyStr = jsonStringify(idKey);
+    const pool = new AtomicPool();
 
     // Add delete operation
-    this.operations.atomic.delete(idKey);
+    pool.delete(idKey);
 
     // If collection is indexable, handle indexing
     if (collection["isIndexable"]) {
@@ -205,7 +211,7 @@ export class AtomicBuilder<
             id,
             doc.versionstamp,
             (doc.value ?? {}) as KvObject,
-            this.operations.atomic,
+            pool,
             collection,
           );
         }
@@ -221,8 +227,11 @@ export class AtomicBuilder<
         timestamp: new Date(),
       };
 
-      this.operations.atomic.set(historyKey, historyEntry);
+      pool.set(historyKey, historyEntry);
     }
+
+    // Add pool to operations
+    this.operations.deleteAtomicPools.set(idKeyStr, pool);
 
     // Return current AtomicBuilder
     return this;
@@ -458,6 +467,15 @@ export class AtomicBuilder<
     // Perform async preparations
     await Promise.all(this.operations.asyncPreparations.map((prep) => prep()));
 
+    // Bind atomic pools to atomic operation (after async preps, since pools are populated there)
+    this.operations.setAtomicPools.forEach((pool) => {
+      pool.bindTo(this.operations.atomic);
+    });
+
+    this.operations.deleteAtomicPools.forEach((pool) => {
+      pool.bindTo(this.operations.atomic);
+    });
+
     // Execute atomic operation
     return await this.operations.atomic.commit();
   }
@@ -485,6 +503,7 @@ export class AtomicBuilder<
       ?.overwrite;
 
     const collection = this.collection;
+    const pool = new AtomicPool();
 
     if (collection["isIndexable"]) {
       // Add collection id key for collision detection
@@ -497,11 +516,12 @@ export class AtomicBuilder<
 
       const docId = id ?? await collection["idGenerator"](parsed);
       const idKey = extendKey(collection["keys"].id, docId);
+      const idKeyStr = jsonStringify(idKey);
 
       // Add set operation
-      this.operations.atomic.set(idKey, parsed, options);
+      pool.set(idKey, parsed, options);
       if (!overwrite) {
-        this.operations.atomic.check({ key: idKey, versionstamp: null });
+        pool.check({ key: idKey, versionstamp: null });
       }
 
       if (collection["isIndexable"]) {
@@ -521,7 +541,7 @@ export class AtomicBuilder<
         applyIndexDiffs(
           diffs,
           parsed as KvObject,
-          this.operations.atomic,
+          pool,
           options,
         );
       }
@@ -540,8 +560,11 @@ export class AtomicBuilder<
           value: parsed,
         };
 
-        this.operations.atomic.set(historyKey, historyEntry);
+        pool.set(historyKey, historyEntry);
       }
+
+      // Add pool to operations
+      this.operations.setAtomicPools.set(idKeyStr, pool);
     });
 
     // Return current AtomicBuilder

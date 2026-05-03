@@ -2,6 +2,7 @@ import type { Collection } from "./collection.ts";
 import type { DeepMergeOptions } from "@std/collections/deep-merge";
 import type { Document } from "./document.ts";
 import type { Kvdex } from "./kvdex.ts";
+import type { AtomicPool } from "./atomic_pool.ts";
 
 /*********************/
 /*                   */
@@ -232,6 +233,8 @@ export type Operations = {
   asyncPreparations: Array<() => Promise<void>>;
   indexDeleteCollectionKeys: KvKey[];
   indexSetCollectionKeys: KvKey[];
+  setAtomicPools: Map<string, AtomicPool>;
+  deleteAtomicPools: Map<string, AtomicPool>;
 };
 
 /** Kvdex atomic check */
