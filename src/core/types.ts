@@ -231,6 +231,7 @@ export type Operations = {
   atomic: DenoAtomicOperation;
   orderedMutationInitializers: Array<() => unknown>;
   lazyMutations: Map<string, () => unknown>;
+  insertPrimaryKeys: KvKey[];
 };
 
 /** Kvdex atomic check */

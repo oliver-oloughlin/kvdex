@@ -76,7 +76,7 @@ export function extendKey(key: KvKey, ...keyParts: KvId[]) {
  * @param k2 - Second kv key.
  * @returns true if keys are equal, false if not.
  */
-export function keyEq(k1: KvKey, k2: KvKey) {
+export function keyEq(k1: KvKey, k2: KvKey): boolean {
   if (k1.length !== k2.length) {
     return false;
   }
@@ -99,6 +99,31 @@ export function keyEq(k1: KvKey, k2: KvKey) {
   }
 
   return true;
+}
+
+export function containsDuplicate<T>(
+  arr: T[],
+  eqFn: (a: T, b: T) => boolean,
+): boolean {
+  for (let i = 0; i < arr.length; i++) {
+    for (let j = i + 1; j < arr.length; j++) {
+      const a = arr.at(0);
+      const b = arr.at(1);
+      if (a === b) {
+        return true;
+      }
+
+      if (a === undefined || b === undefined) {
+        continue;
+      }
+
+      if (eqFn(a, b)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 export async function transform<TInput, TOutput extends KvValue>(

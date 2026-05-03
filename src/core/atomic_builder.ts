@@ -23,9 +23,11 @@ import type {
 } from "../core/types.ts";
 import {
   applyIndexDiffs,
+  containsDuplicate,
   createIndexDiffs,
   deleteIndices,
   extendKey,
+  keyEq,
   prepareEnqueue,
   transform,
   validate,
@@ -88,6 +90,7 @@ export class AtomicBuilder<
       atomic: kv.atomic(),
       orderedMutationInitializers: [],
       lazyMutations: new Map(),
+      insertPrimaryKeys: [],
     };
   }
 
@@ -473,6 +476,11 @@ export class AtomicBuilder<
       this.operations.lazyMutations.values().map((mutation) => mutation()),
     );
 
+    // Check for primary index collisions
+    if (containsDuplicate(this.operations.insertPrimaryKeys, keyEq)) {
+      return { ok: false };
+    }
+
     // Execute atomic operation
     return await this.operations.atomic.commit();
   }
@@ -533,6 +541,8 @@ export class AtomicBuilder<
             this.operations.atomic,
             options,
           );
+
+          this.operations.insertPrimaryKeys.push(...diffs.insertPrimaryKeys);
         }
 
         // Set history entry if keeps history
