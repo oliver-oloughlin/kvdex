@@ -19,6 +19,25 @@ Deno.test("collection - deleteMany", async (t) => {
   });
 
   await t.step(
+    "Should delete all documents from the collection with batched option",
+    async () => {
+      await useDb(async (db) => {
+        const users = generateUsers(1_000);
+        const cr = await db.users.addMany(users);
+        assert(cr.ok);
+
+        const count1 = await db.users.count();
+        assertEquals(count1, users.length);
+
+        await db.users.deleteMany({ batched: true });
+
+        const count2 = await db.users.count();
+        assertEquals(count2, 0);
+      });
+    },
+  );
+
+  await t.step(
     "Should delete all documents from collection with multi-part id",
     async () => {
       await useDb(async (db) => {

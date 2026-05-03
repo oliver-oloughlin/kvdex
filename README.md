@@ -759,12 +759,10 @@ const result = await db.users.upsertByPrimaryIndex({
 
 ### delete()
 
-Delete one or more documents with the given ids from the KV store.
+Delete a document with the given id from the KV store.
 
 ```ts
 await db.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77");
-
-await db.users.delete("user1", "user2", "user3");
 ```
 
 ### deleteByPrimaryIndex()
@@ -1357,16 +1355,9 @@ operation, call "commit" at the end of the chain. A committed atomic operation
 returns a promise resolving to either a Deno.KvCommitResult object if
 successful, or Deno.KvCommitError if not.
 
-**_NOTE_:** Atomic operations are not available for serialized collections. For
-indexable collections, any operations performing deletes will not be truly
-atomic in the sense that it performs a single isolated operation. This is
-because the document data must be read before performing the initial delete
-operation, to then perform another delete operation for the index entries. If
-the initial operation fails, the index entries will not be deleted. To avoid
-collisions and errors related to indexing, an atomic operation will always fail
-if it is trying to delete and write to the same indexable collection. It will
-also fail if trying to set/add a document with colliding index entries, or if
-trying to set a document with the `overwrite` option.
+**_NOTE_:** Atomic operations are not available for serialized collections. Deno
+KV limits to atomic operations (total size, key size, number of mutations) still
+apply.
 
 ### Without checking
 
@@ -1384,24 +1375,6 @@ const result2 = await db
   .add(1)
   .add(2)
   .select((schema) => schema.users)
-  .set("user_1", {
-    username: "oliver",
-    age: 24,
-    activities: ["skiing", "running"],
-    address: {
-      country: "Norway",
-      city: "Bergen",
-      street: "Sesame",
-      houseNumber: 42,
-    },
-  })
-  .commit();
-
-// Will fail and return Deno.KvCommitError because it is trying
-// to both add and delete from an indexable collection
-const result3 = await db
-  .atomic((schema) => schema.users)
-  .delete("user_1")
   .set("user_1", {
     username: "oliver",
     age: 24,

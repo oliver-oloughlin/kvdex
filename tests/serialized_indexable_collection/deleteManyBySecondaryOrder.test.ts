@@ -27,6 +27,30 @@ Deno.test("serialized_indexable_collection - deleteManyBySecondaryOrder", async 
   );
 
   await t.step(
+    "Should delete documents and indices from the collection by secondary order with batched option",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_users.addMany(mockUsersWithAlteredAge);
+        const count1 = await db.is_users.count();
+        assert(cr.ok);
+        assertEquals(count1, mockUsersWithAlteredAge.length);
+
+        await db.is_users.deleteManyBySecondaryOrder("age", {
+          limit: mockUsersWithAlteredAge.length - 1,
+          batched: true,
+        });
+
+        const count2 = await db.is_users.count();
+        const doc = await db.is_users.getOne();
+
+        assertEquals(count2, 1);
+        assertEquals(doc?.value.username, mockUser2.username);
+        assertEquals(doc?.value.address, mockUser2.address);
+      });
+    },
+  );
+
+  await t.step(
     "Should deleteMany by secondary order with multi-part id",
     async () => {
       await useDb(async (db) => {

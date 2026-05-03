@@ -12,7 +12,6 @@ import type {
   DenoKvCommitError,
   DenoKvCommitResult,
   DenoKvU64,
-  EmptyObject,
   EnqueueOptions,
   HistoryEntry,
   KvObject,
@@ -23,15 +22,17 @@ import type {
   SchemaDefinition,
 } from "../core/types.ts";
 import {
-  allFulfilled,
+  applyIndexDiffs,
+  containsDuplicate,
+  createIndexDiffs,
   deleteIndices,
   extendKey,
   keyEq,
   prepareEnqueue,
-  setIndices,
   transform,
   validate,
 } from "../core/utils.ts";
+import { jsonStringify } from "../common/json.ts";
 
 /**
  * Builder object for creating and executing atomic operations in the KV store.
@@ -87,10 +88,9 @@ export class AtomicBuilder<
     // Initiate operations or set from given operations
     this.operations = operations ?? {
       atomic: kv.atomic(),
-      asyncMutations: [],
-      prepareDeleteFns: [],
-      indexDeleteCollectionKeys: [],
-      indexAddCollectionKeys: [],
+      orderedMutationInitializers: [],
+      lazyMutations: new Map(),
+      insertPrimaryKeys: [],
     };
   }
 
@@ -142,7 +142,7 @@ export class AtomicBuilder<
    */
   add(
     value: TInput,
-    options?: AtomicSetOptions<TOptions>,
+    options?: AtomicSetOptions,
   ): this {
     return this.setDocument(null, value, options);
   }
@@ -168,7 +168,7 @@ export class AtomicBuilder<
   set(
     id: ParseId<TOptions>,
     value: TInput,
-    options?: AtomicSetOptions<TOptions>,
+    options?: AtomicSetOptions,
   ): this {
     return this.setDocument(id, value, options);
   }
@@ -190,37 +190,44 @@ export class AtomicBuilder<
     // Create id key from id and collection id key
     const collection = this.collection;
     const idKey = extendKey(collection["keys"].id, id);
+    const idKeyStr = jsonStringify(idKey);
 
-    // Add delete operation
-    this.operations.atomic.delete(idKey);
+    this.operations.orderedMutationInitializers.push(() => {
+      this.operations.lazyMutations.set(idKeyStr, async () => {
+        // Add delete operation
+        this.operations.atomic.delete(idKey);
 
-    // If collection is indexable, handle indexing
-    if (this.collection["isIndexable"]) {
-      // Add collection key for collision detection
-      this.operations.indexDeleteCollectionKeys.push(collection["keys"].base);
+        // If collection is indexable, handle indexing
+        if (collection["isIndexable"]) {
+          const doc = await this.kv.get(idKey);
+          if (doc.versionstamp) {
+            await deleteIndices(
+              id,
+              doc.versionstamp,
+              (doc.value ?? {}) as KvObject,
+              this.operations.atomic,
+              collection,
+            );
+          }
+        }
 
-      // Add delete preperation function to prepeare delete functions list
-      this.operations.prepareDeleteFns.push(async (kv) => {
-        const doc = await kv.get(idKey);
+        // Set history entry if keeps history
+        if (this.collection["keepsHistory"]) {
+          const historyKey = extendKey(
+            this.collection["keys"].history,
+            id,
+            ulid(),
+          );
 
-        return {
-          id,
-          data: doc.value as KvObject ?? {},
-        };
+          const historyEntry: HistoryEntry<TOutput> = {
+            type: "delete",
+            timestamp: new Date(),
+          };
+
+          this.operations.atomic.set(historyKey, historyEntry);
+        }
       });
-    }
-
-    // Set history entry if keeps history
-    if (this.collection["keepsHistory"]) {
-      const historyKey = extendKey(this.collection["keys"].history, id, ulid());
-
-      const historyEntry: HistoryEntry<TOutput> = {
-        type: "delete",
-        timestamp: new Date(),
-      };
-
-      this.operations.atomic.set(historyKey, historyEntry);
-    }
+    });
 
     // Return current AtomicBuilder
     return this;
@@ -281,7 +288,14 @@ export class AtomicBuilder<
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
     const idKey = extendKey(this.collection["keys"].id, id);
-    this.operations.atomic.sum(idKey, value);
+    const idKeyStr = jsonStringify(idKey);
+
+    this.operations.orderedMutationInitializers.push(() => {
+      this.operations.lazyMutations.set(idKeyStr, () => {
+        this.operations.atomic.sum(idKey, value);
+      });
+    });
+
     return this;
   }
 
@@ -306,7 +320,14 @@ export class AtomicBuilder<
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
     const idKey = extendKey(this.collection["keys"].id, id);
-    this.operations.atomic.min(idKey, value);
+    const idKeyStr = jsonStringify(idKey);
+
+    this.operations.orderedMutationInitializers.push(() => {
+      this.operations.lazyMutations.set(idKeyStr, () => {
+        this.operations.atomic.min(idKey, value);
+      });
+    });
+
     return this;
   }
 
@@ -331,7 +352,14 @@ export class AtomicBuilder<
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
     const idKey = extendKey(this.collection["keys"].id, id);
-    this.operations.atomic.max(idKey, value);
+    const idKeyStr = jsonStringify(idKey);
+
+    this.operations.orderedMutationInitializers.push(() => {
+      this.operations.lazyMutations.set(idKeyStr, () => {
+        this.operations.atomic.max(idKey, value);
+      });
+    });
+
     return this;
   }
 
@@ -434,67 +462,27 @@ export class AtomicBuilder<
 
   /**
    * Executes the built atomic operation.
-   * Will always fail if trying to delete and add/set to the same indexable collection in the same operation.
    *
    * @returns A promise that resolves to a DenoKvCommitResult if the operation is successful, or DenoKvCommitError if not.
    */
   async commit(): Promise<DenoKvCommitResult | DenoKvCommitError> {
-    // Perform async mutations
-    for (const mut of this.operations.asyncMutations) {
-      await mut();
+    // Execute ordered initializers sequentially
+    for (const initializer of this.operations.orderedMutationInitializers) {
+      await initializer();
     }
 
-    // Check for key collisions between add/delete
-    if (
-      this.operations.indexAddCollectionKeys.some((addKey) =>
-        this.operations.indexDeleteCollectionKeys.some((deleteKey) =>
-          keyEq(addKey, deleteKey)
-        )
-      )
-    ) {
-      // If collisions are detected, return commit error
-      return {
-        ok: false,
-      };
-    }
-
-    // Prepare delete ops
-    const preparedIndexDeletes = await allFulfilled(
-      this.operations.prepareDeleteFns.map((fn) => fn(this.kv)),
+    // Execute lazy mutations
+    await Promise.all(
+      this.operations.lazyMutations.values().map((mutation) => mutation()),
     );
 
-    // Execute atomic operation
-    const commitResult = await this.operations.atomic.commit();
-
-    // If successful commit, perform delete ops
-    if (commitResult.ok) {
-      await allFulfilled(
-        preparedIndexDeletes.map(async (preparedDelete) => {
-          // Get document id and data from prepared delete object
-          const {
-            id,
-            data,
-          } = preparedDelete;
-
-          // Initiate atomic operation for index deletions
-          const atomic = this.kv.atomic();
-
-          // Set index delete operations using atomic operation
-          await deleteIndices(
-            id,
-            data,
-            atomic,
-            this.collection,
-          );
-
-          // Execute atomic operation
-          await atomic.commit();
-        }),
-      );
+    // Check for primary index collisions
+    if (containsDuplicate(this.operations.insertPrimaryKeys, keyEq)) {
+      return { ok: false };
     }
 
-    // Return commit result
-    return commitResult;
+    // Execute atomic operation
+    return await this.operations.atomic.commit();
   }
 
   /***********************/
@@ -514,64 +502,66 @@ export class AtomicBuilder<
   private setDocument(
     id: ParseId<TOptions> | null,
     value: TInput,
-    options?: AtomicSetOptions<TOptions>,
+    options?: AtomicSetOptions,
   ) {
-    const overwrite = !!(options as AtomicSetOptions<EmptyObject> | undefined)
-      ?.overwrite;
+    const collection = this.collection;
 
-    if (this.collection["isIndexable"] && overwrite) {
-      throw new InvalidCollectionError(
-        "The overwrite property is not supported for indexable collections",
-      );
-    }
-
-    this.operations.asyncMutations.push(async () => {
-      // Create id key from collection id key and id
-      const collection = this.collection;
-
+    this.operations.orderedMutationInitializers.push(async () => {
       const parsed = await transform(collection["model"], value) ??
         await validate(collection["model"], value);
 
       const docId = id ?? await collection["idGenerator"](parsed);
       const idKey = extendKey(collection["keys"].id, docId);
+      const idKeyStr = jsonStringify(idKey);
 
-      // Add set operation
-      this.operations.atomic.set(idKey, parsed, options);
-      if (!overwrite) {
-        this.operations.atomic.check({ key: idKey, versionstamp: null });
-      }
+      this.operations.lazyMutations.set(idKeyStr, async () => {
+        // Add set operation
+        this.operations.atomic.set(idKey, parsed, options);
+        if (!options?.overwrite) {
+          this.operations.atomic.check({ key: idKey, versionstamp: null });
+        }
 
-      if (collection["isIndexable"]) {
-        // Add collection id key for collision detection
-        this.operations.indexAddCollectionKeys.push(collection["keys"].base);
+        if (collection["isIndexable"]) {
+          const doc = options?.overwrite ? await this.kv.get(idKey) : null;
+          const docValue = doc?.value as KvObject | undefined ?? null;
+          const versionstamp = doc?.versionstamp;
 
-        // Add indexing operations
-        await setIndices(
-          docId,
-          parsed as KvObject,
-          parsed as KvObject,
-          this.operations.atomic,
-          this.collection,
-          options,
-        );
-      }
+          const diffs = await createIndexDiffs(
+            docId,
+            idKey,
+            versionstamp,
+            docValue,
+            parsed as KvObject,
+            collection,
+          );
 
-      // Set history entry if keeps history
-      if (this.collection["keepsHistory"]) {
-        const historyKey = extendKey(
-          this.collection["keys"].history,
-          docId,
-          ulid(),
-        );
+          applyIndexDiffs(
+            diffs,
+            parsed as KvObject,
+            this.operations.atomic,
+            options,
+          );
 
-        const historyEntry: HistoryEntry<TOutput> = {
-          type: "write",
-          timestamp: new Date(),
-          value: parsed,
-        };
+          this.operations.insertPrimaryKeys.push(...diffs.insertPrimaryKeys);
+        }
 
-        this.operations.atomic.set(historyKey, historyEntry);
-      }
+        // Set history entry if keeps history
+        if (this.collection["keepsHistory"]) {
+          const historyKey = extendKey(
+            this.collection["keys"].history,
+            docId,
+            ulid(),
+          );
+
+          const historyEntry: HistoryEntry<TOutput> = {
+            type: "write",
+            timestamp: new Date(),
+            value: parsed,
+          };
+
+          this.operations.atomic.set(historyKey, historyEntry);
+        }
+      });
     });
 
     // Return current AtomicBuilder

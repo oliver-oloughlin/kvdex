@@ -1,7 +1,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { Collection } from "../../src/core/collection.ts";
 import { model } from "../../src/core/model.ts";
-import { createIndexDiffs } from "../../src/core/utils.ts";
+import { createIndexDiffs, extendKey } from "../../src/core/utils.ts";
 import { useKv } from "../utils.ts";
 import { jsonEncoder } from "../../src/common/json.ts";
 import type { KvKey } from "../../src/core/types.ts";
@@ -78,6 +78,8 @@ Deno.test("utils - createIndexDiffs", async (t) => {
         const cr = await collection.add(user1);
         assert(cr.ok);
 
+        const idKey = extendKey(collection["keys"].id, cr.id);
+
         const {
           insertPrimaryKeys,
           insertSecondaryKeys,
@@ -85,6 +87,8 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           checkKeys,
         } = await createIndexDiffs(
           cr.id,
+          idKey,
+          cr.versionstamp,
           user1,
           user2,
           collection,
@@ -204,6 +208,8 @@ Deno.test("utils - createIndexDiffs", async (t) => {
         const cr = await collection.add(user1);
         assert(cr.ok);
 
+        const idKey = extendKey(collection["keys"].id, cr.id);
+
         const {
           insertPrimaryKeys,
           insertSecondaryKeys,
@@ -211,6 +217,8 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           checkKeys,
         } = await createIndexDiffs(
           cr.id,
+          idKey,
+          cr.versionstamp,
           user1,
           user2,
           collection,
@@ -322,6 +330,8 @@ Deno.test("utils - createIndexDiffs", async (t) => {
         const cr = await collection.add(user1);
         assert(cr.ok);
 
+        const idKey = extendKey(collection["keys"].id, cr.id);
+
         const {
           insertPrimaryKeys,
           insertSecondaryKeys,
@@ -329,6 +339,8 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           checkKeys,
         } = await createIndexDiffs(
           cr.id,
+          idKey,
+          cr.versionstamp,
           user1,
           user2,
           collection,

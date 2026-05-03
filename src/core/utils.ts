@@ -11,6 +11,7 @@ import type {
   EnqueueOptions,
   FindManyOptions,
   IndexDataEntry,
+  IndexDiffs,
   KvId,
   KvKey,
   KvObject,
@@ -73,7 +74,7 @@ export function extendKey(key: KvKey, ...keyParts: KvId[]) {
  * @param k2 - Second kv key.
  * @returns true if keys are equal, false if not.
  */
-export function keyEq(k1: KvKey, k2: KvKey) {
+export function keyEq(k1: KvKey, k2: KvKey): boolean {
   if (k1.length !== k2.length) {
     return false;
   }
@@ -96,6 +97,31 @@ export function keyEq(k1: KvKey, k2: KvKey) {
   }
 
   return true;
+}
+
+export function containsDuplicate<T>(
+  arr: T[],
+  eqFn: (a: T, b: T) => boolean,
+): boolean {
+  for (let i = 0; i < arr.length; i++) {
+    for (let j = i + 1; j < arr.length; j++) {
+      const a = arr.at(i);
+      const b = arr.at(j);
+      if (a === b) {
+        return true;
+      }
+
+      if (a === undefined || b === undefined) {
+        continue;
+      }
+
+      if (eqFn(a, b)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 export async function transform<TInput, TOutput extends KvValue>(
@@ -265,6 +291,7 @@ export async function setIndices(
  */
 export async function deleteIndices(
   id: KvId,
+  versionstamp: string | null,
   data: KvObject,
   atomic: DenoAtomicOperation,
   collection: Collection<any, any, any>,
@@ -276,6 +303,13 @@ export async function deleteIndices(
     (primaryIndexKey) => atomic.delete(primaryIndexKey),
     (secondaryIndexKey) => atomic.delete(secondaryIndexKey),
   );
+
+  if (versionstamp) {
+    atomic.check({
+      key: extendKey(collection["keys"].id, id),
+      versionstamp,
+    });
+  }
 }
 
 /**
@@ -565,20 +599,18 @@ async function handleIndices(
 }
 
 export function applyIndexDiffs(
-  id: KvId,
   diffs: IndexDiffs,
-  value: unknown,
+  value: KvObject,
   atomic: DenoAtomicOperation,
-  options?: DenoKvSetOptions,
+  options: DenoKvSetOptions | undefined,
 ) {
   diffs.deleteKeys.forEach((key) => atomic.delete(key));
-
   diffs.insertSecondaryKeys.forEach((key) => atomic.set(key, value, options));
 
   diffs.insertPrimaryKeys.forEach((key) => {
     const indexEntry: IndexDataEntry<KvObject> = {
-      ...(value as KvObject),
-      __id__: id,
+      ...value,
+      __id__: diffs.id,
     };
     atomic.set(key, indexEntry, options);
   });
@@ -589,18 +621,20 @@ export function applyIndexDiffs(
       versionstamp: null,
     })
   );
-}
 
-export type IndexDiffs = {
-  insertPrimaryKeys: KvKey[];
-  insertSecondaryKeys: KvKey[];
-  deleteKeys: KvKey[];
-  checkKeys: KvKey[];
-};
+  if (diffs.versionstamp !== undefined) {
+    atomic.check({
+      key: diffs.idKey,
+      versionstamp: diffs.versionstamp,
+    });
+  }
+}
 
 export async function createIndexDiffs(
   id: KvId,
-  dataOld: KvObject,
+  idKey: KvKey,
+  versionstamp: string | null | undefined,
+  dataOld: KvObject | null,
   dataNew: KvObject,
   collection: Collection<any, any, any>,
 ): Promise<IndexDiffs> {
@@ -611,7 +645,10 @@ export async function createIndexDiffs(
 
   // Handle primary indices
   for (const index of collection["primaryIndexList"]) {
-    const indexValueOld = dataOld[index] as KvId | undefined;
+    const indexValueOld = dataOld
+      ? dataOld[index] as KvId | undefined
+      : undefined;
+
     const indexValueNew = dataNew[index] as KvId | undefined;
 
     const encodedOld = typeof indexValueOld !== "undefined"
@@ -638,30 +675,29 @@ export async function createIndexDiffs(
       )
       : undefined;
 
-    if (
-      equals(encodedOld ?? new Uint8Array(), encodedNew ?? new Uint8Array())
-    ) {
-      // Index key unchanged — still re-set the entry with new document data,
-      // but skip delete and collision check since the key already belongs to this doc.
-      if (typeof indexKeyNew !== "undefined") {
-        insertPrimaryKeys.push(indexKeyNew);
-      }
-      continue;
-    }
+    const areEqual = equals(
+      encodedOld ?? new Uint8Array(),
+      encodedNew ?? new Uint8Array(),
+    );
 
-    if (typeof indexKeyOld !== "undefined") {
+    if (typeof indexKeyOld !== "undefined" && !areEqual) {
       deleteKeys.push(indexKeyOld);
     }
 
     if (typeof indexKeyNew !== "undefined") {
-      checkKeys.push(indexKeyNew);
+      if (!areEqual) {
+        checkKeys.push(indexKeyNew);
+      }
       insertPrimaryKeys.push(indexKeyNew);
     }
   }
 
   // Handle secondary indices
   for (const index of collection["secondaryIndexList"]) {
-    const indexValueOld = dataOld[index] as KvId | undefined;
+    const indexValueOld = dataOld
+      ? dataOld[index] as KvId | undefined
+      : undefined;
+
     const indexValueNew = dataNew[index] as KvId | undefined;
 
     const encodedOld = typeof indexValueOld !== "undefined"
@@ -690,18 +726,12 @@ export async function createIndexDiffs(
       )
       : undefined;
 
-    if (
-      equals(encodedOld ?? new Uint8Array(), encodedNew ?? new Uint8Array())
-    ) {
-      // Index key unchanged — still re-set the entry with new document data,
-      // but skip delete since the key already belongs to this doc.
-      if (typeof indexKeyNew !== "undefined") {
-        insertSecondaryKeys.push(indexKeyNew);
-      }
-      continue;
-    }
+    const areEqual = equals(
+      encodedOld ?? new Uint8Array(),
+      encodedNew ?? new Uint8Array(),
+    );
 
-    if (typeof indexKeyOld !== "undefined") {
+    if (typeof indexKeyOld !== "undefined" && !areEqual) {
       deleteKeys.push(indexKeyOld);
     }
 
@@ -710,5 +740,13 @@ export async function createIndexDiffs(
     }
   }
 
-  return { insertPrimaryKeys, insertSecondaryKeys, deleteKeys, checkKeys };
+  return {
+    insertPrimaryKeys,
+    insertSecondaryKeys,
+    deleteKeys,
+    checkKeys,
+    id,
+    idKey,
+    versionstamp,
+  };
 }

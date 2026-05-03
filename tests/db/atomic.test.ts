@@ -6,7 +6,7 @@ import {
   type QueueMessage,
 } from "../../mod.ts";
 import { createHandlerId } from "../../src/core/utils.ts";
-import { assert, assertEquals, assertThrows } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
 import { sleep, useDb, useKv } from "../utils.ts";
 import type { KvKey } from "../../src/core/types.ts";
@@ -28,7 +28,7 @@ Deno.test("db - atomic", async (t) => {
   });
 
   await t.step(
-    "Should only set first document with colliding ids",
+    "Should only set latest document with colliding ids",
     async () => {
       await useDb(async (db) => {
         const id = "id";
@@ -43,6 +43,9 @@ Deno.test("db - atomic", async (t) => {
 
         const count = await db.users.count();
         assert(count === 1);
+
+        const doc = await db.users.find(id);
+        assertEquals(doc?.value, mockUser2);
       });
     },
   );
@@ -68,17 +71,61 @@ Deno.test("db - atomic", async (t) => {
   });
 
   await t.step(
-    "Should throw when trying to overwrite document in indexable collection",
+    "Should overwrite document in indexable collection",
     async () => {
       await useDb(async (db) => {
         const cr1 = await db.i_users.add(mockUser1);
         assert(cr1.ok);
 
-        assertThrows(() => {
-          db
-            .atomic((schema) => schema.i_users)
-            .set(cr1.id, mockUser2, { overwrite: true } as any);
-        });
+        const cr2 = await db
+          .atomic((schema) => schema.i_users)
+          .set(cr1.id, mockUser2, { overwrite: true })
+          .commit();
+
+        assert(cr2.ok);
+
+        const count = await db.i_users.count();
+        assertEquals(count, 1);
+
+        // Document should have new value
+        const doc = await db.i_users.find(cr1.id);
+        assertEquals(doc?.value, mockUser2);
+
+        // Old primary index should be gone
+        const byOldPrimary = await db.i_users.findByPrimaryIndex(
+          "username",
+          mockUser1.username,
+        );
+        assertEquals(byOldPrimary, null);
+
+        // New primary index should work
+        const byNewPrimary = await db.i_users.findByPrimaryIndex(
+          "username",
+          mockUser2.username,
+        );
+        assertEquals(byNewPrimary?.value, mockUser2);
+
+        // Old secondary index should not find the document
+        const { result: byOldSecondary } = await db.i_users
+          .findBySecondaryIndex(
+            "age",
+            mockUser1.age,
+          );
+        const foundByOldAge = byOldSecondary.some(
+          (d) => d.value.username === mockUser1.username,
+        );
+        assertEquals(foundByOldAge, false);
+
+        // New secondary index should find the document
+        const { result: byNewSecondary } = await db.i_users
+          .findBySecondaryIndex(
+            "age",
+            mockUser2.age,
+          );
+        const foundByNewAge = byNewSecondary.some(
+          (d) => d.value.username === mockUser2.username,
+        );
+        assertEquals(foundByNewAge, true);
       });
     },
   );
@@ -648,6 +695,118 @@ Deno.test("db - atomic", async (t) => {
 
         const doc = await db.multi_part_id_u64s.find(cr1.id);
         assert(doc?.value.value === initial + sum);
+      });
+    },
+  );
+
+  await t.step(
+    "Should apply delete as latest mutation when set is called before delete",
+    async () => {
+      await useDb(async (db) => {
+        const id = "id";
+
+        const cr = await db
+          .atomic((schema) => schema.users)
+          .set(id, mockUser1)
+          .delete(id)
+          .commit();
+
+        assert(cr.ok);
+
+        const doc = await db.users.find(id);
+        assertEquals(doc, null);
+
+        const count = await db.users.count();
+        assertEquals(count, 0);
+      });
+    },
+  );
+
+  await t.step(
+    "Should apply set as latest mutation when delete is called before set",
+    async () => {
+      await useDb(async (db) => {
+        const id = "id";
+
+        const cr = await db
+          .atomic((schema) => schema.users)
+          .delete(id)
+          .set(id, mockUser2)
+          .commit();
+
+        assert(cr.ok);
+
+        const doc = await db.users.find(id);
+        assertEquals(doc?.value, mockUser2);
+      });
+    },
+  );
+
+  await t.step(
+    "Should apply latest sum mutation when multiple math mutations target same document",
+    async () => {
+      await useDb(async (db) => {
+        const initial = 100n;
+
+        const cr1 = await db.u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
+
+        const cr2 = await db
+          .atomic((schema) => schema.u64s)
+          .min(cr1.id, 10n)
+          .sum(cr1.id, 50n)
+          .commit();
+
+        assert(cr2.ok);
+
+        const doc = await db.u64s.find(cr1.id);
+        assertEquals(doc?.value.value, initial + 50n);
+      });
+    },
+  );
+
+  await t.step(
+    "Should apply latest max mutation when sum is called before max",
+    async () => {
+      await useDb(async (db) => {
+        const initial = 100n;
+
+        const cr1 = await db.u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
+
+        const cr2 = await db
+          .atomic((schema) => schema.u64s)
+          .sum(cr1.id, 50n)
+          .max(cr1.id, 200n)
+          .commit();
+
+        assert(cr2.ok);
+
+        const doc = await db.u64s.find(cr1.id);
+        assertEquals(doc?.value.value, 200n);
+      });
+    },
+  );
+
+  await t.step(
+    "Should apply delete as latest mutation over math mutations",
+    async () => {
+      await useDb(async (db) => {
+        const initial = 100n;
+
+        const cr1 = await db.u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
+
+        const cr2 = await db
+          .atomic((schema) => schema.u64s)
+          .sum(cr1.id, 50n)
+          .delete(cr1.id)
+          .commit();
+
+        assert(cr2.ok);
+
+        const doc = await db.u64s.find(cr1.id);
+        assertEquals(doc, null);
       });
     },
   );
