@@ -107,8 +107,8 @@ export function containsDuplicate<T>(
 ): boolean {
   for (let i = 0; i < arr.length; i++) {
     for (let j = i + 1; j < arr.length; j++) {
-      const a = arr.at(0);
-      const b = arr.at(1);
+      const a = arr.at(i);
+      const b = arr.at(j);
       if (a === b) {
         return true;
       }
