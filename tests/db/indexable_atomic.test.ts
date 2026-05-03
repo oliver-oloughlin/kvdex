@@ -303,4 +303,71 @@ Deno.test("db - indexable_atomic", async (t) => {
       });
     },
   );
+
+  await t.step(
+    "Should apply delete as latest mutation and remove indices when set is called before delete",
+    async () => {
+      await useDb(async (db) => {
+        const id = "id";
+
+        const cr = await db
+          .atomic((schema) => schema.i_users)
+          .set(id, mockUser1)
+          .delete(id)
+          .commit();
+
+        assert(cr.ok);
+
+        const doc = await db.i_users.find(id);
+        assertEquals(doc, null);
+
+        const count = await db.i_users.count();
+        assertEquals(count, 0);
+
+        // Primary index should not return a document
+        const byPrimary = await db.i_users.findByPrimaryIndex(
+          "username",
+          mockUser1.username,
+        );
+        assertEquals(byPrimary, null);
+
+        // Secondary index should not return a document
+        const { result: bySecondary } = await db.i_users
+          .findBySecondaryIndex("age", mockUser1.age);
+        assertEquals(bySecondary.length, 0);
+      });
+    },
+  );
+
+  await t.step(
+    "Should apply set as latest mutation with indices when delete is called before set",
+    async () => {
+      await useDb(async (db) => {
+        const id = "id";
+
+        const cr = await db
+          .atomic((schema) => schema.i_users)
+          .delete(id)
+          .set(id, mockUser3)
+          .commit();
+
+        assert(cr.ok);
+
+        const doc = await db.i_users.find(id);
+        assertEquals(doc?.value, mockUser3);
+
+        // Primary index should return the document
+        const byPrimary = await db.i_users.findByPrimaryIndex(
+          "username",
+          mockUser3.username,
+        );
+        assertEquals(byPrimary?.value, mockUser3);
+
+        // Secondary index should return the document
+        const { result: [bySecondary] } = await db.i_users
+          .findBySecondaryIndex("age", mockUser3.age);
+        assertEquals(bySecondary?.value, mockUser3);
+      });
+    },
+  );
 });

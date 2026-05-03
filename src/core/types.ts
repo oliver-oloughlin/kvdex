@@ -233,8 +233,7 @@ export type Operations = {
   asyncPreparations: Array<() => Promise<void>>;
   indexDeleteCollectionKeys: KvKey[];
   indexSetCollectionKeys: KvKey[];
-  setAtomicPools: Map<string, AtomicPool>;
-  deleteAtomicPools: Map<string, AtomicPool>;
+  documentMutationPools: Map<string, AtomicPool>;
 };
 
 /** Kvdex atomic check */

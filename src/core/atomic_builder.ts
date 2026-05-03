@@ -91,8 +91,7 @@ export class AtomicBuilder<
       asyncPreparations: [],
       indexDeleteCollectionKeys: [],
       indexSetCollectionKeys: [],
-      deleteAtomicPools: new Map(),
-      setAtomicPools: new Map(),
+      documentMutationPools: new Map(),
     };
   }
 
@@ -231,7 +230,7 @@ export class AtomicBuilder<
     }
 
     // Add pool to operations
-    this.operations.deleteAtomicPools.set(idKeyStr, pool);
+    this.operations.documentMutationPools.set(idKeyStr, pool);
 
     // Return current AtomicBuilder
     return this;
@@ -292,7 +291,10 @@ export class AtomicBuilder<
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
     const idKey = extendKey(this.collection["keys"].id, id);
-    this.operations.atomic.sum(idKey, value);
+    const idKeyStr = jsonStringify(idKey);
+    const pool = new AtomicPool();
+    pool.sum(idKey, value);
+    this.operations.documentMutationPools.set(idKeyStr, pool);
     return this;
   }
 
@@ -317,7 +319,10 @@ export class AtomicBuilder<
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
     const idKey = extendKey(this.collection["keys"].id, id);
-    this.operations.atomic.min(idKey, value);
+    const idKeyStr = jsonStringify(idKey);
+    const pool = new AtomicPool();
+    pool.min(idKey, value);
+    this.operations.documentMutationPools.set(idKeyStr, pool);
     return this;
   }
 
@@ -342,7 +347,10 @@ export class AtomicBuilder<
     value: TOutput extends DenoKvU64 ? bigint : never,
   ): this {
     const idKey = extendKey(this.collection["keys"].id, id);
-    this.operations.atomic.max(idKey, value);
+    const idKeyStr = jsonStringify(idKey);
+    const pool = new AtomicPool();
+    pool.max(idKey, value);
+    this.operations.documentMutationPools.set(idKeyStr, pool);
     return this;
   }
 
@@ -467,12 +475,8 @@ export class AtomicBuilder<
     // Perform async preparations
     await Promise.all(this.operations.asyncPreparations.map((prep) => prep()));
 
-    // Bind atomic pools to atomic operation (after async preps, since pools are populated there)
-    this.operations.setAtomicPools.forEach((pool) => {
-      pool.bindTo(this.operations.atomic);
-    });
-
-    this.operations.deleteAtomicPools.forEach((pool) => {
+    // Bind atomic pools to atomic operation
+    this.operations.documentMutationPools.forEach((pool) => {
       pool.bindTo(this.operations.atomic);
     });
 
@@ -564,7 +568,7 @@ export class AtomicBuilder<
       }
 
       // Add pool to operations
-      this.operations.setAtomicPools.set(idKeyStr, pool);
+      this.operations.documentMutationPools.set(idKeyStr, pool);
     });
 
     // Return current AtomicBuilder

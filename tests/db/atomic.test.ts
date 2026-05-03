@@ -698,4 +698,116 @@ Deno.test("db - atomic", async (t) => {
       });
     },
   );
+
+  await t.step(
+    "Should apply delete as latest mutation when set is called before delete",
+    async () => {
+      await useDb(async (db) => {
+        const id = "id";
+
+        const cr = await db
+          .atomic((schema) => schema.users)
+          .set(id, mockUser1)
+          .delete(id)
+          .commit();
+
+        assert(cr.ok);
+
+        const doc = await db.users.find(id);
+        assertEquals(doc, null);
+
+        const count = await db.users.count();
+        assertEquals(count, 0);
+      });
+    },
+  );
+
+  await t.step(
+    "Should apply set as latest mutation when delete is called before set",
+    async () => {
+      await useDb(async (db) => {
+        const id = "id";
+
+        const cr = await db
+          .atomic((schema) => schema.users)
+          .delete(id)
+          .set(id, mockUser2)
+          .commit();
+
+        assert(cr.ok);
+
+        const doc = await db.users.find(id);
+        assertEquals(doc?.value, mockUser2);
+      });
+    },
+  );
+
+  await t.step(
+    "Should apply latest sum mutation when multiple math mutations target same document",
+    async () => {
+      await useDb(async (db) => {
+        const initial = 100n;
+
+        const cr1 = await db.u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
+
+        const cr2 = await db
+          .atomic((schema) => schema.u64s)
+          .min(cr1.id, 10n)
+          .sum(cr1.id, 50n)
+          .commit();
+
+        assert(cr2.ok);
+
+        const doc = await db.u64s.find(cr1.id);
+        assertEquals(doc?.value.value, initial + 50n);
+      });
+    },
+  );
+
+  await t.step(
+    "Should apply latest max mutation when sum is called before max",
+    async () => {
+      await useDb(async (db) => {
+        const initial = 100n;
+
+        const cr1 = await db.u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
+
+        const cr2 = await db
+          .atomic((schema) => schema.u64s)
+          .sum(cr1.id, 50n)
+          .max(cr1.id, 200n)
+          .commit();
+
+        assert(cr2.ok);
+
+        const doc = await db.u64s.find(cr1.id);
+        assertEquals(doc?.value.value, 200n);
+      });
+    },
+  );
+
+  await t.step(
+    "Should apply delete as latest mutation over math mutations",
+    async () => {
+      await useDb(async (db) => {
+        const initial = 100n;
+
+        const cr1 = await db.u64s.add(new Deno.KvU64(initial));
+        assert(cr1.ok);
+
+        const cr2 = await db
+          .atomic((schema) => schema.u64s)
+          .sum(cr1.id, 50n)
+          .delete(cr1.id)
+          .commit();
+
+        assert(cr2.ok);
+
+        const doc = await db.u64s.find(cr1.id);
+        assertEquals(doc, null);
+      });
+    },
+  );
 });
