@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "@std/assert";
-import { mockUser1 } from "../mocks.ts";
+import { mockUser1, mockUser3 } from "../mocks.ts";
 import { useDb } from "../utils.ts";
 import type { KvKey } from "../../src/core/types.ts";
 
@@ -252,6 +252,54 @@ Deno.test("db - indexable_atomic", async (t) => {
           .commit();
 
         assert(!cr.ok);
+      });
+    },
+  );
+
+  await t.step(
+    "Should only apply latest set on same document and update indices",
+    async () => {
+      await useDb(async (db) => {
+        const id = "id";
+
+        const cr = await db
+          .atomic((schema) => schema.i_users)
+          .set(id, mockUser1)
+          .set(id, mockUser3)
+          .commit();
+
+        assert(cr.ok);
+
+        const count = await db.i_users.count();
+        assertEquals(count, 1);
+
+        // Document should have the latest value
+        const doc = await db.i_users.find(id);
+        assertEquals(doc?.value, mockUser3);
+
+        // Old primary index should not return a document
+        const byOldPrimary = await db.i_users.findByPrimaryIndex(
+          "username",
+          mockUser1.username,
+        );
+        assertEquals(byOldPrimary, null);
+
+        // New primary index should return the document
+        const byNewPrimary = await db.i_users.findByPrimaryIndex(
+          "username",
+          mockUser3.username,
+        );
+        assertEquals(byNewPrimary?.value, mockUser3);
+
+        // Old secondary index should not find the document
+        const { result: [byOldSecondary] } = await db.i_users
+          .findBySecondaryIndex("age", mockUser1.age);
+        assertEquals(byOldSecondary, undefined);
+
+        // New secondary index should find the document
+        const { result: [byNewSecondary] } = await db.i_users
+          .findBySecondaryIndex("age", mockUser3.age);
+        assertEquals(byNewSecondary?.value, mockUser3);
       });
     },
   );

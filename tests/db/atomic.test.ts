@@ -28,7 +28,7 @@ Deno.test("db - atomic", async (t) => {
   });
 
   await t.step(
-    "Should only set first document with colliding ids",
+    "Should only set latest document with colliding ids",
     async () => {
       await useDb(async (db) => {
         const id = "id";
@@ -43,6 +43,9 @@ Deno.test("db - atomic", async (t) => {
 
         const count = await db.users.count();
         assert(count === 1);
+
+        const doc = await db.users.find(id);
+        assertEquals(doc?.value, mockUser2);
       });
     },
   );
