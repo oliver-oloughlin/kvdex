@@ -12,7 +12,6 @@ import type {
   DenoKvSetOptions,
   DenoKvStrictKey,
 } from "./types.ts";
-import { commitAtomicOperations } from "./utils.ts";
 
 type PreparedMutation = {
   mutation: (op: DenoAtomicOperation) => DenoAtomicOperation;
@@ -131,7 +130,27 @@ export class AtomicWrapper implements DenoAtomicOperation {
     this.applyMutations();
 
     // Commit all operations
-    return await commitAtomicOperations(this.atomics);
+    const settled = await Promise.allSettled(
+      this.atomics.map((op) => op.commit()),
+    );
+
+    // Check status of all commits
+    const success = settled.every((v) =>
+      v.status === "fulfilled" && v.value.ok
+    );
+
+    // If successful, return commit result
+    if (success) {
+      return {
+        ok: true,
+        versionstamp: (settled.at(0) as any)?.value.versionstamp ?? "0",
+      };
+    }
+
+    // Return commit error
+    return {
+      ok: false,
+    };
   }
 
   /** PRIVATE METHODS */

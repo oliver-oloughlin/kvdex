@@ -3,8 +3,6 @@ import type { Collection } from "./collection.ts";
 import type {
   DenoAtomicOperation,
   DenoKv,
-  DenoKvCommitError,
-  DenoKvCommitResult,
   DenoKvEntryMaybe,
   DenoKvListSelector,
   DenoKvSetOptions,
@@ -312,32 +310,6 @@ export async function deleteIndices(
       versionstamp,
     });
   }
-}
-
-/**
- * Check for index collisions.
- *
- * @param data - Update data.
- * @param atomic - Atomic operation.
- * @param collection - Collection context.
- * @returns The atomic operation with added checks.
- */
-export async function checkIndices(
-  data: KvObject,
-  atomic: DenoAtomicOperation,
-  collection: Collection<any, any, any>,
-) {
-  await handleIndices(
-    null,
-    data,
-    collection,
-    (primaryIndexKey) => {
-      atomic.check({
-        key: primaryIndexKey,
-        versionstamp: null,
-      });
-    },
-  );
 }
 
 /**
@@ -776,30 +748,5 @@ export async function createIndexDiffs(
     id,
     idKey,
     versionstamp,
-  };
-}
-
-export async function commitAtomicOperations(
-  atomicOperations: DenoAtomicOperation[],
-): Promise<DenoKvCommitResult | DenoKvCommitError> {
-  // Commit all operations
-  const settled = await Promise.allSettled(
-    atomicOperations.map((op) => op.commit()),
-  );
-
-  // Check status of all commits
-  const success = settled.every((v) => v.status === "fulfilled" && v.value.ok);
-
-  // If successful, return commit result
-  if (success) {
-    return {
-      ok: true,
-      versionstamp: (settled.at(0) as any)?.value.versionstamp ?? "0",
-    };
-  }
-
-  // Return commit error
-  return {
-    ok: false,
   };
 }

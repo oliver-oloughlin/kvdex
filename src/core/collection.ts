@@ -6,7 +6,6 @@ import type {
   CommitResult,
   DeleteManyOptions,
   DeleteOptions,
-  DenoAtomicOperation,
   DenoKv,
   DenoKvCommitError,
   DenoKvCommitResult,
@@ -57,8 +56,6 @@ import type {
 import {
   allFulfilled,
   applyIndexDiffs,
-  checkIndices,
-  commitAtomicOperations,
   createHandlerId,
   createIndexDiffs,
   createListOptions,
@@ -2395,13 +2392,6 @@ export class Collection<
         key: idKey,
         versionstamp: null,
       });
-
-      if (options?.batched) {
-        segmentPool.check({
-          key: idKey,
-          versionstamp: null,
-        });
-      }
     }
 
     // Serialize if enabled
@@ -2499,25 +2489,17 @@ export class Collection<
           this,
           options,
         );
-
-        await checkIndices(value as KvObject, segmentPool, this);
       }
     }
 
-    const atomics: DenoAtomicOperation[] = [];
     const mainAtomic = this.kv.atomic();
     mainPool.bindTo(mainAtomic);
-    atomics.push(mainAtomic);
 
-    if (options?.batched) {
-      const segmentsAtomic = new AtomicWrapper(this.kv);
-      segmentPool.bindTo(segmentsAtomic);
-      atomics.push(segmentsAtomic);
-    } else {
+    if (!options?.batched) {
       segmentPool.bindTo(mainAtomic);
     }
 
-    const cr = await commitAtomicOperations(atomics);
+    const cr = await mainAtomic.commit();
 
     // Handle failed operation
     if (!cr.ok) {
@@ -2534,6 +2516,12 @@ export class Collection<
         ...options,
         retry: retry - 1,
       });
+    }
+
+    if (options?.batched) {
+      const segmentsAtomic = new AtomicWrapper(this.kv);
+      segmentPool.bindTo(segmentsAtomic);
+      await segmentsAtomic.commit();
     }
 
     // Return commit result
@@ -2795,12 +2783,11 @@ export class Collection<
 
     // Handle serialized and indexable document
     if (this.isIndexable && this.encoder) {
-      const atomics = [atomic];
-
       // Create document id key, get entry and construct document
       const idKey = extendKey(this.keys.id, id);
       const entry = await this.kv.get(idKey);
       const doc = await this.constructDocument(entry, this.keys.id.length);
+      const segmentPool = new AtomicPool();
 
       // Delete main document entry
       atomic.delete(idKey);
@@ -2811,20 +2798,7 @@ export class Collection<
           extendKey(this.keys.segment, id, segId)
         );
 
-        if (options?.batched) {
-          const segmentAtomic = new AtomicWrapper(this.kv);
-          keys.forEach((key) => segmentAtomic.delete(key));
-
-          // Check that document is deleted when deleting segment entries
-          segmentAtomic.check({
-            key: idKey,
-            versionstamp: null,
-          });
-
-          atomics.push(segmentAtomic);
-        } else {
-          keys.forEach((key) => atomic.delete(key));
-        }
+        keys.forEach((key) => segmentPool.delete(key));
       }
 
       // Delete index entries
@@ -2838,8 +2812,20 @@ export class Collection<
         );
       }
 
-      // Commit atomic operations
-      return await commitAtomicOperations(atomics);
+      if (!options?.batched) {
+        segmentPool.bindTo(atomic);
+        return await atomic.commit();
+      }
+
+      const segmentAtomic = new AtomicWrapper(this.kv);
+      segmentPool.bindTo(segmentAtomic);
+      const cr = await atomic.commit();
+
+      if (cr.ok) {
+        await segmentAtomic.commit();
+      }
+
+      return cr;
     }
 
     // Handle indexable document
@@ -2862,11 +2848,10 @@ export class Collection<
 
     // Handle serialized document
     if (this.encoder) {
-      const atomics = [atomic];
-
       // Create document id key, get entry and construct document
       const idKey = extendKey(this.keys.id, id);
       const { value, versionstamp } = await this.kv.get(idKey);
+      const segmentPool = new AtomicPool();
 
       // Delete main document entry
       atomic.delete(idKey);
@@ -2883,24 +2868,23 @@ export class Collection<
           extendKey(this.keys.segment, id, segId)
         );
 
-        if (options?.batched) {
-          const segmentAtomic = new AtomicWrapper(this.kv);
-          keys.forEach((key) => segmentAtomic.delete(key));
-
-          // Check that document is deleted when deleting segment entries
-          segmentAtomic.check({
-            key: idKey,
-            versionstamp: null,
-          });
-
-          atomics.push(segmentAtomic);
-        } else {
-          keys.forEach((key) => atomic.delete(key));
-        }
+        keys.forEach((key) => segmentPool.delete(key));
       }
 
-      // Commit atomic operations
-      return await commitAtomicOperations(atomics);
+      if (!options?.batched) {
+        segmentPool.bindTo(atomic);
+        return await atomic.commit();
+      }
+
+      const segmentAtomic = new AtomicWrapper(this.kv);
+      segmentPool.bindTo(segmentAtomic);
+      const cr = await atomic.commit();
+
+      if (cr.ok) {
+        await segmentAtomic.commit();
+      }
+
+      return cr;
     }
 
     // Handle regular document
