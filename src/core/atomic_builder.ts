@@ -88,10 +88,10 @@ export class AtomicBuilder<
     // Initiate operations or set from given operations
     this.operations = operations ?? {
       atomic: kv.atomic(),
-      asyncPreparations: [],
       indexDeleteCollectionKeys: [],
       indexSetCollectionKeys: [],
-      documentMutationPools: new Map(),
+      orderedMutationInitializers: [],
+      lazyMutations: new Map(),
     };
   }
 
@@ -192,45 +192,48 @@ export class AtomicBuilder<
     const collection = this.collection;
     const idKey = extendKey(collection["keys"].id, id);
     const idKeyStr = jsonStringify(idKey);
-    const pool = new AtomicPool();
 
-    // Add delete operation
-    pool.delete(idKey);
+    this.operations.orderedMutationInitializers.push(() => {
+      this.operations.lazyMutations.set(idKeyStr, async () => {
+        // Add delete operation
+        this.operations.atomic.delete(idKey);
 
-    // If collection is indexable, handle indexing
-    if (collection["isIndexable"]) {
-      // Add collection key for collision detection
-      this.operations.indexDeleteCollectionKeys.push(collection["keys"].base);
-
-      // Add delete preperation function
-      this.operations.asyncPreparations.push(async () => {
-        const doc = await this.kv.get(idKey);
-        if (doc.versionstamp) {
-          await deleteIndices(
-            id,
-            doc.versionstamp,
-            (doc.value ?? {}) as KvObject,
-            pool,
-            collection,
+        // If collection is indexable, handle indexing
+        if (collection["isIndexable"]) {
+          // Add collection key for collision detection
+          this.operations.indexDeleteCollectionKeys.push(
+            collection["keys"].base,
           );
+
+          const doc = await this.kv.get(idKey);
+          if (doc.versionstamp) {
+            await deleteIndices(
+              id,
+              doc.versionstamp,
+              (doc.value ?? {}) as KvObject,
+              this.operations.atomic,
+              collection,
+            );
+          }
+        }
+
+        // Set history entry if keeps history
+        if (this.collection["keepsHistory"]) {
+          const historyKey = extendKey(
+            this.collection["keys"].history,
+            id,
+            ulid(),
+          );
+
+          const historyEntry: HistoryEntry<TOutput> = {
+            type: "delete",
+            timestamp: new Date(),
+          };
+
+          this.operations.atomic.set(historyKey, historyEntry);
         }
       });
-    }
-
-    // Set history entry if keeps history
-    if (this.collection["keepsHistory"]) {
-      const historyKey = extendKey(this.collection["keys"].history, id, ulid());
-
-      const historyEntry: HistoryEntry<TOutput> = {
-        type: "delete",
-        timestamp: new Date(),
-      };
-
-      pool.set(historyKey, historyEntry);
-    }
-
-    // Add pool to operations
-    this.operations.documentMutationPools.set(idKeyStr, pool);
+    });
 
     // Return current AtomicBuilder
     return this;
@@ -292,9 +295,13 @@ export class AtomicBuilder<
   ): this {
     const idKey = extendKey(this.collection["keys"].id, id);
     const idKeyStr = jsonStringify(idKey);
-    const pool = new AtomicPool();
-    pool.sum(idKey, value);
-    this.operations.documentMutationPools.set(idKeyStr, pool);
+
+    this.operations.orderedMutationInitializers.push(() => {
+      this.operations.lazyMutations.set(idKeyStr, () => {
+        this.operations.atomic.sum(idKey, value);
+      });
+    });
+
     return this;
   }
 
@@ -320,9 +327,13 @@ export class AtomicBuilder<
   ): this {
     const idKey = extendKey(this.collection["keys"].id, id);
     const idKeyStr = jsonStringify(idKey);
-    const pool = new AtomicPool();
-    pool.min(idKey, value);
-    this.operations.documentMutationPools.set(idKeyStr, pool);
+
+    this.operations.orderedMutationInitializers.push(() => {
+      this.operations.lazyMutations.set(idKeyStr, () => {
+        this.operations.atomic.min(idKey, value);
+      });
+    });
+
     return this;
   }
 
@@ -348,9 +359,13 @@ export class AtomicBuilder<
   ): this {
     const idKey = extendKey(this.collection["keys"].id, id);
     const idKeyStr = jsonStringify(idKey);
-    const pool = new AtomicPool();
-    pool.max(idKey, value);
-    this.operations.documentMutationPools.set(idKeyStr, pool);
+
+    this.operations.orderedMutationInitializers.push(() => {
+      this.operations.lazyMutations.set(idKeyStr, () => {
+        this.operations.atomic.max(idKey, value);
+      });
+    });
+
     return this;
   }
 
@@ -472,13 +487,15 @@ export class AtomicBuilder<
       };
     }
 
-    // Perform async preparations
-    await Promise.all(this.operations.asyncPreparations.map((prep) => prep()));
+    // Execute ordered initializers sequentially
+    for (const initializer of this.operations.orderedMutationInitializers) {
+      await initializer();
+    }
 
-    // Bind atomic pools to atomic operation
-    this.operations.documentMutationPools.forEach((pool) => {
-      pool.bindTo(this.operations.atomic);
-    });
+    // Execute lazy mutations
+    await Promise.all(
+      this.operations.lazyMutations.values().map((mutation) => mutation()),
+    );
 
     // Execute atomic operation
     return await this.operations.atomic.commit();
@@ -507,14 +524,13 @@ export class AtomicBuilder<
       ?.overwrite;
 
     const collection = this.collection;
-    const pool = new AtomicPool();
 
     if (collection["isIndexable"]) {
       // Add collection id key for collision detection
       this.operations.indexSetCollectionKeys.push(collection["keys"].base);
     }
 
-    this.operations.asyncPreparations.push(async () => {
+    this.operations.orderedMutationInitializers.push(async () => {
       const parsed = await transform(collection["model"], value) ??
         await validate(collection["model"], value);
 
@@ -522,53 +538,52 @@ export class AtomicBuilder<
       const idKey = extendKey(collection["keys"].id, docId);
       const idKeyStr = jsonStringify(idKey);
 
-      // Add set operation
-      pool.set(idKey, parsed, options);
-      if (!overwrite) {
-        pool.check({ key: idKey, versionstamp: null });
-      }
+      this.operations.lazyMutations.set(idKeyStr, async () => {
+        // Add set operation
+        this.operations.atomic.set(idKey, parsed, options);
+        if (!overwrite) {
+          this.operations.atomic.check({ key: idKey, versionstamp: null });
+        }
 
-      if (collection["isIndexable"]) {
-        const doc = overwrite ? await this.kv.get(idKey) : null;
-        const docValue = doc?.value as KvObject | undefined ?? null;
-        const versionstamp = doc?.versionstamp;
+        if (collection["isIndexable"]) {
+          const doc = overwrite ? await this.kv.get(idKey) : null;
+          const docValue = doc?.value as KvObject | undefined ?? null;
+          const versionstamp = doc?.versionstamp;
 
-        const diffs = await createIndexDiffs(
-          docId,
-          idKey,
-          versionstamp,
-          docValue,
-          parsed as KvObject,
-          collection,
-        );
+          const diffs = await createIndexDiffs(
+            docId,
+            idKey,
+            versionstamp,
+            docValue,
+            parsed as KvObject,
+            collection,
+          );
 
-        applyIndexDiffs(
-          diffs,
-          parsed as KvObject,
-          pool,
-          options,
-        );
-      }
+          applyIndexDiffs(
+            diffs,
+            parsed as KvObject,
+            this.operations.atomic,
+            options,
+          );
+        }
 
-      // Set history entry if keeps history
-      if (this.collection["keepsHistory"]) {
-        const historyKey = extendKey(
-          this.collection["keys"].history,
-          docId,
-          ulid(),
-        );
+        // Set history entry if keeps history
+        if (this.collection["keepsHistory"]) {
+          const historyKey = extendKey(
+            this.collection["keys"].history,
+            docId,
+            ulid(),
+          );
 
-        const historyEntry: HistoryEntry<TOutput> = {
-          type: "write",
-          timestamp: new Date(),
-          value: parsed,
-        };
+          const historyEntry: HistoryEntry<TOutput> = {
+            type: "write",
+            timestamp: new Date(),
+            value: parsed,
+          };
 
-        pool.set(historyKey, historyEntry);
-      }
-
-      // Add pool to operations
-      this.operations.documentMutationPools.set(idKeyStr, pool);
+          this.operations.atomic.set(historyKey, historyEntry);
+        }
+      });
     });
 
     // Return current AtomicBuilder

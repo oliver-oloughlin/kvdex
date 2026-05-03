@@ -230,10 +230,10 @@ export type CollectionSelector<
 /** Atomic builder operations */
 export type Operations = {
   atomic: DenoAtomicOperation;
-  asyncPreparations: Array<() => Promise<void>>;
   indexDeleteCollectionKeys: KvKey[];
   indexSetCollectionKeys: KvKey[];
-  documentMutationPools: Map<string, AtomicPool>;
+  orderedMutationInitializers: Array<() => unknown>;
+  lazyMutations: Map<string, () => unknown>;
 };
 
 /** Kvdex atomic check */
