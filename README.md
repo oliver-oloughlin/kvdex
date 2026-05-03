@@ -1355,10 +1355,9 @@ operation, call "commit" at the end of the chain. A committed atomic operation
 returns a promise resolving to either a Deno.KvCommitResult object if
 successful, or Deno.KvCommitError if not.
 
-**_NOTE_:** Atomic operations are not available for serialized collections. For
-indexable collections, to avoid collisions and errors related to indexing, an
-atomic operation will always fail when trying to delete and write to the same
-indexable collection.
+**_NOTE_:** Atomic operations are not available for serialized collections. Deno
+KV limits to atomic operations (total size, key size, number of mutations) still
+apply.
 
 ### Without checking
 
