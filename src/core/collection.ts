@@ -434,7 +434,7 @@ export class Collection<
    * @param index - Selected index.
    * @param value - Index value.
    * @param options - List options, optional.
-   * @returns A promise resolving to an object containing the result list and iterator cursor.
+   * @returns A promise resolving to a pagination result containing the result list and iterator cursor.
    */
   async findBySecondaryIndex<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
@@ -905,7 +905,7 @@ export class Collection<
    * @param value - Index value.
    * @param data - Update data to be inserted into document.
    * @param options - Update many options, optional.
-   * @returns Promise that resolves to an object containing result list and iterator cursor.
+   * @returns Promise that resolves to a pagination result containing the result list and iterator cursor.
    */
   async updateBySecondaryIndex<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
@@ -1085,7 +1085,7 @@ export class Collection<
    *
    * @param value - Updated value to be inserted into documents.
    * @param options - Update many options, optional.
-   * @returns Promise resolving to an object containing iterator cursor and result list.
+   * @returns Promise resolving to a pagination result containing iterator cursor and result list.
    */
   async updateMany<
     const T extends UpdateManyOptions<
@@ -1121,7 +1121,7 @@ export class Collection<
    * @param order - Secondary order to update documents by.
    * @param data - Updated data to be inserted into documents.
    * @param options - Update many options, optional.
-   * @returns Promise resolving to an object containing iterator cursor and result list.
+   * @returns Promise resolving to a pagination result containing iterator cursor and result list.
    */
   async updateManyBySecondaryOrder<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
@@ -1373,7 +1373,7 @@ export class Collection<
    * ```
    *
    * @param options - Delete many options, optional.
-   * @returns A promise that resolves to an object containing the iterator cursor
+   * @returns A promise that resolves a pagination result containing a list of delete commit results and the iterator cursor.
    */
   async deleteMany(
     options?: DeleteManyOptions<
@@ -1411,7 +1411,7 @@ export class Collection<
    *
    * @param order - Secondary order to delete documents by.
    * @param options - Delete many options, optional.
-   * @returns A promise that resolves to void.
+   * @returns A promise that resolves a pagination result containing a list of delete commit results and the iterator cursor.
    */
   async deleteManyBySecondaryOrder<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
@@ -1451,7 +1451,7 @@ export class Collection<
    * ```
    *
    * @param options - List options, optional.
-   * @returns A promise that resolves to an object containing a list of the retrieved documents and the iterator cursor
+   * @returns A promise that resolves to a pagination result containing a list of the retrieved documents and the iterator cursor
    */
   async getMany(
     options?: ListOptions<
@@ -1487,7 +1487,7 @@ export class Collection<
    *
    * @param order - Secondary order to retrieve documents by.
    * @param options - List options, optional.
-   * @returns A promise that resolves to an object containing a list of the retrieved documents and the iterator cursor
+   * @returns A promise that resolves to a pagination result containing a list of the retrieved documents and the iterator cursor
    */
   async getManyBySecondaryOrder<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
@@ -1657,7 +1657,7 @@ export class Collection<
    *
    * @param fn - Callback function.
    * @param options - List options, optional.
-   * @returns A promise that resolves to an object containing the iterator cursor
+   * @returns A promise that resolves to a pagination result containing the iterator cursor
    */
   async forEach(
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => unknown,
@@ -1697,7 +1697,7 @@ export class Collection<
    * @param value - Index value.
    * @param fn - Callback function.
    * @param options - List options, optional.
-   * @returns A promise that resolves to an object containing the iterator cursor.
+   * @returns A promise that resolves to a pagination result containing the iterator cursor.
    */
   async forEachBySecondaryIndex<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
@@ -1746,7 +1746,7 @@ export class Collection<
    * @param order - Secondary order to retrieve documents by.
    * @param fn - Callback function.
    * @param options - List options, optional.
-   * @returns A promise that resolves to an object containing the iterator cursor.
+   * @returns A promise that resolves to a pagination result containing the iterator cursor.
    */
   async forEachBySecondaryOrder<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
@@ -1793,7 +1793,7 @@ export class Collection<
    *
    * @param fn - Callback function.
    * @param options - List options, optional.
-   * @returns A promise that resolves to an object containing a list of the callback results and the iterator cursor
+   * @returns A promise that resolves to a pagination result containing a list of the callback results and the iterator cursor.
    */
   async map<const T>(
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => T,
@@ -1832,7 +1832,7 @@ export class Collection<
    * @param value - Index value.
    * @param fn - Callback function.
    * @param options - List options, optional.
-   * @returns A promise that resolves to an object containing a list of the callback results and the iterator cursor.
+   * @returns A promise that resolves to a pagination result containing a list of the callback results and the iterator cursor.
    */
   async mapBySecondaryIndex<
     const T,
@@ -1884,7 +1884,7 @@ export class Collection<
    * @param order - Secondary order to map documents by.
    * @param fn - Callback function.
    * @param options - List options, optional.
-   * @returns A promise that resolves to an object containing a list of the callback results and the iterator cursor.
+   * @returns A promise that resolves to a pagination result containing a list of the callback results and the iterator cursor.
    */
   async mapBySecondaryOrder<
     const T,
