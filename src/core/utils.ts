@@ -794,7 +794,7 @@ export async function parseSegmentedValue<
   return await validate(model, decoded);
 }
 
-function parseEncodedEntry(
+export function parseEncodedEntry(
   value: unknown,
 ): EncodedEntry | null {
   if (value === null || typeof value !== "object") {
