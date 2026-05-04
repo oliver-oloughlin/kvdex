@@ -7,6 +7,7 @@ import type {
   DenoKvListSelector,
   DenoKvSetOptions,
   DenoKvStrictKey,
+  EncodedEntry,
   Encoder,
   EnqueueOptions,
   FindManyOptions,
@@ -748,5 +749,25 @@ export async function createIndexDiffs(
     id,
     idKey,
     versionstamp,
+  };
+}
+
+export function parseEncodedEntry(
+  value: unknown,
+): EncodedEntry | null {
+  if (value === null || typeof value !== "object") {
+    return null;
+  }
+
+  const ids = "ids" in value ? value.ids : undefined;
+  const isUint8Array = "isUint8Array" in value ? value.isUint8Array : false;
+
+  if (!Array.isArray(ids) || typeof isUint8Array !== "boolean") {
+    return null;
+  }
+
+  return {
+    ids,
+    isUint8Array,
   };
 }

@@ -70,6 +70,7 @@ import {
   getDocumentId,
   isKvObject,
   kvGetMany,
+  parseEncodedEntry,
   prepareEnqueue,
   selectsAll,
   setIndices,
@@ -2628,14 +2629,26 @@ export class Collection<
     }
 
     if (this.encoder) {
-      // Get document parts
-      const { ids, isUint8Array } = value as EncodedEntry;
+      const encodedEntry = parseEncodedEntry(value);
+      if (!encodedEntry) {
+        return null;
+      }
+
+      const { ids, isUint8Array } = encodedEntry;
 
       const keys = ids.map((segId) =>
         extendKey(this.keys.segment, docId, segId)
       );
 
       const docEntries = await kvGetMany(keys, this.kv);
+
+      if (
+        docEntries.some((entry) =>
+          !entry.versionstamp || !(entry.value instanceof Uint8Array)
+        )
+      ) {
+        return null;
+      }
 
       // Concatenate chunks
       const data = concat(docEntries.map((entry) => entry.value as Uint8Array));
