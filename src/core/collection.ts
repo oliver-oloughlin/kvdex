@@ -62,7 +62,6 @@ import {
   createListSelector,
   createSecondaryIndexKeyPrefix,
   createWatcher,
-  decodeData,
   deleteIndices,
   encodeData,
   extendKey,
@@ -70,6 +69,7 @@ import {
   getDocumentId,
   isKvObject,
   kvGetMany,
+  parseSegmentedValue,
   prepareEnqueue,
   selectsAll,
   setIndices,
@@ -92,7 +92,6 @@ import { AtomicPool } from "./atomic_pool.ts";
 import { Document } from "./document.ts";
 import { model as m } from "./model.ts";
 import { deepMerge } from "@std/collections/deep-merge";
-import { concat } from "@std/bytes/concat";
 import { ulid } from "@std/ulid";
 
 /**
@@ -557,7 +556,6 @@ export class Collection<
 
       // Handle serialized entries
       if (historyEntry.type === "write" && this.encoder) {
-        const { ids } = historyEntry.value as EncodedEntry;
         const timeId = getDocumentId(
           key as DenoKvStrictKey,
           this.keys.historySegment.length,
@@ -567,22 +565,23 @@ export class Collection<
           continue;
         }
 
-        const keys = ids.map((segmentId) =>
-          extendKey(this.keys.historySegment, id, timeId, segmentId)
-        );
+        const parsed = await parseSegmentedValue({
+          value: historyEntry.value,
+          model: this.model,
+          kv: this.kv,
+          encoder: this.encoder,
+          createKey: (segmentId: KvId) =>
+            extendKey(this.keys.historySegment, id, timeId, segmentId),
+        });
 
-        const entries = await kvGetMany(keys, this.kv);
-
-        // Concatenate chunks
-        const data = concat(entries.map((entry) => entry.value as Uint8Array));
-
-        // Decompress and deserialize
-        const decoded = await decodeData(data, this.encoder);
+        if (!parsed) {
+          continue;
+        }
 
         // Set history entry
         historyEntry = {
           ...historyEntry,
-          value: await validate(this.model, decoded),
+          value: parsed,
         };
       } else if (historyEntry.type === "write") {
         // Set history entry
@@ -2628,24 +2627,17 @@ export class Collection<
     }
 
     if (this.encoder) {
-      // Get document parts
-      const { ids, isUint8Array } = value as EncodedEntry;
+      const parsed = await parseSegmentedValue({
+        value,
+        kv: this.kv,
+        model: this.model,
+        encoder: this.encoder,
+        createKey: (segId) => extendKey(this.keys.segment, docId, segId),
+      });
 
-      const keys = ids.map((segId) =>
-        extendKey(this.keys.segment, docId, segId)
-      );
-
-      const docEntries = await kvGetMany(keys, this.kv);
-
-      // Concatenate chunks
-      const data = concat(docEntries.map((entry) => entry.value as Uint8Array));
-
-      // Decompress and deserialize
-      const decoded = isUint8Array
-        ? (await this.encoder?.compressor?.decompress(data) ?? data) as TOutput
-        : await decodeData<TOutput>(data, this.encoder);
-
-      const parsed = await validate(this.model, decoded);
+      if (!parsed) {
+        return null;
+      }
 
       // Return parsed document
       return new Document<TOutput, ParseId<TOptions>>({
