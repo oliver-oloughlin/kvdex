@@ -29,6 +29,7 @@ import type {
 import { ulid } from "@std/ulid";
 import { jsonEncoder } from "../ext/encoding/mod.ts";
 import { equals } from "@std/bytes";
+import { concat } from "@std/bytes/concat";
 
 /**
  * Generate a new document id.
@@ -752,7 +753,48 @@ export async function createIndexDiffs(
   };
 }
 
-export function parseEncodedEntry(
+export async function parseSegmentedValue<
+  TInput,
+  TOutput extends KvValue,
+>(
+  { value, createKey, kv, encoder, model }: {
+    value: unknown;
+    createKey: (segId: KvId) => KvKey;
+    kv: DenoKv;
+    encoder?: Encoder;
+    model: StandardSchemaV1<TInput, TOutput>;
+  },
+) {
+  const encodedEntry = parseEncodedEntry(value);
+  if (!encodedEntry) {
+    return null;
+  }
+
+  const { ids, isUint8Array } = encodedEntry;
+  const keys = ids.map(createKey);
+  const docEntries = await kvGetMany(keys, kv);
+
+  if (
+    keys.length !== docEntries.length ||
+    docEntries.some((entry) =>
+      !entry.versionstamp || !(entry.value instanceof Uint8Array)
+    )
+  ) {
+    return null;
+  }
+
+  // Concatenate chunks
+  const data = concat(docEntries.map((entry) => entry.value as Uint8Array));
+
+  // Decompress and deserialize
+  const decoded = isUint8Array
+    ? (await encoder?.compressor?.decompress(data) ?? data) as TOutput
+    : await decodeData<TOutput>(data, encoder);
+
+  return await validate(model, decoded);
+}
+
+function parseEncodedEntry(
   value: unknown,
 ): EncodedEntry | null {
   if (value === null || typeof value !== "object") {
