@@ -569,6 +569,7 @@ export class Collection<
           value: historyEntry.value,
           model: this.model,
           kv: this.kv,
+          encoder: this.encoder,
           createKey: (segmentId: KvId) =>
             extendKey(this.keys.historySegment, id, timeId, segmentId),
         });

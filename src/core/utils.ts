@@ -761,7 +761,7 @@ export async function parseSegmentedValue<
     value: unknown;
     createKey: (segId: KvId) => KvKey;
     kv: DenoKv;
-    encoder?: Encoder;
+    encoder: Encoder | undefined;
     model: StandardSchemaV1<TInput, TOutput>;
   },
 ) {
