@@ -760,7 +760,7 @@ export function parseEncodedEntry(
   }
 
   const ids = "ids" in value ? value.ids : undefined;
-  const isUint8Array = "isUint8Array" in value ? value.isUint8Array : false;
+  const isUint8Array = "isUint8Array" in value ? value.isUint8Array : undefined;
 
   if (!Array.isArray(ids) || typeof isUint8Array !== "boolean") {
     return null;
