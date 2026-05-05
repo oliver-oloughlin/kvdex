@@ -1,6 +1,9 @@
 import { assert, assertEquals } from "@std/assert";
+import { equals } from "@std/bytes/equals";
 import { mockUser1, mockUserInvalid } from "../mocks.ts";
 import { generateLargeUsers, useDb } from "../utils.ts";
+import { extendKey } from "../../src/core/utils.ts";
+import type { DenoKvEntry } from "../../src/core/types.ts";
 
 const [user1, user2] = generateLargeUsers(2);
 
@@ -163,4 +166,111 @@ Deno.test("serialized_indexable_collection - set", async (t) => {
       assert(doc.value.username === mockUser1.username);
     });
   });
+
+  await t.step(
+    "Should clean up old segments when overwriting document",
+    async () => {
+      await useDb(async (db) => {
+        const kv = db.is_users["kv"];
+        const [largeUser] = generateLargeUsers(1);
+
+        // Set a large document that requires segments
+        const cr1 = await db.is_users.set("id", largeUser);
+        assert(cr1.ok);
+
+        // Collect old segment entries
+        const segmentPrefix = extendKey(db.is_users["keys"].segment, "id");
+        const oldEntries: DenoKvEntry[] = [];
+        const iterBefore = await kv.list({ prefix: segmentPrefix });
+        for await (const entry of iterBefore) {
+          oldEntries.push(entry as DenoKvEntry);
+        }
+        assert(oldEntries.length > 0);
+
+        // Overwrite with a different large document
+        const [largeUser2] = generateLargeUsers(1);
+        const cr2 = await db.is_users.set("id", largeUser2, {
+          overwrite: true,
+        });
+        assert(cr2.ok);
+
+        // Collect new segment entries
+        const newEntries: DenoKvEntry[] = [];
+        const iterAfter = await kv.list({ prefix: segmentPrefix });
+        for await (const entry of iterAfter) {
+          newEntries.push(entry as DenoKvEntry);
+        }
+
+        // Verify none of the old segment values appear in the new entries
+        for (const oldEntry of oldEntries) {
+          const oldBytes = oldEntry.value as Uint8Array;
+          for (const newEntry of newEntries) {
+            const newBytes = newEntry.value as Uint8Array;
+            assert(
+              !equals(oldBytes, newBytes),
+              "Old segment content should not be present after overwrite",
+            );
+          }
+        }
+
+        // Verify the document reads correctly
+        const doc = await db.is_users.find("id");
+        assertEquals(doc?.value, largeUser2);
+      });
+    },
+  );
+
+  await t.step(
+    "Should clean up old segments when overwriting document using batched mode",
+    async () => {
+      await useDb(async (db) => {
+        const kv = db.is_users["kv"];
+        const [largeUser] = generateLargeUsers(1);
+
+        // Set a large document that requires segments
+        const cr1 = await db.is_users.set("id", largeUser, { batched: true });
+        assert(cr1.ok);
+
+        // Collect old segment entries
+        const segmentPrefix = extendKey(db.is_users["keys"].segment, "id");
+        const oldEntries: DenoKvEntry[] = [];
+        const iterBefore = await kv.list({ prefix: segmentPrefix });
+        for await (const entry of iterBefore) {
+          oldEntries.push(entry as DenoKvEntry);
+        }
+        assert(oldEntries.length > 0);
+
+        // Overwrite with a different large document
+        const [largeUser2] = generateLargeUsers(1);
+        const cr2 = await db.is_users.set("id", largeUser2, {
+          overwrite: true,
+          batched: true,
+        });
+        assert(cr2.ok);
+
+        // Collect new segment entries
+        const newEntries: DenoKvEntry[] = [];
+        const iterAfter = await kv.list({ prefix: segmentPrefix });
+        for await (const entry of iterAfter) {
+          newEntries.push(entry as DenoKvEntry);
+        }
+
+        // Verify none of the old segment values appear in the new entries
+        for (const oldEntry of oldEntries) {
+          const oldBytes = oldEntry.value as Uint8Array;
+          for (const newEntry of newEntries) {
+            const newBytes = newEntry.value as Uint8Array;
+            assert(
+              !equals(oldBytes, newBytes),
+              "Old segment content should not be present after overwrite",
+            );
+          }
+        }
+
+        // Verify the document reads correctly
+        const doc = await db.is_users.find("id");
+        assertEquals(doc?.value, largeUser2);
+      });
+    },
+  );
 });
