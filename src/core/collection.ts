@@ -2469,8 +2469,8 @@ export class Collection<
         const diffs = await createIndexDiffs(
           docId,
           idKey,
-          doc?.versionstamp,
-          doc?.value as KvObject | null,
+          doc?.versionstamp ?? null,
+          doc?.value as KvObject ?? null,
           value as KvObject,
           this,
         );
