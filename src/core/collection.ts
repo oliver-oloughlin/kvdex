@@ -2379,10 +2379,12 @@ export class Collection<
     const segmentPool = new AtomicPool();
     const mainPool = new AtomicPool();
 
+    const entry = options?.overwrite
+      ? await this.kv.get(idKey)
+      : { value: null, versionstamp: null, key: idKey };
+
     // Delete old segment entries atomically (from update path)
     if (this.encoder && options?.overwrite) {
-      const idKey = extendKey(this.keys.id, docId);
-      const entry = await this.kv.get(idKey);
       const encodedEntry = parseEncodedEntry(entry.value);
 
       if (encodedEntry) {
@@ -2461,10 +2463,7 @@ export class Collection<
     if (this.isIndexable) {
       if (options?.overwrite) {
         const doc = oldDoc ??
-          await this.constructDocument(
-            await this.kv.get(idKey),
-            this.keys.id.length,
-          );
+          await this.constructDocument(entry, this.keys.id.length);
 
         const diffs = await createIndexDiffs(
           docId,
