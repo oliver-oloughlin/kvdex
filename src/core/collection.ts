@@ -2472,7 +2472,7 @@ export class Collection<
         const diffs = await createIndexDiffs(
           docId,
           idKey,
-          doc?.versionstamp ?? null,
+          doc?.versionstamp ?? entry?.versionstamp ?? null,
           doc?.value as KvObject ?? null,
           value as KvObject,
           this,
