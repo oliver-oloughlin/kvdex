@@ -2379,7 +2379,11 @@ export class Collection<
     const segmentPool = new AtomicPool();
     const mainPool = new AtomicPool();
 
-    const entry = options?.overwrite
+    // Read entry if needed
+    const needsEntry = (!!this.encoder || this.isIndexable) &&
+      !!options?.overwrite;
+
+    const entry = needsEntry
       ? await this.kv.get(idKey)
       : { value: null, versionstamp: null, key: idKey };
 
