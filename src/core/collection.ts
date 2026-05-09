@@ -2380,8 +2380,8 @@ export class Collection<
     const mainPool = new AtomicPool();
 
     // Read entry if needed
-    const needsEntry = (!!this.encoder || this.isIndexable) &&
-      !!options?.overwrite;
+    const needsEntry = !!options?.overwrite &&
+      (!!this.encoder || (this.isIndexable && !oldDoc));
 
     const entry = needsEntry
       ? await this.kv.get(idKey)
