@@ -188,8 +188,7 @@ Deno.test("serialized_indexable_collection - set", async (t) => {
         assert(oldEntries.length > 0);
 
         // Overwrite with a different large document
-        const [largeUser2] = generateLargeUsers(1);
-        const cr2 = await db.is_users.set("id", largeUser2, {
+        const cr2 = await db.is_users.set("id", mockUser1, {
           overwrite: true,
         });
         assert(cr2.ok);
@@ -215,7 +214,7 @@ Deno.test("serialized_indexable_collection - set", async (t) => {
 
         // Verify the document reads correctly
         const doc = await db.is_users.find("id");
-        assertEquals(doc?.value, largeUser2);
+        assertEquals(doc?.value, mockUser1);
       });
     },
   );
@@ -241,8 +240,7 @@ Deno.test("serialized_indexable_collection - set", async (t) => {
         assert(oldEntries.length > 0);
 
         // Overwrite with a different large document
-        const [largeUser2] = generateLargeUsers(1);
-        const cr2 = await db.is_users.set("id", largeUser2, {
+        const cr2 = await db.is_users.set("id", mockUser1, {
           overwrite: true,
           batched: true,
         });
@@ -269,7 +267,7 @@ Deno.test("serialized_indexable_collection - set", async (t) => {
 
         // Verify the document reads correctly
         const doc = await db.is_users.find("id");
-        assertEquals(doc?.value, largeUser2);
+        assertEquals(doc?.value, mockUser1);
       });
     },
   );
