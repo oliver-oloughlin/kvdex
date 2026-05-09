@@ -23,7 +23,6 @@ import type {
   IdGenerator,
   IdUpsert,
   IndexDataEntry,
-  IndexDiffs,
   IndexRecord,
   IndexType,
   KeysOfThatExtend,
@@ -69,6 +68,7 @@ import {
   getDocumentId,
   isKvObject,
   kvGetMany,
+  parseEncodedEntry,
   parseSegmentedValue,
   prepareEnqueue,
   selectsAll,
@@ -2370,8 +2370,7 @@ export class Collection<
     idKey: KvKey,
     value: TOutput,
     options: SetOptions | undefined,
-    indexDiffs: IndexDiffs | null = null,
-    oldSegmentKeys: DenoKvStrictKey[] = [],
+    oldDoc: Document<TOutput, ParseId<TOptions>> | null = null,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Initialize atomic pools
     let docValue: any = value;
@@ -2380,9 +2379,24 @@ export class Collection<
     const segmentPool = new AtomicPool();
     const mainPool = new AtomicPool();
 
-    // Delete old segment entries atomically (from update path)
-    for (const key of oldSegmentKeys) {
-      segmentPool.delete(key);
+    // Read entry if needed
+    const needsEntry = !!options?.overwrite &&
+      (!!this.encoder || (this.isIndexable && !oldDoc));
+
+    const entry = needsEntry
+      ? await this.kv.get(idKey)
+      : { value: null, versionstamp: null, key: idKey };
+
+    // Delete old segment entries atomically during overwrite cleanup
+    if (this.encoder && options?.overwrite) {
+      const encodedEntry = parseEncodedEntry(entry.value);
+
+      if (encodedEntry) {
+        encodedEntry.ids.forEach((seqId) => {
+          const seqKey = extendKey(this.keys.segment, docId, seqId);
+          segmentPool.delete(seqKey);
+        });
+      }
     }
 
     // Check for id collision
@@ -2451,23 +2465,15 @@ export class Collection<
 
     // Set indices if is indexable
     if (this.isIndexable) {
-      if (indexDiffs) {
-        // Update path: apply index diffs
-        applyIndexDiffs(
-          indexDiffs,
-          docValue,
-          mainPool,
-          options,
-        );
-      } else if (options?.overwrite) {
-        const entry = await this.kv.get(idKey);
-        const doc = await this.constructDocument(entry, this.keys.id.length);
+      if (options?.overwrite) {
+        const doc = oldDoc ??
+          await this.constructDocument(entry, this.keys.id.length);
 
         const diffs = await createIndexDiffs(
           docId,
           idKey,
-          entry.versionstamp,
-          doc?.value as KvObject | null,
+          doc?.versionstamp ?? entry?.versionstamp ?? null,
+          doc?.value as KvObject ?? null,
           value as KvObject,
           this,
         );
@@ -2544,22 +2550,7 @@ export class Collection<
     options: UpdateOptions | undefined,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Get document value, delete document entry
-    const { value, id, versionstamp } = doc;
-
-    // If serialized, derive existing segment keys from the document's encoded entry
-    const oldSegmentKeys: DenoKvStrictKey[] = [];
-    if (this.encoder) {
-      const idKey = extendKey(this.keys.id, id);
-      const entry = await this.kv.get(idKey);
-      if (entry.value) {
-        const { ids } = entry.value as EncodedEntry;
-        ids.forEach((segId) => {
-          oldSegmentKeys.push(
-            extendKey(this.keys.segment, id, segId) as DenoKvStrictKey,
-          );
-        });
-      }
-    }
+    const { value, id } = doc;
 
     // Determine update strategy and check value type
     const strategy = options?.strategy ?? DEFAULT_UPDATE_STRATEGY;
@@ -2567,28 +2558,16 @@ export class Collection<
 
     // Handle different update strategies
     const updated = strategy === "replace"
-      ? data as TOutput
+      ? data
       : isObject && strategy === "merge-shallow"
       ? {
         ...value as KvObject,
         ...data as KvObject,
       }
-      : deepMerge({ value }, { value: data }, options?.mergeOptions).value;
+      : deepMerge({ value }, { value: data }, options?.mergeOptions)
+        .value;
 
-    // Parse updated value
     const parsed = await validate(this.model, updated);
-
-    // If indexable, compute index diffs between old and new data
-    const indexDiffs = this.isIndexable
-      ? await createIndexDiffs(
-        id,
-        extendKey(this.keys.id, id),
-        versionstamp,
-        value as KvObject,
-        parsed as KvObject,
-        this,
-      )
-      : null;
 
     // Set new document value
     return await this.setDoc(
@@ -2599,8 +2578,7 @@ export class Collection<
         ...options,
         overwrite: true,
       },
-      indexDiffs,
-      oldSegmentKeys,
+      doc,
     );
   }
 
