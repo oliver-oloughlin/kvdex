@@ -2387,7 +2387,7 @@ export class Collection<
       ? await this.kv.get(idKey)
       : { value: null, versionstamp: null, key: idKey };
 
-    // Delete old segment entries atomically (from update path)
+    // Delete old segment entries atomically during overwrite cleanup
     if (this.encoder && options?.overwrite) {
       const encodedEntry = parseEncodedEntry(entry.value);
 
