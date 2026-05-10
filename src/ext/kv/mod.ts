@@ -9,7 +9,7 @@
  * ## Map
  *
  * Support for `Map` as KV backend.
- * - Provides an implementation of the Deno KV interface that integrates with`Map`.
+ * - Provides an implementation of the Deno KV interface that integrates with `Map`.
  * - Provides a storage adapter, extending backend support to the `Storage` interface (e.g. `localStorage` and `sessionStorage`).
  * - Provides an `IndexedDB` adapter, enabling the use of `IndexedDB` as a KV backend.
  *
