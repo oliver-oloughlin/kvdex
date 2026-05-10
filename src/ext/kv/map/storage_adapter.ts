@@ -4,7 +4,7 @@ import type { BasicMap } from "./types.ts";
 /**
  * BasicMap adapter for the `Storage` interface.
  *
- * Enables a `Storage` object, such as `localStorage` and `sessionStorage`, to be utilized as a BasicMap.
+ * Enables a `Storage` object, such as `localStorage` or `sessionStorage`, to be utilized as a BasicMap.
  *
  * @example
  * ```ts
