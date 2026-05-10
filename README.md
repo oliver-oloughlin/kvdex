@@ -32,8 +32,7 @@ _Supported Deno versions:_ **^2.3.0**
 - Listen to real-time data updates.
 - Support for pagination and filtering.
 - Message queues at database and collection level with topics.
-- Support for different KV-backends, such as `Map`, `localStorage` and
-  `IndexedDB`.
+- Support for alternative KV-backends, such as `Map`, `Storage` and `IndexedDB`.
 
 ## Table of Contents
 
@@ -1625,16 +1624,19 @@ await migrate({
 
 ### KV
 
-Support for alternative KV backends, such as `Map` and `localStorage`. Can be
-used to employ `kvdex` in the browser or other environments where Deno's KV
-store is not available, or to adapt other database backends.
+Extends support to alternative KV-backends, such as `Map`, `Storage` and
+`IndexedDB`. Can be used to employ `kvdex` in the browser or other environments
+where Deno's KV store is not available, or simply to integrate with other data
+backends.
 
 #### Map
 
 Support for `Map` as KV backend.
 
+- Provides an implementation of the Deno KV interface that integrates with
+  `Map`.
 - Provides a storage adapter, extending backend support to the `Storage`
-  interface (e.g. `localStorage`).
+  interface (e.g. `localStorage` and `sessionStorage`).
 - Provides an `IndexedDB` adapter, enabling the use of `IndexedDB` as a KV
   backend.
 
@@ -1655,8 +1657,18 @@ Create a persistent database using `localStorage` as the KV backend:
 import { kvdex } from "@olli/kvdex";
 import { MapKv, StorageAdapter } from "@olli/kvdex/kv/map";
 
-// Equivalent to `new StorageAdapter(localStorage)`
-const map = new StorageAdapter();
+const map = new StorageAdapter(localStorage);
+const kv = new MapKv({ map });
+const db = kvdex({ kv });
+```
+
+Create a session-scoped database using `sessionStorage` as the KV backend:
+
+```ts
+import { kvdex } from "@olli/kvdex";
+import { MapKv, StorageAdapter } from "@olli/kvdex/kv/map";
+
+const map = new StorageAdapter(sessionStorage);
 const kv = new MapKv({ map });
 const db = kvdex({ kv });
 ```

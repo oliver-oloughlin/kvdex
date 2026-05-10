@@ -21,7 +21,18 @@
  * import { MapKv, StorageAdapter } from "@olli/kvdex/kv/map";
  *
  * // Create a persistent database using `localStorage` as the KV backend
- * const map = new StorageAdapter(); // Equivalent to `new StorageAdapter(localStorage)`
+ * const map = new StorageAdapter(localStorage);
+ * const kv = new MapKv({ map });
+ * const db = kvdex({ kv });
+ * ```
+ *
+ * @example
+ * ```ts
+ * import { kvdex } from "@olli/kvdex";
+ * import { MapKv, StorageAdapter } from "@olli/kvdex/kv/map";
+ *
+ * // Create a session-scoped database using `sessionStorage` as the KV backend
+ * const map = new StorageAdapter(sessionStorage);
  * const kv = new MapKv({ map });
  * const db = kvdex({ kv });
  * ```
