@@ -32,7 +32,7 @@ _Supported Deno versions:_ **^2.3.0**
 - Listen to real-time data updates.
 - Support for pagination and filtering.
 - Message queues at database and collection level with topics.
-- Support for different KV-backends, such as `Map`, `Storage` and `IndexedDB`.
+- Support for alternative KV-backends, such as `Map`, `Storage` and `IndexedDB`.
 
 ## Table of Contents
 
@@ -1624,10 +1624,10 @@ await migrate({
 
 ### KV
 
-Support for alternative KV backends, such as `Map`, `localStorage` and
-`sessionStorage`. Can be used to employ `kvdex` in the browser or other
-environments where Deno's KV store is not available, or simply to integrate with
-other data backends.
+Extends support to alternative KV-backends, such as `Map`, `Storage` and
+`IndexedDB`. Can be used to employ `kvdex` in the browser or other environments
+where Deno's KV store is not available, or simply to integrate with other data
+backends.
 
 #### Map
 
