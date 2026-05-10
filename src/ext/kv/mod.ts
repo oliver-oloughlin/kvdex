@@ -4,7 +4,7 @@
  * Support for alternative KV backends, such as `Map`, `Storage`, and `IndexedDB`.
  *
  * Can be used to employ `kvdex` in the browser or other environments where Deno's KV store is not available,
- * or to simply integrate with other database backends.
+ * or simply to integrate with other database backends.
  *
  * ## Map
  *

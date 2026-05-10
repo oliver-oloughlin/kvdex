@@ -1626,7 +1626,7 @@ await migrate({
 
 Support for alternative KV backends, such as `Map`, `localStorage` and
 `sessionStorage`. Can be used to employ `kvdex` in the browser or other
-environments where Deno's KV store is not available, or to simply integrate with
+environments where Deno's KV store is not available, or simply to integrate with
 other data backends.
 
 #### Map
