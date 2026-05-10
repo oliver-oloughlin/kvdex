@@ -22,20 +22,24 @@ Deno.test({
     });
 
     await t.step("Should allow in-memory Map KV type", async () => {
-      const kv = new MapKv({ map: new Map() });
+      const kv = new MapKv({ map: new Map(), clearOnClose: true });
       kvdex({ kv });
       await kv.close();
     });
 
     await t.step("Should allow local storage Map KV type", async () => {
-      const kv = new MapKv({ map: new StorageAdapter(localStorage) });
+      const kv = new MapKv({
+        map: new StorageAdapter(localStorage),
+        clearOnClose: true,
+      });
+
       kvdex({ kv });
       await kv.close();
     });
 
     await t.step("Should allow IndexedDB Map KV type", async () => {
       const map = await indexedDbAdapter();
-      const kv = new MapKv({ map });
+      const kv = new MapKv({ map, clearOnClose: true });
       kvdex({ kv });
       await kv.close();
     });

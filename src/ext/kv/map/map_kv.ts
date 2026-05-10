@@ -35,22 +35,33 @@ import {
  *
  * @example
  * ```ts
+ * import { MapKv } from "@olli/kvdex/kv";
  * // Initializes a new KV instance wrapping the built-in `Map`
  * const kv = new MapKv()
  * ```
  *
  * @example
  * ```ts
+ * import { MapKv, StorageAdapter } from "@olli/kvdex/kv";
  * // Initializes a new KV instance utilizing `localStorage` as it's backend
- * const map = new StorageAdapter()
+ * const map = new StorageAdapter(localStorage)
  * const kv = new MapKv({ map })
  * ```
  *
  * @example
  * ```ts
- * // Initializes a new ephimeral KV instance explicitly utilizing `localStorage` as it's backend
- * const map = new StorageAdapter(localStorage)
- * const kv = new MapKv({ map, clearOnClose: true })
+ * import { MapKv, StorageAdapter } from "@olli/kvdex/kv";
+ * // Initializes a new KV instance utilizing `sessionStorage` as it's backend
+ * const map = new StorageAdapter(sessionStorage)
+ * const kv = new MapKv({ map })
+ * ```
+ *
+ * @example
+ * ```ts
+ * import { MapKv, indexedDbAdapter } from "@olli/kvdex/kv";
+ * // Initializes a new KV instance utilizing `IndexedDB` as it's backend
+ * const map = await indexedDbAdapter()
+ * const kv = new MapKv({ map })
  * ```
  */
 export class MapKv implements DenoKv {

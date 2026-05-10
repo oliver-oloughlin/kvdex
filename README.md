@@ -1657,8 +1657,7 @@ Create a persistent database using `localStorage` as the KV backend:
 import { kvdex } from "@olli/kvdex";
 import { MapKv, StorageAdapter } from "@olli/kvdex/kv/map";
 
-// Equivalent to `new StorageAdapter(localStorage)`
-const map = new StorageAdapter();
+const map = new StorageAdapter(localStorage);
 const kv = new MapKv({ map });
 const db = kvdex({ kv });
 ```

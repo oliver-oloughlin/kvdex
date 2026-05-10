@@ -117,8 +117,10 @@ export async function useKv(
 
   const kv = kvArg === "map"
     ? new MapKv({ clearOnClose: true })
-    : kvArg === "map_local"
+    : kvArg === "map_local_storage"
     ? new MapKv({ map: new StorageAdapter(localStorage), clearOnClose: true })
+    : kvArg === "map_session_storage"
+    ? new MapKv({ map: new StorageAdapter(sessionStorage), clearOnClose: true })
     : kvArg === "map_indexed_db"
     ? new MapKv({
       map: await indexedDbAdapter(),
@@ -151,10 +153,18 @@ export async function useMapKv(
   await mapKv.close();
 }
 
-export async function useStorageMap(
+export async function useLocalStorageMap(
   fn: (store: StorageAdapter<any, any>) => unknown,
 ) {
   const store = new StorageAdapter(localStorage);
+  await fn(store);
+  store.clear();
+}
+
+export async function useSessionStorageMap(
+  fn: (store: StorageAdapter<any, any>) => unknown,
+) {
+  const store = new StorageAdapter(sessionStorage);
   await fn(store);
   store.clear();
 }

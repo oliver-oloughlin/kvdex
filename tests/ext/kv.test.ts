@@ -1,5 +1,10 @@
 import { assert, assertEquals } from "@std/assert";
-import { sleep, useIndexedDbMap, useMapKv, useStorageMap } from "../utils.ts";
+import {
+  sleep,
+  useIndexedDbMap,
+  useLocalStorageMap,
+  useMapKv,
+} from "../utils.ts";
 import { MapKv } from "../../src/ext/kv/map/mod.ts";
 import type { BasicMap } from "../../src/ext/kv/map/types.ts";
 
@@ -155,7 +160,7 @@ Deno.test({
 
     await t.step("storage_adapter (localStorage)", async (t) => {
       await t.step("Should set and get new entry", async () => {
-        await useStorageMap((map) => {
+        await useLocalStorageMap((map) => {
           const key = "key";
           const val = 10;
           map.set(key, val);
@@ -165,7 +170,7 @@ Deno.test({
       });
 
       await t.step("Should get all entries", async () => {
-        await useStorageMap((map) => {
+        await useLocalStorageMap((map) => {
           const entries = [
             ["1", 10],
             ["2", 20],
@@ -188,7 +193,7 @@ Deno.test({
       });
 
       await t.step("Should delete entry by key", async () => {
-        await useStorageMap((map) => {
+        await useLocalStorageMap((map) => {
           const key = "key";
           const val = 10;
           map.set(key, val);
@@ -201,7 +206,7 @@ Deno.test({
       });
 
       await t.step("Should delete all entries", async () => {
-        await useStorageMap((map) => {
+        await useLocalStorageMap((map) => {
           const entries = [
             ["1", 10],
             ["2", 20],
