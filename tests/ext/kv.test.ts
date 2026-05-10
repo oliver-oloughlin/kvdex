@@ -4,6 +4,7 @@ import {
   useIndexedDbMap,
   useLocalStorageMap,
   useMapKv,
+  useSessionStorageMap,
 } from "../utils.ts";
 import { MapKv } from "../../src/ext/kv/map/mod.ts";
 import type { BasicMap } from "../../src/ext/kv/map/types.ts";
@@ -207,6 +208,77 @@ Deno.test({
 
       await t.step("Should delete all entries", async () => {
         await useLocalStorageMap((map) => {
+          const entries = [
+            ["1", 10],
+            ["2", 20],
+            ["3", 30],
+            ["4", 40],
+            ["5", 50],
+          ] as const;
+
+          for (const [key, val] of entries) {
+            map.set(key, val);
+          }
+
+          const storeEntries1 = Array.from(map.entries());
+          assertEquals(storeEntries1.length, entries.length);
+
+          map.clear();
+          const storeEntries2 = Array.from(map.entries());
+          assertEquals(storeEntries2.length, 0);
+        });
+      });
+    });
+
+    await t.step("storage_adapter (sessionStorage)", async (t) => {
+      await t.step("Should set and get new entry", async () => {
+        await useSessionStorageMap((map) => {
+          const key = "key";
+          const val = 10;
+          map.set(key, val);
+          const item = map.get(key);
+          assertEquals(val, item);
+        });
+      });
+
+      await t.step("Should get all entries", async () => {
+        await useSessionStorageMap((map) => {
+          const entries = [
+            ["1", 10],
+            ["2", 20],
+            ["3", 30],
+            ["4", 40],
+            ["5", 50],
+          ] as const;
+
+          for (const [key, val] of entries) {
+            map.set(key, val);
+          }
+
+          const storeEntries = Array.from(map.entries());
+          assertEquals(entries.length, storeEntries.length);
+
+          for (const [key, val] of storeEntries) {
+            assert(entries.some(([k, v]) => k === key && v === val));
+          }
+        });
+      });
+
+      await t.step("Should delete entry by key", async () => {
+        await useSessionStorageMap((map) => {
+          const key = "key";
+          const val = 10;
+          map.set(key, val);
+          const item1 = map.get(key);
+          assertEquals(item1, val);
+          map.delete(key);
+          const item2 = map.get(key);
+          assertEquals(item2, undefined);
+        });
+      });
+
+      await t.step("Should delete all entries", async () => {
+        await useSessionStorageMap((map) => {
           const entries = [
             ["1", 10],
             ["2", 20],
