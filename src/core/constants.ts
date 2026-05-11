@@ -1,8 +1,6 @@
 import type { UpdateStrategy } from "./types.ts";
 
 // Key prefixes
-export const KVDEX_KEY_PREFIX = "__kvdex__";
-
 export const ID_KEY_PREFIX = "__id__";
 
 export const PRIMARY_INDEX_KEY_PREFIX = "__index_primary__";
@@ -29,6 +27,8 @@ export const GET_MANY_KEY_LIMIT = 10;
 export const UINT8ARRAY_LENGTH_LIMIT = 65_536;
 
 // Defaults
+export const DEFAULT_KVDEX_KEY_PREFIX = "__kvdex__";
+
 export const DEFAULT_INTERVAL_RETRY = 10;
 
 export const DEFAULT_LOOP_RETRY = 10;

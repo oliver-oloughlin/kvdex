@@ -2,6 +2,8 @@ import type { Collection } from "./collection.ts";
 import type { DeepMergeOptions } from "@std/collections/deep-merge";
 import type { Document } from "./document.ts";
 import type { Kvdex } from "./kvdex.ts";
+// deno-lint-ignore no-unused-vars -- This is used in the JSDoc for default value of `basePath` in `KvdexOptions`.
+import type { DEFAULT_KVDEX_KEY_PREFIX } from "./constants.ts";
 
 /*********************/
 /*                   */
@@ -21,7 +23,8 @@ export type BuilderFn<
   TOptions extends BaseCollectionOptions<TInput, TOutput>,
 > = (
   kv: DenoKv,
-  key: KvKey,
+  baseKey: KvKey,
+  collectionKey: KvKey,
   queueHandlers: QueueHandlers,
   idempotentListener: IdempotentListener,
 ) => Collection<TInput, TOutput, TOptions>;
@@ -651,6 +654,13 @@ export type Schema<T extends SchemaDefinition | undefined> = T extends undefined
 export type KvdexOptions<T extends SchemaDefinition> = {
   /** The KV instance that will power the database. */
   kv: DenoKv;
+
+  /**
+   * The base key path for the database.
+   *
+   * @default {@link DEFAULT_KVDEX_KEY_PREFIX}
+   */
+  basePath: KvKey;
 
   /** Schema definition containing the database collections */
   schema?: T;

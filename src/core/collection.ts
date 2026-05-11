@@ -80,7 +80,6 @@ import {
   DEFAULT_UPDATE_STRATEGY,
   HISTORY_KEY_PREFIX,
   ID_KEY_PREFIX,
-  KVDEX_KEY_PREFIX,
   PRIMARY_INDEX_KEY_PREFIX,
   SECONDARY_INDEX_KEY_PREFIX,
   SEGMENT_KEY_PREFIX,
@@ -231,13 +230,15 @@ export function collection(
 ) {
   return (
     kv: DenoKv,
-    key: KvKey,
+    baseKey: KvKey,
+    collectionKey: KvKey,
     queueHandlers: QueueHandlers,
     idempotentListener: IdempotentListener,
   ) =>
     new Collection(
       kv,
-      key,
+      baseKey,
+      collectionKey,
       queueHandlers,
       idempotentListener,
       options,
@@ -264,7 +265,8 @@ export class Collection<
 
   constructor(
     kv: DenoKv,
-    key: KvKey,
+    baseKey: KvKey,
+    collectionKey: KvKey,
     queueHandlers: QueueHandlers,
     idempotentListener: IdempotentListener,
     options?: TOptions,
@@ -279,42 +281,42 @@ export class Collection<
 
     // Set keys
     this.keys = {
-      base: extendKey([KVDEX_KEY_PREFIX], ...key),
+      base: extendKey(baseKey, ...collectionKey),
       id: extendKey(
-        [KVDEX_KEY_PREFIX],
-        ...key,
+        baseKey,
+        ...collectionKey,
         ID_KEY_PREFIX,
       ),
       primaryIndex: extendKey(
-        [KVDEX_KEY_PREFIX],
-        ...key,
+        baseKey,
+        ...collectionKey,
         PRIMARY_INDEX_KEY_PREFIX,
       ),
       secondaryIndex: extendKey(
-        [KVDEX_KEY_PREFIX],
-        ...key,
+        baseKey,
+        ...collectionKey,
         SECONDARY_INDEX_KEY_PREFIX,
       ),
       segment: extendKey(
-        [KVDEX_KEY_PREFIX],
-        ...key,
+        baseKey,
+        ...collectionKey,
         SEGMENT_KEY_PREFIX,
       ),
       undelivered: extendKey(
-        [KVDEX_KEY_PREFIX],
+        baseKey,
         UNDELIVERED_KEY_PREFIX,
-        ...key,
+        ...collectionKey,
       ),
       history: extendKey(
-        [KVDEX_KEY_PREFIX],
+        baseKey,
         HISTORY_KEY_PREFIX,
-        ...key,
+        ...collectionKey,
       ),
       historySegment: extendKey(
-        [KVDEX_KEY_PREFIX],
+        baseKey,
         HISTORY_KEY_PREFIX,
         SEGMENT_KEY_PREFIX,
-        ...key,
+        ...collectionKey,
       ),
     };
 
