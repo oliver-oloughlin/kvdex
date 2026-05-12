@@ -126,8 +126,8 @@ _Supported Deno versions:_ **^2.3.0**
 
 ## Database
 
-`kvdex()` is used for creating a new database instance. It takes an options
-object which expects a Deno KV instance and a schema definition.
+`kvdex()` is used for creating a new database instance. It expects an options
+object with a Deno KV instance and an optional base path and schema definition.
 
 ```ts
 import { collection, kvdex, model } from "@olli/kvdex";
@@ -138,10 +138,10 @@ const kv = await Deno.openKv();
 const db = kvdex({
   kv: kv,
   schema: {
-    // Simple collections:
+    // Simple collection:
     numbers: collection<number>(),
 
-    // Object collections with indices and other options:
+    // Object collection with indices, explicit model and additional options:
     users: collection({
       model: model<User>(),
       encoder: jsonEncoder(),
@@ -152,7 +152,7 @@ const db = kvdex({
       },
     }),
 
-    // Nested collections:
+    // Nested collection:
     nested: {
       numbers: collection<number>(),
     },
@@ -161,7 +161,9 @@ const db = kvdex({
 ```
 
 The schema definition contains collection builders, or nested schema
-definitions. Collections can hold any type adhering to KvValue.
+definitions. Collections can hold any data type adhering to KvValue. By default,
+all `kvdex` key-value entries are prefixed with a base path. The base path can
+be customized by setting the `basePath` option.
 
 **_Note:_** Index values are always serialized, using the JSON-encoder by
 default, or alternatively your provided encoder.

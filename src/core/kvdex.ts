@@ -50,6 +50,21 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  *
  * @example
  * ```ts
+ * import { collection, kvdex } from "@olli/kvdex";
+ *
+ * const kv = await Deno.openKv();
+ *
+ * const db = kvdex({
+ *   kv: kv,
+ *   schema: {
+ *     // Simple collection with default options:
+ *     numbers: collection<numbers>(),
+ *   },
+ * });
+ * ```
+ *
+ * @example
+ * ```ts
  * import { collection, kvdex, model } from "@olli/kvdex";
  * import { jsonEncoder } from "@olli/kvdex/encoding/json";
  *
@@ -57,11 +72,9 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  *
  * const db = kvdex({
  *   kv: kv,
+ * basePath: ["my_app"], // Optional custom base path
  *   schema: {
- *     // Simple collections:
- *     numbers: collection<number>(),
- *
- *     // Object collections with indices and other options:
+ *     // Object collection with indices, explicit model and additional options:
  *     users: collection({
  *       model: model<User>(),
  *       encoder: jsonEncoder(),
@@ -72,7 +85,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  *       },
  *     }),
  *
- *     // Nested collections:
+ *     // Nested collection:
  *     nested: {
  *       numbers: collection<number>(),
  *     },
@@ -80,8 +93,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  * });
  * ```
  *
- * @param kv - The Deno KV instance to be used for storing and retrieving data.
- * @param schemaDefinition - The schema definition used to build collections and create the database schema.
+ * @param options - Kvdex options object containing the Deno KV instance and optionally a custom base path and a schema definition.
  * @returns A Kvdex instance with attached schema.
  */
 export function kvdex<const TSchema extends SchemaDefinition>(
