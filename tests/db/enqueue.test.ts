@@ -5,7 +5,7 @@ import {
   model,
   type QueueMessage,
 } from "../../mod.ts";
-import { KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
+import { DEFAULT_KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
 import { createHandlerId } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
 import { useKv } from "../utils.ts";
@@ -22,7 +22,7 @@ Deno.test("db - enqueue", async (t) => {
         schema: { numbers: collection({ model: model<number>() }) },
       });
 
-      const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined);
+      const handlerId = createHandlerId([DEFAULT_KVDEX_KEY_PREFIX], undefined);
 
       let assertion = false;
 
@@ -95,7 +95,7 @@ Deno.test("db - enqueue", async (t) => {
         schema: { numbers: collection({ model: model<number>() }) },
       });
 
-      const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined);
+      const handlerId = createHandlerId([DEFAULT_KVDEX_KEY_PREFIX], undefined);
 
       let assertion = false;
 

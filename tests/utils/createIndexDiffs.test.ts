@@ -6,6 +6,7 @@ import { useKv } from "../utils.ts";
 import { jsonEncoder } from "../../src/common/json.ts";
 import type { KvKey } from "../../src/core/types.ts";
 import { equals } from "@std/bytes/equals";
+import { DEFAULT_KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
 
 type User = {
   username: string;
@@ -32,6 +33,7 @@ Deno.test("utils - createIndexDiffs", async (t) => {
 
         const collection = new Collection(
           kv,
+          [DEFAULT_KVDEX_KEY_PREFIX],
           ["users"],
           new Map<any, any>(),
           () => Promise.resolve(),
@@ -162,6 +164,7 @@ Deno.test("utils - createIndexDiffs", async (t) => {
 
         const collection = new Collection(
           kv,
+          [DEFAULT_KVDEX_KEY_PREFIX],
           ["users"],
           new Map<any, any>(),
           () => Promise.resolve(),
@@ -292,6 +295,7 @@ Deno.test("utils - createIndexDiffs", async (t) => {
 
         const collection = new Collection(
           kv,
+          [DEFAULT_KVDEX_KEY_PREFIX],
           ["users"],
           new Map<any, any>(),
           () => Promise.resolve(),

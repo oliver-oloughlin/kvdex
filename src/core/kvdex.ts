@@ -117,7 +117,7 @@ export function kvdex<const TSchema extends SchemaDefinition>(
   };
 
   // Determine base path
-  const basePath = options.basePath ?? DEFAULT_KVDEX_KEY_PREFIX;
+  const basePath = options.basePath ?? [DEFAULT_KVDEX_KEY_PREFIX];
 
   // Create schema
   const schema = _createSchema(
@@ -131,7 +131,7 @@ export function kvdex<const TSchema extends SchemaDefinition>(
   // Create KvDex object
   const db = new Kvdex(
     options.kv,
-    options.basePath ?? DEFAULT_KVDEX_KEY_PREFIX,
+    basePath,
     schema,
     queueHandlers,
     idempotentListener,

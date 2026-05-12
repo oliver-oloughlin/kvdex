@@ -6,7 +6,7 @@ import {
   type QueueMessage,
 } from "../../mod.ts";
 import {
-  KVDEX_KEY_PREFIX,
+  DEFAULT_KVDEX_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "../../src/core/constants.ts";
 import { createHandlerId, extendKey } from "../../src/core/utils.ts";
@@ -45,7 +45,7 @@ Deno.test("collection - listenQueue", async (t) => {
       await kv.enqueue(msg, {
         keysIfUndelivered: [
           extendKey(
-            [KVDEX_KEY_PREFIX],
+            [DEFAULT_KVDEX_KEY_PREFIX],
             UNDELIVERED_KEY_PREFIX,
             undeliveredId,
           ),

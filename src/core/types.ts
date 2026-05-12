@@ -660,7 +660,7 @@ export type KvdexOptions<T extends SchemaDefinition> = {
    *
    * @default {@link DEFAULT_KVDEX_KEY_PREFIX}
    */
-  basePath: KvKey;
+  basePath?: KvKey;
 
   /** Schema definition containing the database collections */
   schema?: T;

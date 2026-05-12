@@ -6,8 +6,8 @@ import {
   model,
 } from "../../mod.ts";
 import {
+  DEFAULT_KVDEX_KEY_PREFIX,
   ID_KEY_PREFIX,
-  KVDEX_KEY_PREFIX,
   PRIMARY_INDEX_KEY_PREFIX,
   SECONDARY_INDEX_KEY_PREFIX,
 } from "../../src/core/constants.ts";
@@ -27,7 +27,7 @@ Deno.test("indexable_collection - properties", async (t) => {
       const idKey = db.i_users["keys"].id;
       const primaryIndexKey = db.i_users["keys"].primaryIndex;
       const secondaryIndexKey = db.i_users["keys"].secondaryIndex;
-      const prefix = extendKey([KVDEX_KEY_PREFIX], "i_users");
+      const prefix = extendKey([DEFAULT_KVDEX_KEY_PREFIX], "i_users");
 
       assert(keyEq(baseKey, prefix));
       assert(keyEq(idKey, extendKey(prefix, ID_KEY_PREFIX)));
@@ -39,6 +39,47 @@ Deno.test("indexable_collection - properties", async (t) => {
       );
     });
   });
+
+  await t.step(
+    "Keys should have the correct prefixes with custom base path",
+    async () => {
+      await useKv((kv) => {
+        const basePath = ["custom_prefix"] as KvKey;
+
+        const db = kvdex({
+          kv,
+          basePath,
+          schema: {
+            i_users: collection({
+              model: model<User>(),
+              indices: {
+                username: "primary",
+                age: "secondary",
+              },
+            }),
+          },
+        });
+
+        const baseKey = db.i_users["keys"].base;
+        const idKey = db.i_users["keys"].id;
+        const primaryIndexKey = db.i_users["keys"].primaryIndex;
+        const secondaryIndexKey = db.i_users["keys"].secondaryIndex;
+        const prefix = extendKey(basePath, "i_users");
+
+        assert(keyEq(baseKey, prefix));
+        assert(keyEq(idKey, extendKey(prefix, ID_KEY_PREFIX)));
+        assert(
+          keyEq(primaryIndexKey, extendKey(prefix, PRIMARY_INDEX_KEY_PREFIX)),
+        );
+        assert(
+          keyEq(
+            secondaryIndexKey,
+            extendKey(prefix, SECONDARY_INDEX_KEY_PREFIX),
+          ),
+        );
+      });
+    },
+  );
 
   await t.step("Should generate ids with custom id generator", async () => {
     await useKv((kv) => {

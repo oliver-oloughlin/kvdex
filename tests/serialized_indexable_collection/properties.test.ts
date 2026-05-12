@@ -6,14 +6,14 @@ import {
   model,
 } from "../../mod.ts";
 import {
+  DEFAULT_KVDEX_KEY_PREFIX,
   ID_KEY_PREFIX,
-  KVDEX_KEY_PREFIX,
   PRIMARY_INDEX_KEY_PREFIX,
   SECONDARY_INDEX_KEY_PREFIX,
 } from "../../src/core/constants.ts";
 import { extendKey, keyEq } from "../../src/core/utils.ts";
 import type { KvKey } from "../../src/core/types.ts";
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import type { User } from "../models.ts";
 import { generateLargeUsers, generateUsers, useDb, useKv } from "../utils.ts";
 import { mockUser1 } from "../mocks.ts";
@@ -31,18 +31,61 @@ Deno.test("serialized_indexable_collection - properties", async (t) => {
       const idKey = db.is_users["keys"].id;
       const primaryIndexKey = db.is_users["keys"].primaryIndex;
       const secondaryIndexKey = db.is_users["keys"].secondaryIndex;
-      const prefix = extendKey([KVDEX_KEY_PREFIX], "is_users");
+      const prefix = extendKey([DEFAULT_KVDEX_KEY_PREFIX], "is_users");
 
-      assert(keyEq(baseKey, prefix));
-      assert(keyEq(idKey, extendKey(prefix, ID_KEY_PREFIX)));
-      assert(
-        keyEq(primaryIndexKey, extendKey(prefix, PRIMARY_INDEX_KEY_PREFIX)),
+      assertEquals(baseKey, prefix);
+      assertEquals(idKey, extendKey(prefix, ID_KEY_PREFIX));
+      assertEquals(
+        primaryIndexKey,
+        extendKey(prefix, PRIMARY_INDEX_KEY_PREFIX),
       );
-      assert(
-        keyEq(secondaryIndexKey, extendKey(prefix, SECONDARY_INDEX_KEY_PREFIX)),
+      assertEquals(
+        secondaryIndexKey,
+        extendKey(prefix, SECONDARY_INDEX_KEY_PREFIX),
       );
     });
   });
+
+  await t.step(
+    "Keys should have the correct prefixes with custom base path",
+    async () => {
+      await useKv((kv) => {
+        const basePath = ["custom_prefix"] as KvKey;
+
+        const db = kvdex({
+          kv,
+          basePath,
+          schema: {
+            is_users: collection({
+              model: model<User>(),
+              encoder: jsonEncoder(),
+              indices: {
+                username: "primary",
+                age: "secondary",
+              },
+            }),
+          },
+        });
+
+        const baseKey = db.is_users["keys"].base;
+        const idKey = db.is_users["keys"].id;
+        const primaryIndexKey = db.is_users["keys"].primaryIndex;
+        const secondaryIndexKey = db.is_users["keys"].secondaryIndex;
+        const prefix = extendKey(basePath, "is_users");
+
+        assertEquals(baseKey, prefix);
+        assertEquals(idKey, extendKey(prefix, ID_KEY_PREFIX));
+        assertEquals(
+          primaryIndexKey,
+          extendKey(prefix, PRIMARY_INDEX_KEY_PREFIX),
+        );
+        assertEquals(
+          secondaryIndexKey,
+          extendKey(prefix, SECONDARY_INDEX_KEY_PREFIX),
+        );
+      });
+    },
+  );
 
   await t.step("Should generate ids with custom id generator", async () => {
     await useKv((kv) => {
