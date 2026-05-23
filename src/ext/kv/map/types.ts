@@ -1,6 +1,6 @@
 import type { DenoKvEntry } from "../../../core/types.ts";
 
-/** ID of timeout call */
+/** The ID of a specific call to setTimeout */
 export type TimeoutId = ReturnType<typeof setTimeout>;
 
 /** Interface for basic map methods */
