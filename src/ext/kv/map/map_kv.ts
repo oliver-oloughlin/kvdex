@@ -15,7 +15,7 @@ import type {
 import { MapKvAtomicOperation } from "./atomic.ts";
 import { Watcher } from "./watcher.ts";
 import { createVersionstamp } from "./utils.ts";
-import type { BasicMap, MapKvOptions } from "./types.ts";
+import type { BasicMap, MapKvOptions, TimeoutId } from "./types.ts";
 import { allFulfilled } from "../../../core/utils.ts";
 import { AsyncLock } from "./async_lock.ts";
 import {
@@ -59,7 +59,7 @@ export class MapKv implements DenoKv {
   private watchers: Watcher[];
   private listenHandlers: ((msg: unknown) => unknown)[];
   private asyncLock: AsyncLock;
-  private timerIds: Set<number>;
+  private timerIds: Set<TimeoutId>;
   private ready: Promise<unknown>;
   private listener:
     | {
