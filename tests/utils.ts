@@ -1,8 +1,8 @@
 import { collection, type DenoKv, type DenoKvU64, kvdex } from "../mod.ts";
 import { brotliCompressor } from "../src/ext/encoding/brotli/brotli_compressor.ts";
 import { jsonEncoder } from "../src/ext/encoding/mod.ts";
-import { MapKv } from "../src/ext/kv/map/mod.ts";
-import { StorageAdapter } from "../src/ext/kv/mod.ts";
+import { type MapKv, mapKv } from "../src/ext/kv/map/mod.ts";
+import { type StorageAdapter, storageAdapter } from "../src/ext/kv/mod.ts";
 import { model } from "../src/core/model.ts";
 import { TransformUserModel, type User, UserSchema } from "./models.ts";
 import "fake-indexeddb/auto";
@@ -116,13 +116,13 @@ export async function useKv(
   const kvArg = Deno.args[0];
 
   const kv = kvArg === "map"
-    ? new MapKv({ clearOnClose: true })
+    ? mapKv({ clearOnClose: true })
     : kvArg === "map_local_storage"
-    ? new MapKv({ map: new StorageAdapter(localStorage), clearOnClose: true })
+    ? mapKv({ map: storageAdapter(localStorage), clearOnClose: true })
     : kvArg === "map_session_storage"
-    ? new MapKv({ map: new StorageAdapter(sessionStorage), clearOnClose: true })
+    ? mapKv({ map: storageAdapter(sessionStorage), clearOnClose: true })
     : kvArg === "map_indexed_db"
-    ? new MapKv({
+    ? mapKv({
       map: await indexedDbAdapter(),
       clearOnClose: true,
     })
@@ -148,15 +148,15 @@ export async function useDb(
 export async function useMapKv(
   fn: (kv: MapKv) => unknown,
 ) {
-  const mapKv = new MapKv({ clearOnClose: true });
-  await fn(mapKv);
-  await mapKv.close();
+  const kv = mapKv({ clearOnClose: true });
+  await fn(kv);
+  await kv.close();
 }
 
 export async function useLocalStorageMap(
   fn: (store: StorageAdapter<any, any>) => unknown,
 ) {
-  const store = new StorageAdapter(localStorage);
+  const store = storageAdapter(localStorage);
   await fn(store);
   store.clear();
 }
@@ -164,7 +164,7 @@ export async function useLocalStorageMap(
 export async function useSessionStorageMap(
   fn: (store: StorageAdapter<any, any>) => unknown,
 ) {
-  const store = new StorageAdapter(sessionStorage);
+  const store = storageAdapter(sessionStorage);
   await fn(store);
   store.clear();
 }
