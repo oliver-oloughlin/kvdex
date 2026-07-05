@@ -15,7 +15,7 @@ import type {
 import { MapKvAtomicOperation } from "./atomic.ts";
 import { Watcher } from "./watcher.ts";
 import { createVersionstamp } from "./utils.ts";
-import type { BasicMap, MapKvOptions } from "./types.ts";
+import type { BasicMap, MapKvOptions, TimeoutId } from "./types.ts";
 import { allFulfilled } from "../../../core/utils.ts";
 import { AsyncLock } from "./async_lock.ts";
 import {
@@ -29,39 +29,82 @@ import {
 } from "./entry_handlers.ts";
 
 /**
+ * Create a new KV instance utilizing a `BasicMap` as it's backend.
+ *
+ * Uses `new Map()` by default.
+ *
+ * @example
+ * ```ts
+ * import { mapKv } from "@olli/kvdex/kv";
+ * // Initializes a new KV instance wrapping the built-in `Map`
+ * const kv = mapKv()
+ * ```
+ *
+ * @example
+ * ```ts
+ * import { mapKv, storageAdapter } from "@olli/kvdex/kv";
+ * // Initializes a new KV instance utilizing `localStorage` as it's backend
+ * const map = storageAdapter(localStorage)
+ * const kv = mapKv({ map })
+ * ```
+ *
+ * @example
+ * ```ts
+ * import { mapKv, storageAdapter } from "@olli/kvdex/kv";
+ * // Initializes a new KV instance utilizing `sessionStorage` as it's backend
+ * const map = storageAdapter(sessionStorage)
+ * const kv = mapKv({ map })
+ * ```
+ *
+ * @example
+ * ```ts
+ * import { mapKv, indexedDbAdapter } from "@olli/kvdex/kv";
+ * // Initializes a new KV instance utilizing `IndexedDB` as it's backend
+ * const map = await indexedDbAdapter()
+ * const kv = mapKv({ map })
+ * ```
+ *
+ * @param options - Optional configuration for the KV instance and its backing map.
+ * @returns A new MapKv instance.
+ */
+export function mapKv(options?: MapKvOptions): MapKv {
+  return new MapKv(options);
+}
+
+/**
  * KV instance utilising a `BasicMap` as it's backend.
  *
  * Uses `new Map()` by default.
  *
  * @example
  * ```ts
- * import { MapKv } from "@olli/kvdex/kv";
+ * import { mapKv } from "@olli/kvdex/kv";
  * // Initializes a new KV instance wrapping the built-in `Map`
- * const kv = new MapKv()
+ * const kv = mapKv()
  * ```
  *
  * @example
  * ```ts
- * import { MapKv, StorageAdapter } from "@olli/kvdex/kv";
+ * import { mapKv, storageAdapter } from "@olli/kvdex/kv";
  * // Initializes a new KV instance utilizing `localStorage` as it's backend
- * const map = new StorageAdapter(localStorage)
- * const kv = new MapKv({ map })
+ * const map = storageAdapter(localStorage)
+ * const kv = mapKv({ map })
  * ```
  *
  * @example
  * ```ts
- * import { MapKv, StorageAdapter } from "@olli/kvdex/kv";
+ * import { mapKv, storageAdapter } from "@olli/kvdex/kv";
  * // Initializes a new KV instance utilizing `sessionStorage` as it's backend
- * const map = new StorageAdapter(sessionStorage)
- * const kv = new MapKv({ map })
+ * const map = storageAdapter(sessionStorage)
+ * const kv = mapKv({ map })
  * ```
  *
  * @example
  * ```ts
- * import { MapKv, indexedDbAdapter } from "@olli/kvdex/kv";
+ * import { mapKv, indexedDbAdapter } from "@olli/kvdex/kv";
  * // Initializes a new KV instance utilizing `IndexedDB` as it's backend
  * const map = await indexedDbAdapter()
- * const kv = new MapKv({ map })
+ * const kv = mapKv({ map })
  * ```
  */
 export class MapKv implements DenoKv {
@@ -70,7 +113,7 @@ export class MapKv implements DenoKv {
   private watchers: Watcher[];
   private listenHandlers: ((msg: unknown) => unknown)[];
   private asyncLock: AsyncLock;
-  private timerIds: Set<number>;
+  private timerIds: Set<TimeoutId>;
   private ready: Promise<unknown>;
   private listener:
     | {

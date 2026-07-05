@@ -8,49 +8,49 @@
  * @example
  * ```ts
  * import { kvdex } from "@olli/kvdex";
- * import { MapKv } from "@olli/kvdex/kv/map";
+ * import { mapKv } from "@olli/kvdex/kv/map";
  *
  * // Create an in-memory database using `Map` as the KV backend
- * const kv = new MapKv(); // Equivalent to `new MapKv({ map: new Map() })`
+ * const kv = mapKv(); // Equivalent to `mapKv({ map: new Map() })`
  * const db = kvdex({ kv });
  * ```
  *
  * @example
  * ```ts
  * import { kvdex } from "@olli/kvdex";
- * import { MapKv, StorageAdapter } from "@olli/kvdex/kv/map";
+ * import { mapKv, storageAdapter } from "@olli/kvdex/kv/map";
  *
  * // Create a persistent database using `localStorage` as the KV backend
- * const map = new StorageAdapter(localStorage);
- * const kv = new MapKv({ map });
+ * const map = storageAdapter(localStorage);
+ * const kv = mapKv({ map });
  * const db = kvdex({ kv });
  * ```
  *
  * @example
  * ```ts
  * import { kvdex } from "@olli/kvdex";
- * import { MapKv, StorageAdapter } from "@olli/kvdex/kv/map";
+ * import { mapKv, storageAdapter } from "@olli/kvdex/kv/map";
  *
  * // Create a session-scoped database using `sessionStorage` as the KV backend
- * const map = new StorageAdapter(sessionStorage);
- * const kv = new MapKv({ map });
+ * const map = storageAdapter(sessionStorage);
+ * const kv = mapKv({ map });
  * const db = kvdex({ kv });
  * ```
  *
  * @example
  * ```ts
  * import { kvdex } from "@olli/kvdex";
- * import { MapKv, indexedDbAdapter } from "@olli/kvdex/kv/map";
+ * import { mapKv, indexedDbAdapter } from "@olli/kvdex/kv/map";
  *
  * // Create a persistent database using `IndexedDB` as the KV backend
  * const map = await indexedDbAdapter(); // Opens an IndexedDB database with default name and store.
- * const kv = new MapKv({ map });
+ * const kv = mapKv({ map });
  * const db = kvdex({ kv });
  * ```
  */
 
-export { MapKv } from "./map_kv.ts";
-export { StorageAdapter } from "./storage_adapter.ts";
+export { MapKv, mapKv } from "./map_kv.ts";
+export { StorageAdapter, storageAdapter } from "./storage_adapter.ts";
 export { MapKvAtomicOperation } from "./atomic.ts";
 export { IndexedDbAdapter, indexedDbAdapter } from "./indexed_db_adapter.ts";
 export type * from "./types.ts";

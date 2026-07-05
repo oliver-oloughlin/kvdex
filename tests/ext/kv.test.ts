@@ -6,7 +6,7 @@ import {
   useMapKv,
   useSessionStorageMap,
 } from "../utils.ts";
-import { MapKv } from "../../src/ext/kv/map/mod.ts";
+import { mapKv } from "../../src/ext/kv/map/mod.ts";
 import type { BasicMap } from "../../src/ext/kv/map/types.ts";
 
 /** A BasicMap wrapper that delays `set` to simulate slow initialization. */
@@ -382,7 +382,7 @@ Deno.test({
       await t.step(
         "get should not complete before ready",
         async () => {
-          const kv = new MapKv({
+          const kv = mapKv({
             map: new SlowMap(),
             entries: initEntries,
           });
@@ -406,7 +406,7 @@ Deno.test({
       await t.step(
         "getMany should not complete before ready",
         async () => {
-          const kv = new MapKv({
+          const kv = mapKv({
             map: new SlowMap(),
             entries: initEntries,
           });
@@ -430,7 +430,7 @@ Deno.test({
       await t.step(
         "set should not complete before ready",
         async () => {
-          const kv = new MapKv({
+          const kv = mapKv({
             map: new SlowMap(),
             entries: initEntries,
           });
@@ -454,7 +454,7 @@ Deno.test({
       await t.step(
         "delete should not complete before ready",
         async () => {
-          const kv = new MapKv({
+          const kv = mapKv({
             map: new SlowMap(),
             entries: initEntries,
           });
@@ -478,7 +478,7 @@ Deno.test({
       await t.step(
         "list should not complete before ready",
         async () => {
-          const kv = new MapKv({
+          const kv = mapKv({
             map: new SlowMap(),
             entries: initEntries,
           });
@@ -502,7 +502,7 @@ Deno.test({
       await t.step(
         "enqueue should not complete before ready",
         async () => {
-          const kv = new MapKv({
+          const kv = mapKv({
             map: new SlowMap(),
             entries: initEntries,
           });
@@ -526,7 +526,7 @@ Deno.test({
       await t.step(
         "close should not complete before ready",
         async () => {
-          const kv = new MapKv({
+          const kv = mapKv({
             map: new SlowMap(),
             entries: initEntries,
           });
@@ -549,7 +549,7 @@ Deno.test({
       await t.step(
         "concurrent operations should all complete after ready",
         async () => {
-          const kv = new MapKv({
+          const kv = mapKv({
             map: new SlowMap(),
             entries: initEntries,
           });

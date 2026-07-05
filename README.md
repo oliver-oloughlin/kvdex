@@ -1644,10 +1644,10 @@ Create an in-memory database using `Map` as the KV backend:
 
 ```ts
 import { kvdex } from "@olli/kvdex";
-import { MapKv } from "@olli/kvdex/kv/map";
+import { mapKv } from "@olli/kvdex/kv/map";
 
-// Equivalent to `new MapKv({ map: new Map() })`
-const kv = new MapKv();
+// Equivalent to `mapKv({ map: new Map() })`
+const kv = mapKv();
 const db = kvdex({ kv });
 ```
 
@@ -1655,10 +1655,10 @@ Create a persistent database using `localStorage` as the KV backend:
 
 ```ts
 import { kvdex } from "@olli/kvdex";
-import { MapKv, StorageAdapter } from "@olli/kvdex/kv/map";
+import { mapKv, storageAdapter } from "@olli/kvdex/kv/map";
 
-const map = new StorageAdapter(localStorage);
-const kv = new MapKv({ map });
+const map = storageAdapter(localStorage);
+const kv = mapKv({ map });
 const db = kvdex({ kv });
 ```
 
@@ -1666,10 +1666,10 @@ Create a session-scoped database using `sessionStorage` as the KV backend:
 
 ```ts
 import { kvdex } from "@olli/kvdex";
-import { MapKv, StorageAdapter } from "@olli/kvdex/kv/map";
+import { mapKv, storageAdapter } from "@olli/kvdex/kv/map";
 
-const map = new StorageAdapter(sessionStorage);
-const kv = new MapKv({ map });
+const map = storageAdapter(sessionStorage);
+const kv = mapKv({ map });
 const db = kvdex({ kv });
 ```
 
@@ -1677,11 +1677,11 @@ Create a persistent database using `IndexedDB` as the KV backend:
 
 ```ts
 import { kvdex } from "@olli/kvdex";
-import { indexedDbAdapter, MapKv } from "@olli/kvdex/kv/map";
+import { indexedDbAdapter, mapKv } from "@olli/kvdex/kv/map";
 
 // Opens an IndexedDB database with default name and store
 const map = await indexedDbAdapter();
-const kv = new MapKv({ map });
+const kv = mapKv({ map });
 const db = kvdex({ kv });
 ```
 
