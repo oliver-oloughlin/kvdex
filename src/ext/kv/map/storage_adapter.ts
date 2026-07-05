@@ -2,6 +2,34 @@ import { jsonParse, jsonStringify } from "../../../common/json.ts";
 import type { BasicMap } from "./types.ts";
 
 /**
+ * Create a new BasicMap adapter for the `Storage` interface.
+ *
+ * Enables a `Storage` object, such as `localStorage` or `sessionStorage`, to be utilized as a BasicMap.
+ *
+ * @example
+ * ```ts
+ * import { storageAdapter } from "@olli/kvdex/kv";
+ *
+ * // Creates a new BasicMap, wrapping `localStorage`
+ * const map = storageAdapter(localStorage)
+ * ```
+ *
+ * @example
+ * ```ts
+ * import { storageAdapter } from "@olli/kvdex/kv";
+ *
+ * // Creates a new BasicMap, wrapping `sessionStorage`
+ * const map = storageAdapter(sessionStorage)
+ * ```
+ *
+ * @param storage - The `Storage` object to wrap.
+ * @returns A new StorageAdapter instance.
+ */
+export function storageAdapter<K, V>(storage: Storage): StorageAdapter<K, V> {
+  return new StorageAdapter(storage);
+}
+
+/**
  * BasicMap adapter for the `Storage` interface.
  *
  * Enables a `Storage` object, such as `localStorage` or `sessionStorage`, to be utilized as a BasicMap.
