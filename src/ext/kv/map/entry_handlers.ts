@@ -19,6 +19,7 @@ import { allFulfilled } from "../../../core/utils.ts";
 import type { AsyncLock } from "./async_lock.ts";
 import type { Watcher } from "./watcher.ts";
 import { createVersionstamp, keySort } from "./utils.ts";
+import type { TimeoutId } from "./types.ts";
 
 export type KvEntry = {
   value: unknown;
@@ -205,7 +206,7 @@ export async function enqueueValue({
   get: Getter;
   set: Setter;
   delete: Deleter;
-  timerIds: Set<number>;
+  timerIds: Set<TimeoutId>;
 }): Promise<DenoKvCommitResult> {
   const timestamp = Date.now() + (options?.delay ?? 0);
   const id = ulid();
@@ -262,7 +263,7 @@ export async function activateQueuedValues({
   getEntries: EntriesGetter;
   get: Getter;
   delete: Deleter;
-  timerIds: Set<number>;
+  timerIds: Set<TimeoutId>;
 }) {
   const iter = await listEntries({
     selector: { prefix: [KVDEX_QUEUE_KEY_PREFIX] },
