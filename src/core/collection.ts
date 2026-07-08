@@ -10,6 +10,7 @@ import type {
   DenoKvCommitError,
   DenoKvCommitResult,
   DenoKvEntryMaybe,
+  DenoKvListSelector,
   DenoKvStrictKey,
   EncodedEntry,
   Encoder,
@@ -43,6 +44,11 @@ import type {
   QueueListenerOptions,
   QueueMessageHandler,
   SecondaryIndexKeys,
+  SecondaryOrderDeleteManyOptions,
+  SecondaryOrderHandleOneOptions,
+  SecondaryOrderListOptions,
+  SecondaryOrderUpdateManyOptions,
+  SecondaryOrderUpdateOneOptions,
   SetOptions,
   UpdateData,
   UpdateManyOptions,
@@ -60,6 +66,7 @@ import {
   createListOptions,
   createListSelector,
   createSecondaryIndexKeyPrefix,
+  createSecondaryOrderListSelector,
   createWatcher,
   deleteIndices,
   encodeData,
@@ -453,11 +460,12 @@ export class Collection<
     );
 
     // Add documents to result list by secondary index
+    const selector = createListSelector(prefixKey, options);
     return await this.handleMany(
-      prefixKey,
       prefixKey.length,
       (doc) => doc,
       options,
+      selector,
     );
   }
 
@@ -770,11 +778,12 @@ export class Collection<
     );
 
     // Delete documents by secondary index and return pagination result
+    const selector = createListSelector(prefixKey, options);
     return await this.handleMany(
-      prefixKey,
       prefixKey.length,
       (doc) => this.deleteDocument(doc.id, options),
       options,
+      selector,
     );
   }
 
@@ -930,11 +939,12 @@ export class Collection<
     );
 
     // Update each document by secondary index, add commit result to result list
+    const selector = createListSelector(prefixKey, options);
     return await this.handleMany(
-      prefixKey,
       prefixKey.length,
       (doc) => this.updateDocument(doc, data, options),
       options,
+      selector,
     );
   }
 
@@ -1097,11 +1107,12 @@ export class Collection<
     >
   > {
     // Update each document, add commit result to result list
+    const selector = createListSelector(this.keys.id, options);
     return await this.handleMany(
-      this.keys.id,
       this.keys.id.length,
       (doc) => this.updateDocument(doc, value, options),
       options,
+      selector,
     );
   }
 
@@ -1121,9 +1132,9 @@ export class Collection<
    */
   async updateManyBySecondaryOrder<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
-    const T extends UpdateManyOptions<
+    const T extends SecondaryOrderUpdateManyOptions<
       Document<TOutput, ParseId<TOptions>>,
-      ParseId<TOptions>
+      CheckKeyOf<K, TOutput>
     >,
   >(
     order: K,
@@ -1137,12 +1148,19 @@ export class Collection<
     // Create prefix key
     const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
+    // Create list selector with encoded start/end index values
+    const selector = await createSecondaryOrderListSelector(
+      prefixKey,
+      options,
+      this.encoder,
+    );
+
     // Update each document by secondary index, add commit result to result list
     return await this.handleMany(
-      prefixKey,
       prefixKey.length + 1,
       (doc) => this.updateDocument(doc, data, options),
       options,
+      selector,
     );
   }
 
@@ -1178,11 +1196,12 @@ export class Collection<
     options?: T,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Update a single document
+    const selector = createListSelector(this.keys.id, options);
     const { result } = await this.handleMany(
-      this.keys.id,
       this.keys.id.length,
       (doc) => this.updateDocument(doc, data, options),
       { ...options, take: 1 },
+      selector,
     );
 
     // Return first result, or commit error object if not present
@@ -1235,11 +1254,12 @@ export class Collection<
     );
 
     // Update a single document
+    const selector = createListSelector(prefixKey, options);
     const { result } = await this.handleMany(
-      prefixKey,
       prefixKey.length,
       (doc) => this.updateDocument(doc, data, options),
       { ...options, take: 1 },
+      selector,
     );
 
     // Return first result, or commit error object if not present
@@ -1263,11 +1283,11 @@ export class Collection<
    * @returns Promise resolving to either a commit result or commit error object.
    */
   async updateOneBySecondaryOrder<
-    const T extends UpdateOneOptions<
-      Document<TOutput, ParseId<TOptions>>,
-      ParseId<TOptions>
-    >,
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
+    const T extends SecondaryOrderUpdateOneOptions<
+      Document<TOutput, ParseId<TOptions>>,
+      CheckKeyOf<K, TOutput>
+    >,
   >(
     order: K,
     data: UpdateData<TOutput, T["strategy"]>,
@@ -1276,12 +1296,19 @@ export class Collection<
     // Create prefix key
     const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
+    // Create list selector with encoded start/end index values
+    const selector = await createSecondaryOrderListSelector(
+      prefixKey,
+      options,
+      this.encoder,
+    );
+
     // Update a single document
     const { result } = await this.handleMany(
-      prefixKey,
       prefixKey.length + 1,
       (doc) => this.updateDocument(doc, data, options),
       { ...options, take: 1 },
+      selector,
     );
 
     // Return first result, or commit error object if not present
@@ -1384,11 +1411,12 @@ export class Collection<
     }
 
     // Execute delete operation for each document entry and return pagination result
+    const selector = createListSelector(this.keys.id, options);
     return await this.handleMany(
-      this.keys.id,
       this.keys.id.length,
       (doc) => this.deleteDocument(doc.id, options),
       options,
+      selector,
     );
   }
 
@@ -1413,20 +1441,27 @@ export class Collection<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     order: K,
-    options?: DeleteManyOptions<
+    options?: SecondaryOrderDeleteManyOptions<
       Document<TOutput, ParseId<TOptions>>,
-      ParseId<TOptions>
+      CheckKeyOf<K, TOutput>
     >,
   ): Promise<PaginationResult<DenoKvCommitResult | DenoKvCommitError>> {
     // Create prefix key
     const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
+    // Create list selector with encoded start/end index values
+    const selector = await createSecondaryOrderListSelector(
+      prefixKey,
+      options,
+      this.encoder,
+    );
+
     // Delete documents by secondary index and return pagination result
     return await this.handleMany(
-      prefixKey,
       prefixKey.length + 1,
       (doc) => this.deleteDocument(doc.id, options),
       options,
+      selector,
     );
   }
 
@@ -1456,11 +1491,12 @@ export class Collection<
     >,
   ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
     // Get each document, return result list and current iterator cursor
+    const selector = createListSelector(this.keys.id, options);
     return await this.handleMany(
-      this.keys.id,
       this.keys.id.length,
       (doc) => doc,
       options,
+      selector,
     );
   }
 
@@ -1489,17 +1525,22 @@ export class Collection<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     order: K,
-    options?: ListOptions<
+    options?: SecondaryOrderListOptions<
       Document<TOutput, ParseId<TOptions>>,
-      ParseId<TOptions>
+      CheckKeyOf<K, TOutput>
     >,
   ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
     const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
-    return await this.handleMany(
+    const selector = await createSecondaryOrderListSelector(
       prefixKey,
+      options,
+      this.encoder,
+    );
+    return await this.handleMany(
       prefixKey.length + 1,
       (doc) => doc,
       options,
+      selector,
     );
   }
 
@@ -1532,11 +1573,12 @@ export class Collection<
     >,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
     // Get result list with one item
+    const selector = createListSelector(this.keys.id, options);
     const { result } = await this.handleMany(
-      this.keys.id,
       this.keys.id.length,
       (doc) => doc,
       { ...options, take: 1 },
+      selector,
     );
 
     // Return first result item, or null if not present
@@ -1585,11 +1627,12 @@ export class Collection<
     );
 
     // Get result list with one item
+    const selector = createListSelector(prefixKey, options);
     const { result } = await this.handleMany(
-      prefixKey,
       prefixKey.length,
       (doc) => doc,
       { ...options, take: 1 },
+      selector,
     );
 
     // Return first result item, or null if not present
@@ -1615,20 +1658,27 @@ export class Collection<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     order: K,
-    options?: HandleOneOptions<
+    options?: SecondaryOrderHandleOneOptions<
       Document<TOutput, ParseId<TOptions>>,
-      ParseId<TOptions>
+      CheckKeyOf<K, TOutput>
     >,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
     // Create prefix key
     const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
+    // Create list selector with encoded start/end index values
+    const selector = await createSecondaryOrderListSelector(
+      prefixKey,
+      options,
+      this.encoder,
+    );
+
     // Get result list with one item
     const { result } = await this.handleMany(
-      prefixKey,
       prefixKey.length + 1,
       (doc) => doc,
       { ...options, take: 1 },
+      selector,
     );
 
     // Return first result item, or null if not present
@@ -1663,11 +1713,12 @@ export class Collection<
     >,
   ): Promise<Pagination> {
     // Execute callback function for each document entry
+    const selector = createListSelector(this.keys.id, options);
     const { cursor } = await this.handleMany(
-      this.keys.id,
       this.keys.id.length,
       async (doc) => await fn(doc),
       options,
+      selector,
     );
 
     // Return iterator cursor
@@ -1714,11 +1765,12 @@ export class Collection<
     );
 
     // Execute callback function for each document entry
+    const selector = createListSelector(prefixKey, options);
     const { cursor } = await this.handleMany(
-      prefixKey,
       prefixKey.length,
       (doc) => fn(doc),
       options,
+      selector,
     );
 
     // Return iterator cursor
@@ -1749,20 +1801,27 @@ export class Collection<
   >(
     order: K,
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => unknown,
-    options?: UpdateManyOptions<
+    options?: SecondaryOrderUpdateManyOptions<
       Document<TOutput, ParseId<TOptions>>,
-      ParseId<TOptions>
+      CheckKeyOf<K, TOutput>
     >,
   ): Promise<Pagination> {
     // Create prefix key
     const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
+    // Create list selector with encoded start/end index values
+    const selector = await createSecondaryOrderListSelector(
+      prefixKey,
+      options,
+      this.encoder,
+    );
+
     // Execute callback function for each document entry
     const { cursor } = await this.handleMany(
-      prefixKey,
       prefixKey.length + 1,
       (doc) => fn(doc),
       options,
+      selector,
     );
 
     // Return iterator cursor
@@ -1799,11 +1858,12 @@ export class Collection<
     >,
   ): Promise<PaginationResult<Awaited<T>>> {
     // Execute callback function for each document entry, return result and cursor
+    const selector = createListSelector(this.keys.id, options);
     return await this.handleMany(
-      this.keys.id,
       this.keys.id.length,
       (doc) => fn(doc),
       options,
+      selector,
     );
   }
 
@@ -1853,11 +1913,12 @@ export class Collection<
     );
 
     // Execute callback function for each document entry, return result and cursor
+    const selector = createListSelector(prefixKey, options);
     return await this.handleMany(
-      prefixKey,
       prefixKey.length,
       (doc) => fn(doc),
       options,
+      selector,
     );
   }
 
@@ -1888,20 +1949,27 @@ export class Collection<
   >(
     order: K,
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => T,
-    options?: UpdateManyOptions<
+    options?: SecondaryOrderUpdateManyOptions<
       Document<TOutput, ParseId<TOptions>>,
-      ParseId<TOptions>
+      CheckKeyOf<K, TOutput>
     >,
   ): Promise<PaginationResult<Awaited<T>>> {
     // Create prefix key
     const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
 
+    // Create list selector with encoded start/end index values
+    const selector = await createSecondaryOrderListSelector(
+      prefixKey,
+      options,
+      this.encoder,
+    );
+
     // Execute callback function for each document entry, return result and cursor
     return await this.handleMany(
-      prefixKey,
       prefixKey.length + 1,
       (doc) => fn(doc),
       options,
+      selector,
     );
   }
 
@@ -1941,11 +2009,12 @@ export class Collection<
     }
 
     // Perform count using many documents handler
+    const selector = createListSelector(this.keys.id, options);
     await this.handleMany(
-      this.keys.id,
       this.keys.id.length,
       () => result++,
       options,
+      selector,
     );
 
     return result;
@@ -1990,11 +2059,12 @@ export class Collection<
     let result = 0;
 
     // Update each document by secondary index, add commit result to result list
+    const selector = createListSelector(prefixKey, options);
     await this.handleMany(
-      prefixKey,
       prefixKey.length,
       () => result++,
       options,
+      selector,
     );
 
     // Return count result
@@ -2022,23 +2092,30 @@ export class Collection<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     order: K,
-    options?: ListOptions<
+    options?: SecondaryOrderListOptions<
       Document<TOutput, ParseId<TOptions>>,
-      ParseId<TOptions>
+      CheckKeyOf<K, TOutput>
     >,
   ): Promise<number> {
     // Create prefix key
     const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
+
+    // Create list selector with encoded start/end index values
+    const selector = await createSecondaryOrderListSelector(
+      prefixKey,
+      options,
+      this.encoder,
+    );
 
     // Initialize count result
     let result = 0;
 
     // Update each document by secondary index, add commit result to result list
     await this.handleMany(
-      prefixKey,
       prefixKey.length + 1,
       () => result++,
       options,
+      selector,
     );
 
     // Return count result
@@ -2650,21 +2727,21 @@ export class Collection<
   /**
    * Perform operations on lists of documents in the collection.
    *
-   * @param prefixKey - Prefix key for list selector.
+   * @param idKeyPrefixLength - Length of the id key prefix.
    * @param fn - Callback function.
    * @param options - List options, optional.
+   * @param selector - List selector.
    * @returns Promise that resolves to object with iterator cursor.
    */
   private async handleMany<const T>(
-    prefixKey: KvKey,
     idKeyPrefixLength: number,
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => T,
     options:
-      | ListOptions<Document<TOutput, ParseId<TOptions>>, ParseId<TOptions>>
+      | ListOptions<Document<TOutput, ParseId<TOptions>>, KvId>
       | undefined,
+    selector: DenoKvListSelector,
   ) {
     // Create list iterator with given options
-    const selector = createListSelector(prefixKey, options);
     const listOptions = createListOptions(options);
     const iter = await this.kv.list(selector, listOptions);
 

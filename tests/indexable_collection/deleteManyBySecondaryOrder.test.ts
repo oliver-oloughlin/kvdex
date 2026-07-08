@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "@std/assert";
-import { mockUser2, mockUsersWithAlteredAge } from "../mocks.ts";
+import { mockUser2, mockUser3, mockUsersWithAlteredAge } from "../mocks.ts";
 import { useDb } from "../utils.ts";
 
 Deno.test("indexable_collection - deleteManyBySecondaryOrder", async (t) => {
@@ -66,6 +66,25 @@ Deno.test("indexable_collection - deleteManyBySecondaryOrder", async (t) => {
 
         const count2 = await db.i_multi_part_id_users.count();
         assert(count2 === 0);
+      });
+    },
+  );
+
+  await t.step(
+    "Should delete documents bounded by start and end values",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.i_users.addMany(mockUsersWithAlteredAge);
+        assert(cr.ok);
+
+        // Delete documents with age >= 50 (user1, user2), leaving user3 (age 20)
+        await db.i_users.deleteManyBySecondaryOrder("age", {
+          startValue: 50,
+        });
+
+        const { result } = await db.i_users.getManyBySecondaryOrder("age");
+        assertEquals(result.length, 1);
+        assertEquals(result[0].value.username, mockUser3.username);
       });
     },
   );

@@ -1,6 +1,6 @@
 import { assert } from "@std/assert";
 import { useDb } from "../utils.ts";
-import { mockUser3, mockUsersWithAlteredAge } from "../mocks.ts";
+import { mockUser1, mockUser3, mockUsersWithAlteredAge } from "../mocks.ts";
 
 Deno.test("indexable_collection - getOneBySecondaryOrder", async (t) => {
   await t.step("Should get only one document by secondary order", async () => {
@@ -28,6 +28,30 @@ Deno.test("indexable_collection - getOneBySecondaryOrder", async (t) => {
           "age",
         );
         assert(doc !== null);
+      });
+    },
+  );
+
+  await t.step(
+    "Should get one document by secondary order bounded by start and end values",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.i_users.addMany(mockUsersWithAlteredAge);
+        assert(cr.ok);
+
+        // startValue is inclusive, returns first document from the bound
+        const start = await db.i_users.getOneBySecondaryOrder("age", {
+          startValue: 50,
+        });
+        assert(start !== null);
+        assert(start.value.username === mockUser1.username);
+
+        // endValue is exclusive, returns first document before the bound
+        const end = await db.i_users.getOneBySecondaryOrder("age", {
+          endValue: 50,
+        });
+        assert(end !== null);
+        assert(end.value.username === mockUser3.username);
       });
     },
   );

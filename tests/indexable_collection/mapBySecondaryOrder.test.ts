@@ -45,4 +45,34 @@ Deno.test("indexable_collection - mapBySecondaryOrder", async (t) => {
       });
     },
   );
+
+  await t.step(
+    "Should map documents bounded by start and end values",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.i_users.addMany(mockUsersWithAlteredAge);
+        assert(cr.ok);
+
+        // startValue is inclusive
+        const start = await db.i_users.mapBySecondaryOrder(
+          "age",
+          (doc) => doc.value.username,
+          { startValue: 50 },
+        );
+        assert(start.result.length === 2);
+        assert(start.result[0] === mockUser1.username);
+        assert(start.result[1] === mockUser2.username);
+
+        // endValue is exclusive
+        const end = await db.i_users.mapBySecondaryOrder(
+          "age",
+          (doc) => doc.value.username,
+          { endValue: 80 },
+        );
+        assert(end.result.length === 2);
+        assert(end.result[0] === mockUser3.username);
+        assert(end.result[1] === mockUser1.username);
+      });
+    },
+  );
 });

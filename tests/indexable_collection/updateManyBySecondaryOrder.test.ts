@@ -2,6 +2,7 @@ import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import {
   mockUser1,
   mockUser2,
+  mockUser3,
   mockUserInvalid,
   mockUsersWithAlteredAge,
 } from "../mocks.ts";
@@ -249,6 +250,51 @@ Deno.test(
 
           assert(result.every((cr) => cr.ok));
           assert(result.length === mockUsersWithAlteredAge.length);
+        });
+      },
+    );
+
+    await t.step(
+      "Should update documents bounded by start and end values",
+      async () => {
+        await useDb(async (db) => {
+          const cr = await db.i_users.addMany(mockUsersWithAlteredAge);
+          assert(cr.ok);
+
+          const updateData = {
+            address: {
+              country: "Ireland",
+              city: "Dublin",
+              houseNr: null,
+            },
+          };
+
+          // Update documents with age >= 50 (user1, user2)
+          const { result } = await db.i_users.updateManyBySecondaryOrder(
+            "age",
+            updateData,
+            { startValue: 50, strategy: "merge-shallow" },
+          );
+
+          assertEquals(result.length, 2);
+          assert(result.every((cr) => cr.ok));
+
+          const docs = await db.i_users.getManyBySecondaryOrder("age");
+
+          // user3 (age 20) is unchanged
+          assertEquals(
+            docs.result[0].value.address.city,
+            mockUser3.address.city,
+          );
+          // user1 and user2 are updated
+          assertEquals(
+            docs.result[1].value.address.city,
+            updateData.address.city,
+          );
+          assertEquals(
+            docs.result[2].value.address.city,
+            updateData.address.city,
+          );
         });
       },
     );
