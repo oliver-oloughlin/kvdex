@@ -59,6 +59,44 @@ Deno.test("serialized_indexable_collection - updateOneBySecondaryOrder", async (
   );
 
   await t.step(
+    "Should update one document bounded by start and end values",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_users.addMany(mockUsersWithAlteredAge);
+        assert(cr.ok);
+
+        const updateData = {
+          address: {
+            country: "Ireland",
+            city: "Dublin",
+            houseNr: null,
+          },
+        };
+
+        // startValue 50 targets the first document with age >= 50 (user1)
+        const updateCr = await db.is_users.updateOneBySecondaryOrder(
+          "age",
+          updateData,
+          { startValue: 50, strategy: "merge-shallow" },
+        );
+        assert(updateCr.ok);
+
+        const { result } = await db.is_users.mapBySecondaryOrder(
+          "age",
+          (doc) => doc.value,
+        );
+
+        // user3 (age 20) unchanged
+        assert(result[0].address.city === mockUser3.address.city);
+        // user1 (age 50) updated
+        assert(result[1].address.city === updateData.address.city);
+        // user2 (age 80) unchanged
+        assert(result[2].address.city === mockUser2.address.city);
+      });
+    },
+  );
+
+  await t.step(
     "Should update only one document of KvObject type using deep merge",
     async () => {
       await useDb(async (db) => {

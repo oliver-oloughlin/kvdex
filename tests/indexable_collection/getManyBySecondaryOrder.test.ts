@@ -36,4 +36,38 @@ Deno.test("indexable_collection - getManyBySecondaryOrder", async (t) => {
       });
     },
   );
+
+  await t.step(
+    "Should get documents by secondary order bounded by start and end values",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.i_users.addMany(mockUsersWithAlteredAge);
+        assert(cr.ok);
+
+        // startValue is inclusive
+        const start = await db.i_users.getManyBySecondaryOrder("age", {
+          startValue: 50,
+        });
+        assert(start.result.length === 2);
+        assert(start.result[0].value.username === mockUser1.username);
+        assert(start.result[1].value.username === mockUser2.username);
+
+        // endValue is exclusive
+        const end = await db.i_users.getManyBySecondaryOrder("age", {
+          endValue: 80,
+        });
+        assert(end.result.length === 2);
+        assert(end.result[0].value.username === mockUser3.username);
+        assert(end.result[1].value.username === mockUser1.username);
+
+        // Combined start and end bounds
+        const range = await db.i_users.getManyBySecondaryOrder("age", {
+          startValue: 50,
+          endValue: 80,
+        });
+        assert(range.result.length === 1);
+        assert(range.result[0].value.username === mockUser1.username);
+      });
+    },
+  );
 });

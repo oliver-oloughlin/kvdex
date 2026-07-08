@@ -547,6 +547,44 @@ export type UpdateOneOptions<T1, T2 extends KvId> =
   & HandleOneOptions<T1, T2>
   & UpdateOptions;
 
+/**
+ * Options for listing documents by a secondary order.
+ *
+ * Differs from `ListOptions` by replacing the `startId` and `endId` options
+ * with `startValue` and `endValue`, which bound the result by the index value
+ * that documents are ordered by.
+ */
+export type SecondaryOrderListOptions<T1, T2> =
+  & Omit<ListOptions<T1, KvId>, "startId" | "endId">
+  & {
+    /** Index value of the document to start from. */
+    startValue?: T2;
+
+    /** Index value of the document to end at. */
+    endValue?: T2;
+  };
+
+/** Options for handling one listed document by a secondary order */
+export type SecondaryOrderHandleOneOptions<T1, T2> = Omit<
+  SecondaryOrderListOptions<T1, T2>,
+  "take"
+>;
+
+/** Options for deleting many documents by a secondary order */
+export type SecondaryOrderDeleteManyOptions<T1, T2> =
+  & SecondaryOrderListOptions<T1, T2>
+  & DeleteOptions;
+
+/** Options for updating many documents by a secondary order */
+export type SecondaryOrderUpdateManyOptions<T1, T2> =
+  & SecondaryOrderListOptions<T1, T2>
+  & UpdateOptions;
+
+/** Options for updating one listed document by a secondary order */
+export type SecondaryOrderUpdateOneOptions<T1, T2> =
+  & SecondaryOrderHandleOneOptions<T1, T2>
+  & UpdateOptions;
+
 /** Options for counting all documents */
 export type CountAllOptions = Pick<ListOptions<any, KvId>, "consistency">;
 

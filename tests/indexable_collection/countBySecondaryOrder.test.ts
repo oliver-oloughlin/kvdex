@@ -57,4 +57,33 @@ Deno.test("indexable_collection - countBySecondaryOrder", async (t) => {
       });
     },
   );
+
+  await t.step(
+    "Should count documents bounded by start and end values",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.i_users.addMany(mockUsersWithAlteredAge);
+        assert(cr.ok);
+
+        // startValue is inclusive
+        const startCount = await db.i_users.countBySecondaryOrder("age", {
+          startValue: 50,
+        });
+        assert(startCount === 2);
+
+        // endValue is exclusive
+        const endCount = await db.i_users.countBySecondaryOrder("age", {
+          endValue: 80,
+        });
+        assert(endCount === 2);
+
+        // Combined start and end bounds
+        const rangeCount = await db.i_users.countBySecondaryOrder("age", {
+          startValue: 50,
+          endValue: 80,
+        });
+        assert(rangeCount === 1);
+      });
+    },
+  );
 });

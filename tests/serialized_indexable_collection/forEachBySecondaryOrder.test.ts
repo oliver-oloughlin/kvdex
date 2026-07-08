@@ -51,4 +51,36 @@ Deno.test("serialized_indexable_collection - forEachBySecondaryOrder", async (t)
       });
     },
   );
+
+  await t.step(
+    "Should run callback for each document bounded by start and end values",
+    async () => {
+      await useDb(async (db) => {
+        const cr = await db.is_users.addMany(mockUsersWithAlteredAge);
+        assert(cr.ok);
+
+        // startValue is inclusive
+        const startDocs: Document<User, string>[] = [];
+        await db.is_users.forEachBySecondaryOrder(
+          "age",
+          (doc) => startDocs.push(doc),
+          { startValue: 50 },
+        );
+        assert(startDocs.length === 2);
+        assert(startDocs[0].value.username === mockUser1.username);
+        assert(startDocs[1].value.username === mockUser2.username);
+
+        // endValue is exclusive
+        const endDocs: Document<User, string>[] = [];
+        await db.is_users.forEachBySecondaryOrder(
+          "age",
+          (doc) => endDocs.push(doc),
+          { endValue: 80 },
+        );
+        assert(endDocs.length === 2);
+        assert(endDocs[0].value.username === mockUser3.username);
+        assert(endDocs[1].value.username === mockUser1.username);
+      });
+    },
+  );
 });

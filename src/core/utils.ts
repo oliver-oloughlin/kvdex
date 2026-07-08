@@ -22,6 +22,7 @@ import type {
   ParsedQueueMessage,
   PreparedEnqueue,
   QueueMessage,
+  SecondaryOrderListOptions,
   StandardSchemaV1,
   WatchManager,
   WatchOptions,
@@ -474,13 +475,14 @@ export function createListSelector<T1, T2 extends KvId>(
 
   // Conditionally set prefix key
   const prefix = Array.isArray(start) && Array.isArray(end)
-    ? undefined!
+    ? undefined
     : prefixKey;
 
   const selector = { prefix, start, end };
+  if (!selector.prefix) delete selector.prefix;
   if (!selector.end) delete selector.end;
   if (!selector.start) delete selector.start;
-  return selector;
+  return selector as DenoKvListSelector;
 }
 
 /**
@@ -497,6 +499,45 @@ export function createListOptions<T1, T2 extends KvId>(
     ...options,
     limit,
   };
+}
+
+/**
+ * Create a list selector for a secondary order operation.
+ *
+ * Maps the `startValue` and `endValue` options to the `start` and `end` list
+ * selector keys, where the values are encoded to match the index value part of
+ * the document key.
+ *
+ * @param prefixKey - Key prefix.
+ * @param options - Secondary order list options.
+ * @param encoder - Encoder used to encode the index values.
+ * @returns A list selector.
+ */
+export async function createSecondaryOrderListSelector<T1, T2>(
+  prefixKey: KvKey,
+  options: SecondaryOrderListOptions<T1, T2> | undefined,
+  encoder: Encoder | undefined,
+): Promise<DenoKvListSelector> {
+  // Create start key from encoded start value
+  const start = typeof options?.startValue !== "undefined"
+    ? extendKey(prefixKey, await encodeData(options.startValue, encoder))
+    : undefined;
+
+  // Create end key from encoded end value
+  const end = typeof options?.endValue !== "undefined"
+    ? extendKey(prefixKey, await encodeData(options.endValue, encoder))
+    : undefined;
+
+  // Conditionally set prefix key
+  const prefix = Array.isArray(start) && Array.isArray(end)
+    ? undefined
+    : prefixKey;
+
+  const selector = { prefix, start, end };
+  if (!selector.prefix) delete selector.prefix;
+  if (!selector.end) delete selector.end;
+  if (!selector.start) delete selector.start;
+  return selector as DenoKvListSelector;
 }
 
 /**
