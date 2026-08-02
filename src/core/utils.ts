@@ -13,6 +13,7 @@ import type {
   FindManyOptions,
   IndexDataEntry,
   IndexDiffs,
+  IndexOrderListOptions,
   KvId,
   KvKey,
   KvObject,
@@ -22,7 +23,6 @@ import type {
   ParsedQueueMessage,
   PreparedEnqueue,
   QueueMessage,
-  SecondaryOrderListOptions,
   StandardSchemaV1,
   WatchManager,
   WatchOptions,
@@ -502,20 +502,20 @@ export function createListOptions<T1, T2 extends KvId>(
 }
 
 /**
- * Create a list selector for a secondary order operation.
+ * Create a list selector for an index order operation.
  *
  * Maps the `startValue` and `endValue` options to the `start` and `end` list
  * selector keys, where the values are encoded to match the index value part of
  * the document key.
  *
  * @param prefixKey - Key prefix.
- * @param options - Secondary order list options.
+ * @param options - Index order list options.
  * @param encoder - Encoder used to encode the index values.
  * @returns A list selector.
  */
-export async function createSecondaryOrderListSelector<T1, T2>(
+export async function createOrderListSelector<T1, T2>(
   prefixKey: KvKey,
-  options: SecondaryOrderListOptions<T1, T2> | undefined,
+  options: IndexOrderListOptions<T1, T2> | undefined,
   encoder: Encoder | undefined,
 ): Promise<DenoKvListSelector> {
   // Create start key from encoded start value
@@ -594,6 +594,25 @@ export function createWatcher(
   }
 
   return { promise: promise(), cancel };
+}
+
+/**
+ * Create an index order prefix key, dispatching between the primary and
+ * secondary index key spaces based on the given index.
+ *
+ * @param index - Primary or secondary index name.
+ * @param collection - The collection to create the prefix key for.
+ * @returns The prefix key for iterating documents in index order.
+ */
+export function createIndexOrderPrefixKey(
+  index: string,
+  collection: Collection<any, any, any>,
+): KvKey {
+  const indexKeys = collection["primaryIndexList"].includes(index)
+    ? collection["keys"].primaryIndex
+    : collection["keys"].secondaryIndex;
+
+  return extendKey(indexKeys, index);
 }
 
 async function handleIndices(

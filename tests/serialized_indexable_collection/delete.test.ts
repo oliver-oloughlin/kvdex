@@ -11,11 +11,11 @@ Deno.test("serialized_indexable_collection - delete", async (t) => {
       await useDb(async (db) => {
         const cr = await db.is_users.add(user);
         const count1 = await db.is_users.count();
-        const byPrimary1 = await db.is_users.findByPrimaryIndex(
+        const byPrimary1 = await db.is_users.findBy(
           "username",
           user.username,
         );
-        const bySecondary1 = await db.is_users.findBySecondaryIndex(
+        const bySecondary1 = await db.is_users.getManyBy(
           "age",
           user.age,
         );
@@ -30,11 +30,11 @@ Deno.test("serialized_indexable_collection - delete", async (t) => {
 
         const count2 = await db.is_users.count();
         const doc = await db.is_users.find(cr.id);
-        const byPrimary2 = await db.is_users.findByPrimaryIndex(
+        const byPrimary2 = await db.is_users.findBy(
           "username",
           user.username,
         );
-        const bySecondary2 = await db.is_users.findBySecondaryIndex(
+        const bySecondary2 = await db.is_users.getManyBy(
           "age",
           user.age,
         );
@@ -53,11 +53,11 @@ Deno.test("serialized_indexable_collection - delete", async (t) => {
       await useDb(async (db) => {
         const cr = await db.is_users.add(user);
         const count1 = await db.is_users.count();
-        const byPrimary1 = await db.is_users.findByPrimaryIndex(
+        const byPrimary1 = await db.is_users.findBy(
           "username",
           user.username,
         );
-        const bySecondary1 = await db.is_users.findBySecondaryIndex(
+        const bySecondary1 = await db.is_users.getManyBy(
           "age",
           user.age,
         );
@@ -72,11 +72,11 @@ Deno.test("serialized_indexable_collection - delete", async (t) => {
 
         const count2 = await db.is_users.count();
         const doc = await db.is_users.find(cr.id);
-        const byPrimary2 = await db.is_users.findByPrimaryIndex(
+        const byPrimary2 = await db.is_users.findBy(
           "username",
           user.username,
         );
-        const bySecondary2 = await db.is_users.findBySecondaryIndex(
+        const bySecondary2 = await db.is_users.getManyBy(
           "age",
           user.age,
         );

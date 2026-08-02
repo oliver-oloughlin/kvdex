@@ -27,12 +27,12 @@ Deno.test("indexable_collection - update", async (t) => {
 
         const byId = await db.i_users.find(cr.id);
 
-        const byPrimary = await db.i_users.findByPrimaryIndex(
+        const byPrimary = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
 
-        const bySecondary = await db.i_users.findBySecondaryIndex(
+        const bySecondary = await db.i_users.getManyBy(
           "age",
           mockUser1.age,
         );
@@ -86,12 +86,12 @@ Deno.test("indexable_collection - update", async (t) => {
 
         const byId = await db.i_users.find(cr.id);
 
-        const byPrimary = await db.i_users.findByPrimaryIndex(
+        const byPrimary = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
 
-        const bySecondary = await db.i_users.findBySecondaryIndex(
+        const bySecondary = await db.i_users.getManyBy(
           "age",
           mockUser1.age,
         );
@@ -136,12 +136,12 @@ Deno.test("indexable_collection - update", async (t) => {
 
         const byId = await db.i_users.find(cr.id);
 
-        const byPrimary = await db.i_users.findByPrimaryIndex(
+        const byPrimary = await db.i_users.findBy(
           "username",
           mockUser2.username,
         );
 
-        const bySecondary = await db.i_users.findBySecondaryIndex(
+        const bySecondary = await db.i_users.getManyBy(
           "age",
           mockUser2.age,
         );
@@ -194,7 +194,7 @@ Deno.test("indexable_collection - update", async (t) => {
         assert(!update.ok);
 
         const doc = await db.i_users.find(id2);
-        const docByPrimaryIndex = await db.i_users.findByPrimaryIndex(
+        const docByPrimaryIndex = await db.i_users.findBy(
           "username",
           mockUser2.username,
         );

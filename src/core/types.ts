@@ -375,6 +375,15 @@ export type SecondaryIndexKeys<
   : never
   : never;
 
+/** Keys of primary and secondary indices */
+export type IndexKeys<
+  TInput,
+  TOutput extends KvValue,
+  TOptions extends BaseCollectionOptions<TInput, TOutput>,
+> =
+  | PrimaryIndexKeys<TInput, TOutput, TOptions>
+  | SecondaryIndexKeys<TInput, TOutput, TOptions>;
+
 /** Indexed value entry */
 export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
   __id__: KvId;
@@ -548,13 +557,13 @@ export type UpdateOneOptions<T1, T2 extends KvId> =
   & UpdateOptions;
 
 /**
- * Options for listing documents by a secondary order.
+ * Options for listing documents by an index order.
  *
  * Differs from `ListOptions` by replacing the `startId` and `endId` options
  * with `startValue` and `endValue`, which bound the result by the index value
  * that documents are ordered by.
  */
-export type SecondaryOrderListOptions<T1, T2> =
+export type IndexOrderListOptions<T1, T2> =
   & Omit<ListOptions<T1, KvId>, "startId" | "endId">
   & {
     /** Index value of the document to start from. */
@@ -564,25 +573,25 @@ export type SecondaryOrderListOptions<T1, T2> =
     endValue?: T2;
   };
 
-/** Options for handling one listed document by a secondary order */
-export type SecondaryOrderHandleOneOptions<T1, T2> = Omit<
-  SecondaryOrderListOptions<T1, T2>,
+/** Options for handling one listed document by an index order */
+export type IndexOrderHandleOneOptions<T1, T2> = Omit<
+  IndexOrderListOptions<T1, T2>,
   "take"
 >;
 
-/** Options for deleting many documents by a secondary order */
-export type SecondaryOrderDeleteManyOptions<T1, T2> =
-  & SecondaryOrderListOptions<T1, T2>
+/** Options for deleting many documents by an index order */
+export type IndexOrderDeleteManyOptions<T1, T2> =
+  & IndexOrderListOptions<T1, T2>
   & DeleteOptions;
 
-/** Options for updating many documents by a secondary order */
-export type SecondaryOrderUpdateManyOptions<T1, T2> =
-  & SecondaryOrderListOptions<T1, T2>
+/** Options for updating many documents by an index order */
+export type IndexOrderUpdateManyOptions<T1, T2> =
+  & IndexOrderListOptions<T1, T2>
   & UpdateOptions;
 
-/** Options for updating one listed document by a secondary order */
-export type SecondaryOrderUpdateOneOptions<T1, T2> =
-  & SecondaryOrderHandleOneOptions<T1, T2>
+/** Options for updating one listed document by an index order */
+export type IndexOrderUpdateOneOptions<T1, T2> =
+  & IndexOrderHandleOneOptions<T1, T2>
   & UpdateOptions;
 
 /** Options for counting all documents */

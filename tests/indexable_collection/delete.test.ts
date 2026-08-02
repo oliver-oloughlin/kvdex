@@ -9,11 +9,11 @@ Deno.test("indexable_collection - delete", async (t) => {
       await useDb(async (db) => {
         const cr = await db.i_users.add(mockUser1);
         const count1 = await db.i_users.count();
-        const byPrimary1 = await db.i_users.findByPrimaryIndex(
+        const byPrimary1 = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
-        const bySecondary1 = await db.i_users.findBySecondaryIndex(
+        const bySecondary1 = await db.i_users.getManyBy(
           "age",
           mockUser1.age,
         );
@@ -28,11 +28,11 @@ Deno.test("indexable_collection - delete", async (t) => {
 
         const count2 = await db.i_users.count();
         const doc = await db.i_users.find(cr.id);
-        const byPrimary2 = await db.i_users.findByPrimaryIndex(
+        const byPrimary2 = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
-        const bySecondary2 = await db.i_users.findBySecondaryIndex(
+        const bySecondary2 = await db.i_users.getManyBy(
           "age",
           mockUser1.age,
         );
@@ -51,11 +51,11 @@ Deno.test("indexable_collection - delete", async (t) => {
       await useDb(async (db) => {
         const cr = await db.i_users.add(mockUser1);
         const count1 = await db.i_users.count();
-        const byPrimary1 = await db.i_users.findByPrimaryIndex(
+        const byPrimary1 = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
-        const bySecondary1 = await db.i_users.findBySecondaryIndex(
+        const bySecondary1 = await db.i_users.getManyBy(
           "age",
           mockUser1.age,
         );
@@ -70,11 +70,11 @@ Deno.test("indexable_collection - delete", async (t) => {
 
         const count2 = await db.i_users.count();
         const doc = await db.i_users.find(cr.id);
-        const byPrimary2 = await db.i_users.findByPrimaryIndex(
+        const byPrimary2 = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
-        const bySecondary2 = await db.i_users.findBySecondaryIndex(
+        const bySecondary2 = await db.i_users.getManyBy(
           "age",
           mockUser1.age,
         );

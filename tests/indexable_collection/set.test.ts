@@ -41,12 +41,12 @@ Deno.test("indexable_collection - set", async (t) => {
         const cr2 = await db.i_users.set("id2", mockUser1);
         assert(!cr2.ok);
 
-        const byPrimary = await db.i_users.findByPrimaryIndex(
+        const byPrimary = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
 
-        const bySecondary = await db.i_users.findBySecondaryIndex(
+        const bySecondary = await db.i_users.getManyBy(
           "age",
           mockUser1.age,
         );
@@ -72,21 +72,21 @@ Deno.test("indexable_collection - set", async (t) => {
 
         const docById = await db.i_users.find("id");
 
-        const docByOldPrimaryIndex = await db.i_users.findByPrimaryIndex(
+        const docByOldPrimaryIndex = await db.i_users.findBy(
           "username",
           u1.username,
         );
 
-        const docByNewPrimaryIndex = await db.i_users.findByPrimaryIndex(
+        const docByNewPrimaryIndex = await db.i_users.findBy(
           "username",
           u2.username,
         );
 
         const { result: [docByOldSecondaryIndex] } = await db.i_users
-          .findBySecondaryIndex("age", u1.age);
+          .getManyBy("age", u1.age);
 
         const { result: [docByNewSecondaryIndex] } = await db.i_users
-          .findBySecondaryIndex("age", u2.age);
+          .getManyBy("age", u2.age);
 
         assertEquals(docById?.value, u2);
         assertEquals(docByOldPrimaryIndex, null);
@@ -116,16 +116,16 @@ Deno.test("indexable_collection - set", async (t) => {
 
         const docById = await db.i_users.find("id");
 
-        const docByPrimaryIndex = await db.i_users.findByPrimaryIndex(
+        const docByPrimaryIndex = await db.i_users.findBy(
           "username",
           u1.username,
         );
 
         const { result: [docByOldSecondaryIndex] } = await db.i_users
-          .findBySecondaryIndex("age", u1.age);
+          .getManyBy("age", u1.age);
 
         const { result: [docByNewSecondaryIndex] } = await db.i_users
-          .findBySecondaryIndex("age", u2.age);
+          .getManyBy("age", u2.age);
 
         assertEquals(docById?.value, u2);
         assertEquals(docByPrimaryIndex?.value, u2);

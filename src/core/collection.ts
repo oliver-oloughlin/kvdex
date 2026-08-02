@@ -24,6 +24,12 @@ import type {
   IdGenerator,
   IdUpsert,
   IndexDataEntry,
+  IndexKeys,
+  IndexOrderDeleteManyOptions,
+  IndexOrderHandleOneOptions,
+  IndexOrderListOptions,
+  IndexOrderUpdateManyOptions,
+  IndexOrderUpdateOneOptions,
   IndexRecord,
   IndexType,
   KeysOfThatExtend,
@@ -44,11 +50,6 @@ import type {
   QueueListenerOptions,
   QueueMessageHandler,
   SecondaryIndexKeys,
-  SecondaryOrderDeleteManyOptions,
-  SecondaryOrderHandleOneOptions,
-  SecondaryOrderListOptions,
-  SecondaryOrderUpdateManyOptions,
-  SecondaryOrderUpdateOneOptions,
   SetOptions,
   UpdateData,
   UpdateManyOptions,
@@ -63,10 +64,11 @@ import {
   applyIndexDiffs,
   createHandlerId,
   createIndexDiffs,
+  createIndexOrderPrefixKey,
   createListOptions,
   createListSelector,
+  createOrderListSelector,
   createSecondaryIndexKeyPrefix,
-  createSecondaryOrderListSelector,
   createWatcher,
   deleteIndices,
   encodeData,
@@ -386,7 +388,7 @@ export class Collection<
    * @example
    * ```ts
    * // Finds a user document with the username = "oliver"
-   * const userDoc = await db.users.findByPrimaryIndex("username", "oliver")
+   * const userDoc = await db.users.findBy("username", "oliver")
    * ```
    *
    * @param index - Selected index.
@@ -394,7 +396,7 @@ export class Collection<
    * @param options - Find options, optional.
    * @returns A promise resolving to the document found by selected index, or null if not found.
    */
-  async findByPrimaryIndex<
+  async findBy<
     const K extends PrimaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
@@ -426,10 +428,10 @@ export class Collection<
    * @example
    * ```ts
    * // Returns all users with age = 24
-   * const { result } = await db.users.findBySecondaryIndex("age", 24)
+   * const { result } = await db.users.getManyBy("age", 24)
    *
    * // Returns all users with age = 24 AND username that starts with "o"
-   * const { result } = await db.users.findBySecondaryIndex("age", 24, {
+   * const { result } = await db.users.getManyBy("age", 24, {
    *   filter: (doc) => doc.value.username.startsWith("o")
    * })
    * ```
@@ -439,7 +441,7 @@ export class Collection<
    * @param options - List options, optional.
    * @returns A promise resolving to a pagination result containing the result list and iterator cursor.
    */
-  async findBySecondaryIndex<
+  async getManyBy<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
@@ -693,7 +695,7 @@ export class Collection<
    * @example
    * ```ts
    * // Deletes user with username = "oliver"
-   * await db.users.deleteByPrimaryIndex("username", "oliver")
+   * await db.users.deleteBy("username", "oliver")
    * ```
    *
    * @param index - Selected index.
@@ -701,7 +703,7 @@ export class Collection<
    * @param options - Delete options, optional.
    * @returns A promise that resolves to a DenoKvCommitResult object if successful or a DenoKvCommitError object if unsuccessful.
    */
-  async deleteByPrimaryIndex<
+  async deleteBy<
     const K extends PrimaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
@@ -744,10 +746,10 @@ export class Collection<
    * @example
    * ```ts
    * // Deletes all users with age = 24
-   * await db.users.deleteBySecondaryIndex("age", 24)
+   * await db.users.deleteManyBy("age", 24)
    *
    * // Deletes all users with age = 24 AND username that starts with "o"
-   * await db.users.deleteBySecondaryIndex("age", 24, {
+   * await db.users.deleteManyBy("age", 24, {
    *   filter: (doc) => doc.value.username.startsWith("o")
    * })
    * ```
@@ -757,7 +759,7 @@ export class Collection<
    * @param options - Delete many options, optional.
    * @returns A promise that resolves to a PaginationResult containing the results of the delete operations.
    */
-  async deleteBySecondaryIndex<
+  async deleteManyBy<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
@@ -840,13 +842,13 @@ export class Collection<
    * @example
    * ```ts
    * // Updates a user with username = "oliver" to have age = 56
-   * const result = await db.users.updateByPrimaryIndex("username", "oliver", { age: 56 })
+   * const result = await db.users.updateBy("username", "oliver", { age: 56 })
    * ```
    *
    * @example
    * ```ts
    * // Updates a user document using shallow merge
-   * const result = await db.users.updateByPrimaryIndex(
+   * const result = await db.users.updateBy(
    *   "username",
    *   "anders",
    *   { age: 89 },
@@ -860,7 +862,7 @@ export class Collection<
    * @param options - Set options, optional.
    * @returns Promise that resolves to a commit result.
    */
-  async updateByPrimaryIndex<
+  async updateBy<
     const K extends PrimaryIndexKeys<TInput, TOutput, TOptions>,
     const T extends UpdateOptions,
   >(
@@ -870,7 +872,7 @@ export class Collection<
     options?: T,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Find document by primary index
-    const doc = await this.findByPrimaryIndex(index, value);
+    const doc = await this.findBy(index, value);
 
     // If no document, return commit error
     if (!doc) {
@@ -889,13 +891,13 @@ export class Collection<
    * @example
    * ```ts
    * // Updates all user documents with age = 24 and sets age = 67
-   * const { result } = await db.users.updateBySecondaryIndex("age", 24, { age: 67 })
+   * const { result } = await db.users.updateManyBy("age", 24, { age: 67 })
    * ```
    *
    * @example
    * ```ts
    * // Updates all users where age = 24 and username starts with "o", using shallow merge
-   * const { result } = await db.users.updateBySecondaryIndex(
+   * const { result } = await db.users.updateManyBy(
    *   "age",
    *   24,
    *   { age: 67 },
@@ -912,7 +914,7 @@ export class Collection<
    * @param options - Update many options, optional.
    * @returns Promise that resolves to a pagination result containing the result list and iterator cursor.
    */
-  async updateBySecondaryIndex<
+  async updateManyBy<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
     const T extends UpdateManyOptions<
       Document<TOutput, ParseId<TOptions>>,
@@ -1005,7 +1007,7 @@ export class Collection<
    *
    * @example
    * ```ts
-   * const result = await db.users.upsertByPrimaryIndex({
+   * const result = await db.users.upsertBy({
    *   index: ["username", "Jack"],
    *   update: { username: "Chris" },
    *   set: {
@@ -1026,7 +1028,7 @@ export class Collection<
    * @param options - Upsert options.
    * @returns A promise resolving to either CommitResult or CommitError.
    */
-  async upsertByPrimaryIndex<
+  async upsertBy<
     const TIndex extends PrimaryIndexKeys<TInput, TOutput, TOptions>,
     const TUpsertOptions extends UpdateOptions,
   >(
@@ -1040,7 +1042,7 @@ export class Collection<
     options?: TUpsertOptions,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // First attempt update
-    const updateCr = await this.updateByPrimaryIndex(
+    const updateCr = await this.updateBy(
       ...input.index,
       input.update,
       options,
@@ -1117,27 +1119,27 @@ export class Collection<
   }
 
   /**
-   * Update the value of multiple existing documents in the collection by a secondary order.
+   * Update the value of multiple existing documents in the collection by index order.
    *
    * @example
    * ```ts
    * // Updates the first 10 users ordered by age and sets username = "anon"
-   * await db.users.updateManyBySecondaryOrder("age", { username: "anon" })
+   * await db.users.updateManyByOrder("age", { username: "anon" })
    * ```
    *
-   * @param order - Secondary order to update documents by.
+   * @param index - Primary or secondary index to order documents by.
    * @param data - Updated data to be inserted into documents.
    * @param options - Update many options, optional.
    * @returns Promise resolving to a pagination result containing iterator cursor and result list.
    */
-  async updateManyBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
-    const T extends SecondaryOrderUpdateManyOptions<
+  async updateManyByOrder<
+    const K extends IndexKeys<TInput, TOutput, TOptions>,
+    const T extends IndexOrderUpdateManyOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
   >(
-    order: K,
+    index: K,
     data: UpdateData<TOutput, T["strategy"]>,
     options?: T,
   ): Promise<
@@ -1145,11 +1147,11 @@ export class Collection<
       CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError
     >
   > {
-    // Create prefix key
-    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
+    // Create index order prefix key
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
-    const selector = await createSecondaryOrderListSelector(
+    const selector = await createOrderListSelector(
       prefixKey,
       options,
       this.encoder,
@@ -1216,13 +1218,13 @@ export class Collection<
    * @example
    * ```ts
    * // Updates the first user with age = 20 and sets age = 67
-   * const result = await db.users.updateOneBySecondaryIndex("age", 20, { age: 67 })
+   * const result = await db.users.updateOneBy("age", 20, { age: 67 })
    * ```
    *
    * @example
    * ```ts
    * // Updates the first user where age = 20 and username starts with "a", using shallow merge
-   * const result = await db.users.updateOneBySecondaryIndex("age", 20, { age: 67 }, {
+   * const result = await db.users.updateOneBy("age", 20, { age: 67 }, {
    *   filter: (doc) => doc.value.username.startsWith("a"),
    *   strategy: "merge-shallow"
    * })
@@ -1234,7 +1236,7 @@ export class Collection<
    * @param options - Update many options, optional.
    * @returns Promise resolving to either a commit result or commit error object.
    */
-  async updateOneBySecondaryIndex<
+  async updateOneBy<
     const T extends UpdateOneOptions<
       Document<TOutput, ParseId<TOptions>>,
       ParseId<TOptions>
@@ -1269,35 +1271,35 @@ export class Collection<
   }
 
   /**
-   * Update the value of one existing document in the collection by a secondary order.
+   * Update the value of one existing document in the collection by index order.
    *
    * @example
    * ```ts
    * // Updates the first user ordered by age and sets username = "anon"
-   * const result = await db.users.updateOneBySecondaryOrder("age", { username: "anon" })
+   * const result = await db.users.updateOneByOrder("age", { username: "anon" })
    * ```
    *
-   * @param order - Secondary order to update document by.
+   * @param index - Primary or secondary index to order documents by.
    * @param data - Updated data to be inserted into document.
    * @param options - Update many options, optional.
    * @returns Promise resolving to either a commit result or commit error object.
    */
-  async updateOneBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
-    const T extends SecondaryOrderUpdateOneOptions<
+  async updateOneByOrder<
+    const K extends IndexKeys<TInput, TOutput, TOptions>,
+    const T extends IndexOrderUpdateOneOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
   >(
-    order: K,
+    index: K,
     data: UpdateData<TOutput, T["strategy"]>,
     options?: T,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
-    // Create prefix key
-    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
+    // Create index order prefix key
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
-    const selector = await createSecondaryOrderListSelector(
+    const selector = await createOrderListSelector(
       prefixKey,
       options,
       this.encoder,
@@ -1421,7 +1423,7 @@ export class Collection<
   }
 
   /**
-   * Delete multiple documents from the KV store by a secondary order.
+   * Delete multiple documents from the KV store by index order.
    *
    * The method takes an optional options argument that can be used for filtering of documents, and pagination.
    *
@@ -1430,27 +1432,27 @@ export class Collection<
    * @example
    * ```ts
    * // Deletes the first 10 users ordered by age
-   * await db.users.deleteManyBySecondaryOrder("age", { limit: 10 })
+   * await db.users.deleteManyByOrder("age", { limit: 10 })
    * ```
    *
-   * @param order - Secondary order to delete documents by.
+   * @param index - Primary or secondary index to order documents by.
    * @param options - Delete many options, optional.
    * @returns A promise that resolves a pagination result containing a list of delete commit results and the iterator cursor.
    */
-  async deleteManyBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
+  async deleteManyByOrder<
+    const K extends IndexKeys<TInput, TOutput, TOptions>,
   >(
-    order: K,
-    options?: SecondaryOrderDeleteManyOptions<
+    index: K,
+    options?: IndexOrderDeleteManyOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
   ): Promise<PaginationResult<DenoKvCommitResult | DenoKvCommitError>> {
-    // Create prefix key
-    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
+    // Create index order prefix key
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
-    const selector = await createSecondaryOrderListSelector(
+    const selector = await createOrderListSelector(
       prefixKey,
       options,
       this.encoder,
@@ -1502,36 +1504,36 @@ export class Collection<
 
   /**
    * Retrieves multiple documents from the KV store in the specified
-   * secondary order and according to the given options.
+   * index order and according to the given options.
    *
    * If no options are provided, all documents are retrieved.
    *
    * @example
    * ```ts
    * // Get all users ordered by age
-   * const { result } = await db.users.getManyBySecondaryOrder("age")
+   * const { result } = await db.users.getManyByOrder("age")
    *
    * // Only get users with username that starts with "a", ordered by age
-   * const { result } = await db.users.getManyBySecondaryOrder("age", {
+   * const { result } = await db.users.getManyByOrder("age", {
    *   filter: doc => doc.value.username.startsWith("a")
    * })
    * ```
    *
-   * @param order - Secondary order to retrieve documents by.
+   * @param index - Primary or secondary index to order documents by.
    * @param options - List options, optional.
    * @returns A promise that resolves to a pagination result containing a list of the retrieved documents and the iterator cursor
    */
-  async getManyBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
+  async getManyByOrder<
+    const K extends IndexKeys<TInput, TOutput, TOptions>,
   >(
-    order: K,
-    options?: SecondaryOrderListOptions<
+    index: K,
+    options?: IndexOrderListOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
   ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
-    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
-    const selector = await createSecondaryOrderListSelector(
+    const prefixKey = createIndexOrderPrefixKey(index, this);
+    const selector = await createOrderListSelector(
       prefixKey,
       options,
       this.encoder,
@@ -1593,13 +1595,13 @@ export class Collection<
    * @example
    * ```ts
    * // Get the first user with age = 69
-   * const user = await db.users.getOneBySecondaryIndex("age", 69)
+   * const user = await db.users.getOneBy("age", 69)
    * ```
    *
    * @example
    * ```ts
    * // Get the first user with age = 40 and username that starts with "a"
-   * const user = await db.users.getOneBySecondaryIndex("age", 40, {
+   * const user = await db.users.getOneBy("age", 40, {
    *   filter: doc => doc.value.username.startsWith("a")
    * })
    * ```
@@ -1609,7 +1611,7 @@ export class Collection<
    * @param options - List options, optional.
    * @returns A promise resolving to either a document or null.
    */
-  async getOneBySecondaryIndex<
+  async getOneBy<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
@@ -1640,34 +1642,34 @@ export class Collection<
   }
 
   /**
-   * Retrieves one document from the KV store by a secondary order and according to the given options.
+   * Retrieves one document from the KV store by index order and according to the given options.
    *
-   * If no options are provided, the first document in the collection by the given order is retrieved.
+   * If no options are provided, the first document in the collection in the given index order is retrieved.
    *
    * @example
    * ```ts
    * // Get the first user ordered by age
-   * const user = await db.users.getOneBySecondaryOrder("age")
+   * const user = await db.users.getOneByOrder("age")
    * ```
    *
-   * @param order - Secondary order to retrieve document by.
+   * @param index - Primary or secondary index to order documents by.
    * @param options - List options, optional.
    * @returns A promise resolving to either a document or null.
    */
-  async getOneBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
+  async getOneByOrder<
+    const K extends IndexKeys<TInput, TOutput, TOptions>,
   >(
-    order: K,
-    options?: SecondaryOrderHandleOneOptions<
+    index: K,
+    options?: IndexOrderHandleOneOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
-    // Create prefix key
-    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
+    // Create index order prefix key
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
-    const selector = await createSecondaryOrderListSelector(
+    const selector = await createOrderListSelector(
       prefixKey,
       options,
       this.encoder,
@@ -1733,7 +1735,7 @@ export class Collection<
    * @example
    * ```ts
    * // Prints the username of all users where age = 20
-   * await db.users.forEachBySecondaryIndex(
+   * await db.users.forEachBy(
    *   "age",
    *   20,
    *   (doc) => console.log(doc.value.username),
@@ -1746,7 +1748,7 @@ export class Collection<
    * @param options - List options, optional.
    * @returns A promise that resolves to a pagination result containing the iterator cursor.
    */
-  async forEachBySecondaryIndex<
+  async forEachBy<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
@@ -1778,39 +1780,39 @@ export class Collection<
   }
 
   /**
-   * Executes a callback function for every document by a secondary order and according to the given options.
+   * Executes a callback function for every document by index order and according to the given options.
    *
    * If no options are provided, the callback function is executed for all documents.
    *
    * @example
    * ```ts
    * // Prints the username of all users ordered by age
-   * await db.users.forEachBySecondaryOrder(
+   * await db.users.forEachByOrder(
    *   "age",
    *   (doc) => console.log(doc.value.username),
    * )
    * ```
    *
-   * @param order - Secondary order to retrieve documents by.
+   * @param index - Primary or secondary index to order documents by.
    * @param fn - Callback function.
    * @param options - List options, optional.
    * @returns A promise that resolves to a pagination result containing the iterator cursor.
    */
-  async forEachBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
+  async forEachByOrder<
+    const K extends IndexKeys<TInput, TOutput, TOptions>,
   >(
-    order: K,
+    index: K,
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => unknown,
-    options?: SecondaryOrderUpdateManyOptions<
+    options?: IndexOrderUpdateManyOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
   ): Promise<Pagination> {
-    // Create prefix key
-    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
+    // Create index order prefix key
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
-    const selector = await createSecondaryOrderListSelector(
+    const selector = await createOrderListSelector(
       prefixKey,
       options,
       this.encoder,
@@ -1877,7 +1879,7 @@ export class Collection<
    * @example
    * ```ts
    * // Returns a list of usernames of all users where age = 20
-   * const { result } = await db.users.mapBySecondaryIndex(
+   * const { result } = await db.users.mapBy(
    *   "age",
    *   20,
    *   (doc) => doc.value.username,
@@ -1890,7 +1892,7 @@ export class Collection<
    * @param options - List options, optional.
    * @returns A promise that resolves to a pagination result containing a list of the callback results and the iterator cursor.
    */
-  async mapBySecondaryIndex<
+  async mapBy<
     const T,
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
@@ -1923,7 +1925,7 @@ export class Collection<
   }
 
   /**
-   * Executes a callback function for every document by a secondary order and according to the given options.
+   * Executes a callback function for every document by index order and according to the given options.
    *
    * If no options are provided, the callback function is executed for all documents.
    *
@@ -1932,33 +1934,33 @@ export class Collection<
    * @example
    * ```ts
    * // Returns a list of usernames of all users ordered by age
-   * const { result } = await db.users.mapBySecondaryOrder(
+   * const { result } = await db.users.mapByOrder(
    *   "age",
    *   (doc) => doc.value.username,
    * )
    * ```
    *
-   * @param order - Secondary order to map documents by.
+   * @param index - Primary or secondary index to order documents by.
    * @param fn - Callback function.
    * @param options - List options, optional.
    * @returns A promise that resolves to a pagination result containing a list of the callback results and the iterator cursor.
    */
-  async mapBySecondaryOrder<
+  async mapByOrder<
     const T,
-    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
+    const K extends IndexKeys<TInput, TOutput, TOptions>,
   >(
-    order: K,
+    index: K,
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => T,
-    options?: SecondaryOrderUpdateManyOptions<
+    options?: IndexOrderUpdateManyOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
   ): Promise<PaginationResult<Awaited<T>>> {
-    // Create prefix key
-    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
+    // Create index order prefix key
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
-    const selector = await createSecondaryOrderListSelector(
+    const selector = await createOrderListSelector(
       prefixKey,
       options,
       this.encoder,
@@ -2027,7 +2029,7 @@ export class Collection<
    *
    * ```ts
    * // Counts all users where age = 20
-   * const count = await db.users.countBySecondaryIndex("age", 20)
+   * const count = await db.users.countBy("age", 20)
    * ```
    *
    * @param index - Selected index.
@@ -2035,7 +2037,7 @@ export class Collection<
    * @param options - Count options.
    * @returns A promise that resolves to a number representing the count.
    */
-  async countBySecondaryIndex<
+  async countBy<
     const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
@@ -2072,36 +2074,36 @@ export class Collection<
   }
 
   /**
-   * Counts the number of documents in the collection by a secondary order.
+   * Counts the number of documents in the collection by index order.
    *
    * @example
    *
    * ```ts
    * // Counts how many of the first 10 users ordered by age that are under the age of 18
-   * const count = await db.users.countBySecondaryOrder("age", {
+   * const count = await db.users.countByOrder("age", {
    *   limit: 10,
    *   filter: (doc) => doc.value.age < 18
    * })
    * ```
    *
-   * @param order - Secondary order to count documents by.
+   * @param index - Primary or secondary index to order documents by.
    * @param options - Count options.
    * @returns A promise that resolves to a number representing the count.
    */
-  async countBySecondaryOrder<
-    const K extends SecondaryIndexKeys<TInput, TOutput, TOptions>,
+  async countByOrder<
+    const K extends IndexKeys<TInput, TOutput, TOptions>,
   >(
-    order: K,
-    options?: SecondaryOrderListOptions<
+    index: K,
+    options?: IndexOrderListOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
   ): Promise<number> {
-    // Create prefix key
-    const prefixKey = extendKey(this.keys.secondaryIndex, order as KvId);
+    // Create index order prefix key
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
-    const selector = await createSecondaryOrderListSelector(
+    const selector = await createOrderListSelector(
       prefixKey,
       options,
       this.encoder,
