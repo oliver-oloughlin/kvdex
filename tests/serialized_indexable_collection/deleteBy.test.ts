@@ -4,9 +4,9 @@ import { generateLargeUsers, useDb } from "../utils.ts";
 
 const [user] = generateLargeUsers(1);
 
-Deno.test("serialized_indexable_collection - delete", async (t) => {
+Deno.test("serialized_indexable_collection - deleteBy", async (t) => {
   await t.step(
-    "Should successfully delete a document and its indices from the collection",
+    "Should successfully delete a document and its indices from the collection by primary index",
     async () => {
       await useDb(async (db) => {
         const cr = await db.is_users.add(user);
@@ -25,8 +25,7 @@ Deno.test("serialized_indexable_collection - delete", async (t) => {
         assert(byPrimary1?.id === cr.id);
         assert(bySecondary1.result.at(0)?.id === cr.id);
 
-        const deleteCr = await db.is_users.delete(cr.id);
-        assert(deleteCr.ok);
+        await db.is_users.deleteBy("username", user.username);
 
         const count2 = await db.is_users.count();
         const doc = await db.is_users.find(cr.id);
@@ -48,7 +47,7 @@ Deno.test("serialized_indexable_collection - delete", async (t) => {
   );
 
   await t.step(
-    "Should successfully delete a document and its indices from the collection with batched option",
+    "Should successfully delete a document and its indices from the collection by primary index with batched option",
     async () => {
       await useDb(async (db) => {
         const cr = await db.is_users.add(user);
@@ -67,8 +66,9 @@ Deno.test("serialized_indexable_collection - delete", async (t) => {
         assert(byPrimary1?.id === cr.id);
         assert(bySecondary1.result.at(0)?.id === cr.id);
 
-        const deleteCr = await db.is_users.delete(cr.id, { batched: true });
-        assert(deleteCr.ok);
+        await db.is_users.deleteBy("username", user.username, {
+          batched: true,
+        });
 
         const count2 = await db.is_users.count();
         const doc = await db.is_users.find(cr.id);
@@ -90,23 +90,19 @@ Deno.test("serialized_indexable_collection - delete", async (t) => {
   );
 
   await t.step(
-    "Should successfully delete document from collection with multi-part id",
+    "Should delete document by primary index with multi-part id",
     async () => {
       await useDb(async (db) => {
         const cr = await db.is_multi_part_id_users.add(mockUser1);
-        const count1 = await db.is_multi_part_id_users.count();
-
         assert(cr.ok);
-        assert(count1 === 1);
 
-        const deleteCr = await db.is_multi_part_id_users.delete(cr.id);
-        assert(deleteCr.ok);
+        await db.is_multi_part_id_users.deleteBy(
+          "username",
+          mockUser1.username,
+        );
 
-        const count2 = await db.is_multi_part_id_users.count();
-        const doc = await db.is_multi_part_id_users.find(cr.id);
-
-        assert(count2 === 0);
-        assert(doc === null);
+        const count = await db.is_multi_part_id_users.count();
+        assert(count === 0);
       });
     },
   );

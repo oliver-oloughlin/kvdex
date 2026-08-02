@@ -19,10 +19,10 @@ import type {
   KvValue,
   ListOptions,
   Model,
+  OrderListOptions,
   ParsedQueueMessage,
   PreparedEnqueue,
   QueueMessage,
-  SecondaryOrderListOptions,
   StandardSchemaV1,
   WatchManager,
   WatchOptions,
@@ -513,9 +513,9 @@ export function createListOptions<T1, T2 extends KvId>(
  * @param encoder - Encoder used to encode the index values.
  * @returns A list selector.
  */
-export async function createSecondaryOrderListSelector<T1, T2>(
+export async function createOrderListSelector<T1, T2>(
   prefixKey: KvKey,
-  options: SecondaryOrderListOptions<T1, T2> | undefined,
+  options: OrderListOptions<T1, T2> | undefined,
   encoder: Encoder | undefined,
 ): Promise<DenoKvListSelector> {
   // Create start key from encoded start value

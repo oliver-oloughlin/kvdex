@@ -105,13 +105,13 @@ Deno.test("serialized_indexable_collection - updateMany", async (t) => {
         assertEquals(successfulCrs.length, 1);
         assertEquals(unsuccessfulCrs.length, users.length - 1);
 
-        const byPrimary = await db.is_users.findByPrimaryIndex(
+        const byPrimary = await db.is_users.findBy(
           "username",
           mockUser1.username,
         );
 
         const { result: [bySecondary] } = await db.is_users
-          .findBySecondaryIndex(
+          .getManyBy(
             "age",
             mockUser1.age,
           );

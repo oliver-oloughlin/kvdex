@@ -274,11 +274,11 @@ Deno.test("indexable_collection - properties", async (t) => {
       assert(cr1.ok);
       assert(cr2.ok);
 
-      const byOptPrimary2 = await db.i.findByPrimaryIndex(
+      const byOptPrimary2 = await db.i.findBy(
         "optPrimary",
         "optPrimary2",
       );
-      const byOptSecondary2 = await db.i.findBySecondaryIndex(
+      const byOptSecondary2 = await db.i.getManyBy(
         "optSecondary",
         20,
       );
@@ -305,11 +305,11 @@ Deno.test("indexable_collection - properties", async (t) => {
 
       assert(cr4.ok);
 
-      const byOptPrimary4 = await db.i.findByPrimaryIndex(
+      const byOptPrimary4 = await db.i.findBy(
         "optPrimary",
         "optPrimary4",
       );
-      const byOptSecondary4 = await db.i.findBySecondaryIndex(
+      const byOptSecondary4 = await db.i.getManyBy(
         "optSecondary",
         20,
       );
@@ -735,32 +735,32 @@ Deno.test("indexable_collection - properties", async (t) => {
       assert(cr25.ok);
       assert(cr26.ok);
 
-      //const byPrimary1 = await db.val1.findByPrimaryIndex("p", val1)
-      const byPrimary2 = await db.val2.findByPrimaryIndex("p", val2);
-      const byPrimary3 = await db.val3.findByPrimaryIndex("p", val3);
-      const byPrimary4 = await db.val4.findByPrimaryIndex("p", val4);
-      const byPrimary5 = await db.val5.findByPrimaryIndex("p", val5);
-      const byPrimary6 = await db.val6.findByPrimaryIndex("p", val6);
-      const byPrimary7 = await db.val7.findByPrimaryIndex("p", val7);
-      const byPrimary8 = await db.val8.findByPrimaryIndex("p", val8);
-      const byPrimary9 = await db.val9.findByPrimaryIndex("p", val9);
-      const byPrimary10 = await db.val10.findByPrimaryIndex("p", val10);
-      const byPrimary11 = await db.val11.findByPrimaryIndex("p", val11);
-      const byPrimary12 = await db.val12.findByPrimaryIndex("p", val12);
-      const byPrimary13 = await db.val13.findByPrimaryIndex("p", val13);
-      const byPrimary14 = await db.val14.findByPrimaryIndex("p", val14);
-      const byPrimary15 = await db.val15.findByPrimaryIndex("p", val15);
-      const byPrimary16 = await db.val16.findByPrimaryIndex("p", val16);
-      const byPrimary17 = await db.val17.findByPrimaryIndex("p", val17);
-      const byPrimary18 = await db.val18.findByPrimaryIndex("p", val18);
-      const byPrimary19 = await db.val19.findByPrimaryIndex("p", val19);
-      const byPrimary20 = await db.val20.findByPrimaryIndex("p", val20);
-      const byPrimary21 = await db.val21.findByPrimaryIndex("p", val21);
-      const byPrimary22 = await db.val22.findByPrimaryIndex("p", val22);
-      const byPrimary23 = await db.val23.findByPrimaryIndex("p", val23);
-      const byPrimary24 = await db.val24.findByPrimaryIndex("p", val24);
-      const byPrimary25 = await db.val25.findByPrimaryIndex("p", val25);
-      const byPrimary26 = await db.val26.findByPrimaryIndex("p", val26);
+      //const byPrimary1 = await db.val1.findBy("p", val1)
+      const byPrimary2 = await db.val2.findBy("p", val2);
+      const byPrimary3 = await db.val3.findBy("p", val3);
+      const byPrimary4 = await db.val4.findBy("p", val4);
+      const byPrimary5 = await db.val5.findBy("p", val5);
+      const byPrimary6 = await db.val6.findBy("p", val6);
+      const byPrimary7 = await db.val7.findBy("p", val7);
+      const byPrimary8 = await db.val8.findBy("p", val8);
+      const byPrimary9 = await db.val9.findBy("p", val9);
+      const byPrimary10 = await db.val10.findBy("p", val10);
+      const byPrimary11 = await db.val11.findBy("p", val11);
+      const byPrimary12 = await db.val12.findBy("p", val12);
+      const byPrimary13 = await db.val13.findBy("p", val13);
+      const byPrimary14 = await db.val14.findBy("p", val14);
+      const byPrimary15 = await db.val15.findBy("p", val15);
+      const byPrimary16 = await db.val16.findBy("p", val16);
+      const byPrimary17 = await db.val17.findBy("p", val17);
+      const byPrimary18 = await db.val18.findBy("p", val18);
+      const byPrimary19 = await db.val19.findBy("p", val19);
+      const byPrimary20 = await db.val20.findBy("p", val20);
+      const byPrimary21 = await db.val21.findBy("p", val21);
+      const byPrimary22 = await db.val22.findBy("p", val22);
+      const byPrimary23 = await db.val23.findBy("p", val23);
+      const byPrimary24 = await db.val24.findBy("p", val24);
+      const byPrimary25 = await db.val25.findBy("p", val25);
+      const byPrimary26 = await db.val26.findBy("p", val26);
 
       //assert(byPrimary1 !== null)
       assert(byPrimary2 !== null);
@@ -789,108 +789,108 @@ Deno.test("indexable_collection - properties", async (t) => {
       assert(byPrimary25 !== null);
       assert(byPrimary26 !== null);
 
-      /*const { result: bySecondary1 } = await db.val1.findBySecondaryIndex(
+      /*const { result: bySecondary1 } = await db.val1.getManyBy(
         "s",
         val1,
       )*/
 
-      const { result: bySecondary2 } = await db.val2.findBySecondaryIndex(
+      const { result: bySecondary2 } = await db.val2.getManyBy(
         "s",
         val2,
       );
-      const { result: bySecondary3 } = await db.val3.findBySecondaryIndex(
+      const { result: bySecondary3 } = await db.val3.getManyBy(
         "s",
         val3,
       );
-      const { result: bySecondary4 } = await db.val4.findBySecondaryIndex(
+      const { result: bySecondary4 } = await db.val4.getManyBy(
         "s",
         val4,
       );
-      const { result: bySecondary5 } = await db.val5.findBySecondaryIndex(
+      const { result: bySecondary5 } = await db.val5.getManyBy(
         "s",
         val5,
       );
-      const { result: bySecondary6 } = await db.val6.findBySecondaryIndex(
+      const { result: bySecondary6 } = await db.val6.getManyBy(
         "s",
         val6,
       );
-      const { result: bySecondary7 } = await db.val7.findBySecondaryIndex(
+      const { result: bySecondary7 } = await db.val7.getManyBy(
         "s",
         val7,
       );
-      const { result: bySecondary8 } = await db.val8.findBySecondaryIndex(
+      const { result: bySecondary8 } = await db.val8.getManyBy(
         "s",
         val8,
       );
-      const { result: bySecondary9 } = await db.val9.findBySecondaryIndex(
+      const { result: bySecondary9 } = await db.val9.getManyBy(
         "s",
         val9,
       );
-      const { result: bySecondary10 } = await db.val10.findBySecondaryIndex(
+      const { result: bySecondary10 } = await db.val10.getManyBy(
         "s",
         val10,
       );
-      const { result: bySecondary11 } = await db.val11.findBySecondaryIndex(
+      const { result: bySecondary11 } = await db.val11.getManyBy(
         "s",
         val11,
       );
-      const { result: bySecondary12 } = await db.val12.findBySecondaryIndex(
+      const { result: bySecondary12 } = await db.val12.getManyBy(
         "s",
         val12,
       );
-      const { result: bySecondary13 } = await db.val13.findBySecondaryIndex(
+      const { result: bySecondary13 } = await db.val13.getManyBy(
         "s",
         val13,
       );
-      const { result: bySecondary14 } = await db.val14.findBySecondaryIndex(
+      const { result: bySecondary14 } = await db.val14.getManyBy(
         "s",
         val14,
       );
-      const { result: bySecondary15 } = await db.val15.findBySecondaryIndex(
+      const { result: bySecondary15 } = await db.val15.getManyBy(
         "s",
         val15,
       );
-      const { result: bySecondary16 } = await db.val16.findBySecondaryIndex(
+      const { result: bySecondary16 } = await db.val16.getManyBy(
         "s",
         val16,
       );
-      const { result: bySecondary17 } = await db.val17.findBySecondaryIndex(
+      const { result: bySecondary17 } = await db.val17.getManyBy(
         "s",
         val17,
       );
-      const { result: bySecondary18 } = await db.val18.findBySecondaryIndex(
+      const { result: bySecondary18 } = await db.val18.getManyBy(
         "s",
         val18,
       );
-      const { result: bySecondary19 } = await db.val19.findBySecondaryIndex(
+      const { result: bySecondary19 } = await db.val19.getManyBy(
         "s",
         val19,
       );
-      const { result: bySecondary20 } = await db.val20.findBySecondaryIndex(
+      const { result: bySecondary20 } = await db.val20.getManyBy(
         "s",
         val20,
       );
-      const { result: bySecondary21 } = await db.val21.findBySecondaryIndex(
+      const { result: bySecondary21 } = await db.val21.getManyBy(
         "s",
         val21,
       );
-      const { result: bySecondary22 } = await db.val22.findBySecondaryIndex(
+      const { result: bySecondary22 } = await db.val22.getManyBy(
         "s",
         val22,
       );
-      const { result: bySecondary23 } = await db.val23.findBySecondaryIndex(
+      const { result: bySecondary23 } = await db.val23.getManyBy(
         "s",
         val23,
       );
-      const { result: bySecondary24 } = await db.val24.findBySecondaryIndex(
+      const { result: bySecondary24 } = await db.val24.getManyBy(
         "s",
         val24,
       );
-      const { result: bySecondary25 } = await db.val25.findBySecondaryIndex(
+      const { result: bySecondary25 } = await db.val25.getManyBy(
         "s",
         val25,
       );
-      const { result: bySecondary26 } = await db.val26.findBySecondaryIndex(
+      const { result: bySecondary26 } = await db.val26.getManyBy(
         "s",
         val26,
       );

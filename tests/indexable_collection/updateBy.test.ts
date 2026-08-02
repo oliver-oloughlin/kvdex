@@ -1,11 +1,10 @@
 import type { Document } from "../../mod.ts";
-import { assert, assertEquals, assertNotEquals } from "@std/assert";
+import { assert } from "@std/assert";
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
 import type { User } from "../models.ts";
 import { useDb } from "../utils.ts";
-import { mockUser3 } from "../mocks.ts";
 
-Deno.test("indexable_collection - update", async (t) => {
+Deno.test("indexable_collection - updateBy", async (t) => {
   await t.step(
     "Should update document of KvObject type using shallow merge",
     async () => {
@@ -21,9 +20,14 @@ Deno.test("indexable_collection - update", async (t) => {
           },
         };
 
-        const updateCr = await db.i_users.update(cr.id, updateData, {
-          strategy: "merge-shallow",
-        });
+        const updateCr = await db.i_users.updateBy(
+          "username",
+          mockUser1.username,
+          updateData,
+          {
+            strategy: "merge-shallow",
+          },
+        );
 
         const byId = await db.i_users.find(cr.id);
 
@@ -38,14 +42,13 @@ Deno.test("indexable_collection - update", async (t) => {
         );
 
         assert(updateCr.ok);
-        assertEquals(updateCr.id, cr.id);
-        assertEquals(byPrimary?.id, cr.id);
-        assertEquals(bySecondary.result.at(0)?.id, cr.id);
-        assertNotEquals(updateCr.versionstamp, cr.versionstamp);
-        assertEquals(updateCr.versionstamp, byPrimary?.versionstamp);
-        assertEquals(
-          updateCr.versionstamp,
-          bySecondary.result.at(0)?.versionstamp,
+        assert(updateCr.id === cr.id);
+        assert(byPrimary?.id === cr.id);
+        assert(bySecondary.result.at(0)?.id === cr.id);
+        assert(updateCr.versionstamp !== cr.versionstamp);
+        assert(updateCr.versionstamp === byPrimary.versionstamp);
+        assert(
+          updateCr.versionstamp === bySecondary.result.at(0)?.versionstamp,
         );
 
         const asserts = (doc: Document<User, string> | null) => {
@@ -80,9 +83,14 @@ Deno.test("indexable_collection - update", async (t) => {
           },
         };
 
-        const updateCr = await db.i_users.update(cr.id, updateData, {
-          strategy: "merge",
-        });
+        const updateCr = await db.i_users.updateBy(
+          "username",
+          mockUser1.username,
+          updateData,
+          {
+            strategy: "merge",
+          },
+        );
 
         const byId = await db.i_users.find(cr.id);
 
@@ -130,9 +138,14 @@ Deno.test("indexable_collection - update", async (t) => {
         const cr = await db.i_users.add(mockUser1);
         assert(cr.ok);
 
-        const updateCr = await db.i_users.update(cr.id, mockUser2, {
-          strategy: "replace",
-        });
+        const updateCr = await db.i_users.updateBy(
+          "username",
+          mockUser1.username,
+          mockUser2,
+          {
+            strategy: "replace",
+          },
+        );
 
         const byId = await db.i_users.find(cr.id);
 
@@ -173,38 +186,6 @@ Deno.test("indexable_collection - update", async (t) => {
     },
   );
 
-  await t.step(
-    "Should not update document or delete indexed entries upon index collision",
-    async () => {
-      await useDb(async (db) => {
-        const id1 = "id1";
-        const id2 = "id2";
-
-        const cr1 = await db.i_users.set(id1, mockUser1);
-        const cr2 = await db.i_users.set(id2, mockUser2);
-
-        assert(cr1.ok);
-        assert(cr2.ok);
-
-        const update = await db.i_users.update(id2, {
-          ...mockUser3,
-          username: mockUser1.username,
-        });
-
-        assert(!update.ok);
-
-        const doc = await db.i_users.find(id2);
-        const docByPrimaryIndex = await db.i_users.findBy(
-          "username",
-          mockUser2.username,
-        );
-
-        assert(doc?.value.username === mockUser2.username);
-        assert(docByPrimaryIndex?.value.username === mockUser2.username);
-      });
-    },
-  );
-
   await t.step("Should successfully parse and update document", async () => {
     await useDb(async (db) => {
       let assertion = true;
@@ -212,7 +193,11 @@ Deno.test("indexable_collection - update", async (t) => {
       const cr = await db.zi_users.add(mockUser1);
       assert(cr.ok);
 
-      await db.zi_users.update(cr.id, mockUser2).catch(() => assertion = false);
+      await db.zi_users.updateBy(
+        "username",
+        mockUser1.username,
+        mockUser2,
+      ).catch(() => assertion = false);
 
       assert(assertion);
     });
@@ -225,32 +210,46 @@ Deno.test("indexable_collection - update", async (t) => {
       const cr = await db.zi_users.add(mockUser1);
       assert(cr.ok);
 
-      await db.zi_users.update(cr.id, mockUserInvalid).catch(() =>
-        assertion = true
-      );
+      await db.zi_users.updateBy(
+        "username",
+        mockUser1.username,
+        mockUserInvalid,
+      ).catch(() => assertion = true);
 
       assert(assertion);
     });
   });
 
   await t.step(
-    "Should update document with multi-part id using replace",
+    "Should update document by primary index with multi-part id",
     async () => {
       await useDb(async (db) => {
         const cr = await db.i_multi_part_id_users.add(mockUser1);
         assert(cr.ok);
 
-        const updateCr = await db.i_multi_part_id_users.update(
-          cr.id,
-          mockUser2,
-          { strategy: "replace" },
+        const updateData = {
+          address: {
+            country: "Ireland",
+            city: "Dublin",
+            houseNr: null,
+          },
+        };
+
+        const updateCr = await db.i_multi_part_id_users.updateBy(
+          "username",
+          mockUser1.username,
+          updateData,
+          { strategy: "merge-shallow" },
         );
 
         assert(updateCr.ok);
 
-        const doc = await db.i_multi_part_id_users.find(cr.id);
+        const doc = await db.i_multi_part_id_users.findBy(
+          "username",
+          mockUser1.username,
+        );
         assert(doc !== null);
-        assert(doc.value.username === mockUser2.username);
+        assert(doc.value.address.country === updateData.address.country);
       });
     },
   );

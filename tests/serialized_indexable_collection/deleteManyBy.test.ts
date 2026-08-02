@@ -1,17 +1,19 @@
 import { assert } from "@std/assert";
-import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts";
+import { mockUser1, mockUser2 } from "../mocks.ts";
 import { generateLargeUsers, useDb } from "../utils.ts";
 
-Deno.test("serialized_indexable_collection - deleteMany", async (t) => {
+const [user1, user2] = generateLargeUsers(2);
+
+Deno.test("serialized_indexable_collection - deleteManyBy", async (t) => {
   await t.step(
-    "Should delete all documents and indices from the collection",
+    "Should delete documents and indices from the collection by secondary index",
     async () => {
       await useDb(async (db) => {
-        const users = generateLargeUsers(100);
-        const user1 = users[0];
-
-        const cr = await db.is_users.addMany(users);
+        const cr1 = await db.is_users.add(user1);
+        const cr2 = await db.is_users.add(user2);
+        assert(cr1.ok && cr2.ok);
         const count1 = await db.is_users.count();
+
         const byPrimary1 = await db.is_users.findBy(
           "username",
           user1.username,
@@ -21,18 +23,19 @@ Deno.test("serialized_indexable_collection - deleteMany", async (t) => {
           user1.age,
         );
 
-        assert(cr.ok);
-        assert(count1 === users.length);
+        assert(count1 === 2);
         assert(byPrimary1?.value.username === user1.username);
-        assert(bySecondary1.result.length > 0);
+        assert(bySecondary1.result.length === 2);
 
-        await db.is_users.deleteMany();
+        await db.is_users.deleteManyBy("age", user1.age);
 
         const count2 = await db.is_users.count();
+
         const byPrimary2 = await db.is_users.findBy(
           "username",
           user1.username,
         );
+
         const bySecondary2 = await db.is_users.getManyBy(
           "age",
           user1.age,
@@ -46,14 +49,14 @@ Deno.test("serialized_indexable_collection - deleteMany", async (t) => {
   );
 
   await t.step(
-    "Should delete all documents and indices from the collection with batched option",
+    "Should delete documents and indices from the collection by secondary index with batched option",
     async () => {
       await useDb(async (db) => {
-        const users = generateLargeUsers(100);
-        const user1 = users[0];
-
-        const cr = await db.is_users.addMany(users);
+        const cr1 = await db.is_users.add(user1);
+        const cr2 = await db.is_users.add(user2);
+        assert(cr1.ok && cr2.ok);
         const count1 = await db.is_users.count();
+
         const byPrimary1 = await db.is_users.findBy(
           "username",
           user1.username,
@@ -63,18 +66,21 @@ Deno.test("serialized_indexable_collection - deleteMany", async (t) => {
           user1.age,
         );
 
-        assert(cr.ok);
-        assert(count1 === users.length);
+        assert(count1 === 2);
         assert(byPrimary1?.value.username === user1.username);
-        assert(bySecondary1.result.length > 0);
+        assert(bySecondary1.result.length === 2);
 
-        await db.is_users.deleteMany({ batched: true });
+        await db.is_users.deleteManyBy("age", user1.age, {
+          batched: true,
+        });
 
         const count2 = await db.is_users.count();
+
         const byPrimary2 = await db.is_users.findBy(
           "username",
           user1.username,
         );
+
         const bySecondary2 = await db.is_users.getManyBy(
           "age",
           user1.age,
@@ -88,23 +94,20 @@ Deno.test("serialized_indexable_collection - deleteMany", async (t) => {
   );
 
   await t.step(
-    "Should delete all documents from collection with multi-part id",
+    "Should delete documents by secondary index with multi-part id",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.is_multi_part_id_users.addMany([
-          mockUser1,
-          mockUser2,
-          mockUser3,
-        ]);
-        assert(cr.ok);
+        const cr1 = await db.is_multi_part_id_users.add(mockUser1);
+        const cr2 = await db.is_multi_part_id_users.add(mockUser2);
+        assert(cr1.ok && cr2.ok);
 
-        const count1 = await db.is_multi_part_id_users.count();
-        assert(count1 === 3);
+        await db.is_multi_part_id_users.deleteManyBy(
+          "age",
+          mockUser1.age,
+        );
 
-        await db.is_multi_part_id_users.deleteMany();
-
-        const count2 = await db.is_multi_part_id_users.count();
-        assert(count2 === 0);
+        const count = await db.is_multi_part_id_users.count();
+        assert(count === 0);
       });
     },
   );

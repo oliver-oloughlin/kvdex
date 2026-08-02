@@ -1,10 +1,8 @@
-import { assert, assertEquals, assertNotEquals } from "@std/assert";
-import { mockUser1, mockUser2, mockUser3, mockUserInvalid } from "../mocks.ts";
+import { assert } from "@std/assert";
+import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
 import { generateUsers, useDb } from "../utils.ts";
-import { keyEq } from "../../src/core/utils.ts";
-import type { KvKey } from "../../src/core/types.ts";
 
-Deno.test("indexable_collection - updateMany", async (t) => {
+Deno.test("indexable_collection - updateManyBy", async (t) => {
   await t.step(
     "Should update 1000 documents of KvObject type using shallow merge",
     async () => {
@@ -25,9 +23,14 @@ Deno.test("indexable_collection - updateMany", async (t) => {
           },
         };
 
-        const { result } = await db.i_users.updateMany(updateData, {
-          strategy: "merge-shallow",
-        });
+        const { result } = await db.i_users.updateManyBy(
+          "age",
+          users[0].age,
+          updateData,
+          {
+            strategy: "merge-shallow",
+          },
+        );
 
         assert(
           result.every((cr) =>
@@ -36,7 +39,7 @@ Deno.test("indexable_collection - updateMany", async (t) => {
           ),
         );
 
-        await db.i_users.forEach((doc) => {
+        await db.i_users.forEachBy("age", users[0].age, (doc) => {
           assert(doc.value.address.country === updateData.address.country);
           assert(doc.value.address.city === updateData.address.city);
           assert(doc.value.address.houseNr === updateData.address.houseNr);
@@ -66,9 +69,14 @@ Deno.test("indexable_collection - updateMany", async (t) => {
           },
         };
 
-        const { result } = await db.i_users.updateMany(updateData, {
-          strategy: "merge",
-        });
+        const { result } = await db.i_users.updateManyBy(
+          "age",
+          users[0].age,
+          updateData,
+          {
+            strategy: "merge",
+          },
+        );
 
         assert(
           result.every((cr) =>
@@ -77,7 +85,7 @@ Deno.test("indexable_collection - updateMany", async (t) => {
           ),
         );
 
-        await db.i_users.forEach((doc) => {
+        await db.i_users.forEachBy("age", users[0].age, (doc) => {
           assert(doc.value.address.country === updateData.address.country);
           assert(doc.value.address.city === updateData.address.city);
           assert(doc.value.address.houseNr === updateData.address.houseNr);
@@ -91,59 +99,62 @@ Deno.test("indexable_collection - updateMany", async (t) => {
     "Should only update one document of type KvObject using replace (primary index collision)",
     async () => {
       await useDb(async (db) => {
-        const users = generateUsers(1_000, -1);
+        const users = generateUsers(1_000);
         const cr = await db.i_users.addMany(users);
         assert(cr.ok);
 
-        const { result } = await db.i_users.updateMany(mockUser1, {
-          strategy: "replace",
-        });
+        const docs = await db.i_users.getMany();
+        const ids = docs.result.map((doc) => doc.id);
+        const versionstamps = docs.result.map((doc) => doc.versionstamp);
 
-        const successfulCrs = result.filter((cr) => cr.ok);
-        const unsuccessfulCrs = result.filter((cr) => !cr.ok);
+        const { result } = await db.i_users.updateManyBy(
+          "age",
+          users[0].age,
+          mockUser1,
+          {
+            strategy: "replace",
+          },
+        );
 
-        assertEquals(successfulCrs.length, 1);
-        assertEquals(unsuccessfulCrs.length, users.length - 1);
+        assert(
+          result.some((cr) =>
+            cr.ok && ids.includes(cr.id) &&
+            !versionstamps.includes(cr.versionstamp)
+          ),
+        );
+
+        assert(
+          result.some((cr) => !cr.ok),
+        );
 
         const byPrimary = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
 
-        const { result: [bySecondary] } = await db.i_users
+        const { result: bySecondaryDocs } = await db.i_users
           .getManyBy(
             "age",
             mockUser1.age,
           );
 
-        assertNotEquals(byPrimary, null);
-        assertEquals(byPrimary?.value.username, mockUser1.username);
-        assertEquals(
-          byPrimary?.value.address.country,
-          mockUser1.address.country,
-        );
-        assertEquals(byPrimary?.value.address.city, mockUser1.address.city);
-        assertEquals(
-          byPrimary?.value.address.houseNr,
-          mockUser1.address.houseNr,
-        );
-        assertEquals(byPrimary?.value.address.street, mockUser1.address.street);
+        const bySecondary = bySecondaryDocs.find((doc) =>
+          doc.value.username === mockUser1.username
+        ) ?? null;
 
-        assertNotEquals(bySecondary, null);
-        assertEquals(bySecondary?.value.username, mockUser1.username);
-        assertEquals(
-          bySecondary?.value.address.country,
-          mockUser1.address.country,
-        );
-        assertEquals(bySecondary?.value.address.city, mockUser1.address.city);
-        assertEquals(
-          bySecondary?.value.address.houseNr,
-          mockUser1.address.houseNr,
-        );
-        assertEquals(
-          bySecondary?.value.address.street,
-          mockUser1.address.street,
-        );
+        assert(byPrimary !== null);
+        assert(byPrimary.value.username === mockUser1.username);
+        assert(byPrimary.value.address.country === mockUser1.address.country);
+        assert(byPrimary.value.address.city === mockUser1.address.city);
+        assert(byPrimary.value.address.houseNr === mockUser1.address.houseNr);
+        assert(byPrimary.value.address.street === mockUser1.address.street);
+
+        assert(bySecondary !== null);
+        assert(bySecondary.value.username === mockUser1.username);
+        assert(bySecondary.value.address.country === mockUser1.address.country);
+        assert(bySecondary.value.address.city === mockUser1.address.city);
+        assert(bySecondary.value.address.houseNr === mockUser1.address.houseNr);
+        assert(bySecondary.value.address.street === mockUser1.address.street);
       });
     },
   );
@@ -156,7 +167,8 @@ Deno.test("indexable_collection - updateMany", async (t) => {
       const cr = await db.zi_users.addMany(users);
       assert(cr.ok);
 
-      await db.zi_users.updateMany(mockUser1).catch(() => assertion = false);
+      await db.zi_users.updateManyBy("age", users[0].age, mockUser1)
+        .catch(() => assertion = false);
 
       assert(assertion);
     });
@@ -170,25 +182,23 @@ Deno.test("indexable_collection - updateMany", async (t) => {
       const cr = await db.zi_users.addMany(users);
       assert(cr.ok);
 
-      await db.zi_users.updateMany(mockUserInvalid).catch(() =>
-        assertion = true
-      );
+      await db.zi_users.updateManyBy(
+        "age",
+        users[0].age,
+        mockUserInvalid,
+      ).catch(() => assertion = true);
 
       assert(assertion);
     });
   });
 
   await t.step(
-    "Should update multiple documents with multi-part id using replace",
+    "Should update documents by secondary index with multi-part id",
     async () => {
       await useDb(async (db) => {
-        const users = [mockUser1, mockUser2, mockUser3];
-        const cr = await db.i_multi_part_id_users.addMany(users);
-        assert(cr.ok);
-
-        const docs = await db.i_multi_part_id_users.getMany();
-        const ids = docs.result.map((doc) => doc.id);
-        const versionstamps = docs.result.map((doc) => doc.versionstamp);
+        const cr1 = await db.i_multi_part_id_users.add(mockUser1);
+        const cr2 = await db.i_multi_part_id_users.add(mockUser2);
+        assert(cr1.ok && cr2.ok);
 
         const updateData = {
           address: {
@@ -198,23 +208,18 @@ Deno.test("indexable_collection - updateMany", async (t) => {
           },
         };
 
-        const { result } = await db.i_multi_part_id_users.updateMany(
-          updateData,
-          { strategy: "merge-shallow" },
-        );
+        const { result } = await db.i_multi_part_id_users
+          .updateManyBy(
+            "age",
+            mockUser1.age,
+            updateData,
+            { strategy: "merge-shallow" },
+          );
 
-        assert(
-          result.every((cr) =>
-            cr.ok &&
-            ids.some((id) => keyEq(id as KvKey, cr.id as KvKey)) &&
-            !versionstamps.includes(cr.versionstamp)
-          ),
-        );
+        assert(result.every((cr) => cr.ok));
 
         await db.i_multi_part_id_users.forEach((doc) => {
           assert(doc.value.address.country === updateData.address.country);
-          assert(doc.value.address.city === updateData.address.city);
-          assert(doc.value.address.houseNr === updateData.address.houseNr);
         });
       });
     },

@@ -92,14 +92,14 @@ Deno.test("db - atomic", async (t) => {
         assertEquals(doc?.value, mockUser2);
 
         // Old primary index should be gone
-        const byOldPrimary = await db.i_users.findByPrimaryIndex(
+        const byOldPrimary = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
         assertEquals(byOldPrimary, null);
 
         // New primary index should work
-        const byNewPrimary = await db.i_users.findByPrimaryIndex(
+        const byNewPrimary = await db.i_users.findBy(
           "username",
           mockUser2.username,
         );
@@ -107,7 +107,7 @@ Deno.test("db - atomic", async (t) => {
 
         // Old secondary index should not find the document
         const { result: byOldSecondary } = await db.i_users
-          .findBySecondaryIndex(
+          .getManyBy(
             "age",
             mockUser1.age,
           );
@@ -118,7 +118,7 @@ Deno.test("db - atomic", async (t) => {
 
         // New secondary index should find the document
         const { result: byNewSecondary } = await db.i_users
-          .findBySecondaryIndex(
+          .getManyBy(
             "age",
             mockUser2.age,
           );

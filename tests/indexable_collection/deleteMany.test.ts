@@ -12,11 +12,11 @@ Deno.test("indexable_collection - deleteMany", async (t) => {
 
         const cr = await db.i_users.addMany(users);
         const count1 = await db.i_users.count();
-        const byPrimary1 = await db.i_users.findByPrimaryIndex(
+        const byPrimary1 = await db.i_users.findBy(
           "username",
           user1.username,
         );
-        const bySecondary1 = await db.i_users.findBySecondaryIndex(
+        const bySecondary1 = await db.i_users.getManyBy(
           "age",
           user1.age,
         );
@@ -29,11 +29,11 @@ Deno.test("indexable_collection - deleteMany", async (t) => {
         await db.i_users.deleteMany();
 
         const count2 = await db.i_users.count();
-        const byPrimary2 = await db.i_users.findByPrimaryIndex(
+        const byPrimary2 = await db.i_users.findBy(
           "username",
           user1.username,
         );
-        const bySecondary2 = await db.i_users.findBySecondaryIndex(
+        const bySecondary2 = await db.i_users.getManyBy(
           "age",
           user1.age,
         );
@@ -54,11 +54,11 @@ Deno.test("indexable_collection - deleteMany", async (t) => {
 
         const cr = await db.i_users.addMany(users);
         const count1 = await db.i_users.count();
-        const byPrimary1 = await db.i_users.findByPrimaryIndex(
+        const byPrimary1 = await db.i_users.findBy(
           "username",
           user1.username,
         );
-        const bySecondary1 = await db.i_users.findBySecondaryIndex(
+        const bySecondary1 = await db.i_users.getManyBy(
           "age",
           user1.age,
         );
@@ -71,11 +71,11 @@ Deno.test("indexable_collection - deleteMany", async (t) => {
         await db.i_users.deleteMany({ batched: true });
 
         const count2 = await db.i_users.count();
-        const byPrimary2 = await db.i_users.findByPrimaryIndex(
+        const byPrimary2 = await db.i_users.findBy(
           "username",
           user1.username,
         );
-        const bySecondary2 = await db.i_users.findBySecondaryIndex(
+        const bySecondary2 = await db.i_users.getManyBy(
           "age",
           user1.age,
         );

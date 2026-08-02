@@ -15,12 +15,12 @@ Deno.test("db - indexable_atomic", async (t) => {
 
         const count = await db.i_users.count();
 
-        const byPrimary = await db.i_users.findByPrimaryIndex(
+        const byPrimary = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
 
-        const bySecondary = await db.i_users.findBySecondaryIndex(
+        const bySecondary = await db.i_users.getManyBy(
           "age",
           mockUser1.age,
         );
@@ -45,12 +45,12 @@ Deno.test("db - indexable_atomic", async (t) => {
 
         const byId = await db.i_users.find(id);
 
-        const byPrimary = await db.i_users.findByPrimaryIndex(
+        const byPrimary = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
 
-        const bySecondary = await db.i_users.findBySecondaryIndex(
+        const bySecondary = await db.i_users.getManyBy(
           "age",
           mockUser1.age,
         );
@@ -93,12 +93,12 @@ Deno.test("db - indexable_atomic", async (t) => {
 
         const byId = await db.i_users.find(cr1.id);
 
-        const byPrimary = await db.i_users.findByPrimaryIndex(
+        const byPrimary = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
 
-        const bySecondary = await db.i_users.findBySecondaryIndex(
+        const bySecondary = await db.i_users.getManyBy(
           "age",
           mockUser1.age,
         );
@@ -134,25 +134,25 @@ Deno.test("db - indexable_atomic", async (t) => {
         const doc = await db.i_users.find("new_id");
         assertEquals(doc?.value, mockUser3);
 
-        const byPrimary = await db.i_users.findByPrimaryIndex(
+        const byPrimary = await db.i_users.findBy(
           "username",
           mockUser3.username,
         );
         assertEquals(byPrimary?.value, mockUser3);
 
         const { result: [bySecondary] } = await db.i_users
-          .findBySecondaryIndex("age", mockUser3.age);
+          .getManyBy("age", mockUser3.age);
         assertEquals(bySecondary?.value, mockUser3);
 
         // Old indices should be gone
-        const byOldPrimary = await db.i_users.findByPrimaryIndex(
+        const byOldPrimary = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
         assertEquals(byOldPrimary, null);
 
         const { result: [byOldSecondary] } = await db.i_users
-          .findBySecondaryIndex("age", mockUser1.age);
+          .getManyBy("age", mockUser1.age);
         assertEquals(byOldSecondary, undefined);
       });
     },
@@ -181,25 +181,25 @@ Deno.test("db - indexable_atomic", async (t) => {
         const doc = await db.i_users.find("new_id");
         assertEquals(doc?.value, mockUser3);
 
-        const byPrimary = await db.i_users.findByPrimaryIndex(
+        const byPrimary = await db.i_users.findBy(
           "username",
           mockUser3.username,
         );
         assertEquals(byPrimary?.value, mockUser3);
 
         const { result: [bySecondary] } = await db.i_users
-          .findBySecondaryIndex("age", mockUser3.age);
+          .getManyBy("age", mockUser3.age);
         assertEquals(bySecondary?.value, mockUser3);
 
         // Old indices should be gone
-        const byOldPrimary = await db.i_users.findByPrimaryIndex(
+        const byOldPrimary = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
         assertEquals(byOldPrimary, null);
 
         const { result: [byOldSecondary] } = await db.i_users
-          .findBySecondaryIndex("age", mockUser1.age);
+          .getManyBy("age", mockUser1.age);
         assertEquals(byOldSecondary, undefined);
       });
     },
@@ -252,13 +252,13 @@ Deno.test("db - indexable_atomic", async (t) => {
 
         const count = await db.i_multi_part_id_users.count();
 
-        const byPrimary = await db.i_multi_part_id_users.findByPrimaryIndex(
+        const byPrimary = await db.i_multi_part_id_users.findBy(
           "username",
           mockUser1.username,
         );
 
         const bySecondary = await db.i_multi_part_id_users
-          .findBySecondaryIndex(
+          .getManyBy(
             "age",
             mockUser1.age,
           );
@@ -283,13 +283,13 @@ Deno.test("db - indexable_atomic", async (t) => {
 
         const byId = await db.i_multi_part_id_users.find(id);
 
-        const byPrimary = await db.i_multi_part_id_users.findByPrimaryIndex(
+        const byPrimary = await db.i_multi_part_id_users.findBy(
           "username",
           mockUser1.username,
         );
 
         const bySecondary = await db.i_multi_part_id_users
-          .findBySecondaryIndex(
+          .getManyBy(
             "age",
             mockUser1.age,
           );
@@ -335,13 +335,13 @@ Deno.test("db - indexable_atomic", async (t) => {
 
         const byId = await db.i_multi_part_id_users.find(cr1.id);
 
-        const byPrimary = await db.i_multi_part_id_users.findByPrimaryIndex(
+        const byPrimary = await db.i_multi_part_id_users.findBy(
           "username",
           mockUser1.username,
         );
 
         const bySecondary = await db.i_multi_part_id_users
-          .findBySecondaryIndex(
+          .getManyBy(
             "age",
             mockUser1.age,
           );
@@ -425,14 +425,14 @@ Deno.test("db - indexable_atomic", async (t) => {
         assertEquals(doc?.value, mockUser3);
 
         // Old primary index should not return a document
-        const byOldPrimary = await db.i_users.findByPrimaryIndex(
+        const byOldPrimary = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
         assertEquals(byOldPrimary, null);
 
         // New primary index should return the document
-        const byNewPrimary = await db.i_users.findByPrimaryIndex(
+        const byNewPrimary = await db.i_users.findBy(
           "username",
           mockUser3.username,
         );
@@ -440,12 +440,12 @@ Deno.test("db - indexable_atomic", async (t) => {
 
         // Old secondary index should not find the document
         const { result: [byOldSecondary] } = await db.i_users
-          .findBySecondaryIndex("age", mockUser1.age);
+          .getManyBy("age", mockUser1.age);
         assertEquals(byOldSecondary, undefined);
 
         // New secondary index should find the document
         const { result: [byNewSecondary] } = await db.i_users
-          .findBySecondaryIndex("age", mockUser3.age);
+          .getManyBy("age", mockUser3.age);
         assertEquals(byNewSecondary?.value, mockUser3);
       });
     },
@@ -472,7 +472,7 @@ Deno.test("db - indexable_atomic", async (t) => {
         assertEquals(count, 0);
 
         // Primary index should not return a document
-        const byPrimary = await db.i_users.findByPrimaryIndex(
+        const byPrimary = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
@@ -480,7 +480,7 @@ Deno.test("db - indexable_atomic", async (t) => {
 
         // Secondary index should not return a document
         const { result: bySecondary } = await db.i_users
-          .findBySecondaryIndex("age", mockUser1.age);
+          .getManyBy("age", mockUser1.age);
         assertEquals(bySecondary.length, 0);
       });
     },
@@ -504,7 +504,7 @@ Deno.test("db - indexable_atomic", async (t) => {
         assertEquals(doc?.value, mockUser3);
 
         // Primary index should return the document
-        const byPrimary = await db.i_users.findByPrimaryIndex(
+        const byPrimary = await db.i_users.findBy(
           "username",
           mockUser3.username,
         );
@@ -512,7 +512,7 @@ Deno.test("db - indexable_atomic", async (t) => {
 
         // Secondary index should return the document
         const { result: [bySecondary] } = await db.i_users
-          .findBySecondaryIndex("age", mockUser3.age);
+          .getManyBy("age", mockUser3.age);
         assertEquals(bySecondary?.value, mockUser3);
       });
     },

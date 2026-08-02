@@ -48,8 +48,8 @@ _Supported Deno versions:_ **^2.3.0**
     - [`history`](#history)
   - [Collection Methods](#collection-methods)
     - [find()](#find)
-    - [findByPrimaryIndex()](#findbyprimaryindex)
-    - [findBySecondaryIndex()](#findbysecondaryindex)
+    - [findBy()](#findby)
+    - [getManyBy()](#getmanyby)
     - [findMany()](#findmany)
     - [findHistory()](#findhistory)
     - [findUndelivered()](#findundelivered)
@@ -57,36 +57,36 @@ _Supported Deno versions:_ **^2.3.0**
     - [addMany()](#addmany)
     - [set()](#set)
     - [update()](#update)
-    - [updateByPrimaryIndex()](#updatebyprimaryindex)
-    - [updateBySecondaryIndex()](#updatebysecondaryindex)
+    - [updateBy()](#updateby)
+    - [updateManyBy()](#updatemanyby)
     - [updateMany()](#updatemany)
-    - [updateManyBySecondaryOrder()](#updatemanybysecondaryorder)
+    - [updateManyByOrder()](#updatemanybyorder)
     - [updateOne()](#updateone)
-    - [updateOneBySecondaryIndex()](#updateonebysecondaryindex)
-    - [updateOneBySecondaryOrder()](#updateonebysecondaryorder)
+    - [updateOneBy()](#updateoneby)
+    - [updateOneByOrder()](#updateonebyorder)
     - [upsert()](#upsert)
-    - [upsertByPrimaryIndex()](#upsertbyprimaryindex)
+    - [upsertBy()](#upsertby)
     - [delete()](#delete)
-    - [deleteByPrimaryIndex()](#deletebyprimaryindex)
-    - [deleteBySecondaryIndex()](#deletebysecondaryindex)
+    - [deleteBy()](#deleteby)
+    - [deleteManyBy()](#deletemanyby)
     - [deleteMany()](#deletemany)
-    - [deleteManyBySecondaryOrder()](#deletemanybysecondaryorder)
+    - [deleteManyByOrder()](#deletemanybyorder)
     - [deleteHistory()](#deletehistory)
     - [deleteUndelivered()](#deleteundelivered)
     - [getMany()](#getmany)
-    - [getManyBySecondaryOrder()](#getmanybysecondaryorder)
+    - [getManyByOrder()](#getmanybyorder)
     - [getOne()](#getone)
-    - [getOneBySecondaryIndex()](#getonebysecondaryindex)
-    - [getOneBySecondaryOrder()](#getonebysecondaryorder)
+    - [getOneBy()](#getoneby)
+    - [getOneByOrder()](#getonebyorder)
     - [forEach()](#foreach)
-    - [forEachBySecondaryIndex()](#foreachbysecondaryindex)
-    - [forEachBySecondaryOrder()](#foreachbysecondaryorder)
+    - [forEachBy()](#foreachby)
+    - [forEachByOrder()](#foreachbyorder)
     - [map()](#map)
-    - [mapBySecondaryIndex()](#mapbysecondaryindex)
-    - [mapBySecondaryOrder()](#mapbysecondaryorder)
+    - [mapBy()](#mapby)
+    - [mapByOrder()](#mapbyorder)
     - [count()](#count)
-    - [countBySecondaryIndex()](#countbysecondaryindex)
-    - [countBySecondaryOrder()](#countbysecondaryorder)
+    - [countBy()](#countby)
+    - [countByOrder()](#countbyorder)
     - [enqueue()](#enqueue)
     - [listenQueue()](#listenqueue)
     - [watch()](#watch)
@@ -429,29 +429,13 @@ const userDoc3 = await db.users.find("oliver", {
 });
 ```
 
-### findByPrimaryIndex()
+### findBy()
 
 Find a document by a primary index.
 
 ```ts
 // Finds a user document with the username = "oliver"
-const userByUsername = await db.users.findByPrimaryIndex("username", "oliver");
-```
-
-### findBySecondaryIndex()
-
-Find documents by a secondary index. Secondary indices are not unique, and
-therefore the result is an array of documents. The method takes an optional
-options argument that can be used for filtering of documents, and pagination.
-
-```ts
-// Returns all users with age = 24
-const { result } = await db.users.findBySecondaryIndex("age", 24);
-
-// Returns all users with age = 24 AND username that starts with "o"
-const { result } = await db.users.findBySecondaryIndex("age", 24, {
-  filter: (doc) => doc.value.username.startsWith("o"),
-});
+const userByUsername = await db.users.findBy("username", "oliver");
 ```
 
 ### findMany()
@@ -577,48 +561,24 @@ const result = await db.users.update(
 );
 ```
 
-### updateByPrimaryIndex()
+### updateBy()
 
 Update a document by a primary index.
 
 ```ts
 // Updates a user with username = "oliver" to have age = 56
-const result = await db.users.updateByPrimaryIndex(
+const result = await db.users.updateBy(
   "username",
   "oliver",
   { age: 56 },
 );
 
 // Updates a user document using shallow merge
-const result = await db.users.updateByPrimaryIndex(
+const result = await db.users.updateBy(
   "username",
   "anders",
   { age: 89 },
   { strategy: "merge-shallow" },
-);
-```
-
-### updateBySecondaryIndex()
-
-Update documents by a secondary index. Takes an optional options argument that
-can be used for filtering of documents to be updated, and pagination. If no
-options are given, all documents by the given index value will we updated.
-
-```ts
-// Updates all user documents with age = 24 and sets age = 67
-const { result } = await db.users.updateBySecondaryIndex("age", 24, {
-  age: 67,
-});
-
-// Updates all users where age = 24 and username starts with "o", using shallow merge
-const { result } = await db.users.updateBySecondaryIndex(
-  "age",
-  24,
-  { age: 67 },
-  {
-    filter: (doc) => doc.value.username.startsWith("o"),
-    strategy: "merge-shallow",
-  },
 );
 ```
 
@@ -643,14 +603,38 @@ const { result } = await db.users.updateMany({ age: 67 }, {
 const { result } = await db.users.updateMany({ username: "oliver" });
 ```
 
-### updateManyBySecondaryOrder()
+### updateManyBy()
+
+Update documents by a secondary index. Takes an optional options argument that
+can be used for filtering of documents to be updated, and pagination. If no
+options are given, all documents by the given index value will we updated.
+
+```ts
+// Updates all user documents with age = 24 and sets age = 67
+const { result } = await db.users.updateManyBy("age", 24, {
+  age: 67,
+});
+
+// Updates all users where age = 24 and username starts with "o", using shallow merge
+const { result } = await db.users.updateManyBy(
+  "age",
+  24,
+  { age: 67 },
+  {
+    filter: (doc) => doc.value.username.startsWith("o"),
+    strategy: "merge-shallow",
+  },
+);
+```
+
+### updateManyByOrder()
 
 Update the value of multiple existing documents in the collection by a secondary
 order.
 
 ```ts
 // Updates the first 10 users ordered by age and sets username = "anon"
-await db.users.updateManyBySecondaryOrder("age", { username: "anon" });
+await db.users.updateManyByOrder("age", { username: "anon" });
 ```
 
 ### updateOne()
@@ -672,21 +656,21 @@ const result = await db.users.updateOne({ age: 67 }, {
 });
 ```
 
-### updateOneBySecondaryIndex()
+### updateOneBy()
 
 Update the first matching document from the KV store by a secondary index. It
 optionally takes the same `options` argument as `updateMany()`. If no options
-are given, `updateOneBySecondaryIndex()` will update the first document in the
-collection by the given index value.
+are given, `updateOneBy()` will update the first document in the collection by
+the given index value.
 
 ```ts
 // Updates the first user document where age = 20 and sets age = 67
-const result = await db.users.updateOneBySecondaryIndex("age", 20, { age: 67 });
+const result = await db.users.updateOneBy("age", 20, { age: 67 });
 ```
 
 ```ts
 // Updates the first user where age = 20 and username starts with "a", using shallow merge
-const result = await db.users.updateOneBySecondaryIndex(
+const result = await db.users.updateOneBy(
   "age",
   20,
   { age: 67 },
@@ -697,14 +681,14 @@ const result = await db.users.updateOneBySecondaryIndex(
 );
 ```
 
-### updateOneBySecondaryOrder()
+### updateOneByOrder()
 
 Update the value of one existing document in the collection by a secondary
 order.
 
 ```ts
 // Updates the first user ordered by age and sets username = "anon"
-const result = await db.users.updateOneBySecondaryOrder("age", {
+const result = await db.users.updateOneByOrder("age", {
   username: "anon",
 });
 ```
@@ -732,14 +716,14 @@ const result = await db.users.upsert({
 });
 ```
 
-### upsertByPrimaryIndex()
+### upsertBy()
 
 Update an existing document by a primary index, or set a new entry if no
 matching document exists. An id can be optionally specified which will be used
 when creating a new document entry.
 
 ```ts
-const result = await db.users.upsertByPrimaryIndex({
+const result = await db.users.upsertBy({
   index: ["username", "Jack"],
   update: { username: "Chris" },
   set: {
@@ -764,28 +748,13 @@ Delete a document with the given id from the KV store.
 await db.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77");
 ```
 
-### deleteByPrimaryIndex()
+### deleteBy()
 
 Delete a document by a primary index.
 
 ```ts
 // Deletes user with username = "oliver"
-await db.users.deleteByPrimaryIndex("username", "oliver");
-```
-
-### deleteBySecondaryIndex()
-
-Delete documents by a secondary index. The method takes an optional options
-argument that can be used for filtering of documents, and pagination.
-
-```ts
-// Deletes all users with age = 24
-await db.users.deleteBySecondaryIndex("age", 24);
-
-// Deletes all users with age = 24 AND username that starts with "o"
-await db.users.deleteBySecondaryIndex("age", 24, {
-  filter: (doc) => doc.value.username.startsWith("o"),
-});
+await db.users.deleteBy("username", "oliver");
 ```
 
 ### deleteMany()
@@ -816,16 +785,31 @@ await db.users.deleteMany({
 });
 ```
 
-### deleteManyBySecondaryOrder()
+### deleteManyBy()
 
-Delete multiple documents from the KV store by a secondary order. The method
-takes an optional options argument that can be used for filtering of documents,
-and pagination. If no options are provided, all documents in the collection are
+Delete documents by a secondary index. The method takes an optional options
+argument that can be used for filtering of documents, and pagination.
+
+```ts
+// Deletes all users with age = 24
+await db.users.deleteManyBy("age", 24);
+
+// Deletes all users with age = 24 AND username that starts with "o"
+await db.users.deleteManyBy("age", 24, {
+  filter: (doc) => doc.value.username.startsWith("o"),
+});
+```
+
+### deleteManyByOrder()
+
+Delete multiple documents from the KV store by index order. The method takes an
+optional options argument that can be used for filtering of documents, and
+pagination. If no options are provided, all documents in the collection are
 deleted.
 
 ```ts
 // Deletes the first 10 users ordered by age
-await db.users.deleteManyBySecondaryOrder("age", { limit: 10 });
+await db.users.deleteManyByOrder("age", { limit: 10 });
 ```
 
 ### deleteHistory()
@@ -872,19 +856,40 @@ const { result } = await db.users.getMany({
 });
 ```
 
-### getManyBySecondaryOrder()
+### getManyBy()
 
-Retrieves multiple documents from the KV store in the specified secondary order
-and according to the given options. If no options are provided, all documents
-are retrieved.
+Find documents by a secondary index. Secondary indices are not unique, and
+therefore the result is an array of documents. The method takes an optional
+options argument that can be used for filtering of documents, and pagination.
 
 ```ts
-// Get all users ordered by age
-const { result } = await db.users.getManyBySecondaryOrder("age");
+// Returns all users with age = 24
+const { result } = await db.users.getManyBy("age", 24);
 
-// Only get users with username that starts with "a", ordered by age
-const { result } = await db.users.getManyBySecondaryOrder("age", {
-  filter: (doc) => doc.value.username.startsWith("a"),
+// Returns all users with age = 24 AND username that starts with "o"
+const { result } = await db.users.getManyBy("age", 24, {
+  filter: (doc) => doc.value.username.startsWith("o"),
+});
+```
+
+### getManyByOrder()
+
+Retrieves multiple documents ordered by the given index. Works with both primary
+and secondary indexes. The `startValue` and `endValue` options bound the result
+by the index value (inclusive start, exclusive end). If no options are provided,
+all documents are retrieved in index order.
+
+```ts
+// Get all users ordered by age (secondary index)
+const { result } = await db.users.getManyByOrder("age");
+
+// Get all users ordered by username (primary index)
+const { result } = await db.users.getManyByOrder("username");
+
+// Get users with age in the range [18, 40)
+const { result } = await db.users.getManyByOrder("age", {
+  startValue: 18,
+  endValue: 40,
 });
 ```
 
@@ -904,32 +909,32 @@ const user = await db.users.getOne({
 });
 ```
 
-### getOneBySecondaryIndex()
+### getOneBy()
 
 Retrieve the first matching document from the KV store by a secondary index. It
-optionally takes the same `options` argument as `getMany()`. If no options are
-given, `getOneBySecondaryIndex()` will retrieve the first document in the
-collection by the given index value.
+optionally takes the same `options` argument as `getManyBy()`. If no options are
+given, `getOneBy()` will retrieve the first document in the collection by the
+given index value.
 
 ```ts
 // Retrieves the first user document where age = 20
-const user = await db.users.getOneBySecondaryIndex("age", 20);
+const user = await db.users.getOneBy("age", 20);
 
 // Retrieves the first user where age = 20 and username starts with "a"
-const user = await db.users.getOneBySecondaryIndex("age", 20, {
+const user = await db.users.getOneBy("age", 20, {
   filter: (doc) => doc.value.username.startsWith("a"),
 });
 ```
 
-### getOneBySecondaryOrder()
+### getOneByOrder()
 
-Retrieves one document from the KV store by a secondary order and according to
-the given options. If no options are provided, the first document in the
-collection by the given order is retrieved.
+Retrieves one document from the KV store by index order and according to the
+given options. If no options are provided, the first document in the collection
+by the given order is retrieved.
 
 ```ts
 // Get the first user ordered by age
-const user = await db.users.getOneBySecondaryOrder("age");
+const user = await db.users.getOneByOrder("age");
 ```
 
 ### forEach()
@@ -960,7 +965,7 @@ await db.users.forEach((doc) => console.log(doc.value.username), {
 });
 ```
 
-### forEachBySecondaryIndex()
+### forEachBy()
 
 Execute a callback function for documents by a secondary index. Takes an
 optional options argument that can be used for filtering of documents and
@@ -969,22 +974,22 @@ all documents in the collection matching the index.
 
 ```ts
 // Prints the username of all users where age = 20
-await db.users.forEachBySecondaryIndex(
+await db.users.forEachBy(
   "age",
   20,
   (doc) => console.log(doc.value.username),
 );
 ```
 
-### forEachBySecondaryOrder()
+### forEachByOrder()
 
-Executes a callback function for every document by a secondary order and
-according to the given options. If no options are provided, the callback
-function is executed for all documents.
+Executes a callback function for every document by index order and according to
+the given options. If no options are provided, the callback function is executed
+for all documents.
 
 ```ts
 // Prints the username of all users ordered by age
-await db.users.forEachBySecondaryOrder(
+await db.users.forEachByOrder(
   "age",
   (doc) => console.log(doc.value.username),
 );
@@ -1018,7 +1023,7 @@ const { result } = await db.users.map((doc) => doc.value.username, {
 });
 ```
 
-### mapBySecondaryIndex()
+### mapBy()
 
 Executes a callback function for documents by a secondary index and retrieves
 the results. It takes an optional options argument that can be used for
@@ -1027,23 +1032,23 @@ function will be executed for all documents matching the index.
 
 ```ts
 // Returns a list of usernames of all users where age = 20
-const { result } = await db.users.mapBySecondaryIndex(
+const { result } = await db.users.mapBy(
   "age",
   20,
   (doc) => doc.value.username,
 );
 ```
 
-### mapBySecondaryOrder()
+### mapByOrder()
 
-Executes a callback function for every document by a secondary order and
-according to the given options. If no options are provided, the callback
-function is executed for all documents. The results from the callback function
-are returned as a list.
+Executes a callback function for every document by index order and according to
+the given options. If no options are provided, the callback function is executed
+for all documents. The results from the callback function are returned as a
+list.
 
 ```ts
 // Returns a list of usernames of all users ordered by age
-const { result } = await db.users.mapBySecondaryOrder(
+const { result } = await db.users.mapByOrder(
   "age",
   (doc) => doc.value.username,
 );
@@ -1065,7 +1070,7 @@ const count = await db.users.count({
 });
 ```
 
-### countBySecondaryIndex()
+### countBy()
 
 Counts the number of documents in the collection by a secondary index. Takes an
 optional options argument that can be used for filtering of documents. If no
@@ -1073,16 +1078,16 @@ options are given, it will count all documents matching the index.
 
 ```ts
 // Counts all users where age = 20
-const count = await db.users.countBySecondaryIndex("age", 20);
+const count = await db.users.countBy("age", 20);
 ```
 
-### countBySecondaryOrder()
+### countByOrder()
 
-Counts the number of documents in the collection by a secondary order.
+Counts the number of documents in the collection by index order.
 
 ```ts
 // Counts how many of the first 10 users ordered by age that are under the age of 18
-const count = await db.users.countBySecondaryOrder("age", {
+const count = await db.users.countByOrder("age", {
   limit: 10,
   filter: (doc) => doc.value.age < 18,
 });
