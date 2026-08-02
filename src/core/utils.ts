@@ -502,14 +502,14 @@ export function createListOptions<T1, T2 extends KvId>(
 }
 
 /**
- * Create a list selector for a secondary order operation.
+ * Create a list selector for an index order operation.
  *
  * Maps the `startValue` and `endValue` options to the `start` and `end` list
  * selector keys, where the values are encoded to match the index value part of
  * the document key.
  *
  * @param prefixKey - Key prefix.
- * @param options - Secondary order list options.
+ * @param options - Index order list options.
  * @param encoder - Encoder used to encode the index values.
  * @returns A list selector.
  */

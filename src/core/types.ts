@@ -557,7 +557,7 @@ export type UpdateOneOptions<T1, T2 extends KvId> =
   & UpdateOptions;
 
 /**
- * Options for listing documents by a secondary order.
+ * Options for listing documents by an index order.
  *
  * Differs from `ListOptions` by replacing the `startId` and `endId` options
  * with `startValue` and `endValue`, which bound the result by the index value
@@ -573,23 +573,23 @@ export type OrderListOptions<T1, T2> =
     endValue?: T2;
   };
 
-/** Options for handling one listed document by a secondary order */
+/** Options for handling one listed document by an index order */
 export type OrderHandleOneOptions<T1, T2> = Omit<
   OrderListOptions<T1, T2>,
   "take"
 >;
 
-/** Options for deleting many documents by a secondary order */
+/** Options for deleting many documents by an index order */
 export type OrderDeleteManyOptions<T1, T2> =
   & OrderListOptions<T1, T2>
   & DeleteOptions;
 
-/** Options for updating many documents by a secondary order */
+/** Options for updating many documents by an index order */
 export type OrderUpdateManyOptions<T1, T2> =
   & OrderListOptions<T1, T2>
   & UpdateOptions;
 
-/** Options for updating one listed document by a secondary order */
+/** Options for updating one listed document by an index order */
 export type OrderUpdateOneOptions<T1, T2> =
   & OrderHandleOneOptions<T1, T2>
   & UpdateOptions;
