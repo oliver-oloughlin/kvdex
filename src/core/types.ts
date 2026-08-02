@@ -563,7 +563,7 @@ export type UpdateOneOptions<T1, T2 extends KvId> =
  * with `startValue` and `endValue`, which bound the result by the index value
  * that documents are ordered by.
  */
-export type OrderListOptions<T1, T2> =
+export type IndexOrderListOptions<T1, T2> =
   & Omit<ListOptions<T1, KvId>, "startId" | "endId">
   & {
     /** Index value of the document to start from. */
@@ -574,24 +574,24 @@ export type OrderListOptions<T1, T2> =
   };
 
 /** Options for handling one listed document by an index order */
-export type OrderHandleOneOptions<T1, T2> = Omit<
-  OrderListOptions<T1, T2>,
+export type IndexOrderHandleOneOptions<T1, T2> = Omit<
+  IndexOrderListOptions<T1, T2>,
   "take"
 >;
 
 /** Options for deleting many documents by an index order */
-export type OrderDeleteManyOptions<T1, T2> =
-  & OrderListOptions<T1, T2>
+export type IndexOrderDeleteManyOptions<T1, T2> =
+  & IndexOrderListOptions<T1, T2>
   & DeleteOptions;
 
 /** Options for updating many documents by an index order */
-export type OrderUpdateManyOptions<T1, T2> =
-  & OrderListOptions<T1, T2>
+export type IndexOrderUpdateManyOptions<T1, T2> =
+  & IndexOrderListOptions<T1, T2>
   & UpdateOptions;
 
 /** Options for updating one listed document by an index order */
-export type OrderUpdateOneOptions<T1, T2> =
-  & OrderHandleOneOptions<T1, T2>
+export type IndexOrderUpdateOneOptions<T1, T2> =
+  & IndexOrderHandleOneOptions<T1, T2>
   & UpdateOptions;
 
 /** Options for counting all documents */

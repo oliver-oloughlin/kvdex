@@ -13,13 +13,13 @@ import type {
   FindManyOptions,
   IndexDataEntry,
   IndexDiffs,
+  IndexOrderListOptions,
   KvId,
   KvKey,
   KvObject,
   KvValue,
   ListOptions,
   Model,
-  OrderListOptions,
   ParsedQueueMessage,
   PreparedEnqueue,
   QueueMessage,
@@ -515,7 +515,7 @@ export function createListOptions<T1, T2 extends KvId>(
  */
 export async function createOrderListSelector<T1, T2>(
   prefixKey: KvKey,
-  options: OrderListOptions<T1, T2> | undefined,
+  options: IndexOrderListOptions<T1, T2> | undefined,
   encoder: Encoder | undefined,
 ): Promise<DenoKvListSelector> {
   // Create start key from encoded start value

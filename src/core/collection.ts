@@ -25,6 +25,11 @@ import type {
   IdUpsert,
   IndexDataEntry,
   IndexKeys,
+  IndexOrderDeleteManyOptions,
+  IndexOrderHandleOneOptions,
+  IndexOrderListOptions,
+  IndexOrderUpdateManyOptions,
+  IndexOrderUpdateOneOptions,
   IndexRecord,
   IndexType,
   KeysOfThatExtend,
@@ -36,11 +41,6 @@ import type {
   ManyCommitResult,
   Model,
   ObjectCollectionOptions,
-  OrderDeleteManyOptions,
-  OrderHandleOneOptions,
-  OrderListOptions,
-  OrderUpdateManyOptions,
-  OrderUpdateOneOptions,
   Pagination,
   PaginationResult,
   ParseId,
@@ -1134,7 +1134,7 @@ export class Collection<
    */
   async updateManyByOrder<
     const K extends IndexKeys<TInput, TOutput, TOptions>,
-    const T extends OrderUpdateManyOptions<
+    const T extends IndexOrderUpdateManyOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
@@ -1286,7 +1286,7 @@ export class Collection<
    */
   async updateOneByOrder<
     const K extends IndexKeys<TInput, TOutput, TOptions>,
-    const T extends OrderUpdateOneOptions<
+    const T extends IndexOrderUpdateOneOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
@@ -1443,7 +1443,7 @@ export class Collection<
     const K extends IndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
-    options?: OrderDeleteManyOptions<
+    options?: IndexOrderDeleteManyOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
@@ -1527,7 +1527,7 @@ export class Collection<
     const K extends IndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
-    options?: OrderListOptions<
+    options?: IndexOrderListOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
@@ -1660,7 +1660,7 @@ export class Collection<
     const K extends IndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
-    options?: OrderHandleOneOptions<
+    options?: IndexOrderHandleOneOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
@@ -1803,7 +1803,7 @@ export class Collection<
   >(
     index: K,
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => unknown,
-    options?: OrderUpdateManyOptions<
+    options?: IndexOrderUpdateManyOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
@@ -1951,7 +1951,7 @@ export class Collection<
   >(
     index: K,
     fn: (doc: Document<TOutput, ParseId<TOptions>>) => T,
-    options?: OrderUpdateManyOptions<
+    options?: IndexOrderUpdateManyOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
@@ -2094,7 +2094,7 @@ export class Collection<
     const K extends IndexKeys<TInput, TOutput, TOptions>,
   >(
     index: K,
-    options?: OrderListOptions<
+    options?: IndexOrderListOptions<
       Document<TOutput, ParseId<TOptions>>,
       CheckKeyOf<K, TOutput>
     >,
