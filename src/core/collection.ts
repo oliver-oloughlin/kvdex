@@ -64,6 +64,7 @@ import {
   applyIndexDiffs,
   createHandlerId,
   createIndexDiffs,
+  createIndexOrderPrefixKey,
   createListOptions,
   createListSelector,
   createOrderListSelector,
@@ -1147,7 +1148,7 @@ export class Collection<
     >
   > {
     // Create index order prefix key
-    const prefixKey = this.createIndexOrderPrefixKey(index as KvId);
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
     const selector = await createOrderListSelector(
@@ -1295,7 +1296,7 @@ export class Collection<
     options?: T,
   ): Promise<CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError> {
     // Create index order prefix key
-    const prefixKey = this.createIndexOrderPrefixKey(index as KvId);
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
     const selector = await createOrderListSelector(
@@ -1448,7 +1449,7 @@ export class Collection<
     >,
   ): Promise<PaginationResult<DenoKvCommitResult | DenoKvCommitError>> {
     // Create index order prefix key
-    const prefixKey = this.createIndexOrderPrefixKey(index as KvId);
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
     const selector = await createOrderListSelector(
@@ -1531,7 +1532,7 @@ export class Collection<
       CheckKeyOf<K, TOutput>
     >,
   ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
-    const prefixKey = this.createIndexOrderPrefixKey(index as KvId);
+    const prefixKey = createIndexOrderPrefixKey(index, this);
     const selector = await createOrderListSelector(
       prefixKey,
       options,
@@ -1665,7 +1666,7 @@ export class Collection<
     >,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
     // Create index order prefix key
-    const prefixKey = this.createIndexOrderPrefixKey(index as KvId);
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
     const selector = await createOrderListSelector(
@@ -1808,7 +1809,7 @@ export class Collection<
     >,
   ): Promise<Pagination> {
     // Create index order prefix key
-    const prefixKey = this.createIndexOrderPrefixKey(index as KvId);
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
     const selector = await createOrderListSelector(
@@ -1956,7 +1957,7 @@ export class Collection<
     >,
   ): Promise<PaginationResult<Awaited<T>>> {
     // Create index order prefix key
-    const prefixKey = this.createIndexOrderPrefixKey(index as KvId);
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
     const selector = await createOrderListSelector(
@@ -2099,7 +2100,7 @@ export class Collection<
     >,
   ): Promise<number> {
     // Create index order prefix key
-    const prefixKey = this.createIndexOrderPrefixKey(index as KvId);
+    const prefixKey = createIndexOrderPrefixKey(index, this);
 
     // Create list selector with encoded start/end index values
     const selector = await createOrderListSelector(
@@ -2723,21 +2724,6 @@ export class Collection<
       value: parsed,
       versionstamp,
     });
-  }
-
-  /**
-   * Create an index order prefix key, dispatching between the primary and
-   * secondary index key spaces based on the given index.
-   *
-   * @param index - Primary or secondary index name.
-   * @returns The prefix key for iterating documents in index order.
-   */
-  private createIndexOrderPrefixKey(index: KvId): KvKey {
-    const indexKeys = this.primaryIndexList.includes(index as string)
-      ? this.keys.primaryIndex
-      : this.keys.secondaryIndex;
-
-    return extendKey(indexKeys, index);
   }
 
   /**

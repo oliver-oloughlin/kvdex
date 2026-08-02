@@ -596,6 +596,25 @@ export function createWatcher(
   return { promise: promise(), cancel };
 }
 
+/**
+ * Create an index order prefix key, dispatching between the primary and
+ * secondary index key spaces based on the given index.
+ *
+ * @param index - Primary or secondary index name.
+ * @param collection - The collection to create the prefix key for.
+ * @returns The prefix key for iterating documents in index order.
+ */
+export function createIndexOrderPrefixKey(
+  index: string,
+  collection: Collection<any, any, any>,
+): KvKey {
+  const indexKeys = collection["primaryIndexList"].includes(index)
+    ? collection["keys"].primaryIndex
+    : collection["keys"].secondaryIndex;
+
+  return extendKey(indexKeys, index);
+}
+
 async function handleIndices(
   id: KvId | null,
   data: KvObject,
