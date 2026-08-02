@@ -7,15 +7,15 @@ import {
 } from "../mocks.ts";
 import { useDb } from "../utils.ts";
 
-Deno.test("serialized_indexable_collection - mapByOrder", async (t) => {
+Deno.test("indexable_collection - mapByOrder", async (t) => {
   await t.step(
     "Should run callback mapper function for each document in the collection by index order",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.is_users.addMany(mockUsersWithAlteredAge);
+        const cr = await db.i_users.addMany(mockUsersWithAlteredAge);
         assert(cr.ok);
 
-        const { result } = await db.is_users.mapByOrder(
+        const { result } = await db.i_users.mapByOrder(
           "age",
           (doc) => doc.value.username,
         );
@@ -31,12 +31,12 @@ Deno.test("serialized_indexable_collection - mapByOrder", async (t) => {
     "Should map by index order with multi-part id",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.is_multi_part_id_users.addMany(
+        const cr = await db.i_multi_part_id_users.addMany(
           mockUsersWithAlteredAge,
         );
         assert(cr.ok);
 
-        const { result } = await db.is_multi_part_id_users.mapByOrder(
+        const { result } = await db.i_multi_part_id_users.mapByOrder(
           "age",
           (doc) => doc.value.username,
         );
@@ -50,11 +50,11 @@ Deno.test("serialized_indexable_collection - mapByOrder", async (t) => {
     "Should map documents bounded by start and end values",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.is_users.addMany(mockUsersWithAlteredAge);
+        const cr = await db.i_users.addMany(mockUsersWithAlteredAge);
         assert(cr.ok);
 
         // startValue is inclusive
-        const start = await db.is_users.mapByOrder(
+        const start = await db.i_users.mapByOrder(
           "age",
           (doc) => doc.value.username,
           { startValue: 50 },
@@ -64,7 +64,7 @@ Deno.test("serialized_indexable_collection - mapByOrder", async (t) => {
         assertEquals(start.result[1], mockUser2.username);
 
         // endValue is exclusive
-        const end = await db.is_users.mapByOrder(
+        const end = await db.i_users.mapByOrder(
           "age",
           (doc) => doc.value.username,
           { endValue: 80 },
@@ -80,17 +80,18 @@ Deno.test("serialized_indexable_collection - mapByOrder", async (t) => {
     "Should map documents by primary index order",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.is_users.addMany(mockUsersWithAlteredAge);
+        const cr = await db.i_users.addMany(mockUsersWithAlteredAge);
         assert(cr.ok);
 
-        const order = await db.is_users.getManyByOrder("username");
-        const usernames = order.result.map((doc) => doc.value.username);
-
-        const { result } = await db.is_users.mapByOrder(
+        const { result } = await db.i_users.mapByOrder(
           "username",
           (doc) => doc.value.username,
         );
-        assertEquals(result, usernames);
+        assertEquals(result, [
+          mockUser3.username,
+          mockUser2.username,
+          mockUser1.username,
+        ]);
       });
     },
   );
@@ -99,18 +100,18 @@ Deno.test("serialized_indexable_collection - mapByOrder", async (t) => {
     "Should map documents by primary index order with limit",
     async () => {
       await useDb(async (db) => {
-        const cr = await db.is_users.addMany(mockUsersWithAlteredAge);
+        const cr = await db.i_users.addMany(mockUsersWithAlteredAge);
         assert(cr.ok);
 
-        const order = await db.is_users.getManyByOrder("username");
-        const usernames = order.result.map((doc) => doc.value.username);
-
-        const limited = await db.is_users.mapByOrder(
+        const limited = await db.i_users.mapByOrder(
           "username",
           (doc) => doc.value.username,
           { limit: 2 },
         );
-        assertEquals(limited.result, usernames.slice(0, 2));
+        assertEquals(limited.result, [
+          mockUser3.username,
+          mockUser2.username,
+        ]);
       });
     },
   );
