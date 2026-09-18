@@ -40,7 +40,7 @@
     "@std/collections": "jsr:@std/collections@^1.0.9",
     "@std/ulid": "jsr:@std/ulid@^1.0.0",
     "fake-indexeddb": "npm:fake-indexeddb@^6.2.5",
-    "zod": "npm:zod@^3.24.0"
+    "zod": "npm:zod@^4.6.5"
   },
   "compilerOptions": {
     "lib": ["deno.ns", "deno.unstable", "dom"]
