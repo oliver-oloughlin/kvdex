@@ -5,6 +5,26 @@ import { useKv } from "../utils.ts";
 import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 Deno.test("db - kvdex", async (t) => {
+  await t.step("Should allow a collection named basePath", async () => {
+    await useKv(async (kv) => {
+      const db = kvdex({
+        kv,
+        basePath: ["tenant", 42],
+        schema: { basePath: collection<number>() },
+      });
+      assert((await db.basePath.set("id", 1)).ok);
+      assertEquals((await db.basePath.find("id"))?.value, 1);
+      await kv.set(["tenant", 42, "__undelivered__", "message"], "data");
+      assertEquals((await db.findUndelivered("message"))?.value, "data");
+      await db.deleteUndelivered("message");
+      assertEquals(await db.findUndelivered("message"), null);
+      await kv.set(["tenant", 43, "keep"], 2);
+      await db.wipe();
+      assertEquals(await db.basePath.find("id"), null);
+      assertEquals((await kv.get(["tenant", 43, "keep"])).value, 2);
+    });
+  });
+
   await t.step(
     "Should namespace encoded documents, indices, history and atomic writes",
     async () => {
@@ -59,7 +79,6 @@ Deno.test("db - kvdex", async (t) => {
       const custom = kvdex({ kv, schema, basePath });
       const other = kvdex({ kv, schema, basePath: ["tenant", 43] });
       const defaults = kvdex({ kv, schema });
-      assert(custom["basePath"] === basePath);
 
       for (const key of Object.values(custom.nested.numbers["keys"])) {
         assertEquals(key.slice(0, 2), ["tenant", 42]);

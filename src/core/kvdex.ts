@@ -146,7 +146,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   private schema: TSchema;
   private queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>;
   private idempotentListener: () => Promise<void>;
-  private basePath: KvKey;
+  #basePath: KvKey;
 
   constructor(
     kv: DenoKv,
@@ -159,7 +159,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     this.schema = schema;
     this.queueHandlers = queueHandlers;
     this.idempotentListener = idempotentListener;
-    this.basePath = basePath;
+    this.#basePath = basePath;
   }
 
   /**
@@ -236,7 +236,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    */
   async wipe(): Promise<void> {
     // Create iterator
-    const iter = await this.kv.list({ prefix: this.basePath });
+    const iter = await this.kv.list({ prefix: this.#basePath });
 
     // Collect all kvdex keys
     const keys: DenoKvStrictKey[] = [];
@@ -277,8 +277,8 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   ): Promise<DenoKvCommitResult> {
     // Prepare and perform enqueue operation
     const prep = prepareEnqueue(
-      this.basePath,
-      extendKey(this.basePath, UNDELIVERED_KEY_PREFIX),
+      this.#basePath,
+      extendKey(this.#basePath, UNDELIVERED_KEY_PREFIX),
       data,
       options,
     );
@@ -315,7 +315,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     options?: QueueListenerOptions,
   ): Promise<void> {
     // Create handler id
-    const handlerId = createHandlerId(this.basePath, options?.topic);
+    const handlerId = createHandlerId(this.#basePath, options?.topic);
 
     // Add new handler to specified handlers
     const handlers = this.queueHandlers.get(handlerId) ?? [];
@@ -350,7 +350,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     options?: FindUndeliveredOptions<TOutput>,
   ): Promise<Document<TOutput, TId> | null> {
     // Create document key, get document entry
-    const key = extendKey(this.basePath, UNDELIVERED_KEY_PREFIX, id);
+    const key = extendKey(this.#basePath, UNDELIVERED_KEY_PREFIX, id);
     const result = await this.kv.get(key, options);
 
     // If no entry exists, return null
@@ -381,7 +381,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    * @param id - Id of undelivered document.
    */
   async deleteUndelivered(id: KvId): Promise<void> {
-    const key = extendKey(this.basePath, UNDELIVERED_KEY_PREFIX, id);
+    const key = extendKey(this.#basePath, UNDELIVERED_KEY_PREFIX, id);
     await this.kv.delete(key);
   }
 
