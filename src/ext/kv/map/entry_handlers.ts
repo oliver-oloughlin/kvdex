@@ -1,6 +1,6 @@
 import { ulid } from "@std/ulid";
 import { jsonParse, jsonStringify } from "../../../common/json.ts";
-import { KVDEX_QUEUE_KEY_PREFIX } from "../../../core/constants.ts";
+import { MAP_KV_QUEUE_KEY_PREFIX } from "../../../core/constants.ts";
 import type {
   DenoKvCommitError,
   DenoKvCommitResult,
@@ -210,7 +210,7 @@ export async function enqueueValue({
 }): Promise<DenoKvCommitResult> {
   const timestamp = Date.now() + (options?.delay ?? 0);
   const id = ulid();
-  const key: DenoKvStrictKey = [KVDEX_QUEUE_KEY_PREFIX, id];
+  const key: DenoKvStrictKey = [MAP_KV_QUEUE_KEY_PREFIX, id];
   const entryValue: QueueEntryValue = {
     value,
     timestamp,
@@ -266,7 +266,7 @@ export async function activateQueuedValues({
   timerIds: Set<TimeoutId>;
 }) {
   const iter = await listEntries({
-    selector: { prefix: [KVDEX_QUEUE_KEY_PREFIX] },
+    selector: { prefix: [MAP_KV_QUEUE_KEY_PREFIX] },
     options: undefined,
     watchers: [],
     getEntries,

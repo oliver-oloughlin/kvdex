@@ -116,6 +116,35 @@ function createDb(kv: Deno.Kv) {
 }
 
 Deno.test("ext - migrate", async (t) => {
+  await t.step(
+    "Should migrate only the custom base path unless all is set",
+    async () => {
+      using source = await Deno.openKv(":memory:");
+      using target = await Deno.openKv(":memory:");
+      const customKey = ["tenant", 42, "numbers", "__id__", "id"];
+      const otherKey = ["tenant", 43, "numbers", "__id__", "id"];
+      const defaultKey = ["__kvdex__", "numbers", "__id__", "id"];
+      await source.set(customKey, 1);
+      await source.set(otherKey, 2);
+      await source.set(defaultKey, 3);
+
+      await migrate({ source, target, basePath: ["tenant", 42] });
+      assertEquals((await target.get(customKey)).value, 1);
+      assertEquals((await target.get(otherKey)).value, null);
+      assertEquals((await target.get(defaultKey)).value, null);
+
+      await migrate({ source, target, basePath: ["tenant", 42], all: true });
+      assertEquals((await target.get(otherKey)).value, 2);
+      assertEquals((await target.get(defaultKey)).value, 3);
+
+      await target.delete(otherKey);
+      await target.delete(defaultKey);
+      await migrate({ source, target, basePath: [] });
+      assertEquals((await target.get(otherKey)).value, 2);
+      assertEquals((await target.get(defaultKey)).value, 3);
+    },
+  );
+
   await t.step("Should only migrate kvdex entries", async () => {
     const temp = await Deno.makeTempFile({ suffix: ".sqlite3" });
     using sourceKv = await Deno.openKv(":memory:");

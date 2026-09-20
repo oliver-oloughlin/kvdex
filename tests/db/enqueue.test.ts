@@ -1,16 +1,56 @@
 import {
+  type BaseKey,
   collection,
   kvdex,
   type KvValue,
   model,
   type QueueMessage,
 } from "../../mod.ts";
-import { KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
+import { DEFAULT_BASE_KEY_PREFIX } from "../../src/core/constants.ts";
 import { createHandlerId } from "../../src/core/utils.ts";
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { useKv } from "../utils.ts";
 
 Deno.test("db - enqueue", async (t) => {
+  await t.step(
+    "Should route database and collection queues by custom base path",
+    async () => {
+      const paths: BaseKey[] = [["tenant", 42n], ["tenant", "42"], []];
+      for (const basePath of paths) {
+        await useKv(async (kv) => {
+          const db = kvdex({
+            kv,
+            schema: { numbers: collection<number>() },
+            basePath,
+          });
+          const received: string[] = [];
+          const complete = Promise.withResolvers<void>();
+          const record = (queue: string) => (value: string) => {
+            received.push(`${queue}:${value}`);
+            if (received.length === 2) complete.resolve();
+          };
+          const listeners = [
+            db.listenQueue(record("database"), { topic: "topic" }),
+            db.numbers.listenQueue(record("collection")),
+          ];
+          const timeout = setTimeout(
+            () => complete.reject(new Error("Queue delivery timed out")),
+            5_000,
+          );
+          try {
+            await db.enqueue("one", { topic: "topic" });
+            await db.numbers.enqueue("two");
+            await complete.promise;
+            assertEquals(received.sort(), ["collection:two", "database:one"]);
+          } finally {
+            clearTimeout(timeout);
+          }
+          return async () => await Promise.all(listeners);
+        });
+      }
+    },
+  );
+
   await t.step("Should enqueue message with string data", async () => {
     await useKv(async (kv) => {
       const data = "data";
@@ -22,7 +62,7 @@ Deno.test("db - enqueue", async (t) => {
         schema: { numbers: collection({ model: model<number>() }) },
       });
 
-      const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined);
+      const handlerId = createHandlerId([DEFAULT_BASE_KEY_PREFIX], undefined);
 
       let assertion = false;
 
@@ -95,7 +135,7 @@ Deno.test("db - enqueue", async (t) => {
         schema: { numbers: collection({ model: model<number>() }) },
       });
 
-      const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined);
+      const handlerId = createHandlerId([DEFAULT_BASE_KEY_PREFIX], undefined);
 
       let assertion = false;
 

@@ -1,4 +1,4 @@
-import type { DenoKv } from "../../core/types.ts";
+import type { BaseKey, DenoKv } from "../../core/types.ts";
 
 /** Options for migrating entries from a source KV instance to a target KV instance */
 export type MigrateOptions = {
@@ -7,6 +7,9 @@ export type MigrateOptions = {
 
   /** Target KV. */
   target: DenoKv;
+
+  /** Prefix to migrate without rewriting keys. Defaults to `["__kvdex__"]`. Ignored when `all` is true. */
+  basePath?: BaseKey;
 
   /**
    * Flag indicating whether to migrate all entries or only kvdex specific entries.

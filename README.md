@@ -49,7 +49,6 @@ _Supported Deno versions:_ **^2.3.0**
   - [Collection Methods](#collection-methods)
     - [find()](#find)
     - [findBy()](#findby)
-    - [getManyBy()](#getmanyby)
     - [findMany()](#findmany)
     - [findHistory()](#findhistory)
     - [findUndelivered()](#findundelivered)
@@ -58,8 +57,8 @@ _Supported Deno versions:_ **^2.3.0**
     - [set()](#set)
     - [update()](#update)
     - [updateBy()](#updateby)
-    - [updateManyBy()](#updatemanyby)
     - [updateMany()](#updatemany)
+    - [updateManyBy()](#updatemanyby)
     - [updateManyByOrder()](#updatemanybyorder)
     - [updateOne()](#updateone)
     - [updateOneBy()](#updateoneby)
@@ -68,12 +67,13 @@ _Supported Deno versions:_ **^2.3.0**
     - [upsertBy()](#upsertby)
     - [delete()](#delete)
     - [deleteBy()](#deleteby)
-    - [deleteManyBy()](#deletemanyby)
     - [deleteMany()](#deletemany)
+    - [deleteManyBy()](#deletemanyby)
     - [deleteManyByOrder()](#deletemanybyorder)
     - [deleteHistory()](#deletehistory)
     - [deleteUndelivered()](#deleteundelivered)
     - [getMany()](#getmany)
+    - [getManyBy()](#getmanyby)
     - [getManyByOrder()](#getmanybyorder)
     - [getOne()](#getone)
     - [getOneBy()](#getoneby)
@@ -127,7 +127,8 @@ _Supported Deno versions:_ **^2.3.0**
 ## Database
 
 `kvdex()` is used for creating a new database instance. It takes an options
-object which expects a Deno KV instance and a schema definition.
+object which expects a Deno KV instance and a schema definition. Optionally, a
+base path can be set, which all keys in the database will reside under.
 
 ```ts
 import { collection, kvdex, model } from "@olli/kvdex";
@@ -137,11 +138,12 @@ const kv = await Deno.openKv();
 
 const db = kvdex({
   kv: kv,
+  basePath: ["my-app"], // Optional, defaults to: ["__kvdex__"]
   schema: {
     // Simple collections:
     numbers: collection<number>(),
 
-    // Object collections with indices and other options:
+    // Object collections with indices and additional options:
     users: collection({
       model: model<User>(),
       encoder: jsonEncoder(),

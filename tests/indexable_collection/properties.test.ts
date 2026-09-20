@@ -6,8 +6,8 @@ import {
   model,
 } from "../../mod.ts";
 import {
+  DEFAULT_BASE_KEY_PREFIX,
   ID_KEY_PREFIX,
-  KVDEX_KEY_PREFIX,
   PRIMARY_INDEX_KEY_PREFIX,
   SECONDARY_INDEX_KEY_PREFIX,
 } from "../../src/core/constants.ts";
@@ -27,7 +27,7 @@ Deno.test("indexable_collection - properties", async (t) => {
       const idKey = db.i_users["keys"].id;
       const primaryIndexKey = db.i_users["keys"].primaryIndex;
       const secondaryIndexKey = db.i_users["keys"].secondaryIndex;
-      const prefix = extendKey([KVDEX_KEY_PREFIX], "i_users");
+      const prefix = extendKey([DEFAULT_BASE_KEY_PREFIX], "i_users");
 
       assert(keyEq(baseKey, prefix));
       assert(keyEq(idKey, extendKey(prefix, ID_KEY_PREFIX)));
