@@ -89,7 +89,6 @@ import {
   DEFAULT_UPDATE_STRATEGY,
   HISTORY_KEY_PREFIX,
   ID_KEY_PREFIX,
-  KVDEX_KEY_PREFIX,
   PRIMARY_INDEX_KEY_PREFIX,
   SECONDARY_INDEX_KEY_PREFIX,
   SEGMENT_KEY_PREFIX,
@@ -243,12 +242,14 @@ export function collection(
     key: KvKey,
     queueHandlers: QueueHandlers,
     idempotentListener: IdempotentListener,
+    basePath: KvKey,
   ) =>
     new Collection(
       kv,
       key,
       queueHandlers,
       idempotentListener,
+      basePath,
       options,
     );
 }
@@ -276,6 +277,7 @@ export class Collection<
     key: KvKey,
     queueHandlers: QueueHandlers,
     idempotentListener: IdempotentListener,
+    basePath: KvKey,
     options?: TOptions,
   ) {
     // Set basic fields
@@ -288,39 +290,39 @@ export class Collection<
 
     // Set keys
     this.keys = {
-      base: extendKey([KVDEX_KEY_PREFIX], ...key),
+      base: extendKey(basePath, ...key),
       id: extendKey(
-        [KVDEX_KEY_PREFIX],
+        basePath,
         ...key,
         ID_KEY_PREFIX,
       ),
       primaryIndex: extendKey(
-        [KVDEX_KEY_PREFIX],
+        basePath,
         ...key,
         PRIMARY_INDEX_KEY_PREFIX,
       ),
       secondaryIndex: extendKey(
-        [KVDEX_KEY_PREFIX],
+        basePath,
         ...key,
         SECONDARY_INDEX_KEY_PREFIX,
       ),
       segment: extendKey(
-        [KVDEX_KEY_PREFIX],
+        basePath,
         ...key,
         SEGMENT_KEY_PREFIX,
       ),
       undelivered: extendKey(
-        [KVDEX_KEY_PREFIX],
+        basePath,
         UNDELIVERED_KEY_PREFIX,
         ...key,
       ),
       history: extendKey(
-        [KVDEX_KEY_PREFIX],
+        basePath,
         HISTORY_KEY_PREFIX,
         ...key,
       ),
       historySegment: extendKey(
-        [KVDEX_KEY_PREFIX],
+        basePath,
         HISTORY_KEY_PREFIX,
         SEGMENT_KEY_PREFIX,
         ...key,

@@ -87,6 +87,8 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
 export function kvdex<const TSchema extends SchemaDefinition>(
   options: KvdexOptions<TSchema>,
 ): Database<TSchema> {
+  const basePath: KvKey = options.basePath ?? [KVDEX_KEY_PREFIX];
+
   // Set listener activated flag and queue handlers map
   let listener: Promise<void>;
   const queueHandlers = new Map<string, QueueMessageHandler<KvValue>[]>();
@@ -122,6 +124,7 @@ export function kvdex<const TSchema extends SchemaDefinition>(
     options.kv,
     queueHandlers,
     idempotentListener,
+    basePath,
   ) as Schema<TSchema>;
 
   // Create KvDex object
@@ -130,6 +133,7 @@ export function kvdex<const TSchema extends SchemaDefinition>(
     schema,
     queueHandlers,
     idempotentListener,
+    basePath,
   );
 
   // Return schema and db combination
@@ -142,17 +146,20 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   private schema: TSchema;
   private queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>;
   private idempotentListener: () => Promise<void>;
+  private basePath: KvKey;
 
   constructor(
     kv: DenoKv,
     schema: TSchema,
     queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>,
     idempotentListener: () => Promise<void>,
+    basePath: KvKey,
   ) {
     this.kv = kv;
     this.schema = schema;
     this.queueHandlers = queueHandlers;
     this.idempotentListener = idempotentListener;
+    this.basePath = basePath;
   }
 
   /**
@@ -229,7 +236,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    */
   async wipe(): Promise<void> {
     // Create iterator
-    const iter = await this.kv.list({ prefix: [KVDEX_KEY_PREFIX] });
+    const iter = await this.kv.list({ prefix: this.basePath });
 
     // Collect all kvdex keys
     const keys: DenoKvStrictKey[] = [];
@@ -270,8 +277,8 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   ): Promise<DenoKvCommitResult> {
     // Prepare and perform enqueue operation
     const prep = prepareEnqueue(
-      [KVDEX_KEY_PREFIX],
-      [KVDEX_KEY_PREFIX, UNDELIVERED_KEY_PREFIX],
+      this.basePath,
+      extendKey(this.basePath, UNDELIVERED_KEY_PREFIX),
       data,
       options,
     );
@@ -308,7 +315,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     options?: QueueListenerOptions,
   ): Promise<void> {
     // Create handler id
-    const handlerId = createHandlerId([KVDEX_KEY_PREFIX], options?.topic);
+    const handlerId = createHandlerId(this.basePath, options?.topic);
 
     // Add new handler to specified handlers
     const handlers = this.queueHandlers.get(handlerId) ?? [];
@@ -343,7 +350,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     options?: FindUndeliveredOptions<TOutput>,
   ): Promise<Document<TOutput, TId> | null> {
     // Create document key, get document entry
-    const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id);
+    const key = extendKey(this.basePath, UNDELIVERED_KEY_PREFIX, id);
     const result = await this.kv.get(key, options);
 
     // If no entry exists, return null
@@ -374,7 +381,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    * @param id - Id of undelivered document.
    */
   async deleteUndelivered(id: KvId): Promise<void> {
-    const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id);
+    const key = extendKey(this.basePath, UNDELIVERED_KEY_PREFIX, id);
     await this.kv.delete(key);
   }
 
@@ -614,6 +621,7 @@ function _createSchema(
   kv: DenoKv,
   queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>,
   idempotentListener: () => Promise<void>,
+  basePath: KvKey,
   treeKey?: KvKey,
 ): Schema<SchemaDefinition> {
   // Get all the definition entries
@@ -626,13 +634,23 @@ function _createSchema(
 
     // If the entry value is a function => build collection and create collection entry
     if (typeof value === "function") {
-      return [key, value(kv, extendedKey, queueHandlers, idempotentListener)];
+      return [
+        key,
+        value(kv, extendedKey, queueHandlers, idempotentListener, basePath),
+      ];
     }
 
     // Create and return schema entry
     return [
       key,
-      _createSchema(value, kv, queueHandlers, idempotentListener, extendedKey),
+      _createSchema(
+        value,
+        kv,
+        queueHandlers,
+        idempotentListener,
+        basePath,
+        extendedKey,
+      ),
     ];
   });
 

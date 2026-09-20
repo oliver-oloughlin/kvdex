@@ -7,10 +7,56 @@ import {
 } from "../../mod.ts";
 import { KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
 import { createHandlerId } from "../../src/core/utils.ts";
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { useKv } from "../utils.ts";
 
 Deno.test("db - enqueue", async (t) => {
+  await t.step(
+    "Should route database and collection queues by custom base path",
+    async () => {
+      await useKv(async (kv) => {
+        const schema = { numbers: collection<number>() };
+        const custom = kvdex({ kv, schema, basePath: ["tenant", 42n] });
+        const other = kvdex({ kv, schema, basePath: ["tenant", "42"] });
+        const received: string[] = [];
+        const complete = Promise.withResolvers<void>();
+        const record = (queue: string) => (value: string) => {
+          received.push(`${queue}:${value}`);
+          if (received.length === 4) complete.resolve();
+        };
+        const listeners = [
+          custom.listenQueue(record("custom"), { topic: "topic" }),
+          other.listenQueue(record("other"), { topic: "topic" }),
+          custom.numbers.listenQueue(record("custom collection")),
+          other.numbers.listenQueue(record("other collection")),
+        ];
+        const timeout = setTimeout(
+          () => complete.reject(new Error("Queue delivery timed out")),
+          5_000,
+        );
+        try {
+          await custom.enqueue("one", { topic: "topic" });
+          await other.enqueue("two", { topic: "topic" });
+          await custom.numbers.enqueue("three");
+          await other.numbers.enqueue("four");
+          await complete.promise;
+          assertEquals(
+            received.sort(),
+            [
+              "custom:one",
+              "other:two",
+              "custom collection:three",
+              "other collection:four",
+            ].sort(),
+          );
+        } finally {
+          clearTimeout(timeout);
+        }
+        return async () => await Promise.all(listeners);
+      });
+    },
+  );
+
   await t.step("Should enqueue message with string data", async () => {
     await useKv(async (kv) => {
       const data = "data";

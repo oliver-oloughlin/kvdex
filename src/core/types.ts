@@ -24,6 +24,7 @@ export type BuilderFn<
   key: KvKey,
   queueHandlers: QueueHandlers,
   idempotentListener: IdempotentListener,
+  basePath: KvKey,
 ) => Collection<TInput, TOutput, TOptions>;
 
 /** Any collection builder function */
@@ -701,6 +702,9 @@ export type KvdexOptions<T extends SchemaDefinition> = {
 
   /** Schema definition containing the database collections */
   schema?: T;
+
+  /** Key prefix for all database entries. Defaults to ["__kvdex__"]. */
+  basePath?: KvKey;
 };
 
 /*******************/

@@ -31,6 +31,7 @@ import { ulid } from "@std/ulid";
 import { jsonEncoder } from "../ext/encoding/mod.ts";
 import { equals } from "@std/bytes";
 import { concat } from "@std/bytes/concat";
+import { jsonStringify } from "../common/json.ts";
 
 /**
  * Generate a new document id.
@@ -413,7 +414,7 @@ export function createHandlerId(
   key: KvKey,
   topic: string | undefined,
 ) {
-  return `${JSON.stringify(key)}${topic ?? ""}`;
+  return `${jsonStringify(key)}${topic ?? ""}`;
 }
 
 /**
