@@ -1,6 +1,7 @@
 import { GET_MANY_KEY_LIMIT } from "./constants.ts";
 import type { Collection } from "./collection.ts";
 import type {
+  BaseKey,
   DenoAtomicOperation,
   DenoKv,
   DenoKvEntryMaybe,
@@ -67,7 +68,7 @@ export function getDocumentId(
  * @param keyParts - Key parts to add to the input key.
  * @returns An extended kv key.
  */
-export function extendKey(key: KvKey, ...keyParts: KvId[]) {
+export function extendKey(key: BaseKey, ...keyParts: KvId[]) {
   return [...key, ...keyParts].flat() as KvKey;
 }
 
@@ -376,7 +377,7 @@ export async function allFulfilled<const T>(
  * @returns Prepared enqueue
  */
 export function prepareEnqueue<const T extends KvValue>(
-  baseKey: KvKey,
+  baseKey: BaseKey,
   undeliveredKey: KvKey,
   data: T,
   options: EnqueueOptions | undefined,
@@ -411,7 +412,7 @@ export function prepareEnqueue<const T extends KvValue>(
  * @returns A handler id.
  */
 export function createHandlerId(
-  key: KvKey,
+  key: BaseKey,
   topic: string | undefined,
 ) {
   return `${jsonStringify(key)}${topic ?? ""}`;

@@ -1,10 +1,36 @@
-import { collection, kvdex, model } from "../../mod.ts";
+import { type BaseKey, collection, kvdex, model } from "../../mod.ts";
 import { DEFAULT_BASE_KEY_PREFIX } from "../../src/core/constants.ts";
 import { assert, assertEquals } from "@std/assert";
 import { useKv } from "../utils.ts";
 import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 Deno.test("db - kvdex", async (t) => {
+  await t.step("Should support empty and multi-part base paths", async () => {
+    const paths: BaseKey[] = [[], ["tenant", 42, "app"]];
+    for (const basePath of paths) {
+      await useKv(async (kv) => {
+        const db = kvdex({
+          kv,
+          basePath,
+          schema: { numbers: collection<number>() },
+        });
+        assert((await db.numbers.set("id", 1)).ok);
+        assertEquals(
+          (await kv.get([...basePath, "numbers", "__id__", "id"])).value,
+          1,
+        );
+        await kv.set([...basePath, "__undelivered__", "message"], "data");
+        assertEquals((await db.findUndelivered("message"))?.value, "data");
+        await db.deleteUndelivered("message");
+        assertEquals(await db.findUndelivered("message"), null);
+        await kv.set([...basePath, "unrelated"], 2);
+        await db.wipe();
+        assertEquals(await db.numbers.find("id"), null);
+        assertEquals((await kv.get([...basePath, "unrelated"])).value, null);
+      });
+    }
+  });
+
   await t.step("Should allow a collection named basePath", async () => {
     await useKv(async (kv) => {
       const db = kvdex({

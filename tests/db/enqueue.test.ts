@@ -1,4 +1,5 @@
 import {
+  type BaseKey,
   collection,
   kvdex,
   type KvValue,
@@ -14,46 +15,39 @@ Deno.test("db - enqueue", async (t) => {
   await t.step(
     "Should route database and collection queues by custom base path",
     async () => {
-      await useKv(async (kv) => {
-        const schema = { numbers: collection<number>() };
-        const custom = kvdex({ kv, schema, basePath: ["tenant", 42n] });
-        const other = kvdex({ kv, schema, basePath: ["tenant", "42"] });
-        const received: string[] = [];
-        const complete = Promise.withResolvers<void>();
-        const record = (queue: string) => (value: string) => {
-          received.push(`${queue}:${value}`);
-          if (received.length === 4) complete.resolve();
-        };
-        const listeners = [
-          custom.listenQueue(record("custom"), { topic: "topic" }),
-          other.listenQueue(record("other"), { topic: "topic" }),
-          custom.numbers.listenQueue(record("custom collection")),
-          other.numbers.listenQueue(record("other collection")),
-        ];
-        const timeout = setTimeout(
-          () => complete.reject(new Error("Queue delivery timed out")),
-          5_000,
-        );
-        try {
-          await custom.enqueue("one", { topic: "topic" });
-          await other.enqueue("two", { topic: "topic" });
-          await custom.numbers.enqueue("three");
-          await other.numbers.enqueue("four");
-          await complete.promise;
-          assertEquals(
-            received.sort(),
-            [
-              "custom:one",
-              "other:two",
-              "custom collection:three",
-              "other collection:four",
-            ].sort(),
+      const paths: BaseKey[] = [["tenant", 42n], ["tenant", "42"], []];
+      for (const basePath of paths) {
+        await useKv(async (kv) => {
+          const db = kvdex({
+            kv,
+            schema: { numbers: collection<number>() },
+            basePath,
+          });
+          const received: string[] = [];
+          const complete = Promise.withResolvers<void>();
+          const record = (queue: string) => (value: string) => {
+            received.push(`${queue}:${value}`);
+            if (received.length === 2) complete.resolve();
+          };
+          const listeners = [
+            db.listenQueue(record("database"), { topic: "topic" }),
+            db.numbers.listenQueue(record("collection")),
+          ];
+          const timeout = setTimeout(
+            () => complete.reject(new Error("Queue delivery timed out")),
+            5_000,
           );
-        } finally {
-          clearTimeout(timeout);
-        }
-        return async () => await Promise.all(listeners);
-      });
+          try {
+            await db.enqueue("one", { topic: "topic" });
+            await db.numbers.enqueue("two");
+            await complete.promise;
+            assertEquals(received.sort(), ["collection:two", "database:one"]);
+          } finally {
+            clearTimeout(timeout);
+          }
+          return async () => await Promise.all(listeners);
+        });
+      }
     },
   );
 

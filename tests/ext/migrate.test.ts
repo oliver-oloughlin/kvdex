@@ -136,6 +136,12 @@ Deno.test("ext - migrate", async (t) => {
       await migrate({ source, target, basePath: ["tenant", 42], all: true });
       assertEquals((await target.get(otherKey)).value, 2);
       assertEquals((await target.get(defaultKey)).value, 3);
+
+      await target.delete(otherKey);
+      await target.delete(defaultKey);
+      await migrate({ source, target, basePath: [] });
+      assertEquals((await target.get(otherKey)).value, 2);
+      assertEquals((await target.get(defaultKey)).value, 3);
     },
   );
 

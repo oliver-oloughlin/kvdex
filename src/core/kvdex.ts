@@ -1,5 +1,6 @@
 import type {
   BaseCollectionOptions,
+  BaseKey,
   CollectionSelector,
   CountAllOptions,
   Database,
@@ -87,7 +88,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
 export function kvdex<const TSchema extends SchemaDefinition>(
   options: KvdexOptions<TSchema>,
 ): Database<TSchema> {
-  const basePath: KvKey = options.basePath ?? [DEFAULT_BASE_KEY_PREFIX];
+  const basePath: BaseKey = options.basePath ?? [DEFAULT_BASE_KEY_PREFIX];
 
   // Set listener activated flag and queue handlers map
   let listener: Promise<void>;
@@ -146,14 +147,14 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   private schema: TSchema;
   private queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>;
   private idempotentListener: () => Promise<void>;
-  #basePath: KvKey;
+  #basePath: BaseKey;
 
   constructor(
     kv: DenoKv,
     schema: TSchema,
     queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>,
     idempotentListener: () => Promise<void>,
-    basePath: KvKey,
+    basePath: BaseKey,
   ) {
     this.kv = kv;
     this.schema = schema;
@@ -225,7 +226,8 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   }
 
   /**
-   * Wipe all kvdex entries, including undelivered and history entries.
+   * Delete all KV entries under `basePath`, including entries outside the schema, such as undelivered and history entries.
+   * An empty basePath deletes all ordinary KV entries in the store.
    *
    * @example
    * ```ts
@@ -621,7 +623,7 @@ function _createSchema(
   kv: DenoKv,
   queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>,
   idempotentListener: () => Promise<void>,
-  basePath: KvKey,
+  basePath: BaseKey,
   treeKey?: KvKey,
 ): Schema<SchemaDefinition> {
   // Get all the definition entries

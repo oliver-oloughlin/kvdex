@@ -24,7 +24,7 @@ export type BuilderFn<
   key: KvKey,
   queueHandlers: QueueHandlers,
   idempotentListener: IdempotentListener,
-  basePath: KvKey,
+  basePath: BaseKey,
 ) => Collection<TInput, TOutput, TOptions>;
 
 /** Any collection builder function */
@@ -703,8 +703,8 @@ export type KvdexOptions<T extends SchemaDefinition> = {
   /** Schema definition containing the database collections */
   schema?: T;
 
-  /** Key prefix for all database entries. Defaults to ["__kvdex__"]. */
-  basePath?: KvKey;
+  /** Exclusively owned key prefix for all database entries. Defaults to ["__kvdex__"]. Use [] for the KV root. */
+  basePath?: BaseKey;
 };
 
 /*******************/
@@ -784,6 +784,9 @@ export type KvKey = [DenoKvStrictKeyPart, ...DenoKvStrictKey];
 
 /** An entry ID. Can be either a single KeyPart or a full key. */
 export type KvId = DenoKvStrictKeyPart | KvKey;
+
+/** A base path of KV key parts. May be empty. */
+export type BaseKey = DenoKvStrictKeyPart[];
 
 /** An object containing only KV values, and is itself a KV value. */
 export type KvObject = {

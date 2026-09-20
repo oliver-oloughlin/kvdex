@@ -1,5 +1,6 @@
 import type {
   BaseCollectionOptions,
+  BaseKey,
   BuilderFn,
   CheckKeyOf,
   CollectionKeys,
@@ -242,7 +243,7 @@ export function collection(
     key: KvKey,
     queueHandlers: QueueHandlers,
     idempotentListener: IdempotentListener,
-    basePath: KvKey,
+    basePath: BaseKey,
   ) =>
     new Collection(
       kv,
@@ -277,7 +278,7 @@ export class Collection<
     key: KvKey,
     queueHandlers: QueueHandlers,
     idempotentListener: IdempotentListener,
-    basePath: KvKey,
+    basePath: BaseKey,
     options?: TOptions,
   ) {
     // Set basic fields
