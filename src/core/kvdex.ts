@@ -34,9 +34,9 @@ import {
 } from "./utils.ts";
 import { AtomicBuilder } from "./atomic_builder.ts";
 import {
+  DEFAULT_BASE_KEY_PREFIX,
   DEFAULT_INTERVAL_RETRY,
   DEFAULT_LOOP_RETRY,
-  KVDEX_KEY_PREFIX,
   MIN_INTERVAL_START_DELAY,
   MIN_LOOP_START_DELAY,
   UNDELIVERED_KEY_PREFIX,
@@ -87,7 +87,7 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
 export function kvdex<const TSchema extends SchemaDefinition>(
   options: KvdexOptions<TSchema>,
 ): Database<TSchema> {
-  const basePath: KvKey = options.basePath ?? [KVDEX_KEY_PREFIX];
+  const basePath: KvKey = options.basePath ?? [DEFAULT_BASE_KEY_PREFIX];
 
   // Set listener activated flag and queue handlers map
   let listener: Promise<void>;

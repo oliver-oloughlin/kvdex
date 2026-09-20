@@ -1,5 +1,8 @@
 import { collection, type Document, kvdex, model } from "../../mod.ts";
-import { ID_KEY_PREFIX, KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
+import {
+  DEFAULT_BASE_KEY_PREFIX,
+  ID_KEY_PREFIX,
+} from "../../src/core/constants.ts";
 import { extendKey, keyEq } from "../../src/core/utils.ts";
 import { assert, assertEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUser3 } from "../mocks.ts";
@@ -13,7 +16,7 @@ Deno.test("collection - properties", async (t) => {
     await useDb((db) => {
       const baseKey = db.users["keys"].base;
       const idKey = db.users["keys"].id;
-      const prefix = extendKey([KVDEX_KEY_PREFIX], "users");
+      const prefix = extendKey([DEFAULT_BASE_KEY_PREFIX], "users");
 
       assert(keyEq(baseKey, prefix));
       assert(keyEq(idKey, extendKey(prefix, ID_KEY_PREFIX)));

@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "@std/assert";
 import { Collection } from "../../src/core/collection.ts";
-import { KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
+import { DEFAULT_BASE_KEY_PREFIX } from "../../src/core/constants.ts";
 import { model } from "../../src/core/model.ts";
 import { createIndexDiffs, extendKey } from "../../src/core/utils.ts";
 import { useKv } from "../utils.ts";
@@ -36,7 +36,7 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           ["users"],
           new Map<any, any>(),
           () => Promise.resolve(),
-          [KVDEX_KEY_PREFIX],
+          [DEFAULT_BASE_KEY_PREFIX],
           {
             model: model<User>(),
             encoder,
@@ -167,7 +167,7 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           ["users"],
           new Map<any, any>(),
           () => Promise.resolve(),
-          [KVDEX_KEY_PREFIX],
+          [DEFAULT_BASE_KEY_PREFIX],
           {
             model: model<User>(),
             encoder,
@@ -298,7 +298,7 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           ["users"],
           new Map<any, any>(),
           () => Promise.resolve(),
-          [KVDEX_KEY_PREFIX],
+          [DEFAULT_BASE_KEY_PREFIX],
           {
             model: model<User>(),
             encoder,
