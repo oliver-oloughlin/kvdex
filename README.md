@@ -138,7 +138,7 @@ const kv = await Deno.openKv();
 
 const db = kvdex({
   kv: kv,
-  basePath: ["my-app"], // Optional, default to: ["__kvdex__"]
+  basePath: ["my-app"], // Optional, defaults to: ["__kvdex__"]
   schema: {
     // Simple collections:
     numbers: collection<number>(),
