@@ -2,6 +2,7 @@ import { assert, assertEquals } from "@std/assert";
 import {
   sleep,
   useIndexedDbMap,
+  useKv,
   useLocalStorageMap,
   useMapKv,
   useSessionStorageMap,
@@ -10,44 +11,7 @@ import { mapKv } from "../../src/ext/kv/map/mod.ts";
 import type { BasicMap } from "../../src/ext/kv/map/types.ts";
 import { collection, kvdex } from "../../mod.ts";
 import type { KvEntry } from "../../src/ext/kv/map/entry_handlers.ts";
-
-Deno.test("MapKv reopen preserves queue-named collections with an empty base path", async () => {
-  const map = new Map<string, KvEntry>();
-  const schema = {
-    __kvdex_queue__: collection<{ value: string; timestamp: number }>(),
-  };
-  const value = { value: "document", timestamp: 0 };
-  const original = mapKv({ map });
-  try {
-    const db = kvdex({ kv: original, basePath: [], schema });
-    assert((await db.__kvdex_queue__.set("id", value)).ok);
-    assert((await original.enqueue("message", { delay: 50 })).ok);
-  } finally {
-    await original.close();
-  }
-
-  const reopened = mapKv({ map });
-  const received: unknown[] = [];
-  const complete = Promise.withResolvers<void>();
-  const timeout = setTimeout(
-    () => complete.reject(new Error("Queue delivery timed out")),
-    5_000,
-  );
-  const listener = reopened.listenQueue((message) => {
-    received.push(message);
-    if (message === "message") complete.resolve();
-  });
-  try {
-    const db = kvdex({ kv: reopened, basePath: [], schema });
-    await complete.promise;
-    assertEquals(received, ["message"]);
-    assertEquals((await db.__kvdex_queue__.find("id"))?.value, value);
-  } finally {
-    clearTimeout(timeout);
-    await reopened.close();
-    await listener;
-  }
-});
+import type { DenoKvListSelector } from "../../src/core/types.ts";
 
 /** A BasicMap wrapper that delays `set` to simulate slow initialization. */
 class SlowMap<K, V> implements BasicMap<K, V> {
@@ -85,6 +49,106 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async (t) => {
+    await t.step(
+      "KV list respects inclusive start and exclusive end bounds",
+      async () => {
+        await useKv(async (kv) => {
+          for (const value of [1, 3, 5]) {
+            assert((await kv.set(["range", value, "id"], value)).ok);
+          }
+          assert((await kv.set(["other", 3, "id"], 99)).ok);
+
+          const cases: { selector: DenoKvListSelector; expected: number[] }[] =
+            [
+              {
+                selector: { prefix: ["range"], start: ["range", 2] },
+                expected: [3, 5],
+              },
+              {
+                selector: { prefix: ["range"], end: ["range", 4] },
+                expected: [1, 3],
+              },
+              {
+                selector: { start: ["range", 3], end: ["range", 5] },
+                expected: [3],
+              },
+              {
+                selector: {
+                  start: ["range", 3, "id"],
+                  end: ["range", 5, "id"],
+                },
+                expected: [3],
+              },
+              {
+                selector: { prefix: ["range"], end: ["range", 1, "id"] },
+                expected: [],
+              },
+              {
+                selector: { prefix: ["range"], start: ["range", 6] },
+                expected: [],
+              },
+              {
+                selector: { start: ["range", 0], end: ["range", 6] },
+                expected: [1, 3, 5],
+              },
+            ];
+
+          for (const { selector, expected } of cases) {
+            for (const reverse of [false, true]) {
+              const entries = await Array.fromAsync(
+                await kv.list(selector, { reverse }),
+              );
+              assertEquals(
+                entries.map((entry) => entry.value),
+                reverse ? expected.toReversed() : expected,
+              );
+            }
+          }
+        });
+      },
+    );
+
+    await t.step(
+      "MapKv reopen preserves queue-named collections with an empty base path",
+      async () => {
+        const map = new Map<string, KvEntry>();
+        const schema = {
+          __kvdex_queue__: collection<{ value: string; timestamp: number }>(),
+        };
+        const value = { value: "document", timestamp: 0 };
+        const original = mapKv({ map });
+        try {
+          const db = kvdex({ kv: original, basePath: [], schema });
+          assert((await db.__kvdex_queue__.set("id", value)).ok);
+          assert((await original.enqueue("message", { delay: 50 })).ok);
+        } finally {
+          await original.close();
+        }
+
+        const reopened = mapKv({ map });
+        const received: unknown[] = [];
+        const complete = Promise.withResolvers<void>();
+        const timeout = setTimeout(
+          () => complete.reject(new Error("Queue delivery timed out")),
+          5_000,
+        );
+        const listener = reopened.listenQueue((message) => {
+          received.push(message);
+          if (message === "message") complete.resolve();
+        });
+        try {
+          const db = kvdex({ kv: reopened, basePath: [], schema });
+          await complete.promise;
+          assertEquals(received, ["message"]);
+          assertEquals((await db.__kvdex_queue__.find("id"))?.value, value);
+        } finally {
+          clearTimeout(timeout);
+          await reopened.close();
+          await listener;
+        }
+      },
+    );
+
     await t.step("set", async (t) => {
       await t.step("Should set new entry", async () => {
         await useMapKv(async (kv) => {

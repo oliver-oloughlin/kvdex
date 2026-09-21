@@ -365,23 +365,15 @@ export async function listEntries({
   }
 
   if (start) {
-    const index = entries.findIndex(
-      ([key]) => key === jsonStringify(start),
+    entries = entries.filter(
+      ([key]) => keySort(jsonParse<DenoKvStrictKey>(key), start) >= 0,
     );
-
-    if (index && index !== -1) {
-      entries = entries.slice(index);
-    }
   }
 
   if (end) {
-    const index = entries.findIndex(
-      ([key]) => key === jsonStringify(end),
+    entries = entries.filter(
+      ([key]) => keySort(jsonParse<DenoKvStrictKey>(key), end) < 0,
     );
-
-    if (index && index !== -1) {
-      entries = entries.slice(0, index);
-    }
   }
 
   if (options?.cursor) {
