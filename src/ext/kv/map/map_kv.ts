@@ -29,7 +29,7 @@ import {
 } from "./entry_handlers.ts";
 
 /**
- * Create a new KV instance utilizing a `BasicMap` as it's backend.
+ * Create a new KV instance utilizing a `BasicMap` as its backend.
  *
  * Uses `new Map()` by default.
  *
