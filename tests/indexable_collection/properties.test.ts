@@ -16,11 +16,21 @@ import type { KvKey } from "../../src/core/types.ts";
 import { assert } from "@std/assert";
 import { mockUser1 } from "../mocks.ts";
 import type { User } from "../models.ts";
-import { generateUsers, sleep, useDb, useKv } from "../utils.ts";
+import {
+  generateUsers,
+  sleep,
+  testNumericIndexProperties,
+  useDb,
+  useKv,
+} from "../utils.ts";
 import { mockUser2 } from "../mocks.ts";
 import { mockUser3 } from "../mocks.ts";
 
 Deno.test("indexable_collection - properties", async (t) => {
+  await t.step("Numeric index properties", async (t) => {
+    await testNumericIndexProperties(t);
+  });
+
   await t.step("Keys should have the correct prefixes", async () => {
     await useDb((db) => {
       const baseKey = db.i_users["keys"].base;

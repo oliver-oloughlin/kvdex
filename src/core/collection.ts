@@ -73,6 +73,7 @@ import {
   createWatcher,
   deleteIndices,
   encodeData,
+  encodeIndexValue,
   extendKey,
   generateId,
   getDocumentId,
@@ -406,8 +407,7 @@ export class Collection<
     value: CheckKeyOf<K, TOutput>,
     options?: FindOptions,
   ): Promise<Document<TOutput, ParseId<TOptions>> | null> {
-    // Serialize and compress index value
-    const encoded = await encodeData(value, this.encoder);
+    const encoded = await encodeIndexValue(value, this.encoder);
 
     // Create the index key
     const key = extendKey(
@@ -454,8 +454,7 @@ export class Collection<
       ParseId<TOptions>
     >,
   ): Promise<PaginationResult<Document<TOutput, ParseId<TOptions>>>> {
-    // Serialize and compress index value
-    const encoded = await encodeData(value, this.encoder);
+    const encoded = await encodeIndexValue(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -713,8 +712,7 @@ export class Collection<
     value: CheckKeyOf<K, TOutput>,
     options?: DeleteOptions,
   ): Promise<DenoKvCommitResult | DenoKvCommitError> {
-    // Serialize and compress index value
-    const encoded = await encodeData(value, this.encoder);
+    const encoded = await encodeIndexValue(value, this.encoder);
 
     // Create index key
     const key = extendKey(
@@ -772,8 +770,7 @@ export class Collection<
       ParseId<TOptions>
     >,
   ): Promise<PaginationResult<DenoKvCommitResult | DenoKvCommitError>> {
-    // Serialize and compress index value
-    const encoded = await encodeData(value, this.encoder);
+    const encoded = await encodeIndexValue(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -933,8 +930,7 @@ export class Collection<
       CommitResult<TOutput, ParseId<TOptions>> | DenoKvCommitError
     >
   > {
-    // Serialize and compress index value
-    const encoded = await encodeData(value, this.encoder);
+    const encoded = await encodeIndexValue(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -1907,8 +1903,7 @@ export class Collection<
       ParseId<TOptions>
     >,
   ): Promise<PaginationResult<Awaited<T>>> {
-    // Serialize and compress index value
-    const encoded = await encodeData(value, this.encoder);
+    const encoded = await encodeIndexValue(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(
@@ -2050,8 +2045,7 @@ export class Collection<
       ParseId<TOptions>
     >,
   ): Promise<number> {
-    // Serialize and compress index value
-    const encoded = await encodeData(value, this.encoder);
+    const encoded = await encodeIndexValue(value, this.encoder);
 
     // Create prefix key
     const prefixKey = extendKey(

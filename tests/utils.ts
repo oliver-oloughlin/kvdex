@@ -11,7 +11,8 @@ import {
   indexedDbAdapter,
 } from "../src/ext/kv/map/indexed_db_adapter.ts";
 import { ulid } from "@std/ulid/ulid";
-import type { KvId } from "../src/core/types.ts";
+import type { Encoder, KvId } from "../src/core/types.ts";
+import { assert, assertEquals } from "@std/assert";
 
 export const testEncoder = jsonEncoder({
   compressor: brotliCompressor(),
@@ -142,6 +143,186 @@ export async function useDb(
   await useKv(async (kv) => {
     const db = createDb(kv);
     return await fn(db);
+  });
+}
+
+export async function testNumericIndexProperties(
+  test: Deno.TestContext,
+  encoder?: Encoder,
+) {
+  const values = [100, 10, 2.5, 2, 0, -2, -10, -100];
+  const ordered = [-100, -10, -2, 0, 2, 2.5, 10, 100];
+  const cases = [
+    { name: "unbounded", options: {}, expected: ordered },
+    {
+      name: "inclusive start",
+      options: { startValue: 2 },
+      expected: [2, 2.5, 10, 100],
+    },
+    {
+      name: "exclusive end",
+      options: { endValue: 2 },
+      expected: [-100, -10, -2, 0],
+    },
+    {
+      name: "cross-digit range",
+      options: { startValue: 2, endValue: 10 },
+      expected: [2, 2.5],
+    },
+    {
+      name: "negative range",
+      options: { startValue: -100, endValue: -2 },
+      expected: [-100, -10],
+    },
+    {
+      name: "empty range",
+      options: { startValue: 3, endValue: 10 },
+      expected: [],
+    },
+  ];
+
+  await useKv(async (kv) => {
+    const db = kvdex({
+      kv,
+      schema: {
+        numbers: collection({
+          model: model<{
+            primary: number;
+            secondary: number;
+            marked: boolean;
+          }>(),
+          indices: { primary: "primary", secondary: "secondary" },
+          encoder,
+        }),
+      },
+    });
+    const seed = async () => {
+      await db.numbers.deleteMany();
+      assert(
+        (await db.numbers.addMany(
+          values.map((value) => ({
+            primary: value,
+            secondary: value,
+            marked: false,
+          })),
+        )).ok,
+      );
+    };
+    const markedValues = async () => {
+      const { result } = await db.numbers.getMany();
+      return result.filter((doc) => doc.value.marked)
+        .map((doc) => doc.value.primary)
+        .sort((first, second) => first - second);
+    };
+
+    for (const index of ["primary", "secondary"] as const) {
+      for (const scenario of cases) {
+        for (const reverse of [false, true]) {
+          await test.step(
+            `${index}: ${scenario.name}, reverse=${reverse}`,
+            async () => {
+              const options = { ...scenario.options, reverse };
+              const expected = reverse
+                ? [...scenario.expected].reverse()
+                : scenario.expected;
+              await seed();
+
+              const many = await db.numbers.getManyByOrder(index, options);
+              assertEquals(
+                many.result.map((doc) => doc.value[index]),
+                expected,
+                "getManyByOrder",
+              );
+              const one = await db.numbers.getOneByOrder(index, options);
+              assertEquals(one?.value[index], expected[0], "getOneByOrder");
+              const mapped = await db.numbers.mapByOrder(
+                index,
+                (doc) => doc.value[index],
+                options,
+              );
+              assertEquals(mapped.result, expected, "mapByOrder");
+              const visited: number[] = [];
+              await db.numbers.forEachByOrder(
+                index,
+                (doc) => visited.push(doc.value[index]),
+                options,
+              );
+              assertEquals(visited, expected, "forEachByOrder");
+              assertEquals(
+                await db.numbers.countByOrder(index, options),
+                expected.length,
+                "countByOrder",
+              );
+
+              await db.numbers.updateOneByOrder(
+                index,
+                { marked: true },
+                options,
+              );
+              assertEquals(
+                await markedValues(),
+                expected.slice(0, 1),
+                "updateOneByOrder",
+              );
+
+              await seed();
+              await db.numbers.updateManyByOrder(
+                index,
+                { marked: true },
+                options,
+              );
+              assertEquals(
+                await markedValues(),
+                scenario.expected,
+                "updateManyByOrder",
+              );
+
+              await seed();
+              await db.numbers.deleteManyByOrder(index, options);
+              const remaining = await db.numbers.getMany();
+              assertEquals(
+                remaining.result.map((doc) => doc.value[index])
+                  .sort((first, second) => first - second),
+                ordered.filter((value) => !expected.includes(value)),
+                "deleteManyByOrder",
+              );
+            },
+          );
+        }
+      }
+    }
+
+    await test.step("Numeric index lifecycle", async () => {
+      await seed();
+      const zero = await db.numbers.findBy("primary", 0);
+      assert(zero);
+      assert((await db.numbers.update(zero.id, { secondary: 0 })).ok);
+      assert(
+        !(await db.numbers.add({
+          primary: 0,
+          secondary: 0,
+          marked: false,
+        })).ok,
+      );
+      assert(
+        (await db.numbers.update(zero.id, {
+          primary: 3,
+          secondary: 3,
+        })).ok,
+      );
+      assertEquals(await db.numbers.findBy("primary", 0), null);
+      assertEquals((await db.numbers.getManyBy("secondary", 0)).result, []);
+      assertEquals((await db.numbers.findBy("primary", 3))?.id, zero.id);
+      assertEquals(
+        (await db.numbers.getManyBy("secondary", 3)).result.map((doc) =>
+          doc.id
+        ),
+        [zero.id],
+      );
+      assert((await db.numbers.deleteBy("primary", 3)).ok);
+      assertEquals(await db.numbers.findBy("primary", 3), null);
+      assertEquals((await db.numbers.getManyBy("secondary", 3)).result, []);
+    });
   });
 }
 

@@ -563,14 +563,15 @@ export type UpdateOneOptions<T1, T2 extends KvId> =
  * Differs from `ListOptions` by replacing the `startId` and `endId` options
  * with `startValue` and `endValue`, which bound the result by the index value
  * that documents are ordered by.
+ * Numbers use native numeric KV ordering; other values use encoded byte ordering.
  */
 export type IndexOrderListOptions<T1, T2> =
   & Omit<ListOptions<T1, KvId>, "startId" | "endId">
   & {
-    /** Index value of the document to start from. */
+    /** Inclusive index value to start from. */
     startValue?: T2;
 
-    /** Index value of the document to end at. */
+    /** Exclusive index value to end at. */
     endValue?: T2;
   };
 

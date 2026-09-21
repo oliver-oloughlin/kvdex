@@ -175,6 +175,22 @@ export async function decodeData<T>(
   return await serializer.deserialize<T>(decompressed);
 }
 
+export async function encodeIndexValue(
+  value: unknown,
+  encoder?: Encoder,
+): Promise<number | Uint8Array> {
+  return typeof value === "number" ? value : await encodeData(value, encoder);
+}
+
+function indexValueEq(
+  first: number | Uint8Array | undefined,
+  second: number | Uint8Array | undefined,
+): boolean {
+  return first instanceof Uint8Array && second instanceof Uint8Array
+    ? equals(first, second)
+    : Object.is(first, second);
+}
+
 /**
  * Create a secondary index key prefix.
  *
@@ -188,8 +204,7 @@ export async function createSecondaryIndexKeyPrefix(
   value: KvValue,
   collection: Collection<any, any, any>,
 ) {
-  // Serialize and compress index value
-  const encoded = await encodeData(value, collection["encoder"]);
+  const encoded = await encodeIndexValue(value, collection["encoder"]);
 
   // Create prefix key
   return extendKey(
@@ -522,12 +537,12 @@ export async function createOrderListSelector<T1, T2>(
 ): Promise<DenoKvListSelector> {
   // Create start key from encoded start value
   const start = typeof options?.startValue !== "undefined"
-    ? extendKey(prefixKey, await encodeData(options.startValue, encoder))
+    ? extendKey(prefixKey, await encodeIndexValue(options.startValue, encoder))
     : undefined;
 
   // Create end key from encoded end value
   const end = typeof options?.endValue !== "undefined"
-    ? extendKey(prefixKey, await encodeData(options.endValue, encoder))
+    ? extendKey(prefixKey, await encodeIndexValue(options.endValue, encoder))
     : undefined;
 
   // Conditionally set prefix key
@@ -629,7 +644,7 @@ async function handleIndices(
     const indexValue = data[index] as KvId | undefined;
     if (typeof indexValue === "undefined") continue;
 
-    const encoded = await encodeData(indexValue, collection["encoder"]);
+    const encoded = await encodeIndexValue(indexValue, collection["encoder"]);
 
     const indexKey = extendKey(
       collection["keys"].primaryIndex,
@@ -649,7 +664,7 @@ async function handleIndices(
     const indexValue = data[index] as KvId | undefined;
     if (typeof indexValue === "undefined") continue;
 
-    const encoded = await encodeData(indexValue, collection["encoder"]);
+    const encoded = await encodeIndexValue(indexValue, collection["encoder"]);
 
     const indexKey = extendKey(
       collection["keys"].secondaryIndex,
@@ -716,11 +731,11 @@ export async function createIndexDiffs(
     const indexValueNew = dataNew[index] as KvId | undefined;
 
     const encodedOld = typeof indexValueOld !== "undefined"
-      ? await encodeData(indexValueOld, collection["encoder"])
+      ? await encodeIndexValue(indexValueOld, collection["encoder"])
       : undefined;
 
     const encodedNew = typeof indexValueNew !== "undefined"
-      ? await encodeData(indexValueNew, collection["encoder"])
+      ? await encodeIndexValue(indexValueNew, collection["encoder"])
       : undefined;
 
     const indexKeyOld = typeof encodedOld !== "undefined"
@@ -739,10 +754,7 @@ export async function createIndexDiffs(
       )
       : undefined;
 
-    const areEqual = equals(
-      encodedOld ?? new Uint8Array(),
-      encodedNew ?? new Uint8Array(),
-    );
+    const areEqual = indexValueEq(encodedOld, encodedNew);
 
     if (typeof indexKeyOld !== "undefined" && !areEqual) {
       deleteKeys.push(indexKeyOld);
@@ -765,11 +777,11 @@ export async function createIndexDiffs(
     const indexValueNew = dataNew[index] as KvId | undefined;
 
     const encodedOld = typeof indexValueOld !== "undefined"
-      ? await encodeData(indexValueOld, collection["encoder"])
+      ? await encodeIndexValue(indexValueOld, collection["encoder"])
       : undefined;
 
     const encodedNew = typeof indexValueNew !== "undefined"
-      ? await encodeData(indexValueNew, collection["encoder"])
+      ? await encodeIndexValue(indexValueNew, collection["encoder"])
       : undefined;
 
     const indexKeyOld = typeof encodedOld !== "undefined"
@@ -790,10 +802,7 @@ export async function createIndexDiffs(
       )
       : undefined;
 
-    const areEqual = equals(
-      encodedOld ?? new Uint8Array(),
-      encodedNew ?? new Uint8Array(),
-    );
+    const areEqual = indexValueEq(encodedOld, encodedNew);
 
     if (typeof indexKeyOld !== "undefined" && !areEqual) {
       deleteKeys.push(indexKeyOld);

@@ -15,9 +15,13 @@ type User = {
   bornYear?: number;
 };
 
-const keyIncludesEncodedPart = (part: Uint8Array) => {
+const keyIncludesEncodedPart = (part: number | Uint8Array) => {
   return (key: KvKey) =>
-    key.some((p) => p instanceof Uint8Array && equals(part, p));
+    key.some((keyPart) =>
+      part instanceof Uint8Array
+        ? keyPart instanceof Uint8Array && equals(part, keyPart)
+        : Object.is(part, keyPart)
+    );
 };
 
 const keyIncludesStringPart = (part: string) => {
@@ -66,15 +70,15 @@ Deno.test("utils - createIndexDiffs", async (t) => {
         const user1Encoded = {
           username: await encoder.serializer.serialize(user1.username),
           email: await encoder.serializer.serialize(user1.email),
-          age: await encoder.serializer.serialize(user1.age),
-          bornYear: await encoder.serializer.serialize(user1.bornYear),
+          age: user1.age,
+          bornYear: user1.bornYear,
         };
 
         const user2Encoded = {
           username: await encoder.serializer.serialize(user2.username),
           email: await encoder.serializer.serialize(user2.email),
-          age: await encoder.serializer.serialize(user2.age),
-          bornYear: await encoder.serializer.serialize(user2.bornYear),
+          age: user2.age,
+          bornYear: user2.bornYear,
         };
 
         const cr = await collection.add(user1);
@@ -197,15 +201,15 @@ Deno.test("utils - createIndexDiffs", async (t) => {
         const user1Encoded = {
           username: await encoder.serializer.serialize(user1.username),
           email: await encoder.serializer.serialize(user1.email),
-          age: await encoder.serializer.serialize(user1.age),
-          bornYear: await encoder.serializer.serialize(user1.bornYear),
+          age: user1.age,
+          bornYear: user1.bornYear,
         };
 
         const user2Encoded = {
           username: await encoder.serializer.serialize(user2.username),
           email: await encoder.serializer.serialize(user2.email),
-          age: await encoder.serializer.serialize(user2.age),
-          bornYear: await encoder.serializer.serialize(user2.bornYear),
+          age: user2.age,
+          bornYear: user2.bornYear,
         };
 
         const cr = await collection.add(user1);
@@ -323,12 +327,12 @@ Deno.test("utils - createIndexDiffs", async (t) => {
 
         const user1Encoded = {
           username: await encoder.serializer.serialize(user1.username),
-          age: await encoder.serializer.serialize(user1.age),
+          age: user1.age,
         };
 
         const user2Encoded = {
           username: await encoder.serializer.serialize(user2.username),
-          age: await encoder.serializer.serialize(user2.age),
+          age: user2.age,
         };
 
         const cr = await collection.add(user1);

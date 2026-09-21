@@ -15,7 +15,14 @@ import { extendKey, keyEq } from "../../src/core/utils.ts";
 import type { KvKey } from "../../src/core/types.ts";
 import { assert } from "@std/assert";
 import type { User } from "../models.ts";
-import { generateLargeUsers, generateUsers, useDb, useKv } from "../utils.ts";
+import {
+  generateLargeUsers,
+  generateUsers,
+  testEncoder,
+  testNumericIndexProperties,
+  useDb,
+  useKv,
+} from "../utils.ts";
 import { mockUser1 } from "../mocks.ts";
 import { mockUser2 } from "../mocks.ts";
 import { mockUser3 } from "../mocks.ts";
@@ -25,6 +32,10 @@ import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 const [user] = generateLargeUsers(1);
 
 Deno.test("serialized_indexable_collection - properties", async (t) => {
+  await t.step("Numeric index properties", async (t) => {
+    await testNumericIndexProperties(t, testEncoder);
+  });
+
   await t.step("Keys should have the correct prefixes", async () => {
     await useDb((db) => {
       const baseKey = db.is_users["keys"].base;
