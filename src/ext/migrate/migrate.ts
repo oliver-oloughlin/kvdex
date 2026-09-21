@@ -1,5 +1,6 @@
 import { DEFAULT_BASE_KEY_PREFIX } from "../../core/constants.ts";
 import type { DenoKvStrictKey } from "../../core/types.ts";
+import { extendKey } from "../../core/utils.ts";
 import type { MigrateOptions } from "./types.ts";
 
 /**
@@ -24,9 +25,11 @@ export async function migrate({
   source,
   target,
   all,
-  basePath = [DEFAULT_BASE_KEY_PREFIX],
+  basePath = [],
 }: MigrateOptions): Promise<void> {
-  const iter = await source.list({ prefix: all ? [] : basePath });
+  const iter = await source.list({
+    prefix: all ? [] : extendKey(basePath, DEFAULT_BASE_KEY_PREFIX),
+  });
   for await (const { key, value } of iter) {
     await target.set(key as DenoKvStrictKey, value);
   }

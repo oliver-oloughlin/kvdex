@@ -8,6 +8,46 @@ import {
 } from "../utils.ts";
 import { mapKv } from "../../src/ext/kv/map/mod.ts";
 import type { BasicMap } from "../../src/ext/kv/map/types.ts";
+import { collection, kvdex } from "../../mod.ts";
+import type { KvEntry } from "../../src/ext/kv/map/entry_handlers.ts";
+
+Deno.test("MapKv reopen preserves queue-named collections with an empty base path", async () => {
+  const map = new Map<string, KvEntry>();
+  const schema = {
+    __kvdex_queue__: collection<{ value: string; timestamp: number }>(),
+  };
+  const value = { value: "document", timestamp: 0 };
+  const original = mapKv({ map });
+  try {
+    const db = kvdex({ kv: original, basePath: [], schema });
+    assert((await db.__kvdex_queue__.set("id", value)).ok);
+    assert((await original.enqueue("message", { delay: 50 })).ok);
+  } finally {
+    await original.close();
+  }
+
+  const reopened = mapKv({ map });
+  const received: unknown[] = [];
+  const complete = Promise.withResolvers<void>();
+  const timeout = setTimeout(
+    () => complete.reject(new Error("Queue delivery timed out")),
+    5_000,
+  );
+  const listener = reopened.listenQueue((message) => {
+    received.push(message);
+    if (message === "message") complete.resolve();
+  });
+  try {
+    const db = kvdex({ kv: reopened, basePath: [], schema });
+    await complete.promise;
+    assertEquals(received, ["message"]);
+    assertEquals((await db.__kvdex_queue__.find("id"))?.value, value);
+  } finally {
+    clearTimeout(timeout);
+    await reopened.close();
+    await listener;
+  }
+});
 
 /** A BasicMap wrapper that delays `set` to simulate slow initialization. */
 class SlowMap<K, V> implements BasicMap<K, V> {

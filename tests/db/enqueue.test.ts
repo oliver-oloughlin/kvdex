@@ -62,7 +62,10 @@ Deno.test("db - enqueue", async (t) => {
         schema: { numbers: collection({ model: model<number>() }) },
       });
 
-      const handlerId = createHandlerId([DEFAULT_BASE_KEY_PREFIX], undefined);
+      const handlerId = createHandlerId(
+        [DEFAULT_BASE_KEY_PREFIX],
+        undefined,
+      );
 
       let assertion = false;
 
@@ -135,7 +138,10 @@ Deno.test("db - enqueue", async (t) => {
         schema: { numbers: collection({ model: model<number>() }) },
       });
 
-      const handlerId = createHandlerId([DEFAULT_BASE_KEY_PREFIX], undefined);
+      const handlerId = createHandlerId(
+        [DEFAULT_BASE_KEY_PREFIX],
+        undefined,
+      );
 
       let assertion = false;
 

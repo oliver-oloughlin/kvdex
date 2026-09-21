@@ -703,7 +703,7 @@ export type KvdexOptions<T extends SchemaDefinition> = {
   /** Schema definition containing the database collections */
   schema?: T;
 
-  /** Exclusively owned key prefix for all database entries. Defaults to ["__kvdex__"]. Use [] for the KV root. */
+  /** Optional outer key prefix. Defaults to []. The database namespace "__kvdex__" is appended, so an omitted or empty basePath uses ["__kvdex__"]. */
   basePath?: BaseKey;
 };
 

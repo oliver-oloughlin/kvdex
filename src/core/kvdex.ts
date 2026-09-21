@@ -88,7 +88,11 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
 export function kvdex<const TSchema extends SchemaDefinition>(
   options: KvdexOptions<TSchema>,
 ): Database<TSchema> {
-  const basePath: BaseKey = options.basePath ?? [DEFAULT_BASE_KEY_PREFIX];
+  // Append database prefix to the base path to avoid top-level key collisions
+  const basePath = extendKey(
+    options.basePath ?? [],
+    DEFAULT_BASE_KEY_PREFIX,
+  );
 
   // Set listener activated flag and queue handlers map
   let listener: Promise<void>;
@@ -226,8 +230,8 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   }
 
   /**
-   * Delete all KV entries under `basePath`, including entries outside the schema, such as undelivered and history entries.
-   * An empty basePath deletes all ordinary KV entries in the store.
+   * Delete all KV entries under `basePath`.
+   * Including entries outside the schema, such as undelivered and history entries.
    *
    * @example
    * ```ts

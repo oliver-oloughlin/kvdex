@@ -121,27 +121,39 @@ Deno.test("ext - migrate", async (t) => {
     async () => {
       using source = await Deno.openKv(":memory:");
       using target = await Deno.openKv(":memory:");
-      const customKey = ["tenant", 42, "numbers", "__id__", "id"];
-      const otherKey = ["tenant", 43, "numbers", "__id__", "id"];
+      const customKey = ["tenant", 42, "__kvdex__", "numbers", "__id__", "id"];
+      const otherKey = ["tenant", 43, "__kvdex__", "numbers", "__id__", "id"];
       const defaultKey = ["__kvdex__", "numbers", "__id__", "id"];
+      const rootKey = ["__kvdex__", "numbers", "__id__", "root-id"];
+      const unrelatedKey = ["tenant", 42, "unrelated"];
       await source.set(customKey, 1);
       await source.set(otherKey, 2);
       await source.set(defaultKey, 3);
+      await source.set(rootKey, 4);
+      await source.set(unrelatedKey, 5);
 
       await migrate({ source, target, basePath: ["tenant", 42] });
       assertEquals((await target.get(customKey)).value, 1);
       assertEquals((await target.get(otherKey)).value, null);
       assertEquals((await target.get(defaultKey)).value, null);
+      assertEquals((await target.get(rootKey)).value, null);
+      assertEquals((await target.get(unrelatedKey)).value, null);
 
       await migrate({ source, target, basePath: ["tenant", 42], all: true });
       assertEquals((await target.get(otherKey)).value, 2);
       assertEquals((await target.get(defaultKey)).value, 3);
+      assertEquals((await target.get(rootKey)).value, 4);
+      assertEquals((await target.get(unrelatedKey)).value, 5);
 
       await target.delete(otherKey);
       await target.delete(defaultKey);
+      await target.delete(rootKey);
+      await target.delete(unrelatedKey);
       await migrate({ source, target, basePath: [] });
-      assertEquals((await target.get(otherKey)).value, 2);
+      assertEquals((await target.get(rootKey)).value, 4);
+      assertEquals((await target.get(otherKey)).value, null);
       assertEquals((await target.get(defaultKey)).value, 3);
+      assertEquals((await target.get(unrelatedKey)).value, null);
     },
   );
 

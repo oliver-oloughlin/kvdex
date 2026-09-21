@@ -128,7 +128,7 @@ _Supported Deno versions:_ **^2.3.0**
 
 `kvdex()` is used for creating a new database instance. It takes an options
 object which expects a Deno KV instance and a schema definition. Optionally, a
-base path can be set, which all keys in the database will reside under.
+base path can be set, which will prefix all keys in the database.
 
 ```ts
 import { collection, kvdex, model } from "@olli/kvdex";
@@ -138,7 +138,7 @@ const kv = await Deno.openKv();
 
 const db = kvdex({
   kv: kv,
-  basePath: ["my-app"], // Optional, defaults to: ["__kvdex__"]
+  basePath: ["my-app"], // Optional, defaults to: []
   schema: {
     // Simple collections:
     numbers: collection<number>(),

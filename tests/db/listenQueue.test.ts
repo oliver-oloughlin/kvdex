@@ -17,7 +17,10 @@ Deno.test("db - listenQueue", async (t) => {
       const db = kvdex({ kv });
       const sleeper = Promise.withResolvers<void>();
 
-      const handlerId = createHandlerId([DEFAULT_BASE_KEY_PREFIX], undefined);
+      const handlerId = createHandlerId(
+        [DEFAULT_BASE_KEY_PREFIX],
+        undefined,
+      );
 
       let assertion = false;
 

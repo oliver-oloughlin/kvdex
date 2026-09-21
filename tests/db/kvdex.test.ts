@@ -5,6 +5,38 @@ import { useKv } from "../utils.ts";
 import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 
 Deno.test("db - kvdex", async (t) => {
+  await t.step(
+    "Should namespace collections named after the queue prefix",
+    async () => {
+      await useKv(async (kv) => {
+        for (const basePath of [undefined, [], ["tenant"]]) {
+          const db = kvdex({
+            kv,
+            basePath,
+            schema: { __kvdex_queue__: collection<number>() },
+          });
+          assert(
+            (await db.__kvdex_queue__.set("id", 1, { overwrite: true })).ok,
+          );
+          assertEquals((await db.__kvdex_queue__.find("id"))?.value, 1);
+          assertEquals<BaseKey>(db.__kvdex_queue__["keys"].base, [
+            ...(basePath ?? []),
+            DEFAULT_BASE_KEY_PREFIX,
+            "__kvdex_queue__",
+          ]);
+        }
+
+        const db = kvdex({
+          kv,
+          basePath: [],
+          schema: { nested: { __kvdex_queue__: collection<number>() } },
+        });
+        assert((await db.nested.__kvdex_queue__.set("id", 1)).ok);
+        assertEquals((await db.nested.__kvdex_queue__.find("id"))?.value, 1);
+      });
+    },
+  );
+
   await t.step("Should support empty and multi-part base paths", async () => {
     const paths: BaseKey[] = [[], ["tenant", 42, "app"]];
     for (const basePath of paths) {
@@ -16,17 +48,26 @@ Deno.test("db - kvdex", async (t) => {
         });
         assert((await db.numbers.set("id", 1)).ok);
         assertEquals(
-          (await kv.get([...basePath, "numbers", "__id__", "id"])).value,
+          (await kv.get([...basePath, "__kvdex__", "numbers", "__id__", "id"]))
+            .value,
           1,
         );
-        await kv.set([...basePath, "__undelivered__", "message"], "data");
+        await kv.set(
+          [...basePath, "__kvdex__", "__undelivered__", "message"],
+          "data",
+        );
         assertEquals((await db.findUndelivered("message"))?.value, "data");
         await db.deleteUndelivered("message");
         assertEquals(await db.findUndelivered("message"), null);
         await kv.set([...basePath, "unrelated"], 2);
+        await kv.set([...basePath, "__kvdex__", "unrelated"], 3);
         await db.wipe();
         assertEquals(await db.numbers.find("id"), null);
-        assertEquals((await kv.get([...basePath, "unrelated"])).value, null);
+        assertEquals((await kv.get([...basePath, "unrelated"])).value, 2);
+        assertEquals(
+          (await kv.get([...basePath, "__kvdex__", "unrelated"])).value,
+          null,
+        );
       });
     }
   });
@@ -40,7 +81,10 @@ Deno.test("db - kvdex", async (t) => {
       });
       assert((await db.basePath.set("id", 1)).ok);
       assertEquals((await db.basePath.find("id"))?.value, 1);
-      await kv.set(["tenant", 42, "__undelivered__", "message"], "data");
+      await kv.set(
+        ["tenant", 42, "__kvdex__", "__undelivered__", "message"],
+        "data",
+      );
       assertEquals((await db.findUndelivered("message"))?.value, "data");
       await db.deleteUndelivered("message");
       assertEquals(await db.findUndelivered("message"), null);
@@ -83,7 +127,7 @@ Deno.test("db - kvdex", async (t) => {
         assertEquals(await db.countAll(), 2);
         let entryCount = 0;
         for await (const entry of await kv.list({ prefix: [] })) {
-          assertEquals(entry.key.slice(0, 2), ["tenant", 42]);
+          assertEquals(entry.key.slice(0, 3), ["tenant", 42, "__kvdex__"]);
           entryCount++;
         }
         assert(entryCount > 6);
@@ -107,11 +151,13 @@ Deno.test("db - kvdex", async (t) => {
       const defaults = kvdex({ kv, schema });
 
       for (const key of Object.values(custom.nested.numbers["keys"])) {
-        assertEquals(key.slice(0, 2), ["tenant", 42]);
+        assertEquals(key.slice(0, 3), ["tenant", 42, "__kvdex__"]);
       }
+      assertEquals(basePath, ["tenant", 42]);
       assertEquals(custom.nested.numbers["keys"].base, [
         "tenant",
         42,
+        "__kvdex__",
         "nested",
         "numbers",
       ]);
@@ -120,7 +166,10 @@ Deno.test("db - kvdex", async (t) => {
       await defaults.nested.numbers.set("same", 3);
       assertEquals((await custom.nested.numbers.find("same"))?.value, 1);
       assertEquals(await custom.countAll(), 1);
-      await kv.set(["tenant", 42, "__undelivered__", "message"], "custom");
+      await kv.set(
+        ["tenant", 42, "__kvdex__", "__undelivered__", "message"],
+        "custom",
+      );
       assertEquals((await custom.findUndelivered("message"))?.value, "custom");
       assertEquals(await defaults.findUndelivered("message"), null);
       await custom.deleteUndelivered("message");
@@ -151,7 +200,9 @@ Deno.test("db - kvdex", async (t) => {
 
         assert(key1 !== key2);
         assert(key1 === `["${DEFAULT_BASE_KEY_PREFIX}","numbers"]`);
-        assert(key2 === `["${DEFAULT_BASE_KEY_PREFIX}","nested","numbers"]`);
+        assert(
+          key2 === `["${DEFAULT_BASE_KEY_PREFIX}","nested","numbers"]`,
+        );
       });
     },
   );

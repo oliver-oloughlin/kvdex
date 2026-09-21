@@ -8,7 +8,7 @@ export type MigrateOptions = {
   /** Target KV. */
   target: DenoKv;
 
-  /** Prefix to migrate without rewriting keys. Defaults to `["__kvdex__"]`. Ignored when `all` is true. */
+  /** Optional outer key prefix, with "__kvdex__" appended to select entries without rewriting keys. Defaults to []. Ignored when `all` is true. */
   basePath?: BaseKey;
 
   /**
