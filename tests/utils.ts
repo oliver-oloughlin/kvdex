@@ -531,6 +531,19 @@ export async function useIndexedDbMap(
 }
 
 // Generator functions
+export function generateIncompressibleUser(): User {
+  const [user] = generateUsers(1);
+  const alphabet =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  const country = Array.from({ length: 4 }, () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(65_536));
+    return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join(
+      "",
+    );
+  }).join("");
+  return { ...user, address: { ...user.address, country } };
+}
+
 export function generateLargeUsers(n: number) {
   const users: User[] = [];
 

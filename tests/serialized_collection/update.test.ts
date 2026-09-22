@@ -1,10 +1,9 @@
 import { collection, kvdex, model } from "../../mod.ts";
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
-import { equals } from "@std/bytes/equals";
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
-import { generateLargeUsers, useDb, useKv } from "../utils.ts";
+import { generateIncompressibleUser, useDb, useKv } from "../utils.ts";
 import { extendKey } from "../../src/core/utils.ts";
-import type { DenoKvEntry } from "../../src/core/types.ts";
+import type { DenoKvEntry, DenoKvStrictKey } from "../../src/core/types.ts";
 
 Deno.test("serialized_collection - update", async (t) => {
   await t.step(
@@ -271,7 +270,7 @@ Deno.test("serialized_collection - update", async (t) => {
     async () => {
       await useDb(async (db) => {
         const kv = db.s_users["kv"];
-        const [largeUser] = generateLargeUsers(1);
+        const largeUser = generateIncompressibleUser();
 
         // Add a large document that requires segments
         const cr = await db.s_users.add(largeUser);
@@ -284,7 +283,10 @@ Deno.test("serialized_collection - update", async (t) => {
         for await (const entry of iterBefore) {
           oldEntries.push(entry as DenoKvEntry);
         }
-        assert(oldEntries.length > 0);
+        assert(
+          oldEntries.length > 1,
+          "Old document must span multiple segments",
+        );
 
         // Update with a different value
         const updateCr = await db.s_users.update(cr.id, mockUser1, {
@@ -299,16 +301,13 @@ Deno.test("serialized_collection - update", async (t) => {
           newEntries.push(entry as DenoKvEntry);
         }
 
-        // Verify none of the old segment values appear in the new entries
-        for (const oldEntry of oldEntries) {
-          const oldBytes = oldEntry.value as Uint8Array;
-          for (const newEntry of newEntries) {
-            const newBytes = newEntry.value as Uint8Array;
-            assert(
-              !equals(oldBytes, newBytes),
-              "Old segment content should not be present after update",
-            );
-          }
+        assertEquals(newEntries.map((entry) => entry.key), [
+          extendKey(segmentPrefix, 0),
+        ]);
+        for (const oldEntry of oldEntries.slice(1)) {
+          const deleted = await kv.get(oldEntry.key as DenoKvStrictKey);
+          assertEquals(deleted.value, null);
+          assertEquals(deleted.versionstamp, null);
         }
 
         // Verify the document reads correctly
@@ -323,7 +322,7 @@ Deno.test("serialized_collection - update", async (t) => {
     async () => {
       await useDb(async (db) => {
         const kv = db.s_users["kv"];
-        const [largeUser] = generateLargeUsers(1);
+        const largeUser = generateIncompressibleUser();
 
         // Add a large document that requires segments
         const cr = await db.s_users.add(largeUser);
@@ -336,7 +335,10 @@ Deno.test("serialized_collection - update", async (t) => {
         for await (const entry of iterBefore) {
           oldEntries.push(entry as DenoKvEntry);
         }
-        assert(oldEntries.length > 0);
+        assert(
+          oldEntries.length > 1,
+          "Old document must span multiple segments",
+        );
 
         // Update with a different value using batched mode
         const updateCr = await db.s_users.update(cr.id, mockUser1, {
@@ -352,16 +354,13 @@ Deno.test("serialized_collection - update", async (t) => {
           newEntries.push(entry as DenoKvEntry);
         }
 
-        // Verify none of the old segment values appear in the new entries
-        for (const oldEntry of oldEntries) {
-          const oldBytes = oldEntry.value as Uint8Array;
-          for (const newEntry of newEntries) {
-            const newBytes = newEntry.value as Uint8Array;
-            assert(
-              !equals(oldBytes, newBytes),
-              "Old segment content should not be present after update",
-            );
-          }
+        assertEquals(newEntries.map((entry) => entry.key), [
+          extendKey(segmentPrefix, 0),
+        ]);
+        for (const oldEntry of oldEntries.slice(1)) {
+          const deleted = await kv.get(oldEntry.key as DenoKvStrictKey);
+          assertEquals(deleted.value, null);
+          assertEquals(deleted.versionstamp, null);
         }
 
         // Verify the document reads correctly
