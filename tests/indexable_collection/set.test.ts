@@ -135,6 +135,46 @@ Deno.test("indexable_collection - set", async (t) => {
     },
   );
 
+  await t.step(
+    "Should reject overwrite with a primary index owned by another document",
+    async () => {
+      await useDb(async (db) => {
+        const original = mockUser1;
+        const conflicting = {
+          ...mockUser2,
+          username: original.username,
+          age: original.age + 1,
+        };
+
+        const firstCommit = await db.i_users.set("id1", original);
+        assert(firstCommit.ok);
+
+        const secondCommit = await db.i_users.set("id2", conflicting, {
+          overwrite: true,
+        });
+        assert(!secondCommit.ok);
+
+        const byId = await db.i_users.find("id1");
+        assert(byId !== null);
+        assertEquals(byId.value, original);
+        assertEquals(byId.versionstamp, firstCommit.versionstamp);
+        assertEquals(await db.i_users.find("id2"), null);
+        assertEquals(
+          await db.i_users.findBy("username", original.username),
+          byId,
+        );
+        assertEquals(
+          (await db.i_users.getManyBy("age", original.age)).result,
+          [byId],
+        );
+        assertEquals(
+          (await db.i_users.getManyBy("age", conflicting.age)).result,
+          [],
+        );
+      });
+    },
+  );
+
   await t.step("Should successfully parse and set document", async () => {
     await useDb(async (db) => {
       let assertion = true;
