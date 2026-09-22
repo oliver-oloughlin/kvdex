@@ -306,7 +306,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    *
    * @example
    * ```ts
-   * // Prints the data to console when recevied
+  * // Prints the data to console when received
    * db.listenQueue((data) => console.log(data))
    *
    * // Sends post request when data is received in the "posts" topic

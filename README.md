@@ -546,10 +546,10 @@ if (result1.ok) {
 
 ### update()
 
-Updates the value of an exisiting document in the KV store by id. By default,
-the `merge` strategy is used when available, falling back to `replace` for
-primitive types and built-in objects (Date, RegExp, etc.). For plain objects,
-the `merge-shallow` strategy is also supported.
+Updates the value of an existing document in the KV store by id. By default, the
+`merge` strategy is used when available, falling back to `replace` for primitive
+types and built-in objects (Date, RegExp, etc.). For plain objects, the
+`merge-shallow` strategy is also supported.
 
 ```ts
 // Updates the document with a new value
@@ -609,7 +609,7 @@ const { result } = await db.users.updateMany({ username: "oliver" });
 
 Update documents by a secondary index. Takes an optional options argument that
 can be used for filtering of documents to be updated, and pagination. If no
-options are given, all documents by the given index value will we updated.
+options are given, all documents by the given index value will be updated.
 
 ```ts
 // Updates all user documents with age = 24 and sets age = 67
@@ -1121,7 +1121,7 @@ specific collection queue and topic. Expects a handler function as argument, as
 well as optional options that can be used to set the topic.
 
 ```ts
-// Prints the data to console when recevied
+// Prints the data to console when received
 db.users.listenQueue((data) => console.log(data));
 
 // Sends post request when data is received
@@ -1275,7 +1275,7 @@ topic. Expects a handler function as argument, as well as optional options that
 can be used to set the topic.
 
 ```ts
-// Prints the data to console when recevied
+// Prints the data to console when received
 db.listenQueue((data) => console.log(data));
 
 // Sends post request when data is received in the "posts" topic
@@ -1452,7 +1452,7 @@ const flattened = doc.flat();
 
 Additional features outside of the basic functionality provided by `kvdex`.
 While the core functionalities are free of third-party dependencies, extended
-features may rely on third-party dependenices or runtime-specific APIs to
+features may rely on third-party dependencies or runtime-specific APIs to
 enhance integration.
 
 ### Encoding

@@ -1548,7 +1548,7 @@ export class Collection<
   /**
    * Retrieves one document from the KV store according to the given options.
    *
-   * If no options are given, the first document in the collection is retreived.
+   * If no options are given, the first document in the collection is retrieved.
    *
    * @example
    * ```ts
@@ -1565,7 +1565,7 @@ export class Collection<
    * ```
    *
    * @param options - List options, optional.
-   * @returns A promise that resolves to the retreived document
+   * @returns A promise that resolves to the retrieved document
    */
   async getOne(
     options?: HandleOneOptions<
@@ -2166,7 +2166,7 @@ export class Collection<
    *
    * @example
    * ```ts
-   * // Prints the data to console when recevied
+   * // Prints the data to console when received
    * db.users.listenQueue((data) => console.log(data))
    *
    * // Sends post request when data is received in the "posts" topic
