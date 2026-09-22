@@ -19,7 +19,7 @@ import type { User } from "../models.ts";
 import {
   generateUsers,
   sleep,
-  testNumericIndexProperties,
+  testIndexProperties,
   useDb,
   useKv,
 } from "../utils.ts";
@@ -27,8 +27,8 @@ import { mockUser2 } from "../mocks.ts";
 import { mockUser3 } from "../mocks.ts";
 
 Deno.test("indexable_collection - properties", async (t) => {
-  await t.step("Numeric index properties", async (t) => {
-    await testNumericIndexProperties(t);
+  await t.step("Native index properties", async (t) => {
+    await testIndexProperties(t);
   });
 
   await t.step("Keys should have the correct prefixes", async () => {

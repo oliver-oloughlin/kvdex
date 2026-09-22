@@ -11,7 +11,13 @@ import {
   indexedDbAdapter,
 } from "../src/ext/kv/map/indexed_db_adapter.ts";
 import { ulid } from "@std/ulid/ulid";
-import type { Encoder, KvId } from "../src/core/types.ts";
+import type {
+  DenoKvStrictKeyPart,
+  Encoder,
+  KvId,
+  KvValue,
+} from "../src/core/types.ts";
+import { encodeData, keyEq } from "../src/core/utils.ts";
 import { assert, assertEquals } from "@std/assert";
 
 export const testEncoder = jsonEncoder({
@@ -146,40 +152,200 @@ export async function useDb(
   });
 }
 
-export async function testNumericIndexProperties(
+export async function testIndexProperties(
   test: Deno.TestContext,
   encoder?: Encoder,
 ) {
-  const values = [100, 10, 2.5, 2, 0, -2, -10, -100];
-  const ordered = [-100, -10, -2, 0, 2, 2.5, 10, 100];
+  const datasets: { name: string; ordered: DenoKvStrictKeyPart[] }[] = [
+    { name: "number", ordered: [-100, -10, -2, 0, 2, 2.5, 10, 100] },
+    {
+      name: "string",
+      ordered: [
+        "",
+        "\u0000",
+        "\n",
+        '"',
+        "A",
+        "a",
+        "aa",
+        "z",
+        "\ue000",
+        "\u{10000}",
+      ],
+    },
+    { name: "bigint", ordered: [-100n, -10n, -2n, 0n, 2n, 10n, 100n] },
+    { name: "boolean", ordered: [false, true] },
+    {
+      name: "Uint8Array",
+      ordered: [[], [0], [0, 0], [0, 255], [1], [2], [10], [255]]
+        .map((bytes) => new Uint8Array(bytes)),
+    },
+    {
+      name: "mixed native types",
+      ordered: [
+        new Uint8Array(),
+        new Uint8Array([1]),
+        "",
+        "a",
+        2n,
+        10n,
+        2,
+        10,
+        false,
+        true,
+      ],
+    },
+  ];
+
+  for (const dataset of datasets) {
+    await test.step(dataset.name, async (test) => {
+      await testOrderedIndexProperties(test, dataset.ordered, encoder);
+    });
+  }
+
+  await test.step("Encoded objects must not collide with native bytes", async () => {
+    await useKv(async (kv) => {
+      const db = kvdex({
+        kv,
+        schema: {
+          entries: collection({
+            model: model<{ primary: KvValue; secondary: KvValue }>(),
+            indices: { primary: "primary", secondary: "secondary" },
+            encoder,
+          }),
+        },
+      });
+      for (
+        const value of [
+          null,
+          { name: "object" },
+          ["array", 2],
+          new Map([["key", "value"]]),
+          new Set(["value"]),
+          new Date(0),
+        ]
+      ) {
+        const bytes = await encodeData(value, encoder);
+        const objectResult = await db.entries.add({
+          primary: value,
+          secondary: value,
+        });
+        const bytesResult = await db.entries.add({
+          primary: bytes,
+          secondary: bytes,
+        });
+        assert(objectResult.ok);
+        assert(bytesResult.ok);
+        assert(
+          !(await db.entries.add({ primary: value, secondary: value })).ok,
+        );
+        assert(
+          !(await db.entries.add({ primary: bytes, secondary: bytes })).ok,
+        );
+        assertEquals(
+          (await db.entries.findBy("primary", value))?.id,
+          objectResult.id,
+        );
+        assertEquals(
+          (await db.entries.findBy("primary", bytes))?.id,
+          bytesResult.id,
+        );
+        assertEquals(
+          (await db.entries.getManyBy("secondary", value)).result.map((doc) =>
+            doc.id
+          ),
+          [objectResult.id],
+        );
+        assertEquals(
+          (await db.entries.getManyBy("secondary", bytes)).result.map((doc) =>
+            doc.id
+          ),
+          [bytesResult.id],
+        );
+        assert(
+          (await db.entries.update(objectResult.id, { secondary: value })).ok,
+        );
+        assert(
+          (await db.entries.update(objectResult.id, { secondary: bytes })).ok,
+        );
+        assertEquals(
+          (await db.entries.getManyBy("secondary", value)).result,
+          [],
+        );
+        assertEquals(
+          (await db.entries.getManyBy("secondary", bytes)).result.length,
+          2,
+        );
+        assert((await db.entries.deleteBy("primary", value)).ok);
+        assertEquals(await db.entries.findBy("primary", value), null);
+        assertEquals(
+          (await db.entries.getManyBy("secondary", bytes)).result.map((doc) =>
+            doc.id
+          ),
+          [bytesResult.id],
+        );
+        assert((await db.entries.deleteBy("primary", bytes)).ok);
+        assertEquals(await db.entries.count(), 0);
+        assertEquals(await db.entries.countByOrder("primary"), 0);
+        assertEquals(await db.entries.countByOrder("secondary"), 0);
+      }
+    });
+  });
+}
+
+async function testOrderedIndexProperties(
+  test: Deno.TestContext,
+  ordered: DenoKvStrictKeyPart[],
+  encoder?: Encoder,
+) {
+  const values = [...ordered].reverse();
+  const start = Math.floor(ordered.length / 2);
+  const end = ordered.length - 1;
+  const rank = (value: DenoKvStrictKeyPart) =>
+    ordered.findIndex((candidate) => keyEq([candidate], [value]));
   const cases = [
     { name: "unbounded", options: {}, expected: ordered },
     {
       name: "inclusive start",
-      options: { startValue: 2 },
-      expected: [2, 2.5, 10, 100],
+      options: { startValue: ordered[start] },
+      expected: ordered.slice(start),
     },
     {
       name: "exclusive end",
-      options: { endValue: 2 },
-      expected: [-100, -10, -2, 0],
+      options: { endValue: ordered[start] },
+      expected: ordered.slice(0, start),
     },
     {
-      name: "cross-digit range",
-      options: { startValue: 2, endValue: 10 },
-      expected: [2, 2.5],
+      name: "bounded range",
+      options: { startValue: ordered[start], endValue: ordered[end] },
+      expected: ordered.slice(start, end),
     },
     {
-      name: "negative range",
-      options: { startValue: -100, endValue: -2 },
-      expected: [-100, -10],
+      name: "lower range",
+      options: { startValue: ordered[0], endValue: ordered[start] },
+      expected: ordered.slice(0, start),
     },
     {
       name: "empty range",
-      options: { startValue: 3, endValue: 10 },
+      options: { startValue: ordered[end], endValue: ordered[end] },
       expected: [],
     },
   ];
+
+  if (typeof ordered[0] === "number") {
+    cases.push(
+      {
+        name: "cross-digit numeric range",
+        options: { startValue: 2, endValue: 10 },
+        expected: [2, 2.5],
+      },
+      {
+        name: "negative numeric range",
+        options: { startValue: -100, endValue: -2 },
+        expected: [-100, -10],
+      },
+    );
+  }
 
   await useKv(async (kv) => {
     const db = kvdex({
@@ -187,8 +353,8 @@ export async function testNumericIndexProperties(
       schema: {
         numbers: collection({
           model: model<{
-            primary: number;
-            secondary: number;
+            primary: DenoKvStrictKeyPart;
+            secondary: DenoKvStrictKeyPart;
             marked: boolean;
           }>(),
           indices: { primary: "primary", secondary: "secondary" },
@@ -212,7 +378,7 @@ export async function testNumericIndexProperties(
       const { result } = await db.numbers.getMany();
       return result.filter((doc) => doc.value.marked)
         .map((doc) => doc.value.primary)
-        .sort((first, second) => first - second);
+        .sort((first, second) => rank(first) - rank(second));
     };
 
     for (const index of ["primary", "secondary"] as const) {
@@ -241,7 +407,7 @@ export async function testNumericIndexProperties(
                 options,
               );
               assertEquals(mapped.result, expected, "mapByOrder");
-              const visited: number[] = [];
+              const visited: DenoKvStrictKeyPart[] = [];
               await db.numbers.forEachByOrder(
                 index,
                 (doc) => visited.push(doc.value[index]),
@@ -282,8 +448,10 @@ export async function testNumericIndexProperties(
               const remaining = await db.numbers.getMany();
               assertEquals(
                 remaining.result.map((doc) => doc.value[index])
-                  .sort((first, second) => first - second),
-                ordered.filter((value) => !expected.includes(value)),
+                  .sort((first, second) => rank(first) - rank(second)),
+                ordered.filter((value) =>
+                  !expected.some((selected) => keyEq([selected], [value]))
+                ),
                 "deleteManyByOrder",
               );
             },
@@ -292,36 +460,39 @@ export async function testNumericIndexProperties(
       }
     }
 
-    await test.step("Numeric index lifecycle", async () => {
+    await test.step("Index lifecycle", async () => {
       await seed();
-      const zero = await db.numbers.findBy("primary", 0);
+      const first = ordered[0];
+      const last = ordered[end];
+      const zero = await db.numbers.findBy("primary", first);
       assert(zero);
-      assert((await db.numbers.update(zero.id, { secondary: 0 })).ok);
+      assert((await db.numbers.update(zero.id, { secondary: first })).ok);
       assert(
         !(await db.numbers.add({
-          primary: 0,
-          secondary: 0,
+          primary: first,
+          secondary: first,
           marked: false,
         })).ok,
       );
+      assert((await db.numbers.deleteBy("primary", last)).ok);
       assert(
         (await db.numbers.update(zero.id, {
-          primary: 3,
-          secondary: 3,
+          primary: last,
+          secondary: last,
         })).ok,
       );
-      assertEquals(await db.numbers.findBy("primary", 0), null);
-      assertEquals((await db.numbers.getManyBy("secondary", 0)).result, []);
-      assertEquals((await db.numbers.findBy("primary", 3))?.id, zero.id);
+      assertEquals(await db.numbers.findBy("primary", first), null);
+      assertEquals((await db.numbers.getManyBy("secondary", first)).result, []);
+      assertEquals((await db.numbers.findBy("primary", last))?.id, zero.id);
       assertEquals(
-        (await db.numbers.getManyBy("secondary", 3)).result.map((doc) =>
+        (await db.numbers.getManyBy("secondary", last)).result.map((doc) =>
           doc.id
         ),
         [zero.id],
       );
-      assert((await db.numbers.deleteBy("primary", 3)).ok);
-      assertEquals(await db.numbers.findBy("primary", 3), null);
-      assertEquals((await db.numbers.getManyBy("secondary", 3)).result, []);
+      assert((await db.numbers.deleteBy("primary", last)).ok);
+      assertEquals(await db.numbers.findBy("primary", last), null);
+      assertEquals((await db.numbers.getManyBy("secondary", last)).result, []);
     });
   });
 }

@@ -8,6 +8,7 @@ import type {
   DenoKvListSelector,
   DenoKvSetOptions,
   DenoKvStrictKey,
+  DenoKvStrictKeyPart,
   EncodedEntry,
   Encoder,
   EnqueueOptions,
@@ -178,13 +179,23 @@ export async function decodeData<T>(
 export async function encodeIndexValue(
   value: unknown,
   encoder?: Encoder,
-): Promise<number | Uint8Array> {
-  return typeof value === "number" ? value : await encodeData(value, encoder);
+): Promise<DenoKvStrictKeyPart> {
+  if (
+    typeof value === "number" || typeof value === "boolean" ||
+    typeof value === "string" || typeof value === "bigint"
+  ) {
+    return value;
+  }
+
+  // We prefix the encoded value with a distinguishing byte to avoid collisions with native types.
+  return value instanceof Uint8Array
+    ? concat([new Uint8Array([0]), value])
+    : concat([new Uint8Array([1]), await encodeData(value, encoder)]);
 }
 
 function indexValueEq(
-  first: number | Uint8Array | undefined,
-  second: number | Uint8Array | undefined,
+  first: DenoKvStrictKeyPart | undefined,
+  second: DenoKvStrictKeyPart | undefined,
 ): boolean {
   return first instanceof Uint8Array && second instanceof Uint8Array
     ? equals(first, second)

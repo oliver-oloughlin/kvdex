@@ -19,7 +19,7 @@ import {
   generateLargeUsers,
   generateUsers,
   testEncoder,
-  testNumericIndexProperties,
+  testIndexProperties,
   useDb,
   useKv,
 } from "../utils.ts";
@@ -32,8 +32,8 @@ import { jsonEncoder } from "../../src/ext/encoding/mod.ts";
 const [user] = generateLargeUsers(1);
 
 Deno.test("serialized_indexable_collection - properties", async (t) => {
-  await t.step("Numeric index properties", async (t) => {
-    await testNumericIndexProperties(t, testEncoder);
+  await t.step("Native index properties", async (t) => {
+    await testIndexProperties(t, testEncoder);
   });
 
   await t.step("Keys should have the correct prefixes", async () => {
