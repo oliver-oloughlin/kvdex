@@ -12,7 +12,7 @@ Deno.test("collection - types", async (t) => {
           VALUES.map((
             [, val],
             i,
-          ) => [i, collection(model<typeof val>())]),
+          ) => [i, collection({ model: model<typeof val>() })]),
         );
 
         const db = kvdex({ kv, schema });

@@ -1,10 +1,19 @@
 import { assert, assertEquals } from "@std/assert";
 import { Collection } from "../../src/core/collection.ts";
+import { DEFAULT_BASE_KEY_PREFIX } from "../../src/core/constants.ts";
 import { model } from "../../src/core/model.ts";
-import { createIndexDiffs } from "../../src/core/utils.ts";
-import { useKv } from "../utils.ts";
+import {
+  createIndexDiffs,
+  encodeData,
+  extendKey,
+} from "../../src/core/utils.ts";
+import { testEncoder, useKv } from "../utils.ts";
 import { jsonEncoder } from "../../src/common/json.ts";
-import type { KvKey } from "../../src/core/types.ts";
+import type {
+  DenoKvStrictKeyPart,
+  KvKey,
+  KvValue,
+} from "../../src/core/types.ts";
 import { equals } from "@std/bytes/equals";
 
 type User = {
@@ -14,9 +23,13 @@ type User = {
   bornYear?: number;
 };
 
-const keyIncludesEncodedPart = (part: Uint8Array) => {
+const keyIncludesEncodedPart = (part: DenoKvStrictKeyPart) => {
   return (key: KvKey) =>
-    key.some((p) => p instanceof Uint8Array && equals(part, p));
+    key.some((keyPart) =>
+      part instanceof Uint8Array
+        ? keyPart instanceof Uint8Array && equals(part, keyPart)
+        : Object.is(part, keyPart)
+    );
 };
 
 const keyIncludesStringPart = (part: string) => {
@@ -24,6 +37,145 @@ const keyIncludesStringPart = (part: string) => {
 };
 
 Deno.test("utils - createIndexDiffs", async (t) => {
+  for (const encoder of [undefined, testEncoder]) {
+    await t.step(
+      `Should diff byte-backed indices (${encoder ? "compressed" : "plain"})`,
+      async (t) => {
+        await useKv(async (kv) => {
+          type IndexedValue = { primary?: KvValue; secondary?: KvValue };
+          const collection = new Collection(
+            kv,
+            ["values"],
+            new Map<any, any>(),
+            () => Promise.resolve(),
+            [DEFAULT_BASE_KEY_PREFIX],
+            {
+              model: model<IndexedValue>(),
+              encoder,
+              indices: { primary: "primary", secondary: "secondary" },
+            },
+          );
+          const cases = [
+            { name: "object", old: { value: 1 }, next: { value: 2 } },
+            { name: "array", old: [1, 2], next: [1, 3] },
+            {
+              name: "Map",
+              old: new Map([["key", 1]]),
+              next: new Map([["key", 2]]),
+            },
+            { name: "Set", old: new Set([1, 2]), next: new Set([1, 3]) },
+            { name: "Date", old: new Date(0), next: new Date(1) },
+            {
+              name: "Uint8Array",
+              old: new Uint8Array(),
+              next: new Uint8Array([0, 1]),
+            },
+            {
+              name: "object to matching serialized bytes",
+              old: { value: 1 },
+              next: await encodeData({ value: 1 }, encoder),
+            },
+          ];
+          const expectedPart = async (value: KvValue) =>
+            value instanceof Uint8Array
+              ? new Uint8Array([0, ...value])
+              : new Uint8Array([1, ...await encodeData(value, encoder)]);
+          const id = "document";
+          const idKey = extendKey(collection["keys"].id, id);
+
+          for (const entry of cases) {
+            await t.step(entry.name, async () => {
+              const oldPart = await expectedPart(entry.old);
+              const newPart = await expectedPart(entry.next);
+              assert(!equals(oldPart, newPart));
+              const primaryKey = (part: Uint8Array) =>
+                extendKey(collection["keys"].primaryIndex, "primary", part);
+              const secondaryKey = (part: Uint8Array) =>
+                extendKey(
+                  collection["keys"].secondaryIndex,
+                  "secondary",
+                  part,
+                  id,
+                );
+              const oldData = { primary: entry.old, secondary: entry.old };
+              const transitions = [
+                {
+                  name: "changed",
+                  old: oldData,
+                  next: { primary: entry.next, secondary: entry.next },
+                  deleted: true,
+                  inserted: true,
+                  checked: true,
+                  part: newPart,
+                },
+                {
+                  name: "equal but distinct instances",
+                  old: oldData,
+                  next: structuredClone(oldData),
+                  deleted: false,
+                  inserted: true,
+                  checked: false,
+                  part: oldPart,
+                },
+                {
+                  name: "removed",
+                  old: oldData,
+                  next: {},
+                  deleted: true,
+                  inserted: false,
+                  checked: false,
+                  part: oldPart,
+                },
+                {
+                  name: "added",
+                  old: {},
+                  next: oldData,
+                  deleted: false,
+                  inserted: true,
+                  checked: true,
+                  part: oldPart,
+                },
+              ];
+
+              for (const transition of transitions) {
+                const diffs = await createIndexDiffs(
+                  id,
+                  idKey,
+                  null,
+                  transition.old,
+                  transition.next,
+                  collection,
+                );
+                assertEquals(
+                  diffs.deleteKeys,
+                  transition.deleted
+                    ? [primaryKey(oldPart), secondaryKey(oldPart)]
+                    : [],
+                  transition.name,
+                );
+                assertEquals(
+                  diffs.insertPrimaryKeys,
+                  transition.inserted ? [primaryKey(transition.part)] : [],
+                  transition.name,
+                );
+                assertEquals(
+                  diffs.insertSecondaryKeys,
+                  transition.inserted ? [secondaryKey(transition.part)] : [],
+                  transition.name,
+                );
+                assertEquals(
+                  diffs.checkKeys,
+                  transition.checked ? [primaryKey(transition.part)] : [],
+                  transition.name,
+                );
+              }
+            });
+          }
+        });
+      },
+    );
+  }
+
   await t.step(
     "Should delete old primary and secondary indices and set new primary and secondary indices",
     async () => {
@@ -35,8 +187,9 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           ["users"],
           new Map<any, any>(),
           () => Promise.resolve(),
-          model<User>(),
+          [DEFAULT_BASE_KEY_PREFIX],
           {
+            model: model<User>(),
             encoder,
             indices: {
               username: "primary",
@@ -62,21 +215,23 @@ Deno.test("utils - createIndexDiffs", async (t) => {
         } satisfies User;
 
         const user1Encoded = {
-          username: await encoder.serializer.serialize(user1.username),
-          email: await encoder.serializer.serialize(user1.email),
-          age: await encoder.serializer.serialize(user1.age),
-          bornYear: await encoder.serializer.serialize(user1.bornYear),
+          username: user1.username,
+          email: user1.email,
+          age: user1.age,
+          bornYear: user1.bornYear,
         };
 
         const user2Encoded = {
-          username: await encoder.serializer.serialize(user2.username),
-          email: await encoder.serializer.serialize(user2.email),
-          age: await encoder.serializer.serialize(user2.age),
-          bornYear: await encoder.serializer.serialize(user2.bornYear),
+          username: user2.username,
+          email: user2.email,
+          age: user2.age,
+          bornYear: user2.bornYear,
         };
 
         const cr = await collection.add(user1);
         assert(cr.ok);
+
+        const idKey = extendKey(collection["keys"].id, cr.id);
 
         const {
           insertPrimaryKeys,
@@ -85,6 +240,8 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           checkKeys,
         } = await createIndexDiffs(
           cr.id,
+          idKey,
+          cr.versionstamp,
           user1,
           user2,
           collection,
@@ -161,8 +318,9 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           ["users"],
           new Map<any, any>(),
           () => Promise.resolve(),
-          model<User>(),
+          [DEFAULT_BASE_KEY_PREFIX],
           {
+            model: model<User>(),
             encoder,
             indices: {
               username: "primary",
@@ -188,21 +346,23 @@ Deno.test("utils - createIndexDiffs", async (t) => {
         } satisfies User;
 
         const user1Encoded = {
-          username: await encoder.serializer.serialize(user1.username),
-          email: await encoder.serializer.serialize(user1.email),
-          age: await encoder.serializer.serialize(user1.age),
-          bornYear: await encoder.serializer.serialize(user1.bornYear),
+          username: user1.username,
+          email: user1.email,
+          age: user1.age,
+          bornYear: user1.bornYear,
         };
 
         const user2Encoded = {
-          username: await encoder.serializer.serialize(user2.username),
-          email: await encoder.serializer.serialize(user2.email),
-          age: await encoder.serializer.serialize(user2.age),
-          bornYear: await encoder.serializer.serialize(user2.bornYear),
+          username: user2.username,
+          email: user2.email,
+          age: user2.age,
+          bornYear: user2.bornYear,
         };
 
         const cr = await collection.add(user1);
         assert(cr.ok);
+
+        const idKey = extendKey(collection["keys"].id, cr.id);
 
         const {
           insertPrimaryKeys,
@@ -211,6 +371,8 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           checkKeys,
         } = await createIndexDiffs(
           cr.id,
+          idKey,
+          cr.versionstamp,
           user1,
           user2,
           collection,
@@ -287,8 +449,9 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           ["users"],
           new Map<any, any>(),
           () => Promise.resolve(),
-          model<User>(),
+          [DEFAULT_BASE_KEY_PREFIX],
           {
+            model: model<User>(),
             encoder,
             indices: {
               username: "primary",
@@ -310,17 +473,19 @@ Deno.test("utils - createIndexDiffs", async (t) => {
         } satisfies User;
 
         const user1Encoded = {
-          username: await encoder.serializer.serialize(user1.username),
-          age: await encoder.serializer.serialize(user1.age),
+          username: user1.username,
+          age: user1.age,
         };
 
         const user2Encoded = {
-          username: await encoder.serializer.serialize(user2.username),
-          age: await encoder.serializer.serialize(user2.age),
+          username: user2.username,
+          age: user2.age,
         };
 
         const cr = await collection.add(user1);
         assert(cr.ok);
+
+        const idKey = extendKey(collection["keys"].id, cr.id);
 
         const {
           insertPrimaryKeys,
@@ -329,6 +494,8 @@ Deno.test("utils - createIndexDiffs", async (t) => {
           checkKeys,
         } = await createIndexDiffs(
           cr.id,
+          idKey,
+          cr.versionstamp,
           user1,
           user2,
           collection,

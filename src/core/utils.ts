@@ -1,16 +1,21 @@
 import { GET_MANY_KEY_LIMIT } from "./constants.ts";
 import type { Collection } from "./collection.ts";
 import type {
+  BaseKey,
   DenoAtomicOperation,
   DenoKv,
   DenoKvEntryMaybe,
   DenoKvListSelector,
   DenoKvSetOptions,
   DenoKvStrictKey,
+  DenoKvStrictKeyPart,
+  EncodedEntry,
   Encoder,
   EnqueueOptions,
   FindManyOptions,
   IndexDataEntry,
+  IndexDiffs,
+  IndexOrderListOptions,
   KvId,
   KvKey,
   KvObject,
@@ -27,6 +32,8 @@ import type {
 import { ulid } from "@std/ulid";
 import { jsonEncoder } from "../ext/encoding/mod.ts";
 import { equals } from "@std/bytes";
+import { concat } from "@std/bytes/concat";
+import { jsonStringify } from "../common/json.ts";
 
 /**
  * Generate a new document id.
@@ -62,7 +69,7 @@ export function getDocumentId(
  * @param keyParts - Key parts to add to the input key.
  * @returns An extended kv key.
  */
-export function extendKey(key: KvKey, ...keyParts: KvId[]) {
+export function extendKey(key: BaseKey, ...keyParts: KvId[]) {
   return [...key, ...keyParts].flat() as KvKey;
 }
 
@@ -73,7 +80,7 @@ export function extendKey(key: KvKey, ...keyParts: KvId[]) {
  * @param k2 - Second kv key.
  * @returns true if keys are equal, false if not.
  */
-export function keyEq(k1: KvKey, k2: KvKey) {
+export function keyEq(k1: KvKey, k2: KvKey): boolean {
   if (k1.length !== k2.length) {
     return false;
   }
@@ -96,6 +103,31 @@ export function keyEq(k1: KvKey, k2: KvKey) {
   }
 
   return true;
+}
+
+export function containsDuplicate<T>(
+  arr: T[],
+  eqFn: (a: T, b: T) => boolean,
+): boolean {
+  for (let i = 0; i < arr.length; i++) {
+    for (let j = i + 1; j < arr.length; j++) {
+      const a = arr.at(i);
+      const b = arr.at(j);
+      if (a === b) {
+        return true;
+      }
+
+      if (a === undefined || b === undefined) {
+        continue;
+      }
+
+      if (eqFn(a, b)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 export async function transform<TInput, TOutput extends KvValue>(
@@ -144,6 +176,32 @@ export async function decodeData<T>(
   return await serializer.deserialize<T>(decompressed);
 }
 
+export async function encodeIndexValue(
+  value: unknown,
+  encoder?: Encoder,
+): Promise<DenoKvStrictKeyPart> {
+  if (
+    typeof value === "number" || typeof value === "boolean" ||
+    typeof value === "string" || typeof value === "bigint"
+  ) {
+    return value;
+  }
+
+  // We prefix the encoded value with a distinguishing byte to avoid collisions with native types.
+  return value instanceof Uint8Array
+    ? concat([new Uint8Array([0]), value])
+    : concat([new Uint8Array([1]), await encodeData(value, encoder)]);
+}
+
+function indexValueEq(
+  first: DenoKvStrictKeyPart | undefined,
+  second: DenoKvStrictKeyPart | undefined,
+): boolean {
+  return first instanceof Uint8Array && second instanceof Uint8Array
+    ? equals(first, second)
+    : Object.is(first, second);
+}
+
 /**
  * Create a secondary index key prefix.
  *
@@ -157,8 +215,7 @@ export async function createSecondaryIndexKeyPrefix(
   value: KvValue,
   collection: Collection<any, any, any>,
 ) {
-  // Serialize and compress index value
-  const encoded = await encodeData(value, collection["encoder"]);
+  const encoded = await encodeIndexValue(value, collection["encoder"]);
 
   // Create prefix key
   return extendKey(
@@ -265,6 +322,7 @@ export async function setIndices(
  */
 export async function deleteIndices(
   id: KvId,
+  versionstamp: string | null,
   data: KvObject,
   atomic: DenoAtomicOperation,
   collection: Collection<any, any, any>,
@@ -276,6 +334,13 @@ export async function deleteIndices(
     (primaryIndexKey) => atomic.delete(primaryIndexKey),
     (secondaryIndexKey) => atomic.delete(secondaryIndexKey),
   );
+
+  if (versionstamp) {
+    atomic.check({
+      key: extendKey(collection["keys"].id, id),
+      versionstamp,
+    });
+  }
 }
 
 /**
@@ -338,7 +403,7 @@ export async function allFulfilled<const T>(
  * @returns Prepared enqueue
  */
 export function prepareEnqueue<const T extends KvValue>(
-  baseKey: KvKey,
+  baseKey: BaseKey,
   undeliveredKey: KvKey,
   data: T,
   options: EnqueueOptions | undefined,
@@ -373,10 +438,10 @@ export function prepareEnqueue<const T extends KvValue>(
  * @returns A handler id.
  */
 export function createHandlerId(
-  key: KvKey,
+  key: BaseKey,
   topic: string | undefined,
 ) {
-  return `${JSON.stringify(key)}${topic ?? ""}`;
+  return `${jsonStringify(key)}${topic ?? ""}`;
 }
 
 /**
@@ -438,13 +503,14 @@ export function createListSelector<T1, T2 extends KvId>(
 
   // Conditionally set prefix key
   const prefix = Array.isArray(start) && Array.isArray(end)
-    ? undefined!
+    ? undefined
     : prefixKey;
 
   const selector = { prefix, start, end };
+  if (!selector.prefix) delete selector.prefix;
   if (!selector.end) delete selector.end;
   if (!selector.start) delete selector.start;
-  return selector;
+  return selector as DenoKvListSelector;
 }
 
 /**
@@ -461,6 +527,45 @@ export function createListOptions<T1, T2 extends KvId>(
     ...options,
     limit,
   };
+}
+
+/**
+ * Create a list selector for an index order operation.
+ *
+ * Maps the `startValue` and `endValue` options to the `start` and `end` list
+ * selector keys, where the values are encoded to match the index value part of
+ * the document key.
+ *
+ * @param prefixKey - Key prefix.
+ * @param options - Index order list options.
+ * @param encoder - Encoder used to encode the index values.
+ * @returns A list selector.
+ */
+export async function createOrderListSelector<T1, T2>(
+  prefixKey: KvKey,
+  options: IndexOrderListOptions<T1, T2> | undefined,
+  encoder: Encoder | undefined,
+): Promise<DenoKvListSelector> {
+  // Create start key from encoded start value
+  const start = typeof options?.startValue !== "undefined"
+    ? extendKey(prefixKey, await encodeIndexValue(options.startValue, encoder))
+    : undefined;
+
+  // Create end key from encoded end value
+  const end = typeof options?.endValue !== "undefined"
+    ? extendKey(prefixKey, await encodeIndexValue(options.endValue, encoder))
+    : undefined;
+
+  // Conditionally set prefix key
+  const prefix = Array.isArray(start) && Array.isArray(end)
+    ? undefined
+    : prefixKey;
+
+  const selector = { prefix, start, end };
+  if (!selector.prefix) delete selector.prefix;
+  if (!selector.end) delete selector.end;
+  if (!selector.start) delete selector.start;
+  return selector as DenoKvListSelector;
 }
 
 /**
@@ -519,6 +624,25 @@ export function createWatcher(
   return { promise: promise(), cancel };
 }
 
+/**
+ * Create an index order prefix key, dispatching between the primary and
+ * secondary index key spaces based on the given index.
+ *
+ * @param index - Primary or secondary index name.
+ * @param collection - The collection to create the prefix key for.
+ * @returns The prefix key for iterating documents in index order.
+ */
+export function createIndexOrderPrefixKey(
+  index: string,
+  collection: Collection<any, any, any>,
+): KvKey {
+  const indexKeys = collection["primaryIndexList"].includes(index)
+    ? collection["keys"].primaryIndex
+    : collection["keys"].secondaryIndex;
+
+  return extendKey(indexKeys, index);
+}
+
 async function handleIndices(
   id: KvId | null,
   data: KvObject,
@@ -531,7 +655,7 @@ async function handleIndices(
     const indexValue = data[index] as KvId | undefined;
     if (typeof indexValue === "undefined") continue;
 
-    const encoded = await encodeData(indexValue, collection["encoder"]);
+    const encoded = await encodeIndexValue(indexValue, collection["encoder"]);
 
     const indexKey = extendKey(
       collection["keys"].primaryIndex,
@@ -551,7 +675,7 @@ async function handleIndices(
     const indexValue = data[index] as KvId | undefined;
     if (typeof indexValue === "undefined") continue;
 
-    const encoded = await encodeData(indexValue, collection["encoder"]);
+    const encoded = await encodeIndexValue(indexValue, collection["encoder"]);
 
     const indexKey = extendKey(
       collection["keys"].secondaryIndex,
@@ -565,20 +689,18 @@ async function handleIndices(
 }
 
 export function applyIndexDiffs(
-  id: KvId,
   diffs: IndexDiffs,
-  value: unknown,
+  value: KvObject,
   atomic: DenoAtomicOperation,
-  options?: DenoKvSetOptions,
+  options: DenoKvSetOptions | undefined,
 ) {
   diffs.deleteKeys.forEach((key) => atomic.delete(key));
-
   diffs.insertSecondaryKeys.forEach((key) => atomic.set(key, value, options));
 
   diffs.insertPrimaryKeys.forEach((key) => {
     const indexEntry: IndexDataEntry<KvObject> = {
-      ...(value as KvObject),
-      __id__: id,
+      ...value,
+      __id__: diffs.id,
     };
     atomic.set(key, indexEntry, options);
   });
@@ -589,18 +711,20 @@ export function applyIndexDiffs(
       versionstamp: null,
     })
   );
-}
 
-export type IndexDiffs = {
-  insertPrimaryKeys: KvKey[];
-  insertSecondaryKeys: KvKey[];
-  deleteKeys: KvKey[];
-  checkKeys: KvKey[];
-};
+  if (diffs.versionstamp !== undefined) {
+    atomic.check({
+      key: diffs.idKey,
+      versionstamp: diffs.versionstamp,
+    });
+  }
+}
 
 export async function createIndexDiffs(
   id: KvId,
-  dataOld: KvObject,
+  idKey: KvKey,
+  versionstamp: string | null | undefined,
+  dataOld: KvObject | null,
   dataNew: KvObject,
   collection: Collection<any, any, any>,
 ): Promise<IndexDiffs> {
@@ -611,15 +735,18 @@ export async function createIndexDiffs(
 
   // Handle primary indices
   for (const index of collection["primaryIndexList"]) {
-    const indexValueOld = dataOld[index] as KvId | undefined;
+    const indexValueOld = dataOld
+      ? dataOld[index] as KvId | undefined
+      : undefined;
+
     const indexValueNew = dataNew[index] as KvId | undefined;
 
     const encodedOld = typeof indexValueOld !== "undefined"
-      ? await encodeData(indexValueOld, collection["encoder"])
+      ? await encodeIndexValue(indexValueOld, collection["encoder"])
       : undefined;
 
     const encodedNew = typeof indexValueNew !== "undefined"
-      ? await encodeData(indexValueNew, collection["encoder"])
+      ? await encodeIndexValue(indexValueNew, collection["encoder"])
       : undefined;
 
     const indexKeyOld = typeof encodedOld !== "undefined"
@@ -638,10 +765,7 @@ export async function createIndexDiffs(
       )
       : undefined;
 
-    const areEqual = equals(
-      encodedOld ?? new Uint8Array(),
-      encodedNew ?? new Uint8Array(),
-    );
+    const areEqual = indexValueEq(encodedOld, encodedNew);
 
     if (typeof indexKeyOld !== "undefined" && !areEqual) {
       deleteKeys.push(indexKeyOld);
@@ -657,15 +781,18 @@ export async function createIndexDiffs(
 
   // Handle secondary indices
   for (const index of collection["secondaryIndexList"]) {
-    const indexValueOld = dataOld[index] as KvId | undefined;
+    const indexValueOld = dataOld
+      ? dataOld[index] as KvId | undefined
+      : undefined;
+
     const indexValueNew = dataNew[index] as KvId | undefined;
 
     const encodedOld = typeof indexValueOld !== "undefined"
-      ? await encodeData(indexValueOld, collection["encoder"])
+      ? await encodeIndexValue(indexValueOld, collection["encoder"])
       : undefined;
 
     const encodedNew = typeof indexValueNew !== "undefined"
-      ? await encodeData(indexValueNew, collection["encoder"])
+      ? await encodeIndexValue(indexValueNew, collection["encoder"])
       : undefined;
 
     const indexKeyOld = typeof encodedOld !== "undefined"
@@ -686,10 +813,7 @@ export async function createIndexDiffs(
       )
       : undefined;
 
-    const areEqual = equals(
-      encodedOld ?? new Uint8Array(),
-      encodedNew ?? new Uint8Array(),
-    );
+    const areEqual = indexValueEq(encodedOld, encodedNew);
 
     if (typeof indexKeyOld !== "undefined" && !areEqual) {
       deleteKeys.push(indexKeyOld);
@@ -700,5 +824,74 @@ export async function createIndexDiffs(
     }
   }
 
-  return { insertPrimaryKeys, insertSecondaryKeys, deleteKeys, checkKeys };
+  return {
+    insertPrimaryKeys,
+    insertSecondaryKeys,
+    deleteKeys,
+    checkKeys,
+    id,
+    idKey,
+    versionstamp,
+  };
+}
+
+export async function parseSegmentedValue<
+  TInput,
+  TOutput extends KvValue,
+>(
+  { value, createKey, kv, encoder, model }: {
+    value: unknown;
+    createKey: (segId: KvId) => KvKey;
+    kv: DenoKv;
+    encoder: Encoder | undefined;
+    model: StandardSchemaV1<TInput, TOutput>;
+  },
+) {
+  const encodedEntry = parseEncodedEntry(value);
+  if (!encodedEntry) {
+    return null;
+  }
+
+  const { ids, isUint8Array } = encodedEntry;
+  const keys = ids.map(createKey);
+  const docEntries = await kvGetMany(keys, kv);
+
+  if (
+    keys.length !== docEntries.length ||
+    docEntries.some((entry) =>
+      !entry.versionstamp || !(entry.value instanceof Uint8Array)
+    )
+  ) {
+    return null;
+  }
+
+  // Concatenate chunks
+  const data = concat(docEntries.map((entry) => entry.value as Uint8Array));
+
+  // Decompress and deserialize
+  const decoded = isUint8Array
+    ? (await encoder?.compressor?.decompress(data) ?? data) as TOutput
+    : await decodeData<TOutput>(data, encoder);
+
+  return await validate(model, decoded);
+}
+
+export function parseEncodedEntry(
+  value: unknown,
+): EncodedEntry | null {
+  if (value === null || typeof value !== "object") {
+    return null;
+  }
+
+  const ids = "ids" in value ? value.ids : undefined;
+  const isUint8Array = "isUint8Array" in value ? value.isUint8Array : undefined;
+
+  if (!Array.isArray(ids) || typeof isUint8Array !== "boolean") {
+    return null;
+  }
+
+  return {
+    ids,
+    isUint8Array,
+  };
 }

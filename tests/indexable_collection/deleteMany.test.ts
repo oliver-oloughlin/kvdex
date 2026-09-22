@@ -12,11 +12,11 @@ Deno.test("indexable_collection - deleteMany", async (t) => {
 
         const cr = await db.i_users.addMany(users);
         const count1 = await db.i_users.count();
-        const byPrimary1 = await db.i_users.findByPrimaryIndex(
+        const byPrimary1 = await db.i_users.findBy(
           "username",
           user1.username,
         );
-        const bySecondary1 = await db.i_users.findBySecondaryIndex(
+        const bySecondary1 = await db.i_users.getManyBy(
           "age",
           user1.age,
         );
@@ -29,11 +29,53 @@ Deno.test("indexable_collection - deleteMany", async (t) => {
         await db.i_users.deleteMany();
 
         const count2 = await db.i_users.count();
-        const byPrimary2 = await db.i_users.findByPrimaryIndex(
+        const byPrimary2 = await db.i_users.findBy(
           "username",
           user1.username,
         );
-        const bySecondary2 = await db.i_users.findBySecondaryIndex(
+        const bySecondary2 = await db.i_users.getManyBy(
+          "age",
+          user1.age,
+        );
+
+        assert(count2 === 0);
+        assert(byPrimary2 === null);
+        assert(bySecondary2.result.length === 0);
+      });
+    },
+  );
+
+  await t.step(
+    "Should delete all documents and indices from the collection with batched option",
+    async () => {
+      await useDb(async (db) => {
+        const users = generateUsers(1_000);
+        const user1 = users[0];
+
+        const cr = await db.i_users.addMany(users);
+        const count1 = await db.i_users.count();
+        const byPrimary1 = await db.i_users.findBy(
+          "username",
+          user1.username,
+        );
+        const bySecondary1 = await db.i_users.getManyBy(
+          "age",
+          user1.age,
+        );
+
+        assert(cr.ok);
+        assert(count1 === users.length);
+        assert(byPrimary1?.value.username === user1.username);
+        assert(bySecondary1.result.length > 0);
+
+        await db.i_users.deleteMany({ batched: true });
+
+        const count2 = await db.i_users.count();
+        const byPrimary2 = await db.i_users.findBy(
+          "username",
+          user1.username,
+        );
+        const bySecondary2 = await db.i_users.getManyBy(
           "age",
           user1.age,
         );

@@ -6,7 +6,7 @@ import {
   type QueueMessage,
 } from "../../mod.ts";
 import {
-  KVDEX_KEY_PREFIX,
+  DEFAULT_BASE_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "../../src/core/constants.ts";
 import { createHandlerId, extendKey } from "../../src/core/utils.ts";
@@ -22,7 +22,7 @@ Deno.test("serialized_collection - listenQueue", async (t) => {
 
       const db = kvdex({
         kv,
-        schema: { s_users: collection(model<User>()) },
+        schema: { s_users: collection({ model: model<User>() }) },
       });
 
       const sleeper = Promise.withResolvers<void>();
@@ -44,7 +44,7 @@ Deno.test("serialized_collection - listenQueue", async (t) => {
       await kv.enqueue(msg, {
         keysIfUndelivered: [
           extendKey(
-            [KVDEX_KEY_PREFIX],
+            [DEFAULT_BASE_KEY_PREFIX],
             UNDELIVERED_KEY_PREFIX,
             undeliveredId,
           ),
@@ -64,7 +64,7 @@ Deno.test("serialized_collection - listenQueue", async (t) => {
     await useKv(async (kv) => {
       const db = kvdex({
         kv,
-        schema: { l_users: collection(model<User>()) },
+        schema: { l_users: collection({ model: model<User>() }) },
       });
 
       let assertion = true;

@@ -20,7 +20,7 @@ Deno.test("collection - enqueue", async (t) => {
 
       const db = kvdex({
         kv,
-        schema: { numbers: collection(model<number>()) },
+        schema: { numbers: collection({ model: model<number>() }) },
       });
 
       const handlerId = createHandlerId(db.numbers["keys"].base, undefined);
@@ -115,7 +115,8 @@ Deno.test("collection - enqueue", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            numbers: collection(model<number>(), {
+            numbers: collection({
+              model: model<number>(),
               idGenerator: () => [ulid(), Math.random()] as KvId,
             }),
           },

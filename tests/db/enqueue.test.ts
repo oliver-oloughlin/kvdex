@@ -1,16 +1,72 @@
 import {
+  type BaseKey,
   collection,
   kvdex,
   type KvValue,
   model,
   type QueueMessage,
 } from "../../mod.ts";
-import { KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
+import { DEFAULT_BASE_KEY_PREFIX } from "../../src/core/constants.ts";
 import { createHandlerId } from "../../src/core/utils.ts";
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { useKv } from "../utils.ts";
 
 Deno.test("db - enqueue", async (t) => {
+  await t.step(
+    "Should route database and collection queues by custom base path on one KV",
+    async () => {
+      const paths: BaseKey[] = [["tenant", 42n], ["tenant", "42"], []];
+      await useKv(async (kv) => {
+        const listenQueue = kv.listenQueue.bind(kv);
+        let listenerCount = 0;
+        kv.listenQueue = (handler) => {
+          listenerCount++;
+          return listenQueue(handler);
+        };
+        const received: string[] = [];
+        const expected: string[] = [];
+        const complete = Promise.withResolvers<void>();
+        const record = (queue: string) => (value: string) => {
+          received.push(`${queue}:${value}`);
+          if (received.length === paths.length * 2) complete.resolve();
+        };
+        const listeners: Promise<void>[] = [];
+        const databases = paths.map((basePath, index) => {
+          const db = kvdex({
+            kv,
+            schema: { numbers: collection<number>() },
+            basePath,
+          });
+          listeners.push(
+            db.listenQueue(record(`${index}:database`), { topic: "topic" }),
+            db.numbers.listenQueue(record(`${index}:collection`)),
+          );
+          expected.push(
+            `${index}:database:${index}`,
+            `${index}:collection:${index}`,
+          );
+          return db;
+        });
+        const timeout = setTimeout(() => complete.resolve(), 5_000);
+        try {
+          for (const [index, db] of databases.entries()) {
+            await db.enqueue(`${index}`, { topic: "topic" });
+            await db.numbers.enqueue(`${index}`);
+          }
+          await complete.promise;
+        } finally {
+          clearTimeout(timeout);
+          kv.listenQueue = listenQueue;
+        }
+        return async () => {
+          await Promise.all(listeners);
+          assertEquals(listenerCount, 1);
+          assertEquals(received.sort(), expected.sort());
+        };
+      });
+    },
+  );
+
   await t.step("Should enqueue message with string data", async () => {
     await useKv(async (kv) => {
       const data = "data";
@@ -19,10 +75,13 @@ Deno.test("db - enqueue", async (t) => {
 
       const db = kvdex({
         kv,
-        schema: { numbers: collection(model<number>()) },
+        schema: { numbers: collection({ model: model<number>() }) },
       });
 
-      const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined);
+      const handlerId = createHandlerId(
+        [DEFAULT_BASE_KEY_PREFIX],
+        undefined,
+      );
 
       let assertion = false;
 
@@ -54,7 +113,7 @@ Deno.test("db - enqueue", async (t) => {
 
       const db = kvdex({
         kv,
-        schema: { numbers: collection(model<number>()) },
+        schema: { numbers: collection({ model: model<number>() }) },
       });
 
       let assertion1 = false;
@@ -92,10 +151,13 @@ Deno.test("db - enqueue", async (t) => {
 
       const db = kvdex({
         kv,
-        schema: { numbers: collection(model<number>()) },
+        schema: { numbers: collection({ model: model<number>() }) },
       });
 
-      const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined);
+      const handlerId = createHandlerId(
+        [DEFAULT_BASE_KEY_PREFIX],
+        undefined,
+      );
 
       let assertion = false;
 

@@ -32,25 +32,23 @@ _Supported Deno versions:_ **^2.3.0**
 - Listen to real-time data updates.
 - Support for pagination and filtering.
 - Message queues at database and collection level with topics.
-- Support for different KV-backends, such as `Map`, `localStorage` and
-  `IndexedDB`.
+- Support for alternative KV-backends, such as `Map`, `Storage` and `IndexedDB`.
 
 ## Table of Contents
 
 - [kvdex](#kvdex)
   - [Highlights](#highlights)
   - [Table of Contents](#table-of-contents)
-  - [Models](#models)
   - [Database](#database)
   - [Collection Options](#collection-options)
+    - [`model`](#model)
     - [`idGenerator`](#idgenerator)
     - [`indices`](#indices)
     - [`encoder`](#encoder)
     - [`history`](#history)
   - [Collection Methods](#collection-methods)
     - [find()](#find)
-    - [findByPrimaryIndex()](#findbyprimaryindex)
-    - [findBySecondaryIndex()](#findbysecondaryindex)
+    - [findBy()](#findby)
     - [findMany()](#findmany)
     - [findHistory()](#findhistory)
     - [findUndelivered()](#findundelivered)
@@ -58,36 +56,37 @@ _Supported Deno versions:_ **^2.3.0**
     - [addMany()](#addmany)
     - [set()](#set)
     - [update()](#update)
-    - [updateByPrimaryIndex()](#updatebyprimaryindex)
-    - [updateBySecondaryIndex()](#updatebysecondaryindex)
+    - [updateBy()](#updateby)
     - [updateMany()](#updatemany)
-    - [updateManyBySecondaryOrder()](#updatemanybysecondaryorder)
+    - [updateManyBy()](#updatemanyby)
+    - [updateManyByOrder()](#updatemanybyorder)
     - [updateOne()](#updateone)
-    - [updateOneBySecondaryIndex()](#updateonebysecondaryindex)
-    - [updateOneBySecondaryOrder()](#updateonebysecondaryorder)
+    - [updateOneBy()](#updateoneby)
+    - [updateOneByOrder()](#updateonebyorder)
     - [upsert()](#upsert)
-    - [upsertByPrimaryIndex()](#upsertbyprimaryindex)
+    - [upsertBy()](#upsertby)
     - [delete()](#delete)
-    - [deleteByPrimaryIndex()](#deletebyprimaryindex)
-    - [deleteBySecondaryIndex()](#deletebysecondaryindex)
+    - [deleteBy()](#deleteby)
     - [deleteMany()](#deletemany)
-    - [deleteManyBySecondaryOrder()](#deletemanybysecondaryorder)
+    - [deleteManyBy()](#deletemanyby)
+    - [deleteManyByOrder()](#deletemanybyorder)
     - [deleteHistory()](#deletehistory)
     - [deleteUndelivered()](#deleteundelivered)
     - [getMany()](#getmany)
-    - [getManyBySecondaryOrder()](#getmanybysecondaryorder)
+    - [getManyBy()](#getmanyby)
+    - [getManyByOrder()](#getmanybyorder)
     - [getOne()](#getone)
-    - [getOneBySecondaryIndex()](#getonebysecondaryindex)
-    - [getOneBySecondaryOrder()](#getonebysecondaryorder)
+    - [getOneBy()](#getoneby)
+    - [getOneByOrder()](#getonebyorder)
     - [forEach()](#foreach)
-    - [forEachBySecondaryIndex()](#foreachbysecondaryindex)
-    - [forEachBySecondaryOrder()](#foreachbysecondaryorder)
+    - [forEachBy()](#foreachby)
+    - [forEachByOrder()](#foreachbyorder)
     - [map()](#map)
-    - [mapBySecondaryIndex()](#mapbysecondaryindex)
-    - [mapBySecondaryOrder()](#mapbysecondaryorder)
+    - [mapBy()](#mapby)
+    - [mapByOrder()](#mapbyorder)
     - [count()](#count)
-    - [countBySecondaryIndex()](#countbysecondaryindex)
-    - [countBySecondaryOrder()](#countbysecondaryorder)
+    - [countBy()](#countby)
+    - [countByOrder()](#countbyorder)
     - [enqueue()](#enqueue)
     - [listenQueue()](#listenqueue)
     - [watch()](#watch)
@@ -125,74 +124,11 @@ _Supported Deno versions:_ **^2.3.0**
   - [Development](#development)
   - [License](#license)
 
-## Models
-
-Collections are typed using models. Standard models can be defined using the
-`model()` function. Alternatively, any
-[Standard Schema](https://github.com/standard-schema/standard-schema) compliant
-model can be used, meaning validation libraries such as [Zod](https://zod.dev)
-is supported without being a dependency. The standard model uses type casting
-only, and does not perform any runtime validation. Asymmetric models can be
-created by passing a transform function which maps from an input type to an
-output type. Asymmetric models are useful for storing derived values or filling
-default values. It is up to the developer to choose the strategy that fits their
-use case the best.
-
-**_NOTE_:** When using interfaces instead of types, they must extend the
-`KvValue` type.
-
-Using the standard model strategy:
-
-```ts
-import { model } from "@olli/kvdex";
-
-type User = {
-  username: string;
-  age: number;
-  activities: string[];
-  address?: {
-    country: string;
-    city: string;
-    street: string;
-    houseNumber: number | null;
-  };
-};
-
-// Normal model (equal input and output)
-const UserModel = model<User>();
-
-// Asymmetric model (mapped output)
-const UserModel = model((user: User) => ({
-  upperCaseUsername: user.username.toUpperCase(),
-  ageInDecades: user.age / 10,
-  createdAt: new Date(),
-}));
-```
-
-Using [Zod](https://zod.dev) instead:
-
-```ts
-import { z } from "npm:zod";
-
-type User = z.infer<typeof UserModel>;
-
-const UserModel = z.object({
-  username: z.string(),
-  age: z.number(),
-  activities: z.array(z.string()),
-  address: z.object({
-    country: z.string(),
-    city: z.string(),
-    street: z.string(),
-    houseNumber: z.number().nullable(),
-  }).optional(),
-});
-```
-
 ## Database
 
 `kvdex()` is used for creating a new database instance. It takes an options
-object which expects a Deno KV instance and a schema definition.
+object which expects a Deno KV instance and a schema definition. Optionally, a
+base path can be set, which will prefix all keys in the database.
 
 ```ts
 import { collection, kvdex, model } from "@olli/kvdex";
@@ -202,21 +138,25 @@ const kv = await Deno.openKv();
 
 const db = kvdex({
   kv: kv,
+  basePath: ["my-app"], // Optional, defaults to: []
   schema: {
-    numbers: collection(model<number>()),
-    serializedStrings: collection(model<string>(), {
+    // Simple collections:
+    numbers: collection<number>(),
+
+    // Object collections with indices and additional options:
+    users: collection({
+      model: model<User>(),
       encoder: jsonEncoder(),
-    }),
-    users: collection(UserModel, {
       history: true,
       indices: {
         username: "primary", // unique
         age: "secondary", // non-unique
       },
     }),
-    // Nested collections
+
+    // Nested collections:
     nested: {
-      strings: collection(model<string>()),
+      numbers: collection<number>(),
     },
   },
 });
@@ -233,6 +173,94 @@ default, or alternatively your provided encoder.
 These are all the options available for the `collection()` method, used when
 defining collections of documents. All collection options are optional.
 
+### `model`
+
+Set the document model for a collection, which is used to infer the collection's
+document type and perform any validation or transformation of document values.
+Any [Standard Schema](https://standardschema.dev/schema) compliant model can be
+utilized, meaning validation libraries such as [Zod](https://zod.dev) are
+supported without being a dependency. A built-in model is provided, which
+performs type-casting and optionally transformation of document values, but no
+runtime-validation. By default the built-in model is used.
+
+**_NOTE_:** When using interfaces instead of types, they must extend the
+`KvValue` type.
+
+Typing using the built-in model:
+
+```ts
+import { collection, kvdex, model } from "@olli/kvdex";
+
+type User = {
+  username: string;
+  age: number;
+};
+
+const kv = await Deno.openKv();
+
+const db = kvdex({
+  kv: kv,
+  schema: {
+    users: collection({ model: model<User>() }),
+  },
+});
+```
+
+Typing and runtime-validation using Zod:
+
+```ts
+import { collection, kvdex } from "@olli/kvdex";
+import { z } from "zod";
+
+const UserSchema = z.object({
+  username: z.string(),
+  age: z.number(),
+});
+
+const kv = await Deno.openKv();
+
+const db = kvdex({
+  kv: kv,
+  schema: {
+    users: collection({ model: UserSchema }),
+  },
+});
+```
+
+Typing and value transformation using the built-in model:
+
+```ts
+import { collection, kvdex, model } from "@olli/kvdex";
+
+type UserInput = {
+  username: string;
+  displayName?: string;
+  password: string;
+};
+
+type UserOutput = {
+  username: string;
+  displayName: string;
+  passwordHash: string;
+};
+
+// Models with a transform can be used to set default values or derived values
+const UserModel = model((input: UserInput) => ({
+  username: input.username,
+  displayName: input.displayName ?? input.username,
+  passwordHash: hash(input.password),
+} as UserOutput));
+
+const kv = await Deno.openKv();
+
+const db = kvdex({
+  kv: kv,
+  schema: {
+    users: collection({ model: UserModel }),
+  },
+});
+```
+
 ### `idGenerator`
 
 Override the default id generator, which is used to automatically generate an id
@@ -244,14 +272,14 @@ added, which can be useful to create derived ids. The default id generator uses
 Id created from the data being added:
 
 ```ts
-import { collection, kvdex, model } from "@olli/kvdex";
+import { collection, kvdex } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
 const db = kvdex({
   kv: kv,
   schema: {
-    users: collection(model<User>(), {
+    users: collection<User>({
       idGenerator: (user) => user.username,
     }),
   },
@@ -261,14 +289,14 @@ const db = kvdex({
 Using randomly generated UUIDs:
 
 ```ts
-import { collection, kvdex, model } from "@olli/kvdex";
+import { collection, kvdex } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
 const db = kvdex({
   kv: kv,
   schema: {
-    users: collection(model<User>(), {
+    users: collection<User>({
       idGenerator: () => crypto.randomUUID(),
     }),
   },
@@ -278,14 +306,14 @@ const db = kvdex({
 Using multi-part ids:
 
 ```ts
-import { collection, kvdex, model } from "@olli/kvdex";
+import { collection, kvdex } from "@olli/kvdex";
 
 const kv = await Deno.openKv();
 
 const db = kvdex({
   kv: kv,
   schema: {
-    users: collection(model<User>(), {
+    users: collection<User>({
       idGenerator: () => [crypto.randomUUID(), Math.random()],
     }),
   },
@@ -307,7 +335,8 @@ const kv = await Deno.openKv();
 const db = kvdex({
   kv: kv,
   schema: {
-    users: collection(model<User>(), {
+    users: collection({
+      model: model<User>(),
       indices: {
         username: "primary", // unique
         age: "secondary", // non-unique
@@ -327,7 +356,7 @@ For storing objects larger than the atomic operation size limit, see
 [Blob Storage](#blob-storage).
 
 ```ts
-import { kvdex, collection, model } from "@olli/kvdex"
+import { kvdex, collection } from "@olli/kvdex"
 import { jsonEncoder } from "@olli/kvdex/encoding/json"
 import { v8Encoder } from "@olli/kvdex/encoding/v8"
 import { brotliCompressor } from "@olli/kvdex/encoding/brotli"
@@ -337,7 +366,7 @@ const kv = await Deno.openKv()
 const db = kvdex({
   kv: kv,
   schema: {
-    users: collection(model<User>(), {
+    users: collection<User>({
       // JSON-encoder without compression (best runtime compatibility)
       encoder: jsonEncoder(),
 
@@ -379,9 +408,7 @@ const kv = await Deno.openKv();
 const db = kvdex({
   kv: kv,
   schema: {
-    users: collection(model<User>(), {
-      history: true,
-    }),
+    users: collection<User>({ history: true }),
   },
 });
 ```
@@ -404,29 +431,13 @@ const userDoc3 = await db.users.find("oliver", {
 });
 ```
 
-### findByPrimaryIndex()
+### findBy()
 
 Find a document by a primary index.
 
 ```ts
 // Finds a user document with the username = "oliver"
-const userByUsername = await db.users.findByPrimaryIndex("username", "oliver");
-```
-
-### findBySecondaryIndex()
-
-Find documents by a secondary index. Secondary indices are not unique, and
-therefore the result is an array of documents. The method takes an optional
-options argument that can be used for filtering of documents, and pagination.
-
-```ts
-// Returns all users with age = 24
-const { result } = await db.users.findBySecondaryIndex("age", 24);
-
-// Returns all users with age = 24 AND username that starts with "o"
-const { result } = await db.users.findBySecondaryIndex("age", 24, {
-  filter: (doc) => doc.value.username.startsWith("o"),
-});
+const userByUsername = await db.users.findBy("username", "oliver");
 ```
 
 ### findMany()
@@ -535,10 +546,10 @@ if (result1.ok) {
 
 ### update()
 
-Updates the value of an exisiting document in the KV store by id. By default,
-the `merge` strategy is used when available, falling back to `replace` for
-primitive types and built-in objects (Date, RegExp, etc.). For plain objects,
-the `merge-shallow` strategy is also supported.
+Updates the value of an existing document in the KV store by id. By default, the
+`merge` strategy is used when available, falling back to `replace` for primitive
+types and built-in objects (Date, RegExp, etc.). For plain objects, the
+`merge-shallow` strategy is also supported.
 
 ```ts
 // Updates the document with a new value
@@ -552,48 +563,24 @@ const result = await db.users.update(
 );
 ```
 
-### updateByPrimaryIndex()
+### updateBy()
 
 Update a document by a primary index.
 
 ```ts
 // Updates a user with username = "oliver" to have age = 56
-const result = await db.users.updateByPrimaryIndex(
+const result = await db.users.updateBy(
   "username",
   "oliver",
   { age: 56 },
 );
 
 // Updates a user document using shallow merge
-const result = await db.users.updateByPrimaryIndex(
+const result = await db.users.updateBy(
   "username",
   "anders",
   { age: 89 },
   { strategy: "merge-shallow" },
-);
-```
-
-### updateBySecondaryIndex()
-
-Update documents by a secondary index. Takes an optional options argument that
-can be used for filtering of documents to be updated, and pagination. If no
-options are given, all documents by the given index value will we updated.
-
-```ts
-// Updates all user documents with age = 24 and sets age = 67
-const { result } = await db.users.updateBySecondaryIndex("age", 24, {
-  age: 67,
-});
-
-// Updates all users where age = 24 and username starts with "o", using shallow merge
-const { result } = await db.users.updateBySecondaryIndex(
-  "age",
-  24,
-  { age: 67 },
-  {
-    filter: (doc) => doc.value.username.startsWith("o"),
-    strategy: "merge-shallow",
-  },
 );
 ```
 
@@ -618,14 +605,38 @@ const { result } = await db.users.updateMany({ age: 67 }, {
 const { result } = await db.users.updateMany({ username: "oliver" });
 ```
 
-### updateManyBySecondaryOrder()
+### updateManyBy()
+
+Update documents by a secondary index. Takes an optional options argument that
+can be used for filtering of documents to be updated, and pagination. If no
+options are given, all documents by the given index value will be updated.
+
+```ts
+// Updates all user documents with age = 24 and sets age = 67
+const { result } = await db.users.updateManyBy("age", 24, {
+  age: 67,
+});
+
+// Updates all users where age = 24 and username starts with "o", using shallow merge
+const { result } = await db.users.updateManyBy(
+  "age",
+  24,
+  { age: 67 },
+  {
+    filter: (doc) => doc.value.username.startsWith("o"),
+    strategy: "merge-shallow",
+  },
+);
+```
+
+### updateManyByOrder()
 
 Update the value of multiple existing documents in the collection by a secondary
 order.
 
 ```ts
 // Updates the first 10 users ordered by age and sets username = "anon"
-await db.users.updateManyBySecondaryOrder("age", { username: "anon" });
+await db.users.updateManyByOrder("age", { username: "anon" });
 ```
 
 ### updateOne()
@@ -647,21 +658,21 @@ const result = await db.users.updateOne({ age: 67 }, {
 });
 ```
 
-### updateOneBySecondaryIndex()
+### updateOneBy()
 
 Update the first matching document from the KV store by a secondary index. It
 optionally takes the same `options` argument as `updateMany()`. If no options
-are given, `updateOneBySecondaryIndex()` will update the first document in the
-collection by the given index value.
+are given, `updateOneBy()` will update the first document in the collection by
+the given index value.
 
 ```ts
 // Updates the first user document where age = 20 and sets age = 67
-const result = await db.users.updateOneBySecondaryIndex("age", 20, { age: 67 });
+const result = await db.users.updateOneBy("age", 20, { age: 67 });
 ```
 
 ```ts
 // Updates the first user where age = 20 and username starts with "a", using shallow merge
-const result = await db.users.updateOneBySecondaryIndex(
+const result = await db.users.updateOneBy(
   "age",
   20,
   { age: 67 },
@@ -672,14 +683,14 @@ const result = await db.users.updateOneBySecondaryIndex(
 );
 ```
 
-### updateOneBySecondaryOrder()
+### updateOneByOrder()
 
 Update the value of one existing document in the collection by a secondary
 order.
 
 ```ts
 // Updates the first user ordered by age and sets username = "anon"
-const result = await db.users.updateOneBySecondaryOrder("age", {
+const result = await db.users.updateOneByOrder("age", {
   username: "anon",
 });
 ```
@@ -707,14 +718,14 @@ const result = await db.users.upsert({
 });
 ```
 
-### upsertByPrimaryIndex()
+### upsertBy()
 
 Update an existing document by a primary index, or set a new entry if no
 matching document exists. An id can be optionally specified which will be used
 when creating a new document entry.
 
 ```ts
-const result = await db.users.upsertByPrimaryIndex({
+const result = await db.users.upsertBy({
   index: ["username", "Jack"],
   update: { username: "Chris" },
   set: {
@@ -733,36 +744,19 @@ const result = await db.users.upsertByPrimaryIndex({
 
 ### delete()
 
-Delete one or more documents with the given ids from the KV store.
+Delete a document with the given id from the KV store.
 
 ```ts
 await db.users.delete("f897e3cf-bd6d-44ac-8c36-d7ab97a82d77");
-
-await db.users.delete("user1", "user2", "user3");
 ```
 
-### deleteByPrimaryIndex()
+### deleteBy()
 
 Delete a document by a primary index.
 
 ```ts
 // Deletes user with username = "oliver"
-await db.users.deleteByPrimaryIndex("username", "oliver");
-```
-
-### deleteBySecondaryIndex()
-
-Delete documents by a secondary index. The method takes an optional options
-argument that can be used for filtering of documents, and pagination.
-
-```ts
-// Deletes all users with age = 24
-await db.users.deleteBySecondaryIndex("age", 24);
-
-// Deletes all users with age = 24 AND username that starts with "o"
-await db.users.deleteBySecondaryIndex("age", 24, {
-  filter: (doc) => doc.value.username.startsWith("o"),
-});
+await db.users.deleteBy("username", "oliver");
 ```
 
 ### deleteMany()
@@ -793,16 +787,31 @@ await db.users.deleteMany({
 });
 ```
 
-### deleteManyBySecondaryOrder()
+### deleteManyBy()
 
-Delete multiple documents from the KV store by a secondary order. The method
-takes an optional options argument that can be used for filtering of documents,
-and pagination. If no options are provided, all documents in the collection are
+Delete documents by a secondary index. The method takes an optional options
+argument that can be used for filtering of documents, and pagination.
+
+```ts
+// Deletes all users with age = 24
+await db.users.deleteManyBy("age", 24);
+
+// Deletes all users with age = 24 AND username that starts with "o"
+await db.users.deleteManyBy("age", 24, {
+  filter: (doc) => doc.value.username.startsWith("o"),
+});
+```
+
+### deleteManyByOrder()
+
+Delete multiple documents from the KV store by index order. The method takes an
+optional options argument that can be used for filtering of documents, and
+pagination. If no options are provided, all documents in the collection are
 deleted.
 
 ```ts
 // Deletes the first 10 users ordered by age
-await db.users.deleteManyBySecondaryOrder("age", { limit: 10 });
+await db.users.deleteManyByOrder("age", { limit: 10 });
 ```
 
 ### deleteHistory()
@@ -849,19 +858,40 @@ const { result } = await db.users.getMany({
 });
 ```
 
-### getManyBySecondaryOrder()
+### getManyBy()
 
-Retrieves multiple documents from the KV store in the specified secondary order
-and according to the given options. If no options are provided, all documents
-are retrieved.
+Find documents by a secondary index. Secondary indices are not unique, and
+therefore the result is an array of documents. The method takes an optional
+options argument that can be used for filtering of documents, and pagination.
 
 ```ts
-// Get all users ordered by age
-const { result } = await db.users.getManyBySecondaryOrder("age");
+// Returns all users with age = 24
+const { result } = await db.users.getManyBy("age", 24);
 
-// Only get users with username that starts with "a", ordered by age
-const { result } = await db.users.getManyBySecondaryOrder("age", {
-  filter: (doc) => doc.value.username.startsWith("a"),
+// Returns all users with age = 24 AND username that starts with "o"
+const { result } = await db.users.getManyBy("age", 24, {
+  filter: (doc) => doc.value.username.startsWith("o"),
+});
+```
+
+### getManyByOrder()
+
+Retrieves multiple documents ordered by the given index. Works with both primary
+and secondary indices. The `startValue` and `endValue` options bound the result
+by the index value (inclusive start, exclusive end). If no options are provided,
+all documents are retrieved in index order.
+
+```ts
+// Get all users ordered by age (secondary index)
+const { result } = await db.users.getManyByOrder("age");
+
+// Get all users ordered by username (primary index)
+const { result } = await db.users.getManyByOrder("username");
+
+// Get users with age in the range [18, 40)
+const { result } = await db.users.getManyByOrder("age", {
+  startValue: 18,
+  endValue: 40,
 });
 ```
 
@@ -881,32 +911,32 @@ const user = await db.users.getOne({
 });
 ```
 
-### getOneBySecondaryIndex()
+### getOneBy()
 
 Retrieve the first matching document from the KV store by a secondary index. It
-optionally takes the same `options` argument as `getMany()`. If no options are
-given, `getOneBySecondaryIndex()` will retrieve the first document in the
-collection by the given index value.
+optionally takes the same `options` argument as `getManyBy()`. If no options are
+given, `getOneBy()` will retrieve the first document in the collection by the
+given index value.
 
 ```ts
 // Retrieves the first user document where age = 20
-const user = await db.users.getOneBySecondaryIndex("age", 20);
+const user = await db.users.getOneBy("age", 20);
 
 // Retrieves the first user where age = 20 and username starts with "a"
-const user = await db.users.getOneBySecondaryIndex("age", 20, {
+const user = await db.users.getOneBy("age", 20, {
   filter: (doc) => doc.value.username.startsWith("a"),
 });
 ```
 
-### getOneBySecondaryOrder()
+### getOneByOrder()
 
-Retrieves one document from the KV store by a secondary order and according to
-the given options. If no options are provided, the first document in the
-collection by the given order is retrieved.
+Retrieves one document from the KV store by index order and according to the
+given options. If no options are provided, the first document in the collection
+by the given order is retrieved.
 
 ```ts
 // Get the first user ordered by age
-const user = await db.users.getOneBySecondaryOrder("age");
+const user = await db.users.getOneByOrder("age");
 ```
 
 ### forEach()
@@ -937,7 +967,7 @@ await db.users.forEach((doc) => console.log(doc.value.username), {
 });
 ```
 
-### forEachBySecondaryIndex()
+### forEachBy()
 
 Execute a callback function for documents by a secondary index. Takes an
 optional options argument that can be used for filtering of documents and
@@ -946,22 +976,22 @@ all documents in the collection matching the index.
 
 ```ts
 // Prints the username of all users where age = 20
-await db.users.forEachBySecondaryIndex(
+await db.users.forEachBy(
   "age",
   20,
   (doc) => console.log(doc.value.username),
 );
 ```
 
-### forEachBySecondaryOrder()
+### forEachByOrder()
 
-Executes a callback function for every document by a secondary order and
-according to the given options. If no options are provided, the callback
-function is executed for all documents.
+Executes a callback function for every document by index order and according to
+the given options. If no options are provided, the callback function is executed
+for all documents.
 
 ```ts
 // Prints the username of all users ordered by age
-await db.users.forEachBySecondaryOrder(
+await db.users.forEachByOrder(
   "age",
   (doc) => console.log(doc.value.username),
 );
@@ -995,7 +1025,7 @@ const { result } = await db.users.map((doc) => doc.value.username, {
 });
 ```
 
-### mapBySecondaryIndex()
+### mapBy()
 
 Executes a callback function for documents by a secondary index and retrieves
 the results. It takes an optional options argument that can be used for
@@ -1004,23 +1034,23 @@ function will be executed for all documents matching the index.
 
 ```ts
 // Returns a list of usernames of all users where age = 20
-const { result } = await db.users.mapBySecondaryIndex(
+const { result } = await db.users.mapBy(
   "age",
   20,
   (doc) => doc.value.username,
 );
 ```
 
-### mapBySecondaryOrder()
+### mapByOrder()
 
-Executes a callback function for every document by a secondary order and
-according to the given options. If no options are provided, the callback
-function is executed for all documents. The results from the callback function
-are returned as a list.
+Executes a callback function for every document by index order and according to
+the given options. If no options are provided, the callback function is executed
+for all documents. The results from the callback function are returned as a
+list.
 
 ```ts
 // Returns a list of usernames of all users ordered by age
-const { result } = await db.users.mapBySecondaryOrder(
+const { result } = await db.users.mapByOrder(
   "age",
   (doc) => doc.value.username,
 );
@@ -1042,7 +1072,7 @@ const count = await db.users.count({
 });
 ```
 
-### countBySecondaryIndex()
+### countBy()
 
 Counts the number of documents in the collection by a secondary index. Takes an
 optional options argument that can be used for filtering of documents. If no
@@ -1050,16 +1080,16 @@ options are given, it will count all documents matching the index.
 
 ```ts
 // Counts all users where age = 20
-const count = await db.users.countBySecondaryIndex("age", 20);
+const count = await db.users.countBy("age", 20);
 ```
 
-### countBySecondaryOrder()
+### countByOrder()
 
-Counts the number of documents in the collection by a secondary order.
+Counts the number of documents in the collection by index order.
 
 ```ts
 // Counts how many of the first 10 users ordered by age that are under the age of 18
-const count = await db.users.countBySecondaryOrder("age", {
+const count = await db.users.countByOrder("age", {
   limit: 10,
   filter: (doc) => doc.value.age < 18,
 });
@@ -1091,7 +1121,7 @@ specific collection queue and topic. Expects a handler function as argument, as
 well as optional options that can be used to set the topic.
 
 ```ts
-// Prints the data to console when recevied
+// Prints the data to console when received
 db.users.listenQueue((data) => console.log(data));
 
 // Sends post request when data is received
@@ -1245,7 +1275,7 @@ topic. Expects a handler function as argument, as well as optional options that
 can be used to set the topic.
 
 ```ts
-// Prints the data to console when recevied
+// Prints the data to console when received
 db.listenQueue((data) => console.log(data));
 
 // Sends post request when data is received in the "posts" topic
@@ -1331,16 +1361,9 @@ operation, call "commit" at the end of the chain. A committed atomic operation
 returns a promise resolving to either a Deno.KvCommitResult object if
 successful, or Deno.KvCommitError if not.
 
-**_NOTE_:** Atomic operations are not available for serialized collections. For
-indexable collections, any operations performing deletes will not be truly
-atomic in the sense that it performs a single isolated operation. This is
-because the document data must be read before performing the initial delete
-operation, to then perform another delete operation for the index entries. If
-the initial operation fails, the index entries will not be deleted. To avoid
-collisions and errors related to indexing, an atomic operation will always fail
-if it is trying to delete and write to the same indexable collection. It will
-also fail if trying to set/add a document with colliding index entries, or if
-trying to set a document with the `overwrite` option.
+**_NOTE_:** Atomic operations are not available for serialized collections. Deno
+KV limits to atomic operations (total size, key size, number of mutations) still
+apply.
 
 ### Without checking
 
@@ -1358,24 +1381,6 @@ const result2 = await db
   .add(1)
   .add(2)
   .select((schema) => schema.users)
-  .set("user_1", {
-    username: "oliver",
-    age: 24,
-    activities: ["skiing", "running"],
-    address: {
-      country: "Norway",
-      city: "Bergen",
-      street: "Sesame",
-      houseNumber: 42,
-    },
-  })
-  .commit();
-
-// Will fail and return Deno.KvCommitError because it is trying
-// to both add and delete from an indexable collection
-const result3 = await db
-  .atomic((schema) => schema.users)
-  .delete("user_1")
   .set("user_1", {
     username: "oliver",
     age: 24,
@@ -1447,7 +1452,7 @@ const flattened = doc.flat();
 
 Additional features outside of the basic functionality provided by `kvdex`.
 While the core functionalities are free of third-party dependencies, extended
-features may rely on third-party dependenices or runtime-specific APIs to
+features may rely on third-party dependencies or runtime-specific APIs to
 enhance integration.
 
 ### Encoding
@@ -1626,16 +1631,19 @@ await migrate({
 
 ### KV
 
-Support for alternative KV backends, such as `Map` and `localStorage`. Can be
-used to employ `kvdex` in the browser or other environments where Deno's KV
-store is not available, or to adapt other database backends.
+Extends support to alternative KV-backends, such as `Map`, `Storage` and
+`IndexedDB`. Can be used to employ `kvdex` in the browser or other environments
+where Deno's KV store is not available, or simply to integrate with other data
+backends.
 
 #### Map
 
 Support for `Map` as KV backend.
 
+- Provides an implementation of the Deno KV interface that integrates with
+  `Map`.
 - Provides a storage adapter, extending backend support to the `Storage`
-  interface (e.g. `localStorage`).
+  interface (e.g. `localStorage` and `sessionStorage`).
 - Provides an `IndexedDB` adapter, enabling the use of `IndexedDB` as a KV
   backend.
 
@@ -1643,10 +1651,10 @@ Create an in-memory database using `Map` as the KV backend:
 
 ```ts
 import { kvdex } from "@olli/kvdex";
-import { MapKv } from "@olli/kvdex/kv/map";
+import { mapKv } from "@olli/kvdex/kv/map";
 
-// Equivalent to `new MapKv({ map: new Map() })`
-const kv = new MapKv();
+// Equivalent to `mapKv({ map: new Map() })`
+const kv = mapKv();
 const db = kvdex({ kv });
 ```
 
@@ -1654,11 +1662,21 @@ Create a persistent database using `localStorage` as the KV backend:
 
 ```ts
 import { kvdex } from "@olli/kvdex";
-import { MapKv, StorageAdapter } from "@olli/kvdex/kv/map";
+import { mapKv, storageAdapter } from "@olli/kvdex/kv/map";
 
-// Equivalent to `new StorageAdapter(localStorage)`
-const map = new StorageAdapter();
-const kv = new MapKv({ map });
+const map = storageAdapter(localStorage);
+const kv = mapKv({ map });
+const db = kvdex({ kv });
+```
+
+Create a session-scoped database using `sessionStorage` as the KV backend:
+
+```ts
+import { kvdex } from "@olli/kvdex";
+import { mapKv, storageAdapter } from "@olli/kvdex/kv/map";
+
+const map = storageAdapter(sessionStorage);
+const kv = mapKv({ map });
 const db = kvdex({ kv });
 ```
 
@@ -1666,11 +1684,11 @@ Create a persistent database using `IndexedDB` as the KV backend:
 
 ```ts
 import { kvdex } from "@olli/kvdex";
-import { indexedDbAdapter, MapKv } from "@olli/kvdex/kv/map";
+import { indexedDbAdapter, mapKv } from "@olli/kvdex/kv/map";
 
 // Opens an IndexedDB database with default name and store
 const map = await indexedDbAdapter();
-const kv = new MapKv({ map });
+const kv = mapKv({ map });
 const db = kvdex({ kv });
 ```
 
@@ -1689,7 +1707,7 @@ const kv = await Deno.openKv()
 const db = kvdex({
   kv: kv,
   schema: {
-    blobs: collection(model<Uint8Array>(), { encoder: jsonEncoder() }),
+    blobs: collection<Uint8Array>({ encoder: jsonEncoder() }),
   }
 })
 

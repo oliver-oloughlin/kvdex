@@ -1,6 +1,8 @@
 import { assert, assertEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
-import { useDb } from "../utils.ts";
+import { generateIncompressibleUser, useDb } from "../utils.ts";
+import { extendKey } from "../../src/core/utils.ts";
+import type { DenoKvEntry, DenoKvStrictKey } from "../../src/core/types.ts";
 
 Deno.test("serialized_collection - set", async (t) => {
   await t.step("Should set new document entry in collection", async () => {
@@ -79,4 +81,107 @@ Deno.test("serialized_collection - set", async (t) => {
       assertEquals(doc.value, n);
     });
   });
+
+  await t.step(
+    "Should clean up old segments when overwriting document",
+    async () => {
+      await useDb(async (db) => {
+        const kv = db.s_users["kv"];
+        const largeUser = generateIncompressibleUser();
+
+        // Set a large document that requires segments
+        const cr1 = await db.s_users.set("id", largeUser);
+        assert(cr1.ok);
+
+        // Collect old segment entries
+        const segmentPrefix = extendKey(db.s_users["keys"].segment, "id");
+        const oldEntries: DenoKvEntry[] = [];
+        const iterBefore = await kv.list({ prefix: segmentPrefix });
+        for await (const entry of iterBefore) {
+          oldEntries.push(entry as DenoKvEntry);
+        }
+        assert(
+          oldEntries.length > 1,
+          "Old document must span multiple segments",
+        );
+
+        const cr2 = await db.s_users.set("id", mockUser1, {
+          overwrite: true,
+        });
+        assert(cr2.ok);
+
+        // Collect new segment entries
+        const newEntries: DenoKvEntry[] = [];
+        const iterAfter = await kv.list({ prefix: segmentPrefix });
+        for await (const entry of iterAfter) {
+          newEntries.push(entry as DenoKvEntry);
+        }
+
+        assertEquals(newEntries.map((entry) => entry.key), [
+          extendKey(segmentPrefix, 0),
+        ]);
+        for (const oldEntry of oldEntries.slice(1)) {
+          const deleted = await kv.get(oldEntry.key as DenoKvStrictKey);
+          assertEquals(deleted.value, null);
+          assertEquals(deleted.versionstamp, null);
+        }
+
+        // Verify the document reads correctly
+        const doc = await db.s_users.find("id");
+        assertEquals(doc?.value, mockUser1);
+      });
+    },
+  );
+
+  await t.step(
+    "Should clean up old segments when overwriting document using batched mode",
+    async () => {
+      await useDb(async (db) => {
+        const kv = db.s_users["kv"];
+        const largeUser = generateIncompressibleUser();
+
+        // Set a large document that requires segments
+        const cr1 = await db.s_users.set("id", largeUser, { batched: true });
+        assert(cr1.ok);
+
+        // Collect old segment entries
+        const segmentPrefix = extendKey(db.s_users["keys"].segment, "id");
+        const oldEntries: DenoKvEntry[] = [];
+        const iterBefore = await kv.list({ prefix: segmentPrefix });
+        for await (const entry of iterBefore) {
+          oldEntries.push(entry as DenoKvEntry);
+        }
+        assert(
+          oldEntries.length > 1,
+          "Old document must span multiple segments",
+        );
+
+        const cr2 = await db.s_users.set("id", mockUser1, {
+          overwrite: true,
+          batched: true,
+        });
+        assert(cr2.ok);
+
+        // Collect new segment entries
+        const newEntries: DenoKvEntry[] = [];
+        const iterAfter = await kv.list({ prefix: segmentPrefix });
+        for await (const entry of iterAfter) {
+          newEntries.push(entry as DenoKvEntry);
+        }
+
+        assertEquals(newEntries.map((entry) => entry.key), [
+          extendKey(segmentPrefix, 0),
+        ]);
+        for (const oldEntry of oldEntries.slice(1)) {
+          const deleted = await kv.get(oldEntry.key as DenoKvStrictKey);
+          assertEquals(deleted.value, null);
+          assertEquals(deleted.versionstamp, null);
+        }
+
+        // Verify the document reads correctly
+        const doc = await db.s_users.find("id");
+        assertEquals(doc?.value, mockUser1);
+      });
+    },
+  );
 });

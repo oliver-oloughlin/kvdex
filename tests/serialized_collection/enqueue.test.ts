@@ -19,7 +19,7 @@ Deno.test("serialized_collection - enqueue", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          s_users: collection(model<User>(), { encoder: testEncoder }),
+          s_users: collection({ model: model<User>(), encoder: testEncoder }),
         },
       });
 

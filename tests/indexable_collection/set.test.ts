@@ -1,4 +1,4 @@
-import { assert } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
 import { useDb } from "../utils.ts";
 
@@ -41,12 +41,12 @@ Deno.test("indexable_collection - set", async (t) => {
         const cr2 = await db.i_users.set("id2", mockUser1);
         assert(!cr2.ok);
 
-        const byPrimary = await db.i_users.findByPrimaryIndex(
+        const byPrimary = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
 
-        const bySecondary = await db.i_users.findBySecondaryIndex(
+        const bySecondary = await db.i_users.getManyBy(
           "age",
           mockUser1.age,
         );
@@ -61,41 +61,116 @@ Deno.test("indexable_collection - set", async (t) => {
     "Should overwrite document in collection with colliding id",
     async () => {
       await useDb(async (db) => {
-        const cr1 = await db.i_users.set("id", mockUser1);
+        const u1 = mockUser1;
+        const u2 = { ...mockUser2, age: mockUser1.age + 1 };
+
+        const cr1 = await db.i_users.set("id", u1);
         assert(cr1.ok);
 
-        const cr2 = await db.i_users.set("id", mockUser2, { overwrite: true });
+        const cr2 = await db.i_users.set("id", u2, { overwrite: true });
         assert(cr2.ok);
 
-        const doc = await db.i_users.find("id");
-        assert(doc !== null);
-        assert(doc.value.username === mockUser2.username);
+        const docById = await db.i_users.find("id");
+
+        const docByOldPrimaryIndex = await db.i_users.findBy(
+          "username",
+          u1.username,
+        );
+
+        const docByNewPrimaryIndex = await db.i_users.findBy(
+          "username",
+          u2.username,
+        );
+
+        const { result: [docByOldSecondaryIndex] } = await db.i_users
+          .getManyBy("age", u1.age);
+
+        const { result: [docByNewSecondaryIndex] } = await db.i_users
+          .getManyBy("age", u2.age);
+
+        assertEquals(docById?.value, u2);
+        assertEquals(docByOldPrimaryIndex, null);
+        assertEquals(docByNewPrimaryIndex?.value, u2);
+        assertEquals(docByOldSecondaryIndex?.value, undefined);
+        assertEquals(docByNewSecondaryIndex?.value, u2);
       });
     },
   );
 
   await t.step(
-    "Should not overwrite document in collection with colliding primary index",
+    "Should overwrite document in collection with colliding primary index",
     async () => {
       await useDb(async (db) => {
-        const cr1 = await db.i_users.set("id1", mockUser1);
+        const u1 = mockUser1;
+        const u2 = {
+          ...mockUser2,
+          username: mockUser1.username,
+          age: mockUser1.age + 1,
+        };
+
+        const cr1 = await db.i_users.set("id", u1);
         assert(cr1.ok);
 
-        const cr2 = await db.i_users.set("id2", mockUser1, { overwrite: true });
-        assert(!cr2.ok);
+        const cr2 = await db.i_users.set("id", u2, { overwrite: true });
+        assert(cr2.ok);
 
-        const byPrimary = await db.i_users.findByPrimaryIndex(
+        const docById = await db.i_users.find("id");
+
+        const docByPrimaryIndex = await db.i_users.findBy(
           "username",
-          mockUser1.username,
+          u1.username,
         );
 
-        const bySecondary = await db.i_users.findBySecondaryIndex(
-          "age",
-          mockUser1.age,
-        );
+        const { result: [docByOldSecondaryIndex] } = await db.i_users
+          .getManyBy("age", u1.age);
 
-        assert(byPrimary?.id === cr1.id);
-        assert(bySecondary.result.length === 1);
+        const { result: [docByNewSecondaryIndex] } = await db.i_users
+          .getManyBy("age", u2.age);
+
+        assertEquals(docById?.value, u2);
+        assertEquals(docByPrimaryIndex?.value, u2);
+        assertEquals(docByOldSecondaryIndex?.value, undefined);
+        assertEquals(docByNewSecondaryIndex?.value, u2);
+      });
+    },
+  );
+
+  await t.step(
+    "Should reject overwrite with a primary index owned by another document",
+    async () => {
+      await useDb(async (db) => {
+        const original = mockUser1;
+        const conflicting = {
+          ...mockUser2,
+          username: original.username,
+          age: original.age + 1,
+        };
+
+        const firstCommit = await db.i_users.set("id1", original);
+        assert(firstCommit.ok);
+
+        const secondCommit = await db.i_users.set("id2", conflicting, {
+          overwrite: true,
+        });
+        assert(!secondCommit.ok);
+
+        const byId = await db.i_users.find("id1");
+        assert(byId !== null);
+        assertEquals(byId.value, original);
+        assertEquals(byId.versionstamp, firstCommit.versionstamp);
+        assertEquals(await db.i_users.find("id2"), null);
+        assertEquals(
+          await db.i_users.findBy("username", original.username),
+          byId,
+        );
+        assertEquals(
+          (await db.i_users.getManyBy("age", original.age)).result,
+          [byId],
+        );
+        assertEquals(
+          (await db.i_users.getManyBy("age", conflicting.age)).result,
+          [],
+        );
       });
     },
   );

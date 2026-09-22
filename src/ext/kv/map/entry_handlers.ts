@@ -1,6 +1,6 @@
 import { ulid } from "@std/ulid";
 import { jsonParse, jsonStringify } from "../../../common/json.ts";
-import { KVDEX_QUEUE_KEY_PREFIX } from "../../../core/constants.ts";
+import { MAP_KV_QUEUE_KEY_PREFIX } from "../../../core/constants.ts";
 import type {
   DenoKvCommitError,
   DenoKvCommitResult,
@@ -210,7 +210,7 @@ export async function enqueueValue({
 }): Promise<DenoKvCommitResult> {
   const timestamp = Date.now() + (options?.delay ?? 0);
   const id = ulid();
-  const key: DenoKvStrictKey = [KVDEX_QUEUE_KEY_PREFIX, id];
+  const key: DenoKvStrictKey = [MAP_KV_QUEUE_KEY_PREFIX, id];
   const entryValue: QueueEntryValue = {
     value,
     timestamp,
@@ -266,7 +266,7 @@ export async function activateQueuedValues({
   timerIds: Set<TimeoutId>;
 }) {
   const iter = await listEntries({
-    selector: { prefix: [KVDEX_QUEUE_KEY_PREFIX] },
+    selector: { prefix: [MAP_KV_QUEUE_KEY_PREFIX] },
     options: undefined,
     watchers: [],
     getEntries,
@@ -365,23 +365,15 @@ export async function listEntries({
   }
 
   if (start) {
-    const index = entries.findIndex(
-      ([key]) => key === jsonStringify(start),
+    entries = entries.filter(
+      ([key]) => keySort(jsonParse<DenoKvStrictKey>(key), start) >= 0,
     );
-
-    if (index && index !== -1) {
-      entries = entries.slice(index);
-    }
   }
 
   if (end) {
-    const index = entries.findIndex(
-      ([key]) => key === jsonStringify(end),
+    entries = entries.filter(
+      ([key]) => keySort(jsonParse<DenoKvStrictKey>(key), end) < 0,
     );
-
-    if (index && index !== -1) {
-      entries = entries.slice(0, index);
-    }
   }
 
   if (options?.cursor) {

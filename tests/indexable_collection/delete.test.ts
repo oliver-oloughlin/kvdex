@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "@std/assert";
 import { mockUser1 } from "../mocks.ts";
-import { generateUsers, useDb } from "../utils.ts";
+import { useDb } from "../utils.ts";
 
 Deno.test("indexable_collection - delete", async (t) => {
   await t.step(
@@ -9,11 +9,11 @@ Deno.test("indexable_collection - delete", async (t) => {
       await useDb(async (db) => {
         const cr = await db.i_users.add(mockUser1);
         const count1 = await db.i_users.count();
-        const byPrimary1 = await db.i_users.findByPrimaryIndex(
+        const byPrimary1 = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
-        const bySecondary1 = await db.i_users.findBySecondaryIndex(
+        const bySecondary1 = await db.i_users.getManyBy(
           "age",
           mockUser1.age,
         );
@@ -23,15 +23,16 @@ Deno.test("indexable_collection - delete", async (t) => {
         assertEquals(byPrimary1?.id, cr.id);
         assertEquals(bySecondary1.result.at(0)?.id, cr.id);
 
-        await db.i_users.delete(cr.id);
+        const deleteCr = await db.i_users.delete(cr.id);
+        assert(deleteCr.ok);
 
         const count2 = await db.i_users.count();
         const doc = await db.i_users.find(cr.id);
-        const byPrimary2 = await db.i_users.findByPrimaryIndex(
+        const byPrimary2 = await db.i_users.findBy(
           "username",
           mockUser1.username,
         );
-        const bySecondary2 = await db.i_users.findBySecondaryIndex(
+        const bySecondary2 = await db.i_users.getManyBy(
           "age",
           mockUser1.age,
         );
@@ -45,22 +46,43 @@ Deno.test("indexable_collection - delete", async (t) => {
   );
 
   await t.step(
-    "Should successfully delete 1000 documents from the collection",
+    "Should successfully delete a document and its indices from the collection with batched option",
     async () => {
       await useDb(async (db) => {
-        const users = generateUsers(1_000);
-        const cr = await db.i_users.addMany(users);
+        const cr = await db.i_users.add(mockUser1);
         const count1 = await db.i_users.count();
+        const byPrimary1 = await db.i_users.findBy(
+          "username",
+          mockUser1.username,
+        );
+        const bySecondary1 = await db.i_users.getManyBy(
+          "age",
+          mockUser1.age,
+        );
 
         assert(cr.ok);
-        assert(count1 === users.length);
+        assertEquals(count1, 1);
+        assertEquals(byPrimary1?.id, cr.id);
+        assertEquals(bySecondary1.result.at(0)?.id, cr.id);
 
-        const { result: ids } = await db.i_users.map((doc) => doc.id);
-
-        await db.i_users.delete(...ids);
+        const deleteCr = await db.i_users.delete(cr.id, { batched: true });
+        assert(deleteCr.ok);
 
         const count2 = await db.i_users.count();
+        const doc = await db.i_users.find(cr.id);
+        const byPrimary2 = await db.i_users.findBy(
+          "username",
+          mockUser1.username,
+        );
+        const bySecondary2 = await db.i_users.getManyBy(
+          "age",
+          mockUser1.age,
+        );
+
         assert(count2 === 0);
+        assert(doc === null);
+        assert(byPrimary2 === null);
+        assert(bySecondary2.result.length === 0);
       });
     },
   );
@@ -75,7 +97,8 @@ Deno.test("indexable_collection - delete", async (t) => {
         assert(cr.ok);
         assert(count1 === 1);
 
-        await db.i_multi_part_id_users.delete(cr.id);
+        const deleteCr = await db.i_multi_part_id_users.delete(cr.id);
+        assert(deleteCr.ok);
 
         const count2 = await db.i_multi_part_id_users.count();
         const doc = await db.i_multi_part_id_users.find(cr.id);

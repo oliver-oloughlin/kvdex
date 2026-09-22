@@ -10,7 +10,19 @@ import { collection, kvdex } from "../../mod.ts";
 import { testEncoder, useKv } from "../utils.ts";
 import { VALUES } from "../values.ts";
 
-const UserSchema = z.object({
+const UserSchemaWithPrefaultAddress = z.object({
+  username: z.string(),
+  age: z.number().default(18),
+  address: z.object({
+    country: z.string().default("Norway"),
+    city: z.string(),
+  })
+    .prefault({
+      city: "Bergen",
+    }),
+});
+
+const UserSchemaWithDefaultAddress = z.object({
   username: z.string(),
   age: z.number().default(18),
   address: z.object({
@@ -18,6 +30,7 @@ const UserSchema = z.object({
     city: z.string(),
   })
     .default({
+      country: "Norway",
       city: "Bergen",
     }),
 });
@@ -46,14 +59,18 @@ Deno.test("ext - zod", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users: collection(UserSchema),
-          i_users: collection(UserSchema, {
+          users: collection({ model: UserSchemaWithPrefaultAddress }),
+          i_users: collection({
+            model: UserSchemaWithPrefaultAddress,
             indices: {
               username: "primary",
               age: "secondary",
             },
           }),
-          s_users: collection(UserSchema, { encoder: testEncoder }),
+          s_users: collection({
+            model: UserSchemaWithPrefaultAddress,
+            encoder: testEncoder,
+          }),
         },
       });
 
@@ -88,20 +105,50 @@ Deno.test("ext - zod", async (t) => {
   });
 
   await t.step(
+    "Should require all nested defaults when the parent field uses .default()",
+    async () => {
+      await useKv(async (kv) => {
+        const db = kvdex({
+          kv,
+          schema: {
+            users: collection({ model: UserSchemaWithDefaultAddress }),
+          },
+        });
+
+        const cr1 = await db.users.add({
+          username: "oliver",
+          address: {
+            country: "Norway",
+            city: "Bergen",
+          },
+        });
+
+        const cr2 = await db.users.add({
+          username: "oliver",
+        });
+
+        assert(cr1.ok);
+        assert(cr2.ok);
+      });
+    },
+  );
+
+  await t.step(
     "Should use base model when typing selected documents",
     async () => {
       await useKv(async (kv) => {
         const db = kvdex({
           kv,
           schema: {
-            users: collection(UserSchema),
-            i_users: collection(UserSchema, {
+            users: collection({ model: UserSchemaWithPrefaultAddress }),
+            i_users: collection({
+              model: UserSchemaWithPrefaultAddress,
               indices: {
                 username: "primary",
                 age: "secondary",
               },
             }),
-            l_users: collection(UserSchema),
+            l_users: collection({ model: UserSchemaWithPrefaultAddress }),
           },
         });
 

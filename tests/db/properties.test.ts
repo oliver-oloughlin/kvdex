@@ -1,6 +1,6 @@
 import { openKv } from "@deno/kv";
 import { kvdex } from "../../mod.ts";
-import { MapKv, StorageAdapter } from "@olli/kvdex/kv";
+import { mapKv, storageAdapter } from "@olli/kvdex/kv";
 import "fake-indexeddb/auto";
 import { indexedDbAdapter } from "../../src/ext/kv/map/indexed_db_adapter.ts";
 
@@ -22,20 +22,24 @@ Deno.test({
     });
 
     await t.step("Should allow in-memory Map KV type", async () => {
-      const kv = new MapKv({ map: new Map() });
+      const kv = mapKv({ map: new Map(), clearOnClose: true });
       kvdex({ kv });
       await kv.close();
     });
 
     await t.step("Should allow local storage Map KV type", async () => {
-      const kv = new MapKv({ map: new StorageAdapter(localStorage) });
+      const kv = mapKv({
+        map: storageAdapter(localStorage),
+        clearOnClose: true,
+      });
+
       kvdex({ kv });
       await kv.close();
     });
 
     await t.step("Should allow IndexedDB Map KV type", async () => {
       const map = await indexedDbAdapter();
-      const kv = new MapKv({ map });
+      const kv = mapKv({ map, clearOnClose: true });
       kvdex({ kv });
       await kv.close();
     });

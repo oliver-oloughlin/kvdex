@@ -46,8 +46,8 @@ export function keySort(key1: DenoKvStrictKey, key2: DenoKvStrictKey): number {
 const typeMap = {
   object: 0,
   string: 1,
-  number: 2,
-  bigint: 3,
+  bigint: 2,
+  number: 3,
   boolean: 4,
   function: 5,
   symbol: 5,
@@ -131,12 +131,26 @@ function sortByUint8Array(u1: Uint8Array, u2: Uint8Array): number {
   return 0;
 }
 
+const textEncoder = new TextEncoder();
+
 function sortByString(str1: string, str2: string): number {
-  return str1 < str2 ? -1 : str1 > str2 ? 1 : 0;
+  if (str1 === str2) {
+    return 0;
+  }
+
+  return sortByUint8Array(textEncoder.encode(str1), textEncoder.encode(str2));
 }
 
 function sortByNumber(n1: number, n2: number): number {
-  return n1 - n2;
+  if (Number.isNaN(n1)) {
+    return Number.isNaN(n2) ? 0 : 1;
+  }
+
+  if (Number.isNaN(n2)) {
+    return -1;
+  }
+
+  return n1 < n2 ? -1 : n1 > n2 ? 1 : 0;
 }
 
 function sortByBigint(n1: bigint, n2: bigint): number {

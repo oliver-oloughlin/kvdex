@@ -6,7 +6,7 @@ import {
   type QueueMessage,
 } from "../../mod.ts";
 import {
-  KVDEX_KEY_PREFIX,
+  DEFAULT_BASE_KEY_PREFIX,
   UNDELIVERED_KEY_PREFIX,
 } from "../../src/core/constants.ts";
 import { createHandlerId, extendKey } from "../../src/core/utils.ts";
@@ -22,7 +22,7 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
 
       const db = kvdex({
         kv,
-        schema: { i_users: collection(model<User>(), { indices: {} }) },
+        schema: { i_users: collection({ model: model<User>(), indices: {} }) },
       });
 
       const sleeper = Promise.withResolvers<void>();
@@ -43,7 +43,7 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
       await kv.enqueue(msg, {
         keysIfUndelivered: [
           extendKey(
-            [KVDEX_KEY_PREFIX],
+            [DEFAULT_BASE_KEY_PREFIX],
             UNDELIVERED_KEY_PREFIX,
             undeliveredId,
           ),
@@ -63,7 +63,7 @@ Deno.test("indexable_collection - listenQueue", async (t) => {
     await useKv(async (kv) => {
       const db = kvdex({
         kv,
-        schema: { i_users: collection(model<User>(), { indices: {} }) },
+        schema: { i_users: collection({ model: model<User>(), indices: {} }) },
       });
 
       let assertion = true;

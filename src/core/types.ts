@@ -18,12 +18,13 @@ export type EmptyObject = typeof EMPTY_OBJECT;
 export type BuilderFn<
   TInput,
   TOutput extends KvValue,
-  TOptions extends CollectionOptions<TOutput>,
+  TOptions extends BaseCollectionOptions<TInput, TOutput>,
 > = (
   kv: DenoKv,
   key: KvKey,
   queueHandlers: QueueHandlers,
   idempotentListener: IdempotentListener,
+  basePath: BaseKey,
 ) => Collection<TInput, TOutput, TOptions>;
 
 /** Any collection builder function */
@@ -79,6 +80,17 @@ export type WatchManager = {
 
   /** Stops the active watcher. */
   cancel: () => Promise<void>;
+};
+
+/** Index differences used for updating index entries */
+export type IndexDiffs = {
+  insertPrimaryKeys: KvKey[];
+  insertSecondaryKeys: KvKey[];
+  deleteKeys: KvKey[];
+  checkKeys: KvKey[];
+  id: KvId;
+  idKey: KvKey;
+  versionstamp: string | null | undefined;
 };
 
 /**********************/
@@ -210,27 +222,17 @@ export type CollectionSelector<
   TSchema extends Schema<SchemaDefinition>,
   TInput,
   TOutput extends KvValue,
-  TOptions extends CollectionOptions<TOutput>,
+  TOptions extends BaseCollectionOptions<TInput, TOutput>,
 > = (
   schema: TSchema,
 ) => Collection<TInput, TOutput, TOptions>;
 
-/** Prepared value delete function */
-export type PrepareDeleteFn = (kv: DenoKv) => Promise<PreparedIndexDelete>;
-
-/** Prepared index delete function */
-export type PreparedIndexDelete = {
-  id: KvId;
-  data: KvObject;
-};
-
 /** Atomic builder operations */
 export type Operations = {
   atomic: DenoAtomicOperation;
-  asyncMutations: Array<() => Promise<void>>;
-  prepareDeleteFns: PrepareDeleteFn[];
-  indexDeleteCollectionKeys: KvKey[];
-  indexAddCollectionKeys: KvKey[];
+  orderedMutationInitializers: Array<() => unknown>;
+  lazyMutations: Map<string, () => unknown>;
+  insertPrimaryKeys: KvKey[];
 };
 
 /** Kvdex atomic check */
@@ -276,10 +278,7 @@ export type AtomicMutation<T1, T2 extends KvId> =
   );
 
 /** Options for atomic set operation */
-export type AtomicSetOptions<T extends CollectionOptions<any>> =
-  & DenoKvSetOptions
-  & (T extends { indices: IndexRecord<KvObject> } ? EmptyObject
-    : Pick<SetOptions, "overwrite">);
+export type AtomicSetOptions = Pick<SetOptions, "overwrite" | "expireIn">;
 
 /************************/
 /*                      */
@@ -287,27 +286,23 @@ export type AtomicSetOptions<T extends CollectionOptions<any>> =
 /*                      */
 /************************/
 
-/** Options for creating a new collection */
-export type CollectionOptions<T extends KvValue> =
+export type BaseCollectionOptions<TInput, TOutput extends KvValue> = {
+  model?: Model<TInput, TOutput>;
+  idGenerator?: IdGenerator<TOutput, KvId>;
+  encoder?: Encoder;
+  history?: true;
+};
+
+export type ObjectCollectionOptions<TInput, TOutput extends KvObject> =
+  & BaseCollectionOptions<TInput, TOutput>
   & {
-    idGenerator?: IdGenerator<T, KvId>;
-    encoder?: Encoder;
-    history?: true;
-  }
-  & (
-    T extends KvObject ? {
-        indices?: IndexRecord<T>;
-      }
-      : { [K in never]: never }
-  );
+    indices?: IndexRecord<TOutput>;
+  };
 
-export type ParseId<T extends CollectionOptions<any>> = T["idGenerator"] extends
-  IdGenerator<any, any> ? Awaited<ReturnType<T["idGenerator"]>> : string;
-
-/** Utility type for accessing all possible collection options */
-export type PossibleCollectionOptions = CollectionOptions<
-  Record<string, never>
->;
+export type ParseId<T extends BaseCollectionOptions<any, any>> =
+  T["idGenerator"] extends IdGenerator<any, any>
+    ? Awaited<ReturnType<T["idGenerator"]>>
+    : string;
 
 /** Record of all collection keys */
 export type CollectionKeys = {
@@ -353,19 +348,42 @@ export type IndexRecord<T extends KvObject> = {
 
 /** Keys of primary indices */
 export type PrimaryIndexKeys<
-  T1 extends KvValue,
-  T2 extends CollectionOptions<T1>,
-> = T2 extends { indices: IndexRecord<KvObject> }
-  ? KeysOfThatExtend<T2["indices"], "primary">
+  TInput,
+  TOutput extends KvValue,
+  TOptions extends BaseCollectionOptions<TInput, TOutput>,
+> = TOutput extends KvObject
+  ? TOptions extends { indices?: infer I }
+    ? NonNullable<I> extends IndexRecord<KvObject> ? KeysOfThatExtend<
+        { [K in keyof NonNullable<I>]-?: NonNullable<NonNullable<I>[K]> },
+        "primary"
+      >
+    : never
+  : never
   : never;
 
 /** Keys of secondary indices */
 export type SecondaryIndexKeys<
-  T1 extends KvValue,
-  T2 extends CollectionOptions<T1>,
-> = T2 extends { indices: IndexRecord<KvObject> }
-  ? KeysOfThatExtend<T2["indices"], "secondary">
+  TInput,
+  TOutput extends KvValue,
+  TOptions extends BaseCollectionOptions<TInput, TOutput>,
+> = TOutput extends KvObject
+  ? TOptions extends { indices?: infer I }
+    ? NonNullable<I> extends IndexRecord<KvObject> ? KeysOfThatExtend<
+        { [K in keyof NonNullable<I>]-?: NonNullable<NonNullable<I>[K]> },
+        "secondary"
+      >
+    : never
+  : never
   : never;
+
+/** Keys of primary and secondary indices */
+export type IndexKeys<
+  TInput,
+  TOutput extends KvValue,
+  TOptions extends BaseCollectionOptions<TInput, TOutput>,
+> =
+  | PrimaryIndexKeys<TInput, TOutput, TOptions>
+  | SecondaryIndexKeys<TInput, TOutput, TOptions>;
 
 /** Indexed value entry */
 export type IndexDataEntry<T extends KvObject> = Omit<T, "__id__"> & {
@@ -446,6 +464,9 @@ export type SetOptions = NonNullable<Parameters<DenoKv["set"]>["2"]> & {
   batched?: boolean;
 };
 
+/** Options for deleting a document entry */
+export type DeleteOptions = Pick<SetOptions, "batched"> & FindOptions;
+
 /** Options for listing documents */
 export type ListOptions<T1, T2 extends KvId> =
   & Omit<DenoKvListOptions, "limit">
@@ -483,6 +504,11 @@ export type HandleOneOptions<T1, T2 extends KvId> = Omit<
   ListOptions<T1, T2>,
   "take"
 >;
+
+/** Options for deleting many documents */
+export type DeleteManyOptions<T1, T2 extends KvId> =
+  & ListOptions<T1, T2>
+  & DeleteOptions;
 
 /** Options for finding a single document */
 export type FindOptions = NonNullable<Parameters<DenoKv["get"]>[1]>;
@@ -529,6 +555,46 @@ export type UpdateManyOptions<T1, T2 extends KvId> =
 /** Options for updating one listed document */
 export type UpdateOneOptions<T1, T2 extends KvId> =
   & HandleOneOptions<T1, T2>
+  & UpdateOptions;
+
+/**
+ * Options for listing documents by an index order.
+ *
+ * Differs from `ListOptions` by replacing the `startId` and `endId` options
+ * with `startValue` and `endValue`, which bound the result by the index value
+ * that documents are ordered by.
+ * Strings, numbers, bigints, booleans, and Uint8Arrays use native KV ordering,
+ * independently of the collection encoder. Other values use encoded byte ordering.
+ */
+export type IndexOrderListOptions<T1, T2> =
+  & Omit<ListOptions<T1, KvId>, "startId" | "endId">
+  & {
+    /** Inclusive index value to start from. */
+    startValue?: T2;
+
+    /** Exclusive index value to end at. */
+    endValue?: T2;
+  };
+
+/** Options for handling one listed document by an index order */
+export type IndexOrderHandleOneOptions<T1, T2> = Omit<
+  IndexOrderListOptions<T1, T2>,
+  "take"
+>;
+
+/** Options for deleting many documents by an index order */
+export type IndexOrderDeleteManyOptions<T1, T2> =
+  & IndexOrderListOptions<T1, T2>
+  & DeleteOptions;
+
+/** Options for updating many documents by an index order */
+export type IndexOrderUpdateManyOptions<T1, T2> =
+  & IndexOrderListOptions<T1, T2>
+  & UpdateOptions;
+
+/** Options for updating one listed document by an index order */
+export type IndexOrderUpdateOneOptions<T1, T2> =
+  & IndexOrderHandleOneOptions<T1, T2>
   & UpdateOptions;
 
 /** Options for counting all documents */
@@ -638,6 +704,9 @@ export type KvdexOptions<T extends SchemaDefinition> = {
 
   /** Schema definition containing the database collections */
   schema?: T;
+
+  /** Optional outer key prefix. Defaults to []. The database namespace "__kvdex__" is appended, so an omitted or empty basePath uses ["__kvdex__"]. */
+  basePath?: BaseKey;
 };
 
 /*******************/
@@ -717,6 +786,9 @@ export type KvKey = [DenoKvStrictKeyPart, ...DenoKvStrictKey];
 
 /** An entry ID. Can be either a single KeyPart or a full key. */
 export type KvId = DenoKvStrictKeyPart | KvKey;
+
+/** A base path of KV key parts. May be empty. */
+export type BaseKey = DenoKvStrictKeyPart[];
 
 /** An object containing only KV values, and is itself a KV value. */
 export type KvObject = {

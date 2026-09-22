@@ -6,8 +6,8 @@ import {
   model,
 } from "../../mod.ts";
 import {
+  DEFAULT_BASE_KEY_PREFIX,
   ID_KEY_PREFIX,
-  KVDEX_KEY_PREFIX,
   PRIMARY_INDEX_KEY_PREFIX,
   SECONDARY_INDEX_KEY_PREFIX,
 } from "../../src/core/constants.ts";
@@ -16,18 +16,28 @@ import type { KvKey } from "../../src/core/types.ts";
 import { assert } from "@std/assert";
 import { mockUser1 } from "../mocks.ts";
 import type { User } from "../models.ts";
-import { generateUsers, sleep, useDb, useKv } from "../utils.ts";
+import {
+  generateUsers,
+  sleep,
+  testIndexProperties,
+  useDb,
+  useKv,
+} from "../utils.ts";
 import { mockUser2 } from "../mocks.ts";
 import { mockUser3 } from "../mocks.ts";
 
 Deno.test("indexable_collection - properties", async (t) => {
+  await t.step("Native index properties", async (t) => {
+    await testIndexProperties(t);
+  });
+
   await t.step("Keys should have the correct prefixes", async () => {
     await useDb((db) => {
       const baseKey = db.i_users["keys"].base;
       const idKey = db.i_users["keys"].id;
       const primaryIndexKey = db.i_users["keys"].primaryIndex;
       const secondaryIndexKey = db.i_users["keys"].secondaryIndex;
-      const prefix = extendKey([KVDEX_KEY_PREFIX], "i_users");
+      const prefix = extendKey([DEFAULT_BASE_KEY_PREFIX], "i_users");
 
       assert(keyEq(baseKey, prefix));
       assert(keyEq(idKey, extendKey(prefix, ID_KEY_PREFIX)));
@@ -45,11 +55,13 @@ Deno.test("indexable_collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users1: collection(model<User>(), {
+          users1: collection({
+            model: model<User>(),
             idGenerator: () => Math.random(),
             indices: {},
           }),
-          users2: collection(model<User>(), {
+          users2: collection({
+            model: model<User>(),
             idGenerator: (data) => data.username,
             indices: {},
           }),
@@ -239,23 +251,21 @@ Deno.test("indexable_collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          i: collection(
-            model<{
+          i: collection({
+            model: model<{
               oblPrimary: string;
               oblSecondary: number;
               optPrimary?: string;
               optSecondary?: number;
               check?: Date;
             }>(),
-            {
-              indices: {
-                oblPrimary: "primary",
-                oblSecondary: "secondary",
-                optPrimary: "primary",
-                optSecondary: "secondary",
-              },
+            indices: {
+              oblPrimary: "primary",
+              oblSecondary: "secondary",
+              optPrimary: "primary",
+              optSecondary: "secondary",
             },
-          ),
+          }),
         },
       });
 
@@ -274,11 +284,11 @@ Deno.test("indexable_collection - properties", async (t) => {
       assert(cr1.ok);
       assert(cr2.ok);
 
-      const byOptPrimary2 = await db.i.findByPrimaryIndex(
+      const byOptPrimary2 = await db.i.findBy(
         "optPrimary",
         "optPrimary2",
       );
-      const byOptSecondary2 = await db.i.findBySecondaryIndex(
+      const byOptSecondary2 = await db.i.getManyBy(
         "optSecondary",
         20,
       );
@@ -305,11 +315,11 @@ Deno.test("indexable_collection - properties", async (t) => {
 
       assert(cr4.ok);
 
-      const byOptPrimary4 = await db.i.findByPrimaryIndex(
+      const byOptPrimary4 = await db.i.findBy(
         "optPrimary",
         "optPrimary4",
       );
-      const byOptSecondary4 = await db.i.findBySecondaryIndex(
+      const byOptSecondary4 = await db.i.getManyBy(
         "optSecondary",
         20,
       );
@@ -496,157 +506,183 @@ Deno.test("indexable_collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          val1: collection(model<Data>(), {
+          val1: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val2: collection(model<Data>(), {
+          val2: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val3: collection(model<Data>(), {
+          val3: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val4: collection(model<Data>(), {
+          val4: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val5: collection(model<Data>(), {
+          val5: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val6: collection(model<Data>(), {
+          val6: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val7: collection(model<Data>(), {
+          val7: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val8: collection(model<Data>(), {
+          val8: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val9: collection(model<Data>(), {
+          val9: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val10: collection(model<Data>(), {
+          val10: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val11: collection(model<Data>(), {
+          val11: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val12: collection(model<Data>(), {
+          val12: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val13: collection(model<Data>(), {
+          val13: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val14: collection(model<Data>(), {
+          val14: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val15: collection(model<Data>(), {
+          val15: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val16: collection(model<Data>(), {
+          val16: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val17: collection(model<Data>(), {
+          val17: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val18: collection(model<Data>(), {
+          val18: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val19: collection(model<Data>(), {
+          val19: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val20: collection(model<Data>(), {
+          val20: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val21: collection(model<Data>(), {
+          val21: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val22: collection(model<Data>(), {
+          val22: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val23: collection(model<Data>(), {
+          val23: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val24: collection(model<Data>(), {
+          val24: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val25: collection(model<Data>(), {
+          val25: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
             },
           }),
-          val26: collection(model<Data>(), {
+          val26: collection({
+            model: model<Data>(),
             indices: {
               p: "primary",
               s: "secondary",
@@ -709,32 +745,32 @@ Deno.test("indexable_collection - properties", async (t) => {
       assert(cr25.ok);
       assert(cr26.ok);
 
-      //const byPrimary1 = await db.val1.findByPrimaryIndex("p", val1)
-      const byPrimary2 = await db.val2.findByPrimaryIndex("p", val2);
-      const byPrimary3 = await db.val3.findByPrimaryIndex("p", val3);
-      const byPrimary4 = await db.val4.findByPrimaryIndex("p", val4);
-      const byPrimary5 = await db.val5.findByPrimaryIndex("p", val5);
-      const byPrimary6 = await db.val6.findByPrimaryIndex("p", val6);
-      const byPrimary7 = await db.val7.findByPrimaryIndex("p", val7);
-      const byPrimary8 = await db.val8.findByPrimaryIndex("p", val8);
-      const byPrimary9 = await db.val9.findByPrimaryIndex("p", val9);
-      const byPrimary10 = await db.val10.findByPrimaryIndex("p", val10);
-      const byPrimary11 = await db.val11.findByPrimaryIndex("p", val11);
-      const byPrimary12 = await db.val12.findByPrimaryIndex("p", val12);
-      const byPrimary13 = await db.val13.findByPrimaryIndex("p", val13);
-      const byPrimary14 = await db.val14.findByPrimaryIndex("p", val14);
-      const byPrimary15 = await db.val15.findByPrimaryIndex("p", val15);
-      const byPrimary16 = await db.val16.findByPrimaryIndex("p", val16);
-      const byPrimary17 = await db.val17.findByPrimaryIndex("p", val17);
-      const byPrimary18 = await db.val18.findByPrimaryIndex("p", val18);
-      const byPrimary19 = await db.val19.findByPrimaryIndex("p", val19);
-      const byPrimary20 = await db.val20.findByPrimaryIndex("p", val20);
-      const byPrimary21 = await db.val21.findByPrimaryIndex("p", val21);
-      const byPrimary22 = await db.val22.findByPrimaryIndex("p", val22);
-      const byPrimary23 = await db.val23.findByPrimaryIndex("p", val23);
-      const byPrimary24 = await db.val24.findByPrimaryIndex("p", val24);
-      const byPrimary25 = await db.val25.findByPrimaryIndex("p", val25);
-      const byPrimary26 = await db.val26.findByPrimaryIndex("p", val26);
+      //const byPrimary1 = await db.val1.findBy("p", val1)
+      const byPrimary2 = await db.val2.findBy("p", val2);
+      const byPrimary3 = await db.val3.findBy("p", val3);
+      const byPrimary4 = await db.val4.findBy("p", val4);
+      const byPrimary5 = await db.val5.findBy("p", val5);
+      const byPrimary6 = await db.val6.findBy("p", val6);
+      const byPrimary7 = await db.val7.findBy("p", val7);
+      const byPrimary8 = await db.val8.findBy("p", val8);
+      const byPrimary9 = await db.val9.findBy("p", val9);
+      const byPrimary10 = await db.val10.findBy("p", val10);
+      const byPrimary11 = await db.val11.findBy("p", val11);
+      const byPrimary12 = await db.val12.findBy("p", val12);
+      const byPrimary13 = await db.val13.findBy("p", val13);
+      const byPrimary14 = await db.val14.findBy("p", val14);
+      const byPrimary15 = await db.val15.findBy("p", val15);
+      const byPrimary16 = await db.val16.findBy("p", val16);
+      const byPrimary17 = await db.val17.findBy("p", val17);
+      const byPrimary18 = await db.val18.findBy("p", val18);
+      const byPrimary19 = await db.val19.findBy("p", val19);
+      const byPrimary20 = await db.val20.findBy("p", val20);
+      const byPrimary21 = await db.val21.findBy("p", val21);
+      const byPrimary22 = await db.val22.findBy("p", val22);
+      const byPrimary23 = await db.val23.findBy("p", val23);
+      const byPrimary24 = await db.val24.findBy("p", val24);
+      const byPrimary25 = await db.val25.findBy("p", val25);
+      const byPrimary26 = await db.val26.findBy("p", val26);
 
       //assert(byPrimary1 !== null)
       assert(byPrimary2 !== null);
@@ -763,108 +799,108 @@ Deno.test("indexable_collection - properties", async (t) => {
       assert(byPrimary25 !== null);
       assert(byPrimary26 !== null);
 
-      /*const { result: bySecondary1 } = await db.val1.findBySecondaryIndex(
+      /*const { result: bySecondary1 } = await db.val1.getManyBy(
         "s",
         val1,
       )*/
 
-      const { result: bySecondary2 } = await db.val2.findBySecondaryIndex(
+      const { result: bySecondary2 } = await db.val2.getManyBy(
         "s",
         val2,
       );
-      const { result: bySecondary3 } = await db.val3.findBySecondaryIndex(
+      const { result: bySecondary3 } = await db.val3.getManyBy(
         "s",
         val3,
       );
-      const { result: bySecondary4 } = await db.val4.findBySecondaryIndex(
+      const { result: bySecondary4 } = await db.val4.getManyBy(
         "s",
         val4,
       );
-      const { result: bySecondary5 } = await db.val5.findBySecondaryIndex(
+      const { result: bySecondary5 } = await db.val5.getManyBy(
         "s",
         val5,
       );
-      const { result: bySecondary6 } = await db.val6.findBySecondaryIndex(
+      const { result: bySecondary6 } = await db.val6.getManyBy(
         "s",
         val6,
       );
-      const { result: bySecondary7 } = await db.val7.findBySecondaryIndex(
+      const { result: bySecondary7 } = await db.val7.getManyBy(
         "s",
         val7,
       );
-      const { result: bySecondary8 } = await db.val8.findBySecondaryIndex(
+      const { result: bySecondary8 } = await db.val8.getManyBy(
         "s",
         val8,
       );
-      const { result: bySecondary9 } = await db.val9.findBySecondaryIndex(
+      const { result: bySecondary9 } = await db.val9.getManyBy(
         "s",
         val9,
       );
-      const { result: bySecondary10 } = await db.val10.findBySecondaryIndex(
+      const { result: bySecondary10 } = await db.val10.getManyBy(
         "s",
         val10,
       );
-      const { result: bySecondary11 } = await db.val11.findBySecondaryIndex(
+      const { result: bySecondary11 } = await db.val11.getManyBy(
         "s",
         val11,
       );
-      const { result: bySecondary12 } = await db.val12.findBySecondaryIndex(
+      const { result: bySecondary12 } = await db.val12.getManyBy(
         "s",
         val12,
       );
-      const { result: bySecondary13 } = await db.val13.findBySecondaryIndex(
+      const { result: bySecondary13 } = await db.val13.getManyBy(
         "s",
         val13,
       );
-      const { result: bySecondary14 } = await db.val14.findBySecondaryIndex(
+      const { result: bySecondary14 } = await db.val14.getManyBy(
         "s",
         val14,
       );
-      const { result: bySecondary15 } = await db.val15.findBySecondaryIndex(
+      const { result: bySecondary15 } = await db.val15.getManyBy(
         "s",
         val15,
       );
-      const { result: bySecondary16 } = await db.val16.findBySecondaryIndex(
+      const { result: bySecondary16 } = await db.val16.getManyBy(
         "s",
         val16,
       );
-      const { result: bySecondary17 } = await db.val17.findBySecondaryIndex(
+      const { result: bySecondary17 } = await db.val17.getManyBy(
         "s",
         val17,
       );
-      const { result: bySecondary18 } = await db.val18.findBySecondaryIndex(
+      const { result: bySecondary18 } = await db.val18.getManyBy(
         "s",
         val18,
       );
-      const { result: bySecondary19 } = await db.val19.findBySecondaryIndex(
+      const { result: bySecondary19 } = await db.val19.getManyBy(
         "s",
         val19,
       );
-      const { result: bySecondary20 } = await db.val20.findBySecondaryIndex(
+      const { result: bySecondary20 } = await db.val20.getManyBy(
         "s",
         val20,
       );
-      const { result: bySecondary21 } = await db.val21.findBySecondaryIndex(
+      const { result: bySecondary21 } = await db.val21.getManyBy(
         "s",
         val21,
       );
-      const { result: bySecondary22 } = await db.val22.findBySecondaryIndex(
+      const { result: bySecondary22 } = await db.val22.getManyBy(
         "s",
         val22,
       );
-      const { result: bySecondary23 } = await db.val23.findBySecondaryIndex(
+      const { result: bySecondary23 } = await db.val23.getManyBy(
         "s",
         val23,
       );
-      const { result: bySecondary24 } = await db.val24.findBySecondaryIndex(
+      const { result: bySecondary24 } = await db.val24.getManyBy(
         "s",
         val24,
       );
-      const { result: bySecondary25 } = await db.val25.findBySecondaryIndex(
+      const { result: bySecondary25 } = await db.val25.getManyBy(
         "s",
         val25,
       );
-      const { result: bySecondary26 } = await db.val26.findBySecondaryIndex(
+      const { result: bySecondary26 } = await db.val26.getManyBy(
         "s",
         val26,
       );
@@ -903,7 +939,8 @@ Deno.test("indexable_collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          test: collection(model<User>(), {
+          test: collection({
+            model: model<User>(),
             indices: {
               username: "primary",
               age: "secondary",

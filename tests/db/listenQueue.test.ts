@@ -5,7 +5,7 @@ import {
   model,
   type QueueMessage,
 } from "../../mod.ts";
-import { KVDEX_KEY_PREFIX } from "../../src/core/constants.ts";
+import { DEFAULT_BASE_KEY_PREFIX } from "../../src/core/constants.ts";
 import { createHandlerId } from "../../src/core/utils.ts";
 import { assert } from "@std/assert";
 import { sleep, useKv } from "../utils.ts";
@@ -17,7 +17,10 @@ Deno.test("db - listenQueue", async (t) => {
       const db = kvdex({ kv });
       const sleeper = Promise.withResolvers<void>();
 
-      const handlerId = createHandlerId([KVDEX_KEY_PREFIX], undefined);
+      const handlerId = createHandlerId(
+        [DEFAULT_BASE_KEY_PREFIX],
+        undefined,
+      );
 
       let assertion = false;
 
@@ -47,7 +50,7 @@ Deno.test("db - listenQueue", async (t) => {
 
       const db = kvdex({
         kv,
-        schema: { numbers: collection(model<number>()) },
+        schema: { numbers: collection({ model: model<number>() }) },
       });
 
       let assertion = true;

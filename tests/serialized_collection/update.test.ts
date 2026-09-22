@@ -1,7 +1,9 @@
 import { collection, kvdex, model } from "../../mod.ts";
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import { mockUser1, mockUser2, mockUserInvalid } from "../mocks.ts";
-import { useDb, useKv } from "../utils.ts";
+import { generateIncompressibleUser, useDb, useKv } from "../utils.ts";
+import { extendKey } from "../../src/core/utils.ts";
+import type { DenoKvEntry, DenoKvStrictKey } from "../../src/core/types.ts";
 
 Deno.test("serialized_collection - update", async (t) => {
   await t.step(
@@ -111,9 +113,9 @@ Deno.test("serialized_collection - update", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            arrays: collection(model<number[]>()),
-            sets: collection(model<Set<number>>()),
-            maps: collection(model<Map<string, number>>()),
+            arrays: collection({ model: model<number[]>() }),
+            sets: collection({ model: model<Set<number>>() }),
+            maps: collection({ model: model<Map<string, number>>() }),
           },
         });
 
@@ -174,9 +176,9 @@ Deno.test("serialized_collection - update", async (t) => {
         const db = kvdex({
           kv,
           schema: {
-            numbers: collection(model<number>()),
-            strings: collection(model<string>()),
-            dates: collection(model<Date>()),
+            numbers: collection({ model: model<number>() }),
+            strings: collection({ model: model<string>() }),
+            dates: collection({ model: model<Date>() }),
           },
         });
 
@@ -259,6 +261,111 @@ Deno.test("serialized_collection - update", async (t) => {
 
         assert(doc !== null);
         assertEquals(doc.value, n2);
+      });
+    },
+  );
+
+  await t.step(
+    "Should clean up old segments when updating document",
+    async () => {
+      await useDb(async (db) => {
+        const kv = db.s_users["kv"];
+        const largeUser = generateIncompressibleUser();
+
+        // Add a large document that requires segments
+        const cr = await db.s_users.add(largeUser);
+        assert(cr.ok);
+
+        // Collect old segment entries
+        const segmentPrefix = extendKey(db.s_users["keys"].segment, cr.id);
+        const oldEntries: DenoKvEntry[] = [];
+        const iterBefore = await kv.list({ prefix: segmentPrefix });
+        for await (const entry of iterBefore) {
+          oldEntries.push(entry as DenoKvEntry);
+        }
+        assert(
+          oldEntries.length > 1,
+          "Old document must span multiple segments",
+        );
+
+        // Update with a different value
+        const updateCr = await db.s_users.update(cr.id, mockUser1, {
+          strategy: "replace",
+        });
+        assert(updateCr.ok);
+
+        // Collect new segment entries
+        const newEntries: DenoKvEntry[] = [];
+        const iterAfter = await kv.list({ prefix: segmentPrefix });
+        for await (const entry of iterAfter) {
+          newEntries.push(entry as DenoKvEntry);
+        }
+
+        assertEquals(newEntries.map((entry) => entry.key), [
+          extendKey(segmentPrefix, 0),
+        ]);
+        for (const oldEntry of oldEntries.slice(1)) {
+          const deleted = await kv.get(oldEntry.key as DenoKvStrictKey);
+          assertEquals(deleted.value, null);
+          assertEquals(deleted.versionstamp, null);
+        }
+
+        // Verify the document reads correctly
+        const doc = await db.s_users.find(cr.id);
+        assertEquals(doc?.value, mockUser1);
+      });
+    },
+  );
+
+  await t.step(
+    "Should clean up old segments when updating document using batched mode",
+    async () => {
+      await useDb(async (db) => {
+        const kv = db.s_users["kv"];
+        const largeUser = generateIncompressibleUser();
+
+        // Add a large document that requires segments
+        const cr = await db.s_users.add(largeUser);
+        assert(cr.ok);
+
+        // Collect old segment entries
+        const segmentPrefix = extendKey(db.s_users["keys"].segment, cr.id);
+        const oldEntries: DenoKvEntry[] = [];
+        const iterBefore = await kv.list({ prefix: segmentPrefix });
+        for await (const entry of iterBefore) {
+          oldEntries.push(entry as DenoKvEntry);
+        }
+        assert(
+          oldEntries.length > 1,
+          "Old document must span multiple segments",
+        );
+
+        // Update with a different value using batched mode
+        const updateCr = await db.s_users.update(cr.id, mockUser1, {
+          strategy: "replace",
+          batched: true,
+        });
+        assert(updateCr.ok);
+
+        // Collect new segment entries
+        const newEntries: DenoKvEntry[] = [];
+        const iterAfter = await kv.list({ prefix: segmentPrefix });
+        for await (const entry of iterAfter) {
+          newEntries.push(entry as DenoKvEntry);
+        }
+
+        assertEquals(newEntries.map((entry) => entry.key), [
+          extendKey(segmentPrefix, 0),
+        ]);
+        for (const oldEntry of oldEntries.slice(1)) {
+          const deleted = await kv.get(oldEntry.key as DenoKvStrictKey);
+          assertEquals(deleted.value, null);
+          assertEquals(deleted.versionstamp, null);
+        }
+
+        // Verify the document reads correctly
+        const doc = await db.s_users.find(cr.id);
+        assertEquals(doc?.value, mockUser1);
       });
     },
   );

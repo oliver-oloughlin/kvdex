@@ -2,28 +2,54 @@ import { jsonParse, jsonStringify } from "../../../common/json.ts";
 import type { BasicMap } from "./types.ts";
 
 /**
- * BasicMap adapter for `Storage`.
+ * Create a new BasicMap adapter for the `Storage` interface.
  *
- * Enables a `Storage` object, such as `localStorage`, to be utilized as a basic map.
- *
- * Wraps `localStorage` by default.
+ * Enables a `Storage` object, such as `localStorage` or `sessionStorage`, to be utilized as a BasicMap.
  *
  * @example
  * ```ts
+ * import { storageAdapter } from "@olli/kvdex/kv";
+ *
  * // Creates a new BasicMap, wrapping `localStorage`
- * const map = new StorageAdapter()
+ * const map = storageAdapter(localStorage)
  * ```
  *
  * @example
  * ```ts
- * // Creates a new BasicMap, explicitly wrapping `localStorage`
+ * import { storageAdapter } from "@olli/kvdex/kv";
+ *
+ * // Creates a new BasicMap, wrapping `sessionStorage`
+ * const map = storageAdapter(sessionStorage)
+ * ```
+ *
+ * @param storage - The `Storage` object to wrap.
+ * @returns A new StorageAdapter instance.
+ */
+export function storageAdapter<K, V>(storage: Storage): StorageAdapter<K, V> {
+  return new StorageAdapter(storage);
+}
+
+/**
+ * BasicMap adapter for the `Storage` interface.
+ *
+ * Enables a `Storage` object, such as `localStorage` or `sessionStorage`, to be utilized as a BasicMap.
+ *
+ * @example
+ * ```ts
+ * // Creates a new BasicMap, wrapping `localStorage`
  * const map = new StorageAdapter(localStorage)
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Creates a new BasicMap, wrapping `sessionStorage`
+ * const map = new StorageAdapter(sessionStorage)
  * ```
  */
 export class StorageAdapter<K, V> implements BasicMap<K, V> {
   private storage: Storage;
 
-  constructor(storage: Storage = localStorage) {
+  constructor(storage: Storage) {
     this.storage = storage;
   }
 

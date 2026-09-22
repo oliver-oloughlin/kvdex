@@ -1,5 +1,6 @@
 import type {
-  CollectionOptions,
+  BaseCollectionOptions,
+  BaseKey,
   CollectionSelector,
   CountAllOptions,
   Database,
@@ -34,14 +35,19 @@ import {
 } from "./utils.ts";
 import { AtomicBuilder } from "./atomic_builder.ts";
 import {
+  DEFAULT_BASE_KEY_PREFIX,
   DEFAULT_INTERVAL_RETRY,
   DEFAULT_LOOP_RETRY,
-  KVDEX_KEY_PREFIX,
   MIN_INTERVAL_START_DELAY,
   MIN_LOOP_START_DELAY,
   UNDELIVERED_KEY_PREFIX,
 } from "./constants.ts";
 import { AtomicWrapper } from "./atomic_wrapper.ts";
+
+const queueDispatchers = new WeakMap<DenoKv, {
+  queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>;
+  listener?: Promise<void>;
+}>();
 
 /**
  * Create a new database instance.
@@ -50,30 +56,34 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
  *
  * @example
  * ```ts
- * import { kvdex, model, collection } from "@olli/kvdex"
- * import { jsonEncoder } from "@olli/kvdex"
+ * import { collection, kvdex, model } from "@olli/kvdex";
+ * import { jsonEncoder } from "@olli/kvdex/encoding/json";
  *
- * type User = {
- *   username: string
- *   age: number
- * }
- *
- * const kv = await Deno.openKv()
+ * const kv = await Deno.openKv();
  *
  * const db = kvdex({
  *   kv: kv,
  *   schema: {
- *     numbers: collection(model<number>()),
- *     u64s: collection(model<Deno.KvU64>()),
- *     serializedStrings: collection(model<string>(), { encoder: jsonEncoder() }),
- *     users: collection(model<User>(), {
+ *     // Simple collections:
+ *     numbers: collection<number>(),
+ *
+ *     // Object collections with indices and other options:
+ *     users: collection({
+ *       model: model<User>(),
+ *       encoder: jsonEncoder(),
+ *       history: true,
  *       indices: {
- *         username: "primary",
- *         age: "secondary"
- *       }
- *     })
- *   }
- * })
+ *         username: "primary", // unique
+ *         age: "secondary", // non-unique
+ *       },
+ *     }),
+ *
+ *     // Nested collections:
+ *     nested: {
+ *       numbers: collection<number>(),
+ *     },
+ *   },
+ * });
  * ```
  *
  * @param kv - The Deno KV instance to be used for storing and retrieving data.
@@ -83,16 +93,26 @@ import { AtomicWrapper } from "./atomic_wrapper.ts";
 export function kvdex<const TSchema extends SchemaDefinition>(
   options: KvdexOptions<TSchema>,
 ): Database<TSchema> {
-  // Set listener activated flag and queue handlers map
-  let listener: Promise<void>;
-  const queueHandlers = new Map<string, QueueMessageHandler<KvValue>[]>();
+  // Append database prefix to the base path to avoid top-level key collisions
+  const basePath = extendKey(
+    options.basePath ?? [],
+    DEFAULT_BASE_KEY_PREFIX,
+  );
+
+  let dispatcher = queueDispatchers.get(options.kv);
+  if (!dispatcher) {
+    dispatcher = { queueHandlers: new Map() };
+    queueDispatchers.set(options.kv, dispatcher);
+  }
+  const queueDispatcher = dispatcher;
+  const { queueHandlers } = queueDispatcher;
 
   // Create idempotent listener activator
   const idempotentListener = () => {
     // Create new queue listener if not already created
-    if (!listener) {
+    if (!queueDispatcher.listener) {
       // Add queue listener
-      listener = options.kv.listenQueue(async (msg) => {
+      queueDispatcher.listener = options.kv.listenQueue(async (msg) => {
         // Parse queue message
         const parsed = parseQueueMessage(msg);
         if (!parsed.ok) {
@@ -109,7 +129,7 @@ export function kvdex<const TSchema extends SchemaDefinition>(
     }
 
     // Return queue listener
-    return listener;
+    return queueDispatcher.listener;
   };
 
   // Create schema
@@ -118,6 +138,7 @@ export function kvdex<const TSchema extends SchemaDefinition>(
     options.kv,
     queueHandlers,
     idempotentListener,
+    basePath,
   ) as Schema<TSchema>;
 
   // Create KvDex object
@@ -126,6 +147,7 @@ export function kvdex<const TSchema extends SchemaDefinition>(
     schema,
     queueHandlers,
     idempotentListener,
+    basePath,
   );
 
   // Return schema and db combination
@@ -138,17 +160,20 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   private schema: TSchema;
   private queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>;
   private idempotentListener: () => Promise<void>;
+  #basePath: BaseKey;
 
   constructor(
     kv: DenoKv,
     schema: TSchema,
     queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>,
     idempotentListener: () => Promise<void>,
+    basePath: BaseKey,
   ) {
     this.kv = kv;
     this.schema = schema;
     this.queueHandlers = queueHandlers;
     this.idempotentListener = idempotentListener;
+    this.#basePath = basePath;
   }
 
   /**
@@ -167,7 +192,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   atomic<
     const TInput,
     const TOutput extends KvValue,
-    const TOptions extends CollectionOptions<TOutput>,
+    const TOptions extends BaseCollectionOptions<TInput, TOutput>,
   >(
     selector: CollectionSelector<TSchema, TInput, TOutput, TOptions>,
   ): AtomicBuilder<
@@ -214,7 +239,8 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   }
 
   /**
-   * Wipe all kvdex entries, including undelivered and history entries.
+   * Delete all KV entries under `basePath`.
+   * Including entries outside the schema, such as undelivered and history entries.
    *
    * @example
    * ```ts
@@ -225,7 +251,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    */
   async wipe(): Promise<void> {
     // Create iterator
-    const iter = await this.kv.list({ prefix: [KVDEX_KEY_PREFIX] });
+    const iter = await this.kv.list({ prefix: this.#basePath });
 
     // Collect all kvdex keys
     const keys: DenoKvStrictKey[] = [];
@@ -266,8 +292,8 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
   ): Promise<DenoKvCommitResult> {
     // Prepare and perform enqueue operation
     const prep = prepareEnqueue(
-      [KVDEX_KEY_PREFIX],
-      [KVDEX_KEY_PREFIX, UNDELIVERED_KEY_PREFIX],
+      this.#basePath,
+      extendKey(this.#basePath, UNDELIVERED_KEY_PREFIX),
       data,
       options,
     );
@@ -280,7 +306,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    *
    * @example
    * ```ts
-   * // Prints the data to console when recevied
+   * // Prints the data to console when received
    * db.listenQueue((data) => console.log(data))
    *
    * // Sends post request when data is received in the "posts" topic
@@ -304,7 +330,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     options?: QueueListenerOptions,
   ): Promise<void> {
     // Create handler id
-    const handlerId = createHandlerId([KVDEX_KEY_PREFIX], options?.topic);
+    const handlerId = createHandlerId(this.#basePath, options?.topic);
 
     // Add new handler to specified handlers
     const handlers = this.queueHandlers.get(handlerId) ?? [];
@@ -339,7 +365,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
     options?: FindUndeliveredOptions<TOutput>,
   ): Promise<Document<TOutput, TId> | null> {
     // Create document key, get document entry
-    const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id);
+    const key = extendKey(this.#basePath, UNDELIVERED_KEY_PREFIX, id);
     const result = await this.kv.get(key, options);
 
     // If no entry exists, return null
@@ -370,7 +396,7 @@ export class Kvdex<const TSchema extends Schema<SchemaDefinition>> {
    * @param id - Id of undelivered document.
    */
   async deleteUndelivered(id: KvId): Promise<void> {
-    const key = extendKey([KVDEX_KEY_PREFIX], UNDELIVERED_KEY_PREFIX, id);
+    const key = extendKey(this.#basePath, UNDELIVERED_KEY_PREFIX, id);
     await this.kv.delete(key);
   }
 
@@ -610,6 +636,7 @@ function _createSchema(
   kv: DenoKv,
   queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>,
   idempotentListener: () => Promise<void>,
+  basePath: BaseKey,
   treeKey?: KvKey,
 ): Schema<SchemaDefinition> {
   // Get all the definition entries
@@ -622,13 +649,23 @@ function _createSchema(
 
     // If the entry value is a function => build collection and create collection entry
     if (typeof value === "function") {
-      return [key, value(kv, extendedKey, queueHandlers, idempotentListener)];
+      return [
+        key,
+        value(kv, extendedKey, queueHandlers, idempotentListener, basePath),
+      ];
     }
 
     // Create and return schema entry
     return [
       key,
-      _createSchema(value, kv, queueHandlers, idempotentListener, extendedKey),
+      _createSchema(
+        value,
+        kv,
+        queueHandlers,
+        idempotentListener,
+        basePath,
+        extendedKey,
+      ),
     ];
   });
 
@@ -651,7 +688,7 @@ async function _countAll(
   kv: DenoKv,
   schemaOrCollection:
     | Schema<SchemaDefinition>
-    | Collection<KvValue, KvValue, CollectionOptions<KvValue>>,
+    | Collection<KvValue, KvValue, BaseCollectionOptions<KvValue, KvValue>>,
   options?: CountAllOptions,
 ): Promise<number> {
   // If input is a collection, return the collection count
@@ -679,7 +716,7 @@ async function _deleteAll(
   kv: DenoKv,
   schemaOrCollection:
     | Schema<SchemaDefinition>
-    | Collection<KvValue, KvValue, CollectionOptions<KvValue>>,
+    | Collection<KvValue, KvValue, BaseCollectionOptions<KvValue, KvValue>>,
 ): Promise<void> {
   // If input is a collection, perform deleteMany
   if (schemaOrCollection instanceof Collection) {

@@ -1,7 +1,7 @@
 import { collection, type Document, kvdex, model } from "../../mod.ts";
 import {
+  DEFAULT_BASE_KEY_PREFIX,
   ID_KEY_PREFIX,
-  KVDEX_KEY_PREFIX,
   SEGMENT_KEY_PREFIX,
 } from "../../src/core/constants.ts";
 import { extendKey, keyEq } from "../../src/core/utils.ts";
@@ -20,7 +20,7 @@ Deno.test("serialized_collection - properties", async (t) => {
       const baseKey = db.s_users["keys"].base;
       const idKey = db.s_users["keys"].id;
       const segmentKey = db.s_users["keys"].segment;
-      const prefix = extendKey([KVDEX_KEY_PREFIX], "s_users");
+      const prefix = extendKey([DEFAULT_BASE_KEY_PREFIX], "s_users");
 
       assert(keyEq(baseKey, prefix));
       assert(keyEq(idKey, extendKey(prefix, ID_KEY_PREFIX)));
@@ -33,11 +33,13 @@ Deno.test("serialized_collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          users1: collection(model<User>(), {
+          users1: collection({
+            model: model<User>(),
             encoder: jsonEncoder(),
             idGenerator: () => Math.random(),
           }),
-          users2: collection(model<User>(), {
+          users2: collection({
+            model: model<User>(),
             encoder: jsonEncoder(),
             idGenerator: (data) => data.username,
           }),
@@ -296,7 +298,8 @@ Deno.test("serialized_collection - properties", async (t) => {
       const db = kvdex({
         kv,
         schema: {
-          test: collection(model<User>(), {
+          test: collection({
+            model: model<User>(),
             encoder: jsonEncoder(),
             idGenerator: async (user) => {
               const buffer = await crypto.subtle.digest(

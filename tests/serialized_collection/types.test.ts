@@ -15,7 +15,7 @@ Deno.test("serialized_collection - types", async (t) => {
             i,
           ) => [
             i,
-            collection(model<typeof val>(), { encoder: jsonEncoder() }),
+            collection({ model: model<typeof val>(), encoder: jsonEncoder() }),
           ]),
         );
 

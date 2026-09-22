@@ -162,9 +162,9 @@ function _replacer(value: unknown): unknown {
   }
 
   // Infinity
-  if (value === Infinity) {
+  if (value === Infinity || value === -Infinity) {
     return {
-      [TypeKey.Infinity]: false,
+      [TypeKey.Infinity]: value === Infinity,
     };
   }
 
@@ -378,7 +378,7 @@ function _reviver(value: unknown): unknown {
 
   // Infnity
   if (TypeKey.Infinity in value) {
-    return Infinity;
+    return mapValue(TypeKey.Infinity, value) === true ? Infinity : -Infinity;
   }
 
   // RegExp
