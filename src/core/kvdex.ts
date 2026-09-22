@@ -44,6 +44,11 @@ import {
 } from "./constants.ts";
 import { AtomicWrapper } from "./atomic_wrapper.ts";
 
+const queueDispatchers = new WeakMap<DenoKv, {
+  queueHandlers: Map<string, QueueMessageHandler<KvValue>[]>;
+  listener?: Promise<void>;
+}>();
+
 /**
  * Create a new database instance.
  *
@@ -94,16 +99,20 @@ export function kvdex<const TSchema extends SchemaDefinition>(
     DEFAULT_BASE_KEY_PREFIX,
   );
 
-  // Set listener activated flag and queue handlers map
-  let listener: Promise<void>;
-  const queueHandlers = new Map<string, QueueMessageHandler<KvValue>[]>();
+  let dispatcher = queueDispatchers.get(options.kv);
+  if (!dispatcher) {
+    dispatcher = { queueHandlers: new Map() };
+    queueDispatchers.set(options.kv, dispatcher);
+  }
+  const queueDispatcher = dispatcher;
+  const { queueHandlers } = queueDispatcher;
 
   // Create idempotent listener activator
   const idempotentListener = () => {
     // Create new queue listener if not already created
-    if (!listener) {
+    if (!queueDispatcher.listener) {
       // Add queue listener
-      listener = options.kv.listenQueue(async (msg) => {
+      queueDispatcher.listener = options.kv.listenQueue(async (msg) => {
         // Parse queue message
         const parsed = parseQueueMessage(msg);
         if (!parsed.ok) {
@@ -120,7 +129,7 @@ export function kvdex<const TSchema extends SchemaDefinition>(
     }
 
     // Return queue listener
-    return listener;
+    return queueDispatcher.listener;
   };
 
   // Create schema

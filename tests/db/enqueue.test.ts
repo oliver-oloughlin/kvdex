@@ -13,41 +13,57 @@ import { useKv } from "../utils.ts";
 
 Deno.test("db - enqueue", async (t) => {
   await t.step(
-    "Should route database and collection queues by custom base path",
+    "Should route database and collection queues by custom base path on one KV",
     async () => {
       const paths: BaseKey[] = [["tenant", 42n], ["tenant", "42"], []];
-      for (const basePath of paths) {
-        await useKv(async (kv) => {
+      await useKv(async (kv) => {
+        const listenQueue = kv.listenQueue.bind(kv);
+        let listenerCount = 0;
+        kv.listenQueue = (handler) => {
+          listenerCount++;
+          return listenQueue(handler);
+        };
+        const received: string[] = [];
+        const expected: string[] = [];
+        const complete = Promise.withResolvers<void>();
+        const record = (queue: string) => (value: string) => {
+          received.push(`${queue}:${value}`);
+          if (received.length === paths.length * 2) complete.resolve();
+        };
+        const listeners: Promise<void>[] = [];
+        const databases = paths.map((basePath, index) => {
           const db = kvdex({
             kv,
             schema: { numbers: collection<number>() },
             basePath,
           });
-          const received: string[] = [];
-          const complete = Promise.withResolvers<void>();
-          const record = (queue: string) => (value: string) => {
-            received.push(`${queue}:${value}`);
-            if (received.length === 2) complete.resolve();
-          };
-          const listeners = [
-            db.listenQueue(record("database"), { topic: "topic" }),
-            db.numbers.listenQueue(record("collection")),
-          ];
-          const timeout = setTimeout(
-            () => complete.reject(new Error("Queue delivery timed out")),
-            5_000,
+          listeners.push(
+            db.listenQueue(record(`${index}:database`), { topic: "topic" }),
+            db.numbers.listenQueue(record(`${index}:collection`)),
           );
-          try {
-            await db.enqueue("one", { topic: "topic" });
-            await db.numbers.enqueue("two");
-            await complete.promise;
-            assertEquals(received.sort(), ["collection:two", "database:one"]);
-          } finally {
-            clearTimeout(timeout);
-          }
-          return async () => await Promise.all(listeners);
+          expected.push(
+            `${index}:database:${index}`,
+            `${index}:collection:${index}`,
+          );
+          return db;
         });
-      }
+        const timeout = setTimeout(() => complete.resolve(), 5_000);
+        try {
+          for (const [index, db] of databases.entries()) {
+            await db.enqueue(`${index}`, { topic: "topic" });
+            await db.numbers.enqueue(`${index}`);
+          }
+          await complete.promise;
+        } finally {
+          clearTimeout(timeout);
+          kv.listenQueue = listenQueue;
+        }
+        return async () => {
+          await Promise.all(listeners);
+          assertEquals(listenerCount, 1);
+          assertEquals(received.sort(), expected.sort());
+        };
+      });
     },
   );
 
