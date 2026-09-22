@@ -9,6 +9,22 @@ import {
 
 Deno.test("ext - encoder", async (t) => {
   await t.step("json", async (t) => {
+    await t.step("Should encode Infinity signs as boolean markers", () => {
+      const encoder = new TextEncoder();
+      const negativePayload = encoder.encode('{"__infinity__":false}');
+
+      assertEquals(jsonDeserialize(negativePayload), -Infinity);
+      assertEquals(jsonSerialize(-Infinity), negativePayload);
+      assertEquals(
+        jsonDeserialize(encoder.encode('{"values":[{"__infinity__":false}]}')),
+        { values: [-Infinity] },
+      );
+
+      const positivePayload = encoder.encode('{"__infinity__":true}');
+      assertEquals(jsonDeserialize(positivePayload), Infinity);
+      assertEquals(jsonSerialize(Infinity), positivePayload);
+    });
+
     await t.step("Should preserve non-finite numbers", () => {
       for (const value of [-Infinity, Infinity, NaN]) {
         assertEquals(jsonDeserialize(jsonSerialize(value)), value);
