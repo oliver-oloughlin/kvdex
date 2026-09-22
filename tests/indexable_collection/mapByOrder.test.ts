@@ -8,6 +8,35 @@ import {
 import { useDb } from "../utils.ts";
 
 Deno.test("indexable_collection - mapByOrder", async (t) => {
+  await t.step("Should preserve index order with async mappers", async () => {
+    await useDb(async (db) => {
+      assert((await db.i_users.addMany(mockUsersWithAlteredAge)).ok);
+
+      for (const reverse of [false, true]) {
+        const ordered = [
+          mockUser3.username,
+          mockUser1.username,
+          mockUser2.username,
+        ];
+        const expected = reverse ? ordered.toReversed() : ordered;
+        const gates = expected.map(() => Promise.withResolvers<void>());
+        const completed: string[] = [];
+        gates[gates.length - 1].resolve();
+
+        const { result } = await db.i_users.mapByOrder("age", async (doc) => {
+          const index = expected.indexOf(doc.value.username);
+          await gates[index].promise;
+          completed.push(doc.value.username);
+          if (index > 0) gates[index - 1].resolve();
+          return doc.value.username;
+        }, { reverse });
+
+        assertEquals(completed, expected.toReversed());
+        assertEquals(result, expected);
+      }
+    });
+  });
+
   await t.step(
     "Should run callback mapper function for each document in the collection by index order",
     async () => {

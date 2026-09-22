@@ -2783,9 +2783,9 @@ export class Collection<
     }
 
     // Execute callback function for each document
-    await allFulfilled(docs.map(async (doc) => {
+    await allFulfilled(docs.map(async (doc, index) => {
       try {
-        result.push(await fn(doc));
+        result[index] = await fn(doc);
       } catch (e) {
         errors.push(e);
       }
