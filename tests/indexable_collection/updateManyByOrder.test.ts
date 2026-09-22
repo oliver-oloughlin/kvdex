@@ -155,39 +155,29 @@ Deno.test(
             },
           );
 
-          assert(
-            crs.some((cr) =>
-              cr.ok && ids.includes(cr.id) &&
-              !versionstamps.includes(cr.versionstamp)
-            ),
-          );
+          assertEquals(crs.length, docs.result.length);
+          assertEquals(crs.filter((cr) => cr.ok).length, 1);
+          assertEquals(crs.filter((cr) => !cr.ok).length, 2);
 
-          assert(
-            crs.some((cr) => !cr.ok),
-          );
+          const successfulCommit = crs.find((cr) => cr.ok);
+          assert(successfulCommit?.ok);
+          assert(ids.includes(successfulCommit.id));
+          assert(!versionstamps.includes(successfulCommit.versionstamp));
 
           const { result } = await db.i_users.mapByOrder(
             "age",
             (doc) => doc.value,
           );
 
-          assertEquals(result[0].username, updateData.username);
-          assertEquals(result[0].address.country, updateData.address.country);
-          assertEquals(result[0].address.city, updateData.address.city);
-          assertEquals(result[0].address.houseNr, updateData.address.houseNr);
-          assertEquals(result[0].address.street, updateData.address.street);
+          const expected = docs.result.map((doc) =>
+            doc.id === successfulCommit.id ? updateData : doc.value
+          ).sort((first, second) => first.age - second.age);
 
-          assertEquals(result[1].username, mockUser1.username);
-          assertEquals(result[1].address.country, mockUser1.address.country);
-          assertEquals(result[1].address.city, mockUser1.address.city);
-          assertEquals(result[1].address.houseNr, mockUser1.address.houseNr);
-          assertEquals(result[1].address.street, mockUser1.address.street);
-
-          assertEquals(result[2].username, mockUser2.username);
-          assertEquals(result[2].address.country, mockUser2.address.country);
-          assertEquals(result[2].address.city, mockUser2.address.city);
-          assertEquals(result[2].address.houseNr, mockUser2.address.houseNr);
-          assertEquals(result[2].address.street, mockUser2.address.street);
+          assertEquals(result, expected);
+          assertEquals(
+            (await db.i_users.find(successfulCommit.id))?.value,
+            updateData,
+          );
         });
       },
     );
