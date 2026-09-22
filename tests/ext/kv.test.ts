@@ -49,6 +49,75 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async (t) => {
+    await t.step("KV list respects non-finite numeric bounds", async () => {
+      await useKv(async (kv) => {
+        for (const value of [NaN, Infinity, 0, -Infinity]) {
+          for (const suffix of ["b", "a"]) {
+            assert(
+              (await kv.set(["range", value, suffix], `${value}:${suffix}`)).ok,
+            );
+          }
+        }
+
+        const ordered = [
+          "-Infinity:a",
+          "-Infinity:b",
+          "0:a",
+          "0:b",
+          "Infinity:a",
+          "Infinity:b",
+          "NaN:a",
+          "NaN:b",
+        ];
+        const cases: { selector: DenoKvListSelector; expected: string[] }[] = [
+          { selector: { prefix: ["range"] }, expected: ordered },
+          {
+            selector: { prefix: ["range"], start: ["range", -Infinity] },
+            expected: ordered,
+          },
+          {
+            selector: { prefix: ["range"], end: ["range", -Infinity] },
+            expected: [],
+          },
+          {
+            selector: { prefix: ["range"], start: ["range", Infinity] },
+            expected: ordered.slice(4),
+          },
+          {
+            selector: { prefix: ["range"], end: ["range", Infinity] },
+            expected: ordered.slice(0, 4),
+          },
+          {
+            selector: { prefix: ["range"], start: ["range", NaN] },
+            expected: ordered.slice(6),
+          },
+          {
+            selector: { prefix: ["range"], end: ["range", NaN] },
+            expected: ordered.slice(0, 6),
+          },
+          ...[-Infinity, Infinity, NaN].map((value) => ({
+            selector: {
+              start: ["range", value, "a"],
+              end: ["range", value, "b"],
+            },
+            expected: [`${value}:a`],
+          })),
+        ];
+
+        for (const { selector, expected } of cases) {
+          for (const reverse of [false, true]) {
+            const entries = await Array.fromAsync(
+              await kv.list(selector, { reverse }),
+            );
+            assertEquals(
+              entries.map((entry) => entry.value),
+              reverse ? expected.toReversed() : expected,
+            );
+          }
+        }
+      });
+    });
+
     await t.step(
       "KV list respects inclusive start and exclusive end bounds",
       async () => {

@@ -9,6 +9,16 @@ import {
 
 Deno.test("ext - encoder", async (t) => {
   await t.step("json", async (t) => {
+    await t.step("Should preserve non-finite numbers", () => {
+      for (const value of [-Infinity, Infinity, NaN]) {
+        assertEquals(jsonDeserialize(jsonSerialize(value)), value);
+        assertEquals(
+          jsonDeserialize(jsonSerialize({ values: [value] })),
+          { values: [value] },
+        );
+      }
+    });
+
     await t.step(
       "Should successfully serialize all KvValue type values",
       () => {

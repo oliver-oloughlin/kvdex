@@ -142,7 +142,15 @@ function sortByString(str1: string, str2: string): number {
 }
 
 function sortByNumber(n1: number, n2: number): number {
-  return n1 - n2;
+  if (Number.isNaN(n1)) {
+    return Number.isNaN(n2) ? 0 : 1;
+  }
+
+  if (Number.isNaN(n2)) {
+    return -1;
+  }
+
+  return n1 < n2 ? -1 : n1 > n2 ? 1 : 0;
 }
 
 function sortByBigint(n1: bigint, n2: bigint): number {
