@@ -11,7 +11,10 @@ import { mapKv } from "../../src/ext/kv/map/mod.ts";
 import type { BasicMap } from "../../src/ext/kv/map/types.ts";
 import { collection, kvdex } from "../../mod.ts";
 import type { KvEntry } from "../../src/ext/kv/map/entry_handlers.ts";
-import type { DenoKvListSelector } from "../../src/core/types.ts";
+import type {
+  DenoKvListSelector,
+  DenoKvStrictKeyPart,
+} from "../../src/core/types.ts";
 
 /** A BasicMap wrapper that delays `set` to simulate slow initialization. */
 class SlowMap<K, V> implements BasicMap<K, V> {
@@ -49,6 +52,72 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   fn: async (t) => {
+    await t.step(
+      "KV list respects all key part type ordering and bounds",
+      async () => {
+        await useKv(async (kv) => {
+          const ordered: DenoKvStrictKeyPart[] = [
+            new Uint8Array(),
+            new Uint8Array([0]),
+            new Uint8Array([0, 1]),
+            new Uint8Array([1]),
+            "",
+            "a",
+            "b",
+            -1n,
+            1n,
+            -1,
+            1,
+            false,
+            true,
+          ];
+
+          for (const value of ordered.toReversed()) {
+            assert((await kv.set(["mixed", value], value)).ok);
+          }
+
+          const cases: {
+            selector: DenoKvListSelector;
+            expected: DenoKvStrictKeyPart[];
+          }[] = [
+            {
+              selector: { prefix: ["mixed"] },
+              expected: ordered,
+            },
+            {
+              selector: { start: ["mixed", 1n], end: ["mixed", 1] },
+              expected: [1n, -1],
+            },
+          ];
+
+          for (const [index, value] of ordered.entries()) {
+            cases.push(
+              {
+                selector: { prefix: ["mixed"], start: ["mixed", value] },
+                expected: ordered.slice(index),
+              },
+              {
+                selector: { prefix: ["mixed"], end: ["mixed", value] },
+                expected: ordered.slice(0, index),
+              },
+            );
+          }
+
+          for (const { selector, expected } of cases) {
+            for (const reverse of [false, true]) {
+              const entries = await Array.fromAsync(
+                await kv.list(selector, { reverse }),
+              );
+              assertEquals(
+                entries.map((entry) => entry.key[1]),
+                reverse ? expected.toReversed() : expected,
+              );
+            }
+          }
+        });
+      },
+    );
+
     await t.step("KV list respects non-finite numeric bounds", async () => {
       await useKv(async (kv) => {
         for (const value of [NaN, Infinity, 0, -Infinity]) {
