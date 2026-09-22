@@ -877,7 +877,7 @@ const { result } = await db.users.getManyBy("age", 24, {
 ### getManyByOrder()
 
 Retrieves multiple documents ordered by the given index. Works with both primary
-and secondary indexes. The `startValue` and `endValue` options bound the result
+and secondary indices. The `startValue` and `endValue` options bound the result
 by the index value (inclusive start, exclusive end). If no options are provided,
 all documents are retrieved in index order.
 
